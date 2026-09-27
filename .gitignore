@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local corpora and generated databases
+data/*
+!data/AGENTS.md
+*.db
+*.sqlite*
+
+# Tool caches and generated previews
+.firecrawl/
+.playwright-cli/
+graphify-out/
+output/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Legal RAG 2026 — целевая архитектура и runtime-пайплайн</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f5f1e8;
+      --sheet: #fffdf8;
+      --ink: #1f2937;
+      --muted: #63707c;
+      --line: #aeb7bd;
+      --navy: #264653;
+      --teal: #2a9d8f;
+      --coral: #e76f51;
+      --sand: #e9c46a;
+      --source: #f2eadf;
+      --trusted: #eaf4f1;
+      --app: #eef1f4;
+      --shadow: 0 18px 48px rgba(38, 70, 83, .11);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(233, 196, 106, .14), transparent 26rem),
+        radial-gradient(circle at 88% 35%, rgba(42, 157, 143, .10), transparent 30rem),
+        var(--paper);
+      font-family: Manrope, "Noto Sans", Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1360px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 48px;
+      align-items: end;
+      margin: 0 auto 34px;
+      max-width: 1280px;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--coral);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      letter-spacing: -.02em;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 830px;
+      font-size: clamp(48px, 6vw, 82px);
+      line-height: .98;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .decision {
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .panel {
+      margin: 26px 0 40px;
+      padding: 26px;
+      border: 1px solid rgba(38, 70, 83, .14);
+      border-radius: 24px;
+      background: rgba(255, 253, 248, .92);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      max-width: 1280px;
+      margin: 0 auto 18px;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.05;
+    }
+
+    .panel-head p {
+      margin: 0;
+      max-width: 580px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .svg-wrap {
+      overflow-x: auto;
+      border: 1px solid rgba(38, 70, 83, .10);
+      border-radius: 18px;
+      background: var(--sheet);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 980px;
+      height: auto;
+      font-family: Manrope, "Noto Sans", Arial, sans-serif;
+    }
+
+    svg .zone-label {
+      fill: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    svg .node-title {
+      fill: var(--ink);
+      font-size: 17px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+
+    svg .node-sub {
+      fill: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      text-anchor: middle;
+    }
+
+    svg .node-tag {
+      fill: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-anchor: middle;
+      text-transform: uppercase;
+    }
+
+    svg .on-dark { fill: #fffdf8; }
+    svg .on-dark-sub { fill: rgba(255, 253, 248, .78); }
+
+    svg .connector {
+      fill: none;
+      stroke: #71808a;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      marker-end: url(#arrow);
+    }
+
+    svg .connector-dashed {
+      fill: none;
+      stroke: #8b989f;
+      stroke-width: 2;
+      stroke-dasharray: 8 7;
+      stroke-linecap: round;
+      marker-end: url(#arrow-muted);
+    }
+
+    svg .card {
+      fill: #fffdf8;
+      stroke: #aab7bd;
+      stroke-width: 1.5;
+    }
+
+    svg .store {
+      fill: #f5fbf9;
+      stroke: var(--teal);
+      stroke-width: 1.8;
+    }
+
+    svg .accent {
+      fill: var(--coral);
+      stroke: #cb593f;
+      stroke-width: 1.6;
+    }
+
+    svg .navy {
+      fill: var(--navy);
+      stroke: #1d3943;
+      stroke-width: 1.6;
+    }
+
+    svg .legend {
+      fill: var(--muted);
+      font-size: 12px;
+    }
+
+    svg .step-number {
+      fill: var(--coral);
+      font-size: 11px;
+      font-weight: 800;
+      text-anchor: middle;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      max-width: 1280px;
+      margin: 26px auto 0;
+    }
+
+    .summary-card {
+      padding: 22px 22px 20px;
+      border-radius: 18px;
+      background: rgba(255, 253, 248, .82);
+      border: 1px solid rgba(38, 70, 83, .13);
+    }
+
+    .summary-card h3 {
+      margin: 0 0 8px;
+      color: var(--navy);
+      font-size: 25px;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary-card.now { border-top: 4px solid var(--teal); }
+    .summary-card.test { border-top: 4px solid var(--sand); }
+    .summary-card.later { border-top: 4px solid var(--coral); }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      max-width: 1280px;
+      margin: 34px auto 0;
+      padding-top: 20px;
+      border-top: 1px solid rgba(38, 70, 83, .15);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 860px) {
+      main { width: min(100% - 20px, 1360px); padding-top: 30px; }
+      header { grid-template-columns: 1fr; gap: 20px; }
+      .panel { padding: 12px; }
+      .panel-head { align-items: flex-start; flex-direction: column; }
+      .panel-head p { text-align: left; }
+      .summary-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">Целевая модель · 23.09.2026</p>
+        <h1>Legal RAG как система юридических доказательств</h1>
+      </div>
+      <p class="lead"><span class="decision">Решение:</span> сначала версионированный корпус, точный retrieval и проверяемые evidence handles; агент появляется только поверх этого контура. `LAW_Data` остаётся внешним read-only источником.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="architecture-heading">
+      <div class="panel-head">
+        <h2 id="architecture-heading">1. Целевая архитектура</h2>
+        <p>Канонические юридические сущности отделены от перестраиваемых поисковых проекций. Приложение не получает прямой доступ к базе, индексам или файловой системе.</p>
+      </div>
+      <div class="svg-wrap">
+        <svg viewBox="0 0 1280 720" role="img" aria-labelledby="arch-title arch-desc">
+          <title id="arch-title">Целевая архитектура Legal RAG</title>
+          <desc id="arch-desc">LAW_Data импортируется только для чтения в компилятор корпуса. После проверки юридическая структура сохраняется в каноническом хранилище, из которого строятся поисковые проекции. Retrieval-сервис выдаёт проверяемые доказательства ограниченному агенту и пользовательскому приложению.</desc>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#71808a"/>
+            </marker>
+            <marker id="arrow-muted" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b989f"/>
+            </marker>
+          </defs>
+
+          <rect x="40" y="58" width="200" height="500" rx="22" fill="#f2eadf" stroke="#dfd1c1"/>
+          <rect x="270" y="58" width="654" height="500" rx="22" fill="#eaf4f1" stroke="#c5ded7"/>
+          <rect x="954" y="58" width="286" height="500" rx="22" fill="#eef1f4" stroke="#d6dde2"/>
+          <text x="64" y="91" class="zone-label">Источник</text>
+          <text x="294" y="91" class="zone-label">Доверенный корпус и поиск</text>
+          <text x="978" y="91" class="zone-label">Приложение</text>
+
+          <!-- Connectors are intentionally rendered before nodes. -->
+          <path class="connector" d="M208 308 H252 Q260 308 260 300 V212 Q260 204 268 204 H312"/>
+          <path class="connector" d="M392 252 V352"/>
+          <path class="connector" d="M472 204 H536"/>
+          <path class="connector" d="M472 396 H536"/>
+          <path class="connector" d="M616 252 V352"/>
+          <path class="connector" d="M696 204 H720 Q728 204 728 212 V280 Q728 288 736 288 H760"/>
+          <path class="connector" d="M696 396 H712 Q720 396 720 388 V328 Q720 320 728 320 H760"/>
+          <path class="connector" d="M920 288 H944 Q952 288 952 280 V212 Q952 204 960 204 H984"/>
+          <path class="connector" d="M920 320 H936 Q944 320 944 328 V388 Q944 396 952 396 H984"/>
+          <path class="connector" d="M1064 252 V352"/>
+          <path class="connector-dashed" d="M840 356 V472 H1064 V444"/>
+
+          <rect x="72" y="264" width="136" height="88" rx="14" class="card"/>
+          <text x="140" y="294" class="node-tag">read-only</text>
+          <text x="140" y="321" class="node-title">LAW_Data</text>
+          <text x="140" y="340" class="node-sub">файлы · каталог · hash</text>
+
+          <rect x="312" y="156" width="160" height="96" rx="15" class="accent"/>
+          <text x="392" y="184" class="node-tag on-dark">компилятор</text>
+          <text x="392" y="211" class="node-title on-dark">Corpus compiler</text>
+          <text x="392" y="231" class="node-sub on-dark-sub">extract · clean · parse</text>
+
+          <rect x="312" y="352" width="160" height="88" rx="15" class="card"/>
+          <text x="392" y="379" class="node-tag">контроль</text>
+          <text x="392" y="406" class="node-title">Review gate</text>
+          <text x="392" y="425" class="node-sub">diff · ошибки · approve</text>
+
+          <path d="M552 166 h128 a16 16 0 0 1 16 16 v52 a16 16 0 0 1-16 16 H552 a16 16 0 0 1-16-16 v-52 a16 16 0 0 1 16-16z" class="store"/>
+          <ellipse cx="616" cy="181" rx="64" ry="13" fill="#dff1ec" stroke="#2a9d8f" stroke-width="1.5"/>
+          <text x="616" y="204" class="node-tag">source of truth</text>
+          <text x="616" y="226" class="node-title">Canonical store</text>
+          <text x="616" y="244" class="node-sub">Act · Edition · Provision</text>
+
+          <rect x="536" y="352" width="160" height="88" rx="15" class="card"/>
+          <text x="616" y="379" class="node-tag">перестраивается</text>
+          <text x="616" y="406" class="node-title">Search projections</text>
+          <text x="616" y="425" class="node-sub">FTS · vector · links</text>
+
+          <rect x="760" y="256" width="160" height="100" rx="15" class="navy"/>
+          <text x="840" y="284" class="node-tag on-dark">evidence API</text>
+          <text x="840" y="311" class="node-title on-dark">Retrieval service</text>
+          <text x="840" y="331" class="node-sub on-dark-sub">filters · routes · handles</text>
+
+          <rect x="984" y="156" width="160" height="96" rx="15" class="card"/>
+          <text x="1064" y="184" class="node-tag">bounded workflow</text>
+          <text x="1064" y="211" class="node-title">Agent runtime</text>
+          <text x="1064" y="231" class="node-sub">tools · audit · abstain</text>
+
+          <rect x="984" y="352" width="160" height="92" rx="15" class="card"/>
+          <text x="1064" y="380" class="node-tag">fastapi + react</text>
+          <text x="1064" y="407" class="node-title">Application</text>
+          <text x="1064" y="427" class="node-sub">answer · evidence viewer</text>
+
+          <line x1="64" y1="606" x2="1216" y2="606" stroke="#d9dfe2"/>
+          <circle cx="82" cy="646" r="7" fill="#e76f51"/>
+          <text x="98" y="650" class="legend">точка принятия критического решения</text>
+          <circle cx="388" cy="646" r="7" fill="#2a9d8f"/>
+          <text x="404" y="650" class="legend">каноническое хранилище и provenance</text>
+          <line x1="748" y1="646" x2="782" y2="646" class="connector-dashed"/>
+          <text x="797" y="650" class="legend">обратная связь UI/наблюдаемости без обхода API</text>
+          <text x="64" y="686" class="legend">Инвариант: SearchChunk помогает найти право, но authority остаётся LegalProvision в конкретной LegalEdition.</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="runtime-heading">
+      <div class="panel-head">
+        <h2 id="runtime-heading">2. Runtime-пайплайн запроса</h2>
+        <p>Дата, юрисдикция, статус источника и ACL ограничивают множество кандидатов до любого ранжирования. Финальный ответ выпускается только после двух независимых проверок.</p>
+      </div>
+      <div class="svg-wrap">
+        <svg viewBox="0 0 1280 720" role="img" aria-labelledby="runtime-title runtime-desc">
+          <title id="runtime-title">Runtime-пайплайн юридического запроса</title>
+          <desc id="runtime-desc">Девять шагов: запрос, установление области и даты, маршрутизация, поиск с жёсткими фильтрами, сбор evidence, проверка достаточности, структурированный черновик, проверка ссылки и поддержки утверждений, затем ответ или типизированный отказ.</desc>
+          <defs>
+            <marker id="arrow-runtime" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#71808a"/>
+            </marker>
+          </defs>
+
+          <rect x="40" y="52" width="1200" height="554" rx="24" fill="#fbfaf6" stroke="#d8dedf"/>
+          <text x="72" y="88" class="zone-label">Сначала применимость → затем релевантность → затем доказанность</text>
+
+          <!-- Primary path rendered before nodes. -->
+          <path d="M320 170 H520" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M760 170 H960" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M1080 220 V290" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M960 340 H760" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M520 340 H320" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M200 390 V460" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M320 510 H520" class="connector" style="marker-end:url(#arrow-runtime)"/>
+          <path d="M760 510 H960" class="connector" style="marker-end:url(#arrow-runtime)"/>
+
+          <rect x="80" y="120" width="240" height="100" rx="16" class="card"/>
+          <circle cx="108" cy="145" r="14" fill="#f6dfd8"/><text x="108" y="149" class="step-number">1</text>
+          <text x="200" y="163" class="node-title">Запрос</text>
+          <text x="200" y="188" class="node-sub">вопрос · документы · параметры</text>
+
+          <rect x="520" y="120" width="240" height="100" rx="16" class="card"/>
+          <circle cx="548" cy="145" r="14" fill="#f6dfd8"/><text x="548" y="149" class="step-number">2</text>
+          <text x="640" y="158" class="node-title">Scope &amp; date</text>
+          <text x="640" y="182" class="node-sub">дата фактов · юрисдикция</text>
+          <text x="640" y="200" class="node-sub">тип authority · ACL</text>
+
+          <rect x="960" y="120" width="240" height="100" rx="16" class="card"/>
+          <circle cx="988" cy="145" r="14" fill="#f6dfd8"/><text x="988" y="149" class="step-number">3</text>
+          <text x="1080" y="158" class="node-title">Маршрут</text>
+          <text x="1080" y="182" class="node-sub">нормы · практика · дело</text>
+          <text x="1080" y="200" class="node-sub">exact · scoped · fallback</text>
+
+          <rect x="960" y="290" width="240" height="100" rx="16" class="navy"/>
+          <circle cx="988" cy="315" r="14" fill="#fffdf8"/><text x="988" y="319" class="step-number">4</text>
+          <text x="1080" y="328" class="node-title on-dark">Prefilter + retrieval</text>
+          <text x="1080" y="352" class="node-sub on-dark-sub">edition до ranking</text>
+          <text x="1080" y="370" class="node-sub on-dark-sub">exact · sparse · dense</text>
+
+          <rect x="520" y="290" width="240" height="100" rx="16" class="card"/>
+          <circle cx="548" cy="315" r="14" fill="#f6dfd8"/><text x="548" y="319" class="step-number">5</text>
+          <text x="640" y="328" class="node-title">Evidence bundle</text>
+          <text x="640" y="352" class="node-sub">parents · definitions · links</text>
+          <text x="640" y="370" class="node-sub">rerank только после A/B</text>
+
+          <rect x="80" y="290" width="240" height="100" rx="16" class="accent"/>
+          <circle cx="108" cy="315" r="14" fill="#fffdf8"/><text x="108" y="319" class="step-number">6</text>
+          <text x="200" y="328" class="node-title on-dark">Sufficiency gate</text>
+          <text x="200" y="352" class="node-sub on-dark-sub">все issues покрыты?</text>
+          <text x="200" y="370" class="node-sub on-dark-sub">иначе уточнить / отказаться</text>
+
+          <rect x="80" y="460" width="240" height="100" rx="16" class="card"/>
+          <circle cx="108" cy="485" r="14" fill="#f6dfd8"/><text x="108" y="489" class="step-number">7</text>
+          <text x="200" y="498" class="node-title">Structured draft</text>
+          <text x="200" y="522" class="node-sub">atomic claims</text>
+          <text x="200" y="540" class="node-sub">только citation handles</text>
+
+          <rect x="520" y="460" width="240" height="100" rx="16" class="accent"/>
+          <circle cx="548" cy="485" r="14" fill="#fffdf8"/><text x="548" y="489" class="step-number">8</text>
+          <text x="640" y="498" class="node-title on-dark">Два аудита</text>
+          <text x="640" y="522" class="node-sub on-dark-sub">reference_valid</text>
+          <text x="640" y="540" class="node-sub on-dark-sub">claim_supported</text>
+
+          <rect x="960" y="460" width="240" height="100" rx="16" class="store"/>
+          <circle cx="988" cy="485" r="14" fill="#dff1ec"/><text x="988" y="489" class="step-number">9</text>
+          <text x="1080" y="498" class="node-title">Результат</text>
+          <text x="1080" y="522" class="node-sub">ответ + pinpoint evidence</text>
+          <text x="1080" y="540" class="node-sub">или reason-coded abstention</text>
+
+          <line x1="64" y1="638" x2="1216" y2="638" stroke="#d9dfe2"/>
+          <text x="72" y="674" class="legend">Один bounded repair допустим; циклический self-reflection и свободное создание ссылок запрещены.</text>
+          <text x="1208" y="674" text-anchor="end" class="legend">Hard filters: date · jurisdiction · approval · access</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="summary-grid" aria-label="Приоритеты реализации">
+      <article class="summary-card now">
+        <h3>Делать сейчас</h3>
+        <p>`Act → Edition → Provision`, provenance, review gate, exact lookup, temporal filters, русский gold set и FTS baseline.</p>
+      </article>
+      <article class="summary-card test">
+        <h3>Проверять экспериментом</h3>
+        <p>Dense retrieval, RRF, reranker, metadata injection, bounded reference expansion и conditional decomposition.</p>
+      </article>
+      <article class="summary-card later">
+        <h3>Отложить</h3>
+        <p>GraphRAG, multi-agent topology, отдельные search engines и локальная большая answer-модель — пока benchmark не покажет bottleneck.</p>
+      </article>
+    </section>
+
+    <footer>
+      <span>Целевое состояние, а не описание уже развёрнутой системы.</span>
+      <span>Рекомендуемый стек: Python · FastAPI · PostgreSQL/pgvector · React · LangGraph при доказанной необходимости.</span>
+    </footer>
+  </main>
+</body>
+</html>
