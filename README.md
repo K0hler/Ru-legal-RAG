@@ -2,7 +2,28 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-Implementation has not started yet. The current materials are architecture and research documents.
+M0-01 and M0-02 are implemented. The fixture-backed path and the
+`PublicationPravoConnector` store immutable raw bytes and provenance, then report
+`new` on the first run and `unchanged` on an identical repeat. The publication
+connector uses the portal's documented HTTP read API without a protocol fallback.
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m legal_rag.sources acquire-fixture `
+  --fixture tests/legal_rag/sources/fixtures/sample_act.txt `
+  --metadata tests/legal_rag/sources/fixtures/sample_act.json `
+  --data-dir data/m0-01
+
+python -m legal_rag.sources acquire-publication `
+  --eo-number 0001202511280030 `
+  --data-dir data/m0-02-live-0001202511280030
+```
+
+Run its offline acceptance tests with:
+
+```powershell
+python -m unittest discover -s tests/legal_rag/sources -p "test_*.py" -v
+```
 
 ## Map
 

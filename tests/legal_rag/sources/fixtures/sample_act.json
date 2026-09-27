@@ -1,0 +1,12 @@
+{
+  "source_system": "fixture",
+  "external_id": "sample-act",
+  "source_url": "https://example.invalid/legal-rag/m0-01/sample-act",
+  "captured_at": "2026-09-27T00:00:00Z",
+  "media_type": "text/plain; charset=utf-8",
+  "adapter_version": "fixture/1",
+  "declared_act_identity": "M0-01 sample act",
+  "declared_edition_label": "fixture-v1",
+  "rights_status": "Project-authored test fixture; redistribution permitted",
+  "expected_sha256": "b8baa47a338ee26561b65a9d105ffab257e12102a9112a24110aa0840046d249"
+}

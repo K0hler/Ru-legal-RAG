@@ -113,6 +113,7 @@ M0-11 → M0-12 M0 gate report
 **Type:** AFK
 **Blocked by:** none
 **User stories:** 1–6
+**Implementation status:** completed and verified offline on 27.09.2026
 
 Deliver one end-to-end CLI path that reads a deterministic fixture through a connector, writes raw bytes to the content-addressed archive, records `SourceAsset` and `AcquisitionRun`, and returns `new` on the first run and `unchanged` on the second.
 
@@ -130,6 +131,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-01
 **User stories:** 1–4, 8
+**Implementation status:** completed and live-smoke verified on 27.09.2026 for publication `0001202511280030`
 
 Acquire one pilot act through the documented publication.pravo.gov.ru contract and persist its official publication metadata and original asset through the same lifecycle proven by M0-01.
 
