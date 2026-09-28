@@ -2,10 +2,12 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-M0-01 and M0-02 are implemented. The fixture-backed path and the
+M0-01 through M0-03 are implemented. The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
-`new` on the first run and `unchanged` on an identical repeat. The publication
-connector uses the portal's documented HTTP read API without a protocol fallback.
+`new`, `unchanged`, `changed`, or `failed` without losing the latest successful
+asset. Changed runs record the old and new SHA-256 without copying raw content into
+the report. The publication connector uses the portal's documented HTTP read API
+without a protocol fallback.
 
 ```powershell
 $env:PYTHONPATH = "src"

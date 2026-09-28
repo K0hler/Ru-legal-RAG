@@ -19,3 +19,13 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
 - Keep implemented behavior, target architecture, research findings, and hypotheses explicitly separate.
 - Keep the repository root limited to project-wide entry points and configuration.
 
+## Development workflow
+
+- During the current early-development phase, work directly on `main`. Create a
+  separate branch or worktree only when the user explicitly requests isolation.
+- After each implemented plan item, update the nearest applicable `AGENTS.md` with
+  durable module knowledge, run its acceptance checks, and commit the completed item
+  before starting the next one.
+- Keep project-wide workflow in this file and module-specific facts in the deeper
+  `AGENTS.md` files linked above.
+

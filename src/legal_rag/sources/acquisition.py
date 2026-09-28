@@ -81,6 +81,7 @@ def _persist_success(
     asset_path = data_dir / "assets" / f"{raw_sha256}.json"
     item_path = data_dir / "items" / f"{item_id}.json"
     previous_item = _read_json(item_path) if item_path.exists() else None
+    change = None
     if previous_item is None:
         result = "new"
         asset_sha256s = [raw_sha256]
@@ -88,7 +89,13 @@ def _persist_success(
         result = "unchanged"
         asset_sha256s = previous_item["asset_sha256s"]
     else:
-        raise NotImplementedError("changed acquisition is implemented in M0-03")
+        result = "changed"
+        asset_sha256s = list(dict.fromkeys([*previous_item["asset_sha256s"], raw_sha256]))
+        change = {
+            "new_sha256": raw_sha256,
+            "old_sha256": previous_item["latest_successful_asset"],
+            "source_item": source_item,
+        }
 
     _write_once(raw_path, raw_bytes)
     _write_json_once(
@@ -127,21 +134,21 @@ def _persist_success(
     run_id = str(uuid.uuid4())
     report_path = data_dir / "runs" / f"{run_id}.json"
     counts = {status: int(status == result) for status in ("new", "unchanged", "changed", "failed")}
-    _write_json(
-        report_path,
-        {
-            "adapter_version": fetched["adapter_version"],
-            "counts": counts,
-            "errors": [],
-            "finished_at": _utc_now(),
-            "request_cursor": fetched["request_cursor"],
-            "result": result,
-            "run_id": run_id,
-            "source": fetched["source_system"],
-            "source_item": source_item,
-            "started_at": started_at,
-        },
-    )
+    report = {
+        "adapter_version": fetched["adapter_version"],
+        "counts": counts,
+        "errors": [],
+        "finished_at": _utc_now(),
+        "request_cursor": fetched["request_cursor"],
+        "result": result,
+        "run_id": run_id,
+        "source": fetched["source_system"],
+        "source_item": source_item,
+        "started_at": started_at,
+    }
+    if change is not None:
+        report["change"] = change
+    _write_json(report_path, report)
     return {
         "report": str(report_path.resolve()),
         "result": result,

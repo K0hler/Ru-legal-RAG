@@ -17,7 +17,11 @@ FIXTURE_METADATA = FIXTURES / "sample_act.json"
 
 sys.path.insert(0, str(SRC_ROOT))
 
-from legal_rag.sources.acquisition import acquire_fixture  # noqa: E402
+from legal_rag.sources.acquisition import acquire_fixture, acquire_publication  # noqa: E402
+from legal_rag.sources.publication_pravo import (  # noqa: E402
+    PublicationPravoConnector,
+    PublicationPravoFailure,
+)
 
 
 class FixtureAcquisitionTest(unittest.TestCase):
@@ -89,22 +93,72 @@ class FixtureAcquisitionTest(unittest.TestCase):
             self.assertFalse((data_dir / "runs").exists())
             self.assertEqual(list(data_dir.rglob("*.tmp")), [])
 
-    def test_changed_fixture_is_deferred_without_changing_the_current_item(self):
+    def test_source_item_lifecycle_preserves_assets_and_reports_every_outcome(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_dir = Path(temporary_directory) / "data"
             changed_fixture = Path(temporary_directory) / "changed.txt"
             changed_fixture.write_bytes(FIXTURE.read_bytes() + b"changed")
-            first = acquire_fixture(FIXTURE, FIXTURE_METADATA, data_dir)
 
-            with self.assertRaisesRegex(NotImplementedError, "M0-03"):
-                acquire_fixture(changed_fixture, FIXTURE_METADATA, data_dir)
+            outputs = [
+                acquire_fixture(FIXTURE, FIXTURE_METADATA, data_dir),
+                acquire_fixture(FIXTURE, FIXTURE_METADATA, data_dir),
+                acquire_fixture(changed_fixture, FIXTURE_METADATA, data_dir),
+            ]
+            connector = PublicationPravoConnector()
+            connector.source_system = "fixture"
+            connector.adapter_version = "fixture/1"
+            with patch.object(
+                connector,
+                "fetch",
+                side_effect=PublicationPravoFailure(
+                    "timeout",
+                    "source request timed out",
+                    retryable=True,
+                ),
+            ):
+                outputs.append(acquire_publication(connector, "sample-act", data_dir))
+
+            self.assertEqual(
+                [output["result"] for output in outputs],
+                ["new", "unchanged", "changed", "failed"],
+            )
 
             item_path = next((data_dir / "items").glob("*.json"))
             item = json.loads(item_path.read_text(encoding="utf-8"))
-            self.assertEqual(item["latest_successful_asset"], self._fixture_hash())
-            self.assertEqual(len(list((data_dir / "raw").iterdir())), 1)
-            self.assertEqual(len(list((data_dir / "runs").iterdir())), 1)
-            self.assertEqual(first["result"], "new")
+            changed_hash = hashlib.sha256(changed_fixture.read_bytes()).hexdigest()
+            self.assertEqual(item["latest_successful_asset"], changed_hash)
+            self.assertEqual(item["asset_sha256s"], [self._fixture_hash(), changed_hash])
+            self.assertEqual(len(list((data_dir / "raw").iterdir())), 2)
+            self.assertEqual(len(list((data_dir / "assets").iterdir())), 2)
+            self.assertEqual(len(list((data_dir / "runs").iterdir())), 4)
+
+            reports = [
+                json.loads(Path(output["report"]).read_text(encoding="utf-8"))
+                for output in outputs
+            ]
+            for outcome, report in zip(
+                ("new", "unchanged", "changed", "failed"),
+                reports,
+                strict=True,
+            ):
+                self.assertEqual(
+                    report["counts"],
+                    {
+                        status: int(status == outcome)
+                        for status in ("new", "unchanged", "changed", "failed")
+                    },
+                )
+                self.assertEqual(len(report["errors"]), int(outcome == "failed"))
+
+            self.assertEqual(
+                reports[2]["change"],
+                {
+                    "new_sha256": changed_hash,
+                    "old_sha256": self._fixture_hash(),
+                    "source_item": "fixture:sample-act",
+                },
+            )
+            self.assertEqual(reports[3]["errors"][0]["reason"], "timeout")
 
     def _run_cli(self, data_dir: Path) -> dict[str, object]:
         environment = os.environ.copy()

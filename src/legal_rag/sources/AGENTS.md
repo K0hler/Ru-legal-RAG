@@ -9,6 +9,10 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Record source URL, acquisition time, adapter version, declared identity/edition, rights status, and failures.
 - Treat API card fields as source claims, not as proof of legal applicability.
 - Repeated unchanged acquisition must be idempotent; changed content creates a new asset and diff.
+- Acquisition outcomes are exactly `new`, `unchanged`, `changed`, and `failed`.
+  A changed run preserves asset history and records the source item plus old/new
+  SHA-256 values without embedding raw content in the run report.
+- A failed resynchronization must retain the latest successful asset pointer.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
 - Verify source terms and rate limits before enabling bulk acquisition.
 
