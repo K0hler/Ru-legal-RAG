@@ -271,6 +271,57 @@ class PublicationPravoTest(unittest.TestCase):
                 },
             )
 
+    def test_changed_card_with_same_pdf_reports_changed(self):
+        first_card = json.loads(json.dumps(self.replay["card"]))
+        second_card = json.loads(json.dumps(first_card))
+        second_card["viewDate"] = "29.11.2025"
+        first_card_bytes = json.dumps(first_card, ensure_ascii=False).encode("utf-8")
+        second_card_bytes = json.dumps(second_card, ensure_ascii=False).encode("utf-8")
+        pdf_bytes = base64.b64decode(self.replay["asset"]["body_base64"])
+        card_url = self.replay["provenance"]["card_url"]
+        asset_url = self.replay["provenance"]["asset_url"]
+        responses = []
+        for card_bytes in (first_card_bytes, second_card_bytes):
+            responses.extend(
+                [
+                    ReplayResponse(card_bytes, card_url, self.replay["card_headers"]),
+                    ReplayResponse(pdf_bytes, asset_url, self.replay["asset"]["headers"]),
+                ]
+            )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=responses,
+            ):
+                first = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    data_dir,
+                )
+                second = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    data_dir,
+                )
+
+            report = json.loads(Path(second["report"]).read_text(encoding="utf-8"))
+            first_card_hash = hashlib.sha256(first_card_bytes).hexdigest()
+            second_card_hash = hashlib.sha256(second_card_bytes).hexdigest()
+            self.assertEqual(first["result"], "new")
+            self.assertEqual(second["result"], "changed")
+            self.assertEqual(
+                report["change"]["changed_assets"],
+                {
+                    "declared_publication": {
+                        "new_sha256": second_card_hash,
+                        "old_sha256": first_card_hash,
+                    }
+                },
+            )
+            self.assertEqual(len(list((data_dir / "raw").iterdir())), 3)
+
     def test_http_error_creates_diagnostic_failed_run(self):
         card_url = self.replay["provenance"]["card_url"]
         error = HTTPError(card_url, 503, "Service Unavailable", None, None)

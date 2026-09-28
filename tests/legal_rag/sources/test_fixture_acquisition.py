@@ -200,6 +200,33 @@ class FixtureAcquisitionTest(unittest.TestCase):
             )
             self.assertTrue(exception["created_at"].endswith("Z"))
 
+    def test_conflicting_declared_identity_fails_before_persisting_new_asset(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            data_dir = root / "data"
+            changed_fixture = root / "changed.txt"
+            changed_fixture.write_bytes(FIXTURE.read_bytes() + b"changed")
+            metadata = json.loads(FIXTURE_METADATA.read_text(encoding="utf-8"))
+            conflicting_metadata = {**metadata, "declared_act_identity": "Different act"}
+            conflicting_metadata_path = root / "conflicting.json"
+            conflicting_metadata_path.write_text(
+                json.dumps(conflicting_metadata),
+                encoding="utf-8",
+            )
+
+            first = acquire_fixture(FIXTURE, FIXTURE_METADATA, data_dir)
+            second = acquire_fixture(changed_fixture, conflicting_metadata_path, data_dir)
+
+            item = json.loads(next((data_dir / "items").glob("*.json")).read_text("utf-8"))
+            second_report = json.loads(Path(second["report"]).read_text(encoding="utf-8"))
+            self.assertEqual(first["result"], "new")
+            self.assertEqual(second["result"], "failed")
+            self.assertEqual(second_report["errors"][0]["reason"], "source_item_identity_conflict")
+            self.assertEqual(item["declared_act_identity"], metadata["declared_act_identity"])
+            self.assertEqual(item["latest_successful_asset"], self._fixture_hash())
+            self.assertEqual(len(list((data_dir / "raw").iterdir())), 1)
+            self.assertEqual(len(list((data_dir / "assets").iterdir())), 1)
+
     def _run_cli(self, data_dir: Path) -> dict[str, object]:
         environment = os.environ.copy()
         environment["PYTHONPATH"] = os.pathsep.join(

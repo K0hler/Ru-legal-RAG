@@ -89,27 +89,13 @@ def _persist_success(
     started_at: str,
 ) -> dict[str, str]:
     raw_bytes = fetched["raw_bytes"]
-    raw_sha256 = _persist_asset(
-        data_dir=data_dir,
-        raw_bytes=raw_bytes,
-        captured_at=fetched["captured_at"],
-        media_type=fetched["media_type"],
-        rights_status=fetched["rights_status"],
-        source_url=fetched["source_url"],
-        transport_metadata=fetched["transport_metadata"],
+    raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    publication_card_bytes = fetched.get("publication_card_bytes")
+    publication_card_sha256 = (
+        hashlib.sha256(publication_card_bytes).hexdigest()
+        if publication_card_bytes is not None
+        else None
     )
-    publication_card_sha256 = None
-    if "publication_card_bytes" in fetched:
-        publication_card_sha256 = _persist_asset(
-            data_dir=data_dir,
-            raw_bytes=fetched["publication_card_bytes"],
-            captured_at=fetched["captured_at"],
-            media_type="application/json",
-            rights_status=fetched["rights_status"],
-            source_url=fetched["publication_card_url"],
-            transport_metadata=fetched["publication_card_transport_metadata"],
-            role="declared_publication",
-        )
     source_item = f"{fetched['source_system']}:{fetched['external_id']}"
     item_id = hashlib.sha256(source_item.encode("utf-8")).hexdigest()
 
@@ -118,20 +104,69 @@ def _persist_success(
     if previous_item is not None and (
         previous_item["source_system"] != fetched["source_system"]
         or previous_item["external_id"] != fetched["external_id"]
+        or previous_item["declared_act_identity"] != fetched["declared_act_identity"]
     ):
-        raise ValueError(f"source item identity conflict: {source_item}")
+        return _record_failed_run(
+            data_dir=data_dir,
+            source=fetched["source_system"],
+            source_item=source_item,
+            adapter_version=fetched["adapter_version"],
+            request_cursor=fetched["request_cursor"],
+            started_at=started_at,
+            error={
+                "message": f"source item identity conflict: {source_item}",
+                "reason": "source_item_identity_conflict",
+                "retryable": False,
+                "source_url": fetched["source_url"],
+                "stage": "acquisition",
+            },
+        )
+
+    previous_raw_sha256 = previous_item["latest_successful_asset"] if previous_item else None
+    previous_card_sha256 = previous_item.get("declared_publication_asset") if previous_item else None
     change = None
-    if previous_item is None or previous_item["latest_successful_asset"] is None:
+    if previous_raw_sha256 is None:
         result = "new"
-    elif previous_item["latest_successful_asset"] == raw_sha256:
+    elif previous_raw_sha256 == raw_sha256 and previous_card_sha256 == publication_card_sha256:
         result = "unchanged"
     else:
         result = "changed"
-        change = {
-            "new_sha256": raw_sha256,
-            "old_sha256": previous_item["latest_successful_asset"],
-            "source_item": source_item,
-        }
+        if previous_raw_sha256 != raw_sha256:
+            change = {
+                "new_sha256": raw_sha256,
+                "old_sha256": previous_raw_sha256,
+                "source_item": source_item,
+            }
+        else:
+            change = {"source_item": source_item}
+        if previous_card_sha256 != publication_card_sha256:
+            change["changed_assets"] = {
+                "declared_publication": {
+                    "new_sha256": publication_card_sha256,
+                    "old_sha256": previous_card_sha256,
+                }
+            }
+
+    _persist_asset(
+        data_dir=data_dir,
+        raw_bytes=raw_bytes,
+        captured_at=fetched["captured_at"],
+        media_type=fetched["media_type"],
+        rights_status=fetched["rights_status"],
+        source_url=fetched["source_url"],
+        transport_metadata=fetched["transport_metadata"],
+    )
+    if publication_card_bytes is not None:
+        _persist_asset(
+            data_dir=data_dir,
+            raw_bytes=publication_card_bytes,
+            captured_at=fetched["captured_at"],
+            media_type="application/json",
+            rights_status=fetched["rights_status"],
+            source_url=fetched["publication_card_url"],
+            transport_metadata=fetched["publication_card_transport_metadata"],
+            role="declared_publication",
+        )
 
     previous_asset_sha256s = previous_item["asset_sha256s"] if previous_item else []
     current_asset_sha256s = [raw_sha256]
