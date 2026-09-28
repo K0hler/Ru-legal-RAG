@@ -5,6 +5,7 @@ import sys
 
 from .acquisition import acquire_fixture, acquire_publication
 from .publication_pravo import PublicationPravoConnector
+from .relations import reconcile_publication_relations
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -18,16 +19,21 @@ def main(argv: list[str] | None = None) -> int:
     publication.add_argument("--eo-number", required=True)
     publication.add_argument("--data-dir", type=Path, required=True)
     publication.add_argument("--timeout", type=float, default=20.0)
+    relations = commands.add_parser("reconcile-relations")
+    relations.add_argument("--claims", type=Path, required=True)
+    relations.add_argument("--data-dir", type=Path, required=True)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "acquire-fixture":
         result = acquire_fixture(arguments.fixture, arguments.metadata, arguments.data_dir)
-    else:
+    elif arguments.command == "acquire-publication":
         result = acquire_publication(
             PublicationPravoConnector(timeout=arguments.timeout),
             arguments.eo_number,
             arguments.data_dir,
         )
+    else:
+        result = reconcile_publication_relations(arguments.claims, arguments.data_dir)
     print(json.dumps(result, sort_keys=True))
     return int(result["result"] == "failed")
 

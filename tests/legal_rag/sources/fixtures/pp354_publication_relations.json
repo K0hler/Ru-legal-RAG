@@ -1,0 +1,92 @@
+{
+  "act_source_item": "declared-act:government-decree:2011-05-06:354",
+  "captured_at": "2026-09-28T03:19:57Z",
+  "items": [
+    {
+      "external_id": "government-decree:2011-05-06:354",
+      "item_kind": "act",
+      "label": "Постановление Правительства Российской Федерации от 06.05.2011 № 354",
+      "source_item": "declared-act:government-decree:2011-05-06:354",
+      "source_system": "declared-act"
+    },
+    {
+      "external_id": "sobranie-zakonodatelstva-rf:2011:22:3168",
+      "item_kind": "publication",
+      "label": "Собрание законодательства Российской Федерации, 2011, № 22, ст. 3168",
+      "source_item": "official-print:sobranie-zakonodatelstva-rf:2011:22:3168",
+      "source_system": "official-print",
+      "source_url": "http://ips.pravo.gov.ru/api/ips/legislation/document?baseid=None&hash=dc745e53fa50a82f1cfd6f1d630fe076a014efa4f758edccbf07da564426ae63"
+    },
+    {
+      "external_id": "government-decree:2025-11-25:1871",
+      "item_kind": "amendment",
+      "label": "Постановление Правительства Российской Федерации от 25.11.2025 № 1871",
+      "source_item": "declared-act:government-decree:2025-11-25:1871",
+      "source_system": "declared-act"
+    },
+    {
+      "external_id": "0001202511280030",
+      "item_kind": "publication",
+      "label": "Официальное опубликование ПП РФ № 1871 от 28.11.2025",
+      "source_item": "publication.pravo.gov.ru:0001202511280030",
+      "source_system": "publication.pravo.gov.ru",
+      "source_url": "http://publication.pravo.gov.ru/document/0001202511280030"
+    }
+  ],
+  "provenance": {
+    "rights_status": "Project-authored relation claims from cited official metadata; no official raw content embedded",
+    "sources": [
+      "http://ips.pravo.gov.ru/api/ips/legislation/document?baseid=None&hash=dc745e53fa50a82f1cfd6f1d630fe076a014efa4f758edccbf07da564426ae63",
+      "http://publication.pravo.gov.ru/document/0001202511280030"
+    ]
+  },
+  "relation_claims": [
+    {
+      "asserted_by": "ips.pravo.gov.ru",
+      "evidence_reference": {
+        "locator": "citation: Собрание законодательства Российской Федерации, 2011, № 22, ст. 3168",
+        "source_url": "http://ips.pravo.gov.ru/api/ips/legislation/document?baseid=None&hash=dc745e53fa50a82f1cfd6f1d630fe076a014efa4f758edccbf07da564426ae63"
+      },
+      "from_source_item": "official-print:sobranie-zakonodatelstva-rf:2011:22:3168",
+      "relation_type": "publishes",
+      "to_candidates": [
+        "declared-act:government-decree:2011-05-06:354"
+      ]
+    },
+    {
+      "asserted_by": "publication.pravo.gov.ru",
+      "evidence_reference": {
+        "locator": "document card: publication number and act identity",
+        "source_url": "http://publication.pravo.gov.ru/document/0001202511280030"
+      },
+      "from_source_item": "publication.pravo.gov.ru:0001202511280030",
+      "relation_type": "publishes",
+      "to_candidates": [
+        "declared-act:government-decree:2025-11-25:1871"
+      ]
+    },
+    {
+      "asserted_by": "publication.pravo.gov.ru",
+      "evidence_reference": {
+        "locator": "document card title: О внесении изменений в постановление Правительства Российской Федерации от 6 мая 2011 г. № 354",
+        "source_url": "http://publication.pravo.gov.ru/document/0001202511280030"
+      },
+      "from_source_item": "declared-act:government-decree:2025-11-25:1871",
+      "relation_type": "amends",
+      "to_candidates": [
+        "declared-act:government-decree:2011-05-06:354"
+      ]
+    },
+    {
+      "asserted_by": "ips.pravo.gov.ru",
+      "diagnostic_message": "The original print publication is identified, but its raw source asset has not been acquired.",
+      "evidence_reference": {
+        "locator": "citation only; raw publication asset absent",
+        "source_url": "http://ips.pravo.gov.ru/api/ips/legislation/document?baseid=None&hash=dc745e53fa50a82f1cfd6f1d630fe076a014efa4f758edccbf07da564426ae63"
+      },
+      "from_source_item": "official-print:sobranie-zakonodatelstva-rf:2011:22:3168",
+      "relation_type": "attachment",
+      "to_candidates": []
+    }
+  ]
+}

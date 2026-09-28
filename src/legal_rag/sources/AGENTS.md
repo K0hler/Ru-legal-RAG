@@ -13,6 +13,11 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   A changed run preserves asset history and records the source item plus old/new
   SHA-256 values without embedding raw content in the run report.
 - A failed resynchronization must retain the latest successful asset pointer.
+- Persist a source relation only when one known target is supported by an asserting
+  source and evidence reference. Missing or ambiguous targets become deterministic
+  exception items; never choose a target by title similarity or legal inference.
+- Keep relation-discovery snapshots in `relation-items/`; only successful acquisition
+  may write `items/`. Validate the complete claim document before persisting anything.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
 - Verify source terms and rate limits before enabling bulk acquisition.
 
