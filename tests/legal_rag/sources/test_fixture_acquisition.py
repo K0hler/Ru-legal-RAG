@@ -128,6 +128,7 @@ class FixtureAcquisitionTest(unittest.TestCase):
                     "timeout",
                     "source request timed out",
                     retryable=True,
+                    source_url="http://publication.pravo.gov.ru/api/Document?eoNumber=sample-act",
                 ),
             ):
                 outputs.append(acquire_publication(connector, "sample-act", data_dir))
@@ -173,6 +174,31 @@ class FixtureAcquisitionTest(unittest.TestCase):
                 },
             )
             self.assertEqual(reports[3]["errors"][0]["reason"], "timeout")
+            exception_paths = list((data_dir / "exceptions").glob("*.json"))
+            self.assertEqual(len(exception_paths), 1)
+            exception = json.loads(exception_paths[0].read_text(encoding="utf-8"))
+            self.assertEqual(reports[3]["exception_ids"], [exception["exception_id"]])
+            self.assertEqual(
+                {
+                    "stage": exception["stage"],
+                    "source": exception["source"],
+                    "source_item": exception["source_item"],
+                    "reason": exception["reason"],
+                    "diagnostic_message": exception["diagnostic_message"],
+                    "retryable": exception["retryable"],
+                    "source_url": exception["source_url"],
+                },
+                {
+                    "stage": "acquisition",
+                    "source": "fixture",
+                    "source_item": "fixture:sample-act",
+                    "reason": "timeout",
+                    "diagnostic_message": "source request timed out",
+                    "retryable": True,
+                    "source_url": "http://publication.pravo.gov.ru/api/Document?eoNumber=sample-act",
+                },
+            )
+            self.assertTrue(exception["created_at"].endswith("Z"))
 
     def _run_cli(self, data_dir: Path) -> dict[str, object]:
         environment = os.environ.copy()

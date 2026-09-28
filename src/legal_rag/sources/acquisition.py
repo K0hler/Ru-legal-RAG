@@ -192,6 +192,23 @@ def _record_failed_run(
     error: dict[str, object],
 ) -> dict[str, str]:
     run_id = str(uuid.uuid4())
+    exception_id = str(uuid.uuid4())
+    created_at = _utc_now()
+    exception = {
+        "created_at": created_at,
+        "diagnostic_message": error["message"],
+        "exception_id": exception_id,
+        "reason": error["reason"],
+        "retryable": error["retryable"],
+        "source": source,
+        "source_item": source_item,
+        "stage": error["stage"],
+    }
+    for field in ("http_status", "source_url"):
+        if field in error:
+            exception[field] = error[field]
+    _write_json(data_dir / "exceptions" / f"{exception_id}.json", exception)
+
     report_path = data_dir / "runs" / f"{run_id}.json"
     _write_json(
         report_path,
@@ -199,7 +216,8 @@ def _record_failed_run(
             "adapter_version": adapter_version,
             "counts": {status: int(status == "failed") for status in ("new", "unchanged", "changed", "failed")},
             "errors": [error],
-            "finished_at": _utc_now(),
+            "exception_ids": [exception_id],
+            "finished_at": created_at,
             "request_cursor": request_cursor,
             "result": "failed",
             "run_id": run_id,

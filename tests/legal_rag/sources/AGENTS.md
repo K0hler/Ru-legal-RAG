@@ -16,3 +16,4 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
 - Live checks must be explicit CLI commands and must write only to ignored `data/` paths.
 - A first-attempt transport failure must leave no successful source item or raw asset
   behind; after a prior success, it must retain that successful item and asset pointer.
+  In both cases it writes a complete exception item linked from the failed run.

@@ -16,6 +16,8 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   A changed run preserves asset history and records the source item plus old/new
   SHA-256 values without embedding raw content in the run report.
 - A failed resynchronization must retain the latest successful asset pointer.
+- Every failed acquisition writes a standalone `ExceptionItem` linked from its run;
+  the item records UTC creation, source/item, reason, diagnostic, retryability, and URL.
 - Persist a source relation only when one known target is supported by an asserting
   source and evidence reference. Missing or ambiguous targets become deterministic
   exception items; never choose a target by title similarity or legal inference.
