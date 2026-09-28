@@ -7,4 +7,8 @@ Scope: every file under `docs/`.
 - Update `docs/README.md` when adding, renaming, or moving a document.
 - Keep deterministic diagram sources beside rendered assets when both exist.
 - Do not present a planned component as deployed without current code or runtime evidence.
+- Distinguish the legacy and new test versions of the integrated bank; do not
+  infer shared document coverage. Treat commercial consolidated texts as
+  discovery evidence unless the source-admission policy explicitly grants a
+  stronger role.
 

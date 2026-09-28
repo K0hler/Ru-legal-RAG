@@ -216,6 +216,7 @@ Acceptance:
 **Type:** HITL
 **Blocked by:** none
 **User stories:** 8, 16, 29
+**Implementation status:** completed by product-owner approval on 28.09.2026; SanPiN edition coverage remains an explicit M0-09/M0-10 review item
 
 Record the human decisions required to finish the M0 pilot: the fifth registered agency act, source access/rights constraints, reviewer authority and the second-review rule for disputed gold labels.
 

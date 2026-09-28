@@ -16,6 +16,9 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   64-character public-page hash. Keep the JSON card and `documenttext` routes
   private to the adapter, retain the public search URL in source claims, and do not
   follow redirects outside the portal's HTTP origin.
+- The connector targets the new `ips.pravo.gov.ru` test bank only. Treat the
+  legacy `pravo.gov.ru/proxy/ips` bank as a separate source contract; never infer
+  matching coverage or add a silent fallback between them.
 - Archive the card as `legislation_card` and the selected `documenttext` response as
   `legislation_text`. Bind them by `hash`, `nd`, `baseid`, and `rdk`; record the
   card's edition date/label as source claims without inferring `valid_from/to`.
