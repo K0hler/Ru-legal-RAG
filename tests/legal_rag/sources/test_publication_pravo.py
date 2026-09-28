@@ -394,6 +394,41 @@ class PublicationPravoTest(unittest.TestCase):
 
             self._assert_failed_run(result, Path(temporary_directory), "invalid_card", False)
 
+    def test_invalid_card_values_create_failed_runs_without_assets(self):
+        invalid_values = (
+            ("document_date", ("documentDate",), "not-a-date"),
+            ("publication_date", ("publishDateShort",), "not-a-date"),
+            ("boolean_page_count", ("pagesCount",), True),
+            ("negative_page_count", ("pagesCount",), -1),
+            ("blank_document_type", ("documentType", "name"), " "),
+            ("missing_authority", ("signatoryAuthorities",), []),
+        )
+        for case, field_path, invalid_value in invalid_values:
+            with self.subTest(case=case):
+                replay = json.loads(json.dumps(self.replay))
+                target = replay["card"]
+                for field in field_path[:-1]:
+                    target = target[field]
+                target[field_path[-1]] = invalid_value
+                response = ReplayResponse(
+                    json.dumps(replay["card"], ensure_ascii=False).encode("utf-8"),
+                    replay["provenance"]["card_url"],
+                    replay["card_headers"],
+                )
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    data_dir = Path(temporary_directory)
+                    with patch(
+                        "legal_rag.sources.publication_pravo.urlopen",
+                        return_value=response,
+                    ):
+                        result = acquire_publication(
+                            PublicationPravoConnector(timeout=1),
+                            self.eo_number,
+                            data_dir,
+                        )
+
+                    self._assert_failed_run(result, data_dir, "invalid_card", False)
+
     def test_non_pdf_asset_creates_failed_run_without_asset(self):
         card_url = self.replay["provenance"]["card_url"]
         asset_url = self.replay["provenance"]["asset_url"]

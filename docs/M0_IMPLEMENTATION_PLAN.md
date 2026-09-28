@@ -336,7 +336,7 @@ M0 passes only when:
 ## 9. Stop conditions
 
 - Source terms or access restrictions prohibit the intended capture pattern.
-- Ordinary DNS/HTTPS access cannot be made reliable without unsafe workarounds.
+- Ordinary DNS/HTTP access to the documented source services cannot be made reliable without unsafe workarounds.
 - A pilot act cannot be tied to an official publication or reviewable candidate edition.
 - No authorized legal reviewer is available for the gate.
 - Raw bytes or provenance cannot be reproduced from a clean run.

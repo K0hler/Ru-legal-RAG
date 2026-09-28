@@ -11,6 +11,8 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Record source URL, acquisition time, adapter version, declared identity/edition,
   rights status, and the exact failed request URL.
 - Treat API card fields as source claims, not as proof of legal applicability.
+- Validate identity-bearing strings, ISO dates, positive page counts, document
+  type, and signatory authorities before requesting or persisting the document.
 - Repeated unchanged acquisition must be idempotent across both the document asset
   and publication-card asset; a change to either creates a new asset and diff.
 - Validate an existing source item's system, external ID, and declared act identity

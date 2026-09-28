@@ -85,18 +85,30 @@ class PublicationPravoConnector:
             card = json.loads(card_bytes.decode("utf-8-sig"))
             if not isinstance(card, dict) or card["eoNumber"] != eo_number:
                 raise ValueError("card identity mismatch")
-            for field in ("complexName", "documentDate", "eoNumber", "name", "number"):
+            for field in (
+                "complexName",
+                "documentDate",
+                "eoNumber",
+                "name",
+                "number",
+                "publishDateShort",
+            ):
                 if not isinstance(card[field], str) or not card[field].strip():
                     raise ValueError(f"{field} must be a non-empty string")
-            if not isinstance(card["pagesCount"], int):
-                raise ValueError("pagesCount must be an integer")
+            for field in ("documentDate", "publishDateShort"):
+                datetime.fromisoformat(card[field].replace("Z", "+00:00"))
+            if type(card["pagesCount"]) is not int or card["pagesCount"] <= 0:
+                raise ValueError("pagesCount must be a positive integer")
             if not isinstance(card["documentType"], dict) or not isinstance(
                 card["documentType"].get("name"), str
-            ):
-                raise ValueError("documentType.name must be a string")
-            if not isinstance(card["signatoryAuthorities"], list) or any(
+            ) or not card["documentType"]["name"].strip():
+                raise ValueError("documentType.name must be a non-empty string")
+            if not isinstance(card["signatoryAuthorities"], list) or not card[
+                "signatoryAuthorities"
+            ] or any(
                 not isinstance(authority, dict)
                 or not isinstance(authority.get("name"), str)
+                or not authority["name"].strip()
                 for authority in card["signatoryAuthorities"]
             ):
                 raise ValueError("signatoryAuthorities must contain named objects")
