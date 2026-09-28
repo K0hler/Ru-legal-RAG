@@ -279,6 +279,40 @@ class PublicationRelationsTest(unittest.TestCase):
                     }
                     self.assertEqual(after, before)
 
+    def test_acquired_relation_evidence_asset_is_verified_before_output(self):
+        for corruption in ("missing_raw", "mismatched_pointer", "corrupt_raw"):
+            with self.subTest(corruption=corruption):
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    data_dir = Path(temporary_directory) / "data"
+                    self._acquire_publication(data_dir)
+                    item_path = next((data_dir / "items").glob("*.json"))
+                    item = json.loads(item_path.read_text(encoding="utf-8"))
+                    evidence_sha256 = item["declared_publication_asset"]
+                    raw_path = data_dir / "raw" / evidence_sha256
+
+                    if corruption == "missing_raw":
+                        raw_path.unlink()
+                    elif corruption == "mismatched_pointer":
+                        for claim in item["relation_claims"]:
+                            claim["evidence_reference"]["source_asset_sha256"] = "0" * 64
+                        item_path.write_text(json.dumps(item), encoding="utf-8")
+                    else:
+                        raw_path.write_bytes(b"corrupt")
+
+                    before = {
+                        str(path.relative_to(data_dir)): path.read_bytes()
+                        for path in data_dir.rglob("*")
+                        if path.is_file()
+                    }
+                    with self.assertRaisesRegex(ValueError, "evidence asset"):
+                        reconcile_publication_relations(FIXTURE, data_dir)
+                    after = {
+                        str(path.relative_to(data_dir)): path.read_bytes()
+                        for path in data_dir.rglob("*")
+                        if path.is_file()
+                    }
+                    self.assertEqual(after, before)
+
     def _acquire_publication(self, data_dir: Path) -> None:
         replay = json.loads(REPLAY.read_text(encoding="utf-8"))
         card_url = replay["provenance"]["card_url"]

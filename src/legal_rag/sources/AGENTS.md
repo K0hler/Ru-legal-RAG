@@ -33,6 +33,8 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   conflicts instead of creating a parallel item namespace.
 - Reconciliation loads every `acquired_source_items` record before writing and
   validates the complete combined claim document before persisting anything.
+  Its relation evidence hash must match the declared publication asset, metadata,
+  source URL, and archived raw bytes.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
 - Verify source terms and rate limits before enabling bulk acquisition.
 
