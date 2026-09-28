@@ -127,11 +127,14 @@ class PublicationPravoConnector:
                     in {"content-type", "content-length", "content-disposition", "etag", "last-modified"}
                 }
         except HTTPError as error:
+            status = error.code
+            reason = error.reason
+            error.close()
             raise PublicationPravoFailure(
                 "http_error",
-                f"HTTP {error.code}: {error.reason}",
-                retryable=error.code == 429 or error.code >= 500,
-                http_status=error.code,
+                f"HTTP {status}: {reason}",
+                retryable=status == 429 or status >= 500,
+                http_status=status,
             ) from None
         except (TimeoutError, socket.timeout):
             raise PublicationPravoFailure(

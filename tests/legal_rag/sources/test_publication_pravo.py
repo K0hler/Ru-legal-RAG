@@ -139,6 +139,7 @@ class PublicationPravoTest(unittest.TestCase):
             self._assert_failed_run(result, Path(temporary_directory), "http_error", True)
             report = json.loads(Path(result["report"]).read_text(encoding="utf-8"))
             self.assertEqual(report["errors"][0]["http_status"], 503)
+            self.assertTrue(error.closed)
 
     def test_invalid_card_creates_failed_run_without_asset(self):
         card_url = self.replay["provenance"]["card_url"]
