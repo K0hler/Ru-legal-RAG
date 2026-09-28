@@ -18,6 +18,7 @@ REPLAY_PATH = Path(__file__).with_name("fixtures") / "publication_pravo_00012025
 sys.path.insert(0, str(SRC_ROOT))
 
 from legal_rag.sources.__main__ import main  # noqa: E402
+from legal_rag.sources import publication_pravo  # noqa: E402
 from legal_rag.sources.acquisition import acquire_publication  # noqa: E402
 from legal_rag.sources.publication_pravo import PublicationPravoConnector  # noqa: E402
 
@@ -346,6 +347,39 @@ class PublicationPravoTest(unittest.TestCase):
             self.assertIn("source_url", report["errors"][0])
             self.assertEqual(report["errors"][0]["source_url"], card_url)
             self.assertTrue(error.closed)
+
+    def test_https_redirect_is_blocked_before_a_second_request(self):
+        redirect_url = (
+            "https://publication.pravo.gov.ru/api/Document?eoNumber="
+            f"{self.eo_number}"
+        )
+
+        def redirecting_response(request, timeout):
+            return publication_pravo._HttpOnlyRedirectHandler().redirect_request(
+                request,
+                None,
+                302,
+                "Found",
+                {"Location": redirect_url},
+                redirect_url,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=redirecting_response,
+            ) as mocked_urlopen:
+                result = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    data_dir,
+                )
+
+            self._assert_failed_run(result, data_dir, "blocked_redirect", False)
+            report = json.loads(Path(result["report"]).read_text(encoding="utf-8"))
+            self.assertEqual(mocked_urlopen.call_count, 1)
+            self.assertEqual(report["errors"][0]["source_url"], redirect_url)
 
     def test_invalid_card_creates_failed_run_without_asset(self):
         card_url = self.replay["provenance"]["card_url"]

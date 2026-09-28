@@ -5,7 +5,7 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Connectors are read-only adapters around one external source contract.
 - `PublicationPravoConnector` uses the portal's HTTP-only read API. Do not attempt
   HTTPS fallback, silently switch protocols, hard-code IP addresses, or add an
-  undocumented endpoint.
+  undocumented endpoint. Follow redirects only within the same HTTP origin.
 - Detect format from content, not filename; retain every fetched response body,
   including publication-card JSON and the document asset, with its own SHA-256.
 - Record source URL, acquisition time, adapter version, declared identity/edition,

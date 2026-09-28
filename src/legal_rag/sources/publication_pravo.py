@@ -4,8 +4,8 @@ import json
 import re
 import socket
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode, urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 _RUSSIAN_MONTHS = {
@@ -58,6 +58,37 @@ class PublicationPravoFailure(Exception):
         if self.source_url is not None:
             record["source_url"] = self.source_url
         return record
+
+
+class _HttpOnlyRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, request, file_pointer, code, message, headers, new_url):
+        redirected = super().redirect_request(
+            request,
+            file_pointer,
+            code,
+            message,
+            headers,
+            new_url,
+        )
+        if redirected is None:
+            return None
+        original = urlsplit(request.full_url)
+        destination = urlsplit(redirected.full_url)
+        if destination.scheme != "http" or destination.netloc != original.netloc:
+            raise PublicationPravoFailure(
+                "blocked_redirect",
+                f"source redirect is outside the HTTP origin: {redirected.full_url}",
+                retryable=False,
+                source_url=redirected.full_url,
+            )
+        return redirected
+
+
+_HTTP_ONLY_OPENER = build_opener(_HttpOnlyRedirectHandler())
+
+
+def urlopen(request: Request, timeout: float):
+    return _HTTP_ONLY_OPENER.open(request, timeout=timeout)
 
 
 class PublicationPravoConnector:
