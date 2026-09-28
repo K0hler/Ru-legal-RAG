@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import uuid
 
+from .actual_pravo import ActualPravoConnector, ActualPravoFailure
 from .publication_pravo import PublicationPravoConnector, PublicationPravoFailure
 
 
@@ -83,6 +84,29 @@ def acquire_publication(
     return _persist_success(fetched, data_dir, started_at)
 
 
+def acquire_actual(
+    connector: ActualPravoConnector,
+    document_hash: str,
+    data_dir: Path,
+) -> dict[str, str]:
+    started_at = _utc_now()
+    data_dir = Path(data_dir)
+    source_item = f"{connector.source_system}:{document_hash}"
+    try:
+        fetched = connector.fetch(document_hash)
+    except ActualPravoFailure as error:
+        return _record_failed_run(
+            data_dir=data_dir,
+            source=connector.source_system,
+            source_item=source_item,
+            adapter_version=connector.adapter_version,
+            request_cursor=document_hash,
+            started_at=started_at,
+            error=error.as_record(),
+        )
+    return _persist_success(fetched, data_dir, started_at)
+
+
 def _persist_success(
     fetched: dict[str, object],
     data_dir: Path,
@@ -96,6 +120,11 @@ def _persist_success(
         if publication_card_bytes is not None
         else None
     )
+    supporting_assets = fetched.get("supporting_assets", [])
+    supporting_asset_sha256s = {
+        asset["role"]: hashlib.sha256(asset["raw_bytes"]).hexdigest()
+        for asset in supporting_assets
+    }
     source_item = f"{fetched['source_system']}:{fetched['external_id']}"
     item_id = hashlib.sha256(source_item.encode("utf-8")).hexdigest()
 
@@ -124,10 +153,15 @@ def _persist_success(
 
     previous_raw_sha256 = previous_item["latest_successful_asset"] if previous_item else None
     previous_card_sha256 = previous_item.get("declared_publication_asset") if previous_item else None
+    previous_supporting_assets = previous_item.get("supporting_assets", {}) if previous_item else {}
     change = None
     if previous_raw_sha256 is None:
         result = "new"
-    elif previous_raw_sha256 == raw_sha256 and previous_card_sha256 == publication_card_sha256:
+    elif (
+        previous_raw_sha256 == raw_sha256
+        and previous_card_sha256 == publication_card_sha256
+        and previous_supporting_assets == supporting_asset_sha256s
+    ):
         result = "unchanged"
     else:
         result = "changed"
@@ -146,6 +180,14 @@ def _persist_success(
                     "old_sha256": previous_card_sha256,
                 }
             }
+        for role in sorted(set(previous_supporting_assets) | set(supporting_asset_sha256s)):
+            old_sha256 = previous_supporting_assets.get(role)
+            new_sha256 = supporting_asset_sha256s.get(role)
+            if old_sha256 != new_sha256:
+                change.setdefault("changed_assets", {})[role] = {
+                    "new_sha256": new_sha256,
+                    "old_sha256": old_sha256,
+                }
 
     _persist_asset(
         data_dir=data_dir,
@@ -167,11 +209,23 @@ def _persist_success(
             transport_metadata=fetched["publication_card_transport_metadata"],
             role="declared_publication",
         )
+    for asset in supporting_assets:
+        _persist_asset(
+            data_dir=data_dir,
+            raw_bytes=asset["raw_bytes"],
+            captured_at=fetched["captured_at"],
+            media_type=asset["media_type"],
+            rights_status=fetched["rights_status"],
+            source_url=asset["source_url"],
+            transport_metadata=asset["transport_metadata"],
+            role=asset["role"],
+        )
 
     previous_asset_sha256s = previous_item["asset_sha256s"] if previous_item else []
     current_asset_sha256s = [raw_sha256]
     if publication_card_sha256 is not None:
         current_asset_sha256s.append(publication_card_sha256)
+    current_asset_sha256s.extend(supporting_asset_sha256s.values())
     asset_sha256s = list(dict.fromkeys([*previous_asset_sha256s, *current_asset_sha256s]))
     item = {
         "adapter_version": fetched["adapter_version"],
@@ -200,6 +254,11 @@ def _persist_success(
         item["declared_publication"] = fetched["declared_publication"]
     if publication_card_sha256 is not None:
         item["declared_publication_asset"] = publication_card_sha256
+    if supporting_asset_sha256s:
+        item["supporting_assets"] = supporting_asset_sha256s
+    for field in ("edition_claim", "temporal_coverage", "unresolved_items"):
+        if field in fetched:
+            item[field] = fetched[field]
     if "discovered_source_items" in fetched:
         item["discovered_source_items"] = fetched["discovered_source_items"]
     if "relation_claims" in fetched:

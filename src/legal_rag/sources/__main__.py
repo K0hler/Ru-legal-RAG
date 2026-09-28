@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 import sys
 
-from .acquisition import acquire_fixture, acquire_publication
+from .acquisition import acquire_actual, acquire_fixture, acquire_publication
+from .actual_pravo import ActualPravoConnector
 from .publication_pravo import PublicationPravoConnector
 from .relations import reconcile_publication_relations
 
@@ -19,6 +20,10 @@ def main(argv: list[str] | None = None) -> int:
     publication.add_argument("--eo-number", required=True)
     publication.add_argument("--data-dir", type=Path, required=True)
     publication.add_argument("--timeout", type=float, default=20.0)
+    actual = commands.add_parser("acquire-actual")
+    actual.add_argument("--document-hash", required=True)
+    actual.add_argument("--data-dir", type=Path, required=True)
+    actual.add_argument("--timeout", type=float, default=20.0)
     relations = commands.add_parser("reconcile-relations")
     relations.add_argument("--claims", type=Path, required=True)
     relations.add_argument("--data-dir", type=Path, required=True)
@@ -30,6 +35,12 @@ def main(argv: list[str] | None = None) -> int:
         result = acquire_publication(
             PublicationPravoConnector(timeout=arguments.timeout),
             arguments.eo_number,
+            arguments.data_dir,
+        )
+    elif arguments.command == "acquire-actual":
+        result = acquire_actual(
+            ActualPravoConnector(timeout=arguments.timeout),
+            arguments.document_hash,
             arguments.data_dir,
         )
     else:

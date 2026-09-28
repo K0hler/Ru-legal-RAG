@@ -1,0 +1,74 @@
+{
+  "provenance": {
+    "fixture_kind": "synthetic",
+    "observed_at": "2026-09-28T07:29:00Z",
+    "source_url": "http://actual.pravo.gov.ru/list.html#hash=4c8dcb690700cdc95a209ca40db2bb177cfc85916d6cfef83439b8696fbf546f&bpa=ebpi",
+    "rights_status": "Project-authored synthetic payload matching the official portal response shape; no official full text embedded"
+  },
+  "document_hash": "4c8dcb690700cdc95a209ca40db2bb177cfc85916d6cfef83439b8696fbf546f",
+  "headers": {
+    "Content-Type": "application/json; charset=utf-8"
+  },
+  "card": {
+    "docid": 95837,
+    "docstateid": 0,
+    "docstate": "Действует с изменениями",
+    "docpassing": "Федеральный закон от 02.05.2006 № 59-ФЗ",
+    "docname": "О порядке рассмотрения обращений граждан Российской Федерации",
+    "docdescription": "",
+    "docimagepath": "",
+    "publications": [
+      "Собрание законодательства Российской Федерации, 2006, № 19, ст. 2060"
+    ],
+    "dochash": "4c8dcb690700cdc95a209ca40db2bb177cfc85916d6cfef83439b8696fbf546f",
+    "adoptions": [
+      {
+        "organ": "",
+        "onumber": "59-ФЗ",
+        "odate": "02.05.2006",
+        "region": "",
+        "type": "Федеральный закон"
+      }
+    ],
+    "error": ""
+  },
+  "redactions": {
+    "docid": 95837,
+    "dochash": "4c8dcb690700cdc95a209ca40db2bb177cfc85916d6cfef83439b8696fbf546f",
+    "serverdate": "2026-09-28T00:00:00",
+    "redactions": [
+      {
+        "redid": 466661,
+        "reddocrefid": 313732,
+        "reddate": "20250330",
+        "reddatetimed": "2025-03-30T03:00:00",
+        "redstateid": 3,
+        "stateclass": 3,
+        "statename": "Действует с изменениями",
+        "redelements": 1,
+        "redtype": 0,
+        "redcaption": "с 30.03.2025, актуальная",
+        "redreason": "",
+        "redflags": 57,
+        "redcompleted": true,
+        "redchecked": true,
+        "redofficial": true,
+        "actual": true,
+        "redinitial": false,
+        "redstatus": "актуальная",
+        "hascontent": true,
+        "contentcomplete": true
+      }
+    ],
+    "error": ""
+  },
+  "redtext": {
+    "redtext": "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"UTF-8\"><title>Complex</title></head><body><p class=\"H\">Федеральный закон № 59-ФЗ</p><p>Синтетический текст транспортной фикстуры.</p></body></html>",
+    "error": null
+  },
+  "expected_sha256": {
+    "card": "bba5ac5d4bb28592d2928a976764ac8c6ea0b39e974d8c4001c7e08f40049440",
+    "redactions": "e9ee7150af832b9872335fd7ed4e0a878ff7295dc1d42a8a7e294e712b411f16",
+    "redtext": "bb7c4e618698708d2ff163949c80aabaffcea956e8117d217cbdb342971f4605"
+  }
+}

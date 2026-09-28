@@ -182,6 +182,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-04
 **User stories:** 8–10, 21
+**Implementation status:** completed and verified offline and by explicit live smoke on 28.09.2026
 
 For one supported pilot act, acquire an available consolidated-text candidate and link it to the act/publication chain without treating the claimed edition as verified temporal coverage.
 

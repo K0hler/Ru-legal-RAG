@@ -6,6 +6,8 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
 - Connector failure coverage includes invalid IDs/cards/assets, timeout, retryable
   network/HTTP failure, and non-retryable HTTP failure.
 - Keep fixture provenance, capture time, rights note, and expected raw SHA-256 together.
+- The `actual` replay is synthetic: preserve the observed response shape and official
+  act metadata, but do not embed the portal's full consolidated legal text.
 - Verify media type from fixture bytes and archive both raw publication-card JSON and
   the original document asset; failure assertions include the attempted source URL.
 - Test the observable run report and persisted provenance, not private parsing helpers.

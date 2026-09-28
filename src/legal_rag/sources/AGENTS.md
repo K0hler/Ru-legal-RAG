@@ -6,6 +6,12 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - `PublicationPravoConnector` uses the portal's HTTP-only read API. Do not attempt
   HTTPS fallback, silently switch protocols, hard-code IP addresses, or add an
   undocumented endpoint. Follow redirects only within the same HTTP origin.
+- `ActualPravoConnector` supports the 59-ФЗ pilot by its 64-character portal hash.
+  Keep its undocumented JSON routes private to the adapter, retain the public UI URL
+  in source claims, and record exact request URLs only as transport provenance.
+- Archive the `actual` card, redactions response, and consolidated-text response as
+  separate immutable assets. Select only one complete official current edition; its
+  source-declared date/label is not verified `valid_from` evidence.
 - Detect format from content, not filename; retain every fetched response body,
   including publication-card JSON and the document asset, with its own SHA-256.
 - Record source URL, acquisition time, adapter version, declared identity/edition,
@@ -36,8 +42,9 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   conflicts instead of creating a parallel item namespace.
 - Reconciliation loads every `acquired_source_items` record before writing and
   validates the complete combined claim document before persisting anything.
-  Its relation evidence hash must match the declared publication asset, metadata,
-  source URL, and archived raw bytes.
+  Its relation evidence hash must belong to that source item's archived assets and
+  match the claim's current asset-role pointer, asset metadata, source URL, and
+  archived raw bytes; membership in asset history alone is insufficient.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
 - Verify source terms and rate limits before enabling bulk acquisition.
 

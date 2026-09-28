@@ -45,7 +45,12 @@ def reconcile_publication_relations(
         discovered_relations = acquired_item.get("relation_claims", [])
         if not isinstance(discovered_items, list) or not isinstance(discovered_relations, list):
             raise ValueError(f"acquired source item has invalid source claims: {source_item}")
-        declared_publication_asset = acquired_item.get("declared_publication_asset")
+        asset_sha256s = acquired_item.get("asset_sha256s", [])
+        if not isinstance(asset_sha256s, list):
+            raise ValueError(f"acquired source item has invalid assets: {source_item}")
+        supporting_assets = acquired_item.get("supporting_assets", {})
+        if not isinstance(supporting_assets, dict):
+            raise ValueError(f"acquired source item has invalid assets: {source_item}")
         for relation_claim in discovered_relations:
             if not isinstance(relation_claim, dict):
                 raise ValueError(f"acquired source item has invalid source claims: {source_item}")
@@ -53,8 +58,19 @@ def reconcile_publication_relations(
             if not isinstance(evidence, dict):
                 raise ValueError(f"acquired source item has invalid source claims: {source_item}")
             evidence_sha256 = evidence.get("source_asset_sha256")
-            if evidence_sha256 != declared_publication_asset:
+            if evidence_sha256 not in asset_sha256s:
                 raise ValueError(f"acquired relation evidence asset mismatch: {source_item}")
+            evidence_role = evidence.get("source_asset_role")
+            if evidence_role is None:
+                expected_role = "declared_publication"
+                expected_sha256 = acquired_item.get("declared_publication_asset")
+            elif isinstance(evidence_role, str) and evidence_role.strip():
+                expected_role = evidence_role
+                expected_sha256 = supporting_assets.get(evidence_role)
+            else:
+                raise ValueError(f"acquired relation evidence asset role mismatch: {source_item}")
+            if evidence_sha256 != expected_sha256:
+                raise ValueError(f"acquired relation evidence asset role mismatch: {source_item}")
             asset_path = data_dir / "assets" / f"{evidence_sha256}.json"
             raw_path = data_dir / "raw" / str(evidence_sha256)
             if not asset_path.is_file() or not raw_path.is_file():
@@ -63,7 +79,7 @@ def reconcile_publication_relations(
             if (
                 asset.get("sha256") != evidence_sha256
                 or asset.get("archive_key") != f"raw/{evidence_sha256}"
-                or asset.get("role") != "declared_publication"
+                or asset.get("role") != expected_role
                 or asset.get("source_url") != evidence.get("source_url")
                 or hashlib.sha256(raw_path.read_bytes()).hexdigest() != evidence_sha256
             ):
@@ -76,6 +92,7 @@ def reconcile_publication_relations(
                 "discovered_source_items": discovered_items,
                 "relation_claims": discovered_relations,
                 "source_item": source_item,
+                "supporting_assets": acquired_item.get("supporting_assets", {}),
             }
         )
 
