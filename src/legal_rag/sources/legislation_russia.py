@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
-from html.parser import HTMLParser
 import hashlib
+import json
 import re
 import socket
 from urllib.error import HTTPError, URLError
@@ -8,17 +8,17 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
-_DOCUMENT_ID = "102147807"
+_APPROVED_DOCUMENT_HASH = (
+    "c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663"
+)
+_DOCUMENT_HASH = re.compile(r"[0-9a-f]{64}")
 _ACT_EXTERNAL_ID = "government-decree:2011-05-06:354"
 _TITLE = (
     "О предоставлении коммунальных услуг собственникам и пользователям помещений "
     "в многоквартирных домах и жилых домов"
 )
-_HEADING = "от 6 мая 2011 г. № 354"
-_DECLARED_ACT_IDENTITY = (
-    "Постановление Правительства Российской Федерации от 6 мая 2011 г. № 354 "
-    f'"{_TITLE}"'
-)
+_ADOPTION = "Постановление Правительства Российской Федерации от 06.05.2011 № 354"
+_DECLARED_ACT_IDENTITY = f'{_ADOPTION} "{_TITLE}"'
 
 
 class LegislationRussiaFailure(Exception):
@@ -83,49 +83,25 @@ def urlopen(request: Request, timeout: float):
     return _OPENER.open(request, timeout=timeout)
 
 
-class _DocumentParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.ignored_depth = 0
-        self.in_title = False
-        self.title_complete = False
-        self.text: list[str] = []
-        self.title: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs) -> None:
-        if tag.casefold() in {"script", "style"}:
-            self.ignored_depth += 1
-            return
-        if tag.casefold() == "title" and not self.title_complete:
-            self.in_title = True
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.casefold() in {"script", "style"}:
-            self.ignored_depth = max(0, self.ignored_depth - 1)
-            return
-        if tag.casefold() == "title" and self.in_title:
-            self.in_title = False
-            self.title_complete = True
-
-    def handle_data(self, data: str) -> None:
-        if self.ignored_depth:
-            return
-        self.text.append(data)
-        if self.in_title:
-            self.title.append(data)
-
-
 class LegislationRussiaConnector:
     source_system = "pravo.gov.ru/legislation-russia"
-    adapter_version = "legislation-russia/1"
-    base_url = "http://pravo.gov.ru"
+    adapter_version = "legislation-russia/2"
+    base_url = "http://ips.pravo.gov.ru"
     rights_status = "Official legal act; verify access terms before bulk acquisition"
+    _api_base = f"{base_url}/api/ips/legislation"
 
     def __init__(self, timeout: float = 20.0) -> None:
         self.timeout = timeout
 
-    def fetch(self, document_id: str) -> dict[str, object]:
-        if document_id != _DOCUMENT_ID:
+    def fetch(self, document_hash: str) -> dict[str, object]:
+        if _DOCUMENT_HASH.fullmatch(document_hash) is None:
+            raise LegislationRussiaFailure(
+                "invalid_external_id",
+                "document hash must contain 64 lowercase hexadecimal characters",
+                retryable=False,
+                source_url=self.base_url,
+            )
+        if document_hash != _APPROVED_DOCUMENT_HASH:
             raise LegislationRussiaFailure(
                 "unsupported_document",
                 "M0-06 supports only the approved Government-decree pilot document",
@@ -133,49 +109,35 @@ class LegislationRussiaConnector:
                 source_url=self.base_url,
             )
 
-        source_url = f"{self.base_url}/proxy/ips/?" + urlencode(
-            {"doc_itself": "", "nd": document_id}
+        source_url = f"{self.base_url}/search/{document_hash}"
+        card_url = f"{self._api_base}/document_card.json?" + urlencode(
+            {"hash": document_hash}
         )
-        raw_bytes, transport = self._get(source_url)
-        content_type = transport["headers"].get("content-type", "")
-        charset_match = re.search(r"charset=([-\w]+)", content_type, re.IGNORECASE)
-        try:
-            if content_type.split(";", 1)[0].strip().casefold() != "text/html":
-                raise ValueError("response is not HTML")
-            if charset_match is None:
-                raise ValueError("response charset is missing")
-            document = raw_bytes.decode(charset_match[1])
-            parser = _DocumentParser()
-            parser.feed(document)
-            title = _normalize(" ".join(parser.title))
-            visible_text = _normalize(" ".join(parser.text))
-            if title != _TITLE:
-                raise ValueError("document title mismatch")
-            for marker in (
-                "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ",
-                "ПОСТАНОВЛЕНИЕ",
-                _HEADING,
-                _TITLE,
-            ):
-                if marker not in visible_text:
-                    raise ValueError(f"document marker is missing: {marker}")
-        except (LookupError, UnicodeDecodeError, ValueError) as error:
-            raise LegislationRussiaFailure(
-                "invalid_document",
-                f"Government-decree document is not valid: {error}",
-                retryable=False,
-                source_url=source_url,
-            ) from None
+        card_bytes, card_transport = self._get(card_url)
+        card = self._parse_json(card_bytes, "invalid_card", card_url)
+        edition = self._validate_card(card, document_hash, card_url)
 
-        raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+        text_url = f"{self._api_base}/documenttext?" + urlencode(
+            {
+                "nd": card["nd"],
+                "rdk": edition["id"],
+                "bpa": card["baseid"],
+            }
+        )
+        text_bytes, text_transport = self._get(text_url)
+        text = self._parse_json(text_bytes, "invalid_text", text_url)
+        self._validate_text(text, card, edition, text_url)
+
+        card_sha256 = hashlib.sha256(card_bytes).hexdigest()
+        edition_date = datetime.strptime(edition["date"], "%d.%m.%Y").date().isoformat()
         act_source_item = f"declared-act:{_ACT_EXTERNAL_ID}"
-        source_item = f"{self.source_system}:{document_id}"
-        captured_at = _utc_now()
+        source_item = f"{self.source_system}:{document_hash}"
+
         return {
             "adapter_version": self.adapter_version,
-            "captured_at": captured_at,
+            "captured_at": _utc_now(),
             "declared_act_identity": _DECLARED_ACT_IDENTITY,
-            "declared_edition_label": None,
+            "declared_edition_label": edition["redname"],
             "declared_publication": None,
             "discovered_source_items": [
                 {
@@ -189,23 +151,23 @@ class LegislationRussiaConnector:
                 }
             ],
             "edition_claim": {
-                "claimed_edition_date": None,
-                "claimed_edition_label": None,
-                "source_asset_sha256": raw_sha256,
+                "claimed_edition_date": edition_date,
+                "claimed_edition_label": edition["redname"],
+                "source_asset_sha256": card_sha256,
             },
-            "external_id": document_id,
+            "external_id": document_hash,
             "item_kind": "edition_candidate",
             "label": f"Legislation Russia candidate: {_DECLARED_ACT_IDENTITY}",
-            "media_type": content_type,
-            "raw_asset_role": "legislation_document",
-            "raw_bytes": raw_bytes,
+            "media_type": "application/json",
+            "raw_asset_role": "legislation_text",
+            "raw_bytes": text_bytes,
             "relation_claims": [
                 {
                     "asserted_by": self.source_system,
                     "evidence_reference": {
-                        "locator": "document title; government decree heading",
-                        "source_asset_role": "legislation_document",
-                        "source_asset_sha256": raw_sha256,
+                        "locator": "$.hash; $.nd; $.adoption",
+                        "source_asset_role": "legislation_card",
+                        "source_asset_sha256": card_sha256,
                         "source_url": source_url,
                     },
                     "from_source_item": source_item,
@@ -213,31 +175,34 @@ class LegislationRussiaConnector:
                     "to_candidates": [act_source_item],
                 }
             ],
-            "request_cursor": document_id,
+            "request_cursor": document_hash,
             "rights_status": self.rights_status,
             "source_system": self.source_system,
             "source_url": source_url,
+            "supporting_assets": [
+                {
+                    "media_type": "application/json",
+                    "raw_bytes": card_bytes,
+                    "role": "legislation_card",
+                    "source_url": source_url,
+                    "transport_metadata": card_transport,
+                }
+            ],
             "temporal_coverage": {
                 "status": "temporal_coverage_unknown",
                 "valid_from": None,
                 "valid_to": None,
             },
-            "transport_metadata": transport,
+            "transport_metadata": text_transport,
             "unresolved_items": [
                 {
                     "diagnostic_message": (
-                        "The response does not expose a distinct source-declared edition date or label."
-                    ),
-                    "reason": "edition_metadata_absent",
-                    "source_asset_sha256": raw_sha256,
-                },
-                {
-                    "diagnostic_message": (
-                        "The consolidated response is not verified effective-date evidence."
+                        "The source-declared edition date is not verified "
+                        "effective-date evidence."
                     ),
                     "reason": "temporal_coverage_unknown",
-                    "source_asset_sha256": raw_sha256,
-                },
+                    "source_asset_sha256": card_sha256,
+                }
             ],
         }
 
@@ -245,7 +210,7 @@ class LegislationRussiaConnector:
         request = Request(
             url,
             headers={
-                "Accept": "text/html",
+                "Accept": "application/json",
                 "User-Agent": "LegalRAG-M0/0.6",
             },
         )
@@ -312,9 +277,95 @@ class LegislationRussiaConnector:
             "response_url": response_url,
         }
 
+    @staticmethod
+    def _parse_json(
+        raw_bytes: bytes,
+        reason: str,
+        source_url: str,
+    ) -> dict[str, object]:
+        try:
+            value = json.loads(raw_bytes.decode("utf-8-sig"))
+            if not isinstance(value, dict):
+                raise ValueError("response must be an object")
+            return value
+        except (UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+            raise LegislationRussiaFailure(
+                reason,
+                f"source response is not valid JSON: {error}",
+                retryable=False,
+                source_url=source_url,
+            ) from None
 
-def _normalize(value: str) -> str:
-    return " ".join(value.split())
+    @staticmethod
+    def _validate_card(
+        card: dict[str, object],
+        document_hash: str,
+        source_url: str,
+    ) -> dict[str, object]:
+        try:
+            if card["hash"] != document_hash:
+                raise ValueError("card identity mismatch")
+            if card["adoption"] != _ADOPTION or card["type"] != "Постановление":
+                raise ValueError("card adoption mismatch")
+            if card["name"] != _TITLE:
+                raise ValueError("card title mismatch")
+            if not isinstance(card["nd"], str) or not card["nd"].isdigit():
+                raise ValueError("card nd must be a numeric string")
+            if not isinstance(card["baseid"], str) or not card["baseid"]:
+                raise ValueError("card baseid is missing")
+            if type(card["actualrdk"]) is not int:
+                raise ValueError("card actualrdk must be an integer")
+            redactions = card["redactions"]
+            if not isinstance(redactions, list):
+                raise ValueError("card redactions must be an array")
+            selected = [
+                edition
+                for edition in redactions
+                if isinstance(edition, dict) and edition.get("id") == card["actualrdk"]
+            ]
+            if len(selected) != 1:
+                raise ValueError("card must expose exactly one selected edition")
+            edition = selected[0]
+            if (
+                edition.get("actual") is not True
+                or edition.get("completed") is not True
+                or edition.get("status") != "актуальная"
+            ):
+                raise ValueError("selected edition is not complete and current")
+            if not isinstance(edition.get("redname"), str) or not edition["redname"]:
+                raise ValueError("selected edition label is missing")
+            datetime.strptime(edition["date"], "%d.%m.%Y")
+            return edition
+        except (KeyError, TypeError, ValueError) as error:
+            raise LegislationRussiaFailure(
+                "invalid_card",
+                f"Government-decree card is not valid: {error}",
+                retryable=False,
+                source_url=source_url,
+            ) from None
+
+    @staticmethod
+    def _validate_text(
+        text: dict[str, object],
+        card: dict[str, object],
+        edition: dict[str, object],
+        source_url: str,
+    ) -> None:
+        try:
+            if text["docid"] != card["nd"] or text["baseid"] != card["baseid"]:
+                raise ValueError("document identity mismatch")
+            if text["rdk"] != edition["id"]:
+                raise ValueError("document edition mismatch")
+            doctext = text["doctext"]
+            if not isinstance(doctext, str) or "<html" not in doctext.casefold():
+                raise ValueError("document HTML is missing")
+        except (KeyError, TypeError, ValueError) as error:
+            raise LegislationRussiaFailure(
+                "invalid_text",
+                f"Government-decree text is not valid: {error}",
+                retryable=False,
+                source_url=source_url,
+            ) from None
 
 
 def _utc_now() -> str:

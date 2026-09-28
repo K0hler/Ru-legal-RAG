@@ -110,21 +110,21 @@ def acquire_actual(
 
 def acquire_legislation(
     connector: LegislationRussiaConnector,
-    document_id: str,
+    document_hash: str,
     data_dir: Path,
 ) -> dict[str, str]:
     started_at = _utc_now()
     data_dir = Path(data_dir)
-    source_item = f"{connector.source_system}:{document_id}"
+    source_item = f"{connector.source_system}:{document_hash}"
     try:
-        fetched = connector.fetch(document_id)
+        fetched = connector.fetch(document_hash)
     except LegislationRussiaFailure as error:
         return _record_failed_run(
             data_dir=data_dir,
             source=connector.source_system,
             source_item=source_item,
             adapter_version=connector.adapter_version,
-            request_cursor=document_id,
+            request_cursor=document_hash,
             started_at=started_at,
             error=error.as_record(),
         )

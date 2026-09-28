@@ -15,10 +15,10 @@ protocol fallback.
 consolidated-text response separately for the 59-ФЗ pilot. It links the candidate
 to the declared act while keeping the source edition date separate from unknown
 verified temporal coverage.
-`LegislationRussiaConnector` archives the official Windows-1251 HTML candidate for
-ПП РФ № 354 and links it to the same declared act identity used by publication
-relations. The portal response does not provide a distinct verified edition date,
-so edition metadata and temporal coverage remain explicitly unresolved.
+`LegislationRussiaConnector` archives the portal's JSON card and selected
+`documenttext` response separately for the ПП РФ № 354 pilot. It binds the text to
+the card's `hash`, `nd`, `baseid`, and `rdk`, preserves the source-declared edition
+date and label, and keeps verified temporal coverage explicitly unresolved.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -40,7 +40,7 @@ python -m legal_rag.sources acquire-actual `
   --data-dir data/m0-05
 
 python -m legal_rag.sources acquire-legislation `
-  --document-id 102147807 `
+  --document-hash c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663 `
   --data-dir data/m0-06
 ```
 

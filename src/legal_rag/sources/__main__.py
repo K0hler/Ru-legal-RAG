@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
     actual.add_argument("--data-dir", type=Path, required=True)
     actual.add_argument("--timeout", type=float, default=20.0)
     legislation = commands.add_parser("acquire-legislation")
-    legislation.add_argument("--document-id", required=True)
+    legislation.add_argument("--document-hash", required=True)
     legislation.add_argument("--data-dir", type=Path, required=True)
     legislation.add_argument("--timeout", type=float, default=20.0)
     relations = commands.add_parser("reconcile-relations")
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     elif arguments.command == "acquire-legislation":
         result = acquire_legislation(
             LegislationRussiaConnector(timeout=arguments.timeout),
-            arguments.document_id,
+            arguments.document_hash,
             arguments.data_dir,
         )
     else:

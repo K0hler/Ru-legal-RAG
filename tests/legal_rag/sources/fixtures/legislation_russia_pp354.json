@@ -1,16 +1,88 @@
 {
-  "body": "<!doctype html><html><head><meta charset=\"windows-1251\"><title>О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов</title></head><body><p>ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ</p><p>ПОСТАНОВЛЕНИЕ</p><p>от 6 мая 2011 г. № 354</p><p>МОСКВА</p><h1>О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов</h1><p>(В редакции постановлений Правительства Российской Федерации)</p><svg><title>Complex</title></svg></body></html>",
-  "document_id": "102147807",
-  "expected_sha256": "4ab8b62df08a1cba3685a1f0afca0b1cbd4fdd470fe73404b3e8c1d224a88e00",
-  "headers": {
-    "Content-Length": "537",
-    "Content-Type": "text/html; charset=windows-1251"
-  },
   "provenance": {
-    "fixture_kind": "synthetic_replay",
-    "observed_response_bytes": 597738,
-    "observed_at": "2026-09-28T08:45:00Z",
-    "rights_note": "Synthetic excerpt preserving the observed official response shape; full live response remains outside Git.",
-    "source_url": "http://pravo.gov.ru/proxy/ips/?doc_itself=&nd=102147807"
+    "fixture_kind": "synthetic",
+    "observed_at": "2026-09-28T09:38:09Z",
+    "source_url": "http://ips.pravo.gov.ru/search/c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663",
+    "rights_status": "Project-authored synthetic payload matching the official portal response shape; no official full text embedded"
+  },
+  "document_hash": "c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663",
+  "headers": {
+    "Content-Type": "application/json; charset=utf-8"
+  },
+  "card": {
+    "publications": [
+      "Собрание законодательства Российской Федерации от 30.05.2011 г., № 22, ст. 3168",
+      "Российская газета от 01.06.2011 г."
+    ],
+    "hash": "c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663",
+    "nd": "1000000000102147807",
+    "actualrdk": 60,
+    "docnpa": "",
+    "adoption": "Постановление Правительства Российской Федерации от 06.05.2011 № 354",
+    "ofpubnumber": null,
+    "officers": [
+      "В.Путин"
+    ],
+    "suppliment": null,
+    "baseid": "c000000000",
+    "type": "Постановление",
+    "comment": "Настоящее постановление действует до 31 декабря 2027 г.",
+    "description": null,
+    "billnumber": "",
+    "keywords": [
+      "КОММУНАЛЬНЫЙ",
+      "УСЛУГА"
+    ],
+    "minustnum": null,
+    "state": "Действует с изменениями",
+    "branches": [
+      "050040010|Общие вопросы"
+    ],
+    "minustdate": null,
+    "redactions": [
+      {
+        "id": 60,
+        "refadoption": "Постановление Правительства Российской Федерации от 24.07.2026 № 931",
+        "size": 1373380,
+        "refhash": "92919ae6979443def283793303fadec4bf47a9acc2cde45034ca05260f90e4e2",
+        "dtid": 34,
+        "drversion": 1,
+        "rdstid": 3,
+        "status": "актуальная",
+        "redreason": null,
+        "image": null,
+        "docname": null,
+        "actual": true,
+        "sign": false,
+        "completed": true,
+        "cntcompleted": false,
+        "hascontent": false,
+        "redname": "на 27.07.2026, (№ 931 от 24.07.2026), актуальная, есть изменения, не вступившие в силу",
+        "orgid": 180,
+        "official": false,
+        "refnd": "1000000000609937189",
+        "onumber": "931",
+        "odate": "24.07.2026",
+        "rgnid": 63,
+        "comment": "Положения отдельных пунктов Правил не применяются",
+        "state": "Действует с изменениями",
+        "date": "27.07.2026"
+      }
+    ],
+    "attributes": null,
+    "docname_history": null,
+    "name": "О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов"
+  },
+  "documenttext": {
+    "baseid": "c000000000",
+    "tounitid": null,
+    "rdk": 60,
+    "toparaid": "",
+    "docid": "1000000000102147807",
+    "doctext": "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"utf-8\"></head><body><p id=\"p1\">ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ</p><p id=\"p2\">ПОСТАНОВЛЕНИЕ</p><p id=\"p3\">от 6 мая 2011 г. № 354</p><p id=\"p4\">О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов</p><p id=\"p5\">Синтетический текст транспортной фикстуры.</p></body></html>"
+  },
+  "expected_sha256": {
+    "card": "596120ebdb1ddfa425f29de24438eda80a3465b512d5a6ea61595911f26e5095",
+    "documenttext": "cb5f6ee7145dc595155d6c065878de57adb714c1b84189f8fb9cd08b5e3ed3c9"
   }
 }

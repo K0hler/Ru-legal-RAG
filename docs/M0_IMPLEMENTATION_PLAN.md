@@ -199,9 +199,9 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-04
 **User stories:** 8–10, 21
-**Implementation status:** completed and verified offline and by explicit live smoke on 28.09.2026
+**Implementation status:** completed and reverified offline and by explicit live smoke on 28.09.2026 after replacing the legacy HTML route with the portal card and selected-edition `documenttext` responses
 
-Acquire and reconcile one Government decree candidate through «Законодательство России», using the same domain contracts and reports as other sources.
+Acquire and reconcile one Government decree candidate through «Законодательство России», binding the portal card to one selected `documenttext` edition through `hash`, `nd`, `baseid`, and `rdk`, while using the same domain contracts and reports as other sources.
 
 Acceptance:
 
