@@ -276,6 +276,23 @@ class PublicationPravoTest(unittest.TestCase):
                 },
             )
 
+    def test_amendment_detection_uses_normalized_case(self):
+        card = json.loads(json.dumps(self.replay["card"]))
+        card["name"] = f" {card['name'].lower()} "
+
+        items, claims = publication_pravo._discover_source_claims(
+            card,
+            self.replay["provenance"]["card_url"],
+            PublicationPravoConnector.source_system,
+        )
+
+        self.assertEqual(items[0]["item_kind"], "amendment")
+        self.assertEqual(claims[1]["relation_type"], "amends")
+        self.assertEqual(
+            claims[1]["to_candidates"],
+            ["declared-act:government-decree:2011-05-06:354"],
+        )
+
     def test_changed_card_with_same_pdf_reports_changed(self):
         first_card = json.loads(json.dumps(self.replay["card"]))
         second_card = json.loads(json.dumps(first_card))

@@ -27,8 +27,8 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   source and evidence reference. Missing or ambiguous targets become deterministic
   exception items; never choose a target by title similarity or legal inference.
 - Publication-card relation claims use structured fields or an explicit supported
-  single-target amendment-title pattern matching the whole title and point to the
-  archived raw JSON asset; never infer legal effect from meaning. An explicit
+  case-insensitive single-target amendment-title pattern matching the whole trimmed
+  title and point to the archived raw JSON asset; never infer legal effect from meaning. An explicit
   amendment title without one supported target emits an unresolved `amends` claim
   with no target candidate.
 - Acquired and discovered records share the canonical `items/` lifecycle. An

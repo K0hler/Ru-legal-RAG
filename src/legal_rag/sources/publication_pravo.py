@@ -300,8 +300,9 @@ def _discover_source_claims(
             "to_candidates": [act_source_item],
         }
     ]
-    amendment_title = card["name"].startswith("О внесении изменений")
-    amendment_match = _GOVERNMENT_DECREE_AMENDMENT.fullmatch(card["name"])
+    amendment_name = card["name"].strip()
+    amendment_title = amendment_name.casefold().startswith("о внесении изменений")
+    amendment_match = _GOVERNMENT_DECREE_AMENDMENT.fullmatch(amendment_name)
     item_kind = "amendment" if amendment_title else "act"
     if amendment_match:
         month = _RUSSIAN_MONTHS.get(amendment_match["month"].lower())
