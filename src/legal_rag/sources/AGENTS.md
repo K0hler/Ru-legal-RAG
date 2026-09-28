@@ -23,7 +23,8 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   exception items; never choose a target by title similarity or legal inference.
 - Publication-card relation claims use structured fields or an explicit supported
   amendment-title pattern and point to the archived raw JSON asset; never infer legal
-  effect from meaning.
+  effect from meaning. An explicit amendment title without one supported target emits
+  an unresolved `amends` claim with no target candidate.
 - Acquired and discovered records share the canonical `items/` lifecycle. An
   unacquired discovered item has `latest_successful_asset: null`; reject identity
   conflicts instead of creating a parallel item namespace.

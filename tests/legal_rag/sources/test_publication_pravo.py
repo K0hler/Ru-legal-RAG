@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -170,6 +170,107 @@ class PublicationPravoTest(unittest.TestCase):
 
             self._assert_failed_run(result, Path(temporary_directory), "timeout", True)
 
+    def test_invalid_external_id_creates_nonretryable_failed_run(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result = acquire_publication(
+                PublicationPravoConnector(timeout=1),
+                "not-an-eo-number",
+                Path(temporary_directory),
+            )
+
+            self._assert_failed_run(
+                result,
+                Path(temporary_directory),
+                "invalid_external_id",
+                False,
+            )
+
+    def test_not_found_creates_nonretryable_failed_run(self):
+        card_url = self.replay["provenance"]["card_url"]
+        error = HTTPError(card_url, 404, "Not Found", None, None)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=error,
+            ):
+                result = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    Path(temporary_directory),
+                )
+
+            self._assert_failed_run(result, Path(temporary_directory), "http_error", False)
+            self.assertTrue(error.closed)
+
+    def test_network_error_creates_retryable_failed_run(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=URLError("connection refused"),
+            ):
+                result = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    Path(temporary_directory),
+                )
+
+            self._assert_failed_run(
+                result,
+                Path(temporary_directory),
+                "network_error",
+                True,
+            )
+
+    def test_unparsed_amendment_target_remains_an_unresolved_source_claim(self):
+        replay = json.loads(json.dumps(self.replay))
+        replay["card"]["name"] = "О внесении изменений в отдельные акты Правительства Российской Федерации"
+        replay["card"]["complexName"] = replay["card"]["name"]
+        card_url = replay["provenance"]["card_url"]
+        responses = [
+            ReplayResponse(
+                json.dumps(replay["card"], ensure_ascii=False).encode("utf-8"),
+                card_url,
+                replay["card_headers"],
+            ),
+            ReplayResponse(
+                base64.b64decode(replay["asset"]["body_base64"]),
+                replay["provenance"]["asset_url"],
+                replay["asset"]["headers"],
+            ),
+        ]
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=responses,
+            ):
+                result = acquire_publication(
+                    PublicationPravoConnector(timeout=1),
+                    self.eo_number,
+                    data_dir,
+                )
+
+            item = json.loads(next((data_dir / "items").glob("*.json")).read_text("utf-8"))
+            self.assertEqual(result["result"], "new")
+            self.assertEqual(item["discovered_source_items"][0]["item_kind"], "amendment")
+            self.assertEqual(len(item["relation_claims"]), 2)
+            self.assertEqual(
+                item["relation_claims"][1],
+                {
+                    "asserted_by": "publication.pravo.gov.ru",
+                    "diagnostic_message": "The publication card declares amendments but does not identify one supported target.",
+                    "evidence_reference": {
+                        "locator": "$.name",
+                        "source_asset_sha256": item["declared_publication_asset"],
+                        "source_url": card_url,
+                    },
+                    "from_source_item": "declared-act:government-decree:2025-11-25:1871",
+                    "relation_type": "amends",
+                    "to_candidates": [],
+                },
+            )
+
     def test_http_error_creates_diagnostic_failed_run(self):
         card_url = self.replay["provenance"]["card_url"]
         error = HTTPError(card_url, 503, "Service Unavailable", None, None)
@@ -204,6 +305,37 @@ class PublicationPravoTest(unittest.TestCase):
                     self.eo_number,
                     Path(temporary_directory),
                 )
+
+            self._assert_failed_run(result, Path(temporary_directory), "invalid_card", False)
+
+    def test_invalid_card_field_type_creates_failed_run_without_asset(self):
+        replay = json.loads(json.dumps(self.replay))
+        replay["card"]["name"] = 123
+        responses = [
+            ReplayResponse(
+                json.dumps(replay["card"], ensure_ascii=False).encode("utf-8"),
+                replay["provenance"]["card_url"],
+                replay["card_headers"],
+            ),
+            ReplayResponse(
+                base64.b64decode(replay["asset"]["body_base64"]),
+                replay["provenance"]["asset_url"],
+                replay["asset"]["headers"],
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with patch(
+                "legal_rag.sources.publication_pravo.urlopen",
+                side_effect=responses,
+            ):
+                try:
+                    result = acquire_publication(
+                        PublicationPravoConnector(timeout=1),
+                        self.eo_number,
+                        Path(temporary_directory),
+                    )
+                except AttributeError as error:
+                    self.fail(f"invalid card field escaped source validation: {error}")
 
             self._assert_failed_run(result, Path(temporary_directory), "invalid_card", False)
 
@@ -244,6 +376,14 @@ class PublicationPravoTest(unittest.TestCase):
         self.assertEqual(report["errors"][0]["stage"], "acquisition")
         self.assertEqual(report["errors"][0]["reason"], reason)
         self.assertEqual(report["errors"][0]["retryable"], retryable)
+        self.assertIn("source_url", report["errors"][0])
+        exception_paths = list((data_dir / "exceptions").glob("*.json"))
+        self.assertEqual(len(exception_paths), 1)
+        exception = json.loads(exception_paths[0].read_text(encoding="utf-8"))
+        self.assertEqual(report["exception_ids"], [exception["exception_id"]])
+        self.assertEqual(exception["reason"], reason)
+        self.assertEqual(exception["retryable"], retryable)
+        self.assertEqual(exception["source_url"], report["errors"][0]["source_url"])
         self.assertFalse((data_dir / "raw").exists())
         self.assertFalse((data_dir / "items").exists())
 

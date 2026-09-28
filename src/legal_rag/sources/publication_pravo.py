@@ -85,6 +85,21 @@ class PublicationPravoConnector:
             card = json.loads(card_bytes.decode("utf-8-sig"))
             if not isinstance(card, dict) or card["eoNumber"] != eo_number:
                 raise ValueError("card identity mismatch")
+            for field in ("complexName", "documentDate", "eoNumber", "name", "number"):
+                if not isinstance(card[field], str) or not card[field].strip():
+                    raise ValueError(f"{field} must be a non-empty string")
+            if not isinstance(card["pagesCount"], int):
+                raise ValueError("pagesCount must be an integer")
+            if not isinstance(card["documentType"], dict) or not isinstance(
+                card["documentType"].get("name"), str
+            ):
+                raise ValueError("documentType.name must be a string")
+            if not isinstance(card["signatoryAuthorities"], list) or any(
+                not isinstance(authority, dict)
+                or not isinstance(authority.get("name"), str)
+                for authority in card["signatoryAuthorities"]
+            ):
+                raise ValueError("signatoryAuthorities must contain named objects")
             document_type = card["documentType"]["name"]
             authority_names = [authority["name"] for authority in card["signatoryAuthorities"]]
             declared_publication = {
@@ -242,8 +257,9 @@ def _discover_source_claims(
             "to_candidates": [act_source_item],
         }
     ]
+    amendment_title = card["name"].startswith("О внесении изменений")
     amendment_match = _GOVERNMENT_DECREE_AMENDMENT.search(card["name"])
-    item_kind = "amendment" if amendment_match else "act"
+    item_kind = "amendment" if amendment_title else "act"
     if amendment_match:
         month = _RUSSIAN_MONTHS.get(amendment_match["month"].lower())
         if month is None:
@@ -268,6 +284,23 @@ def _discover_source_claims(
                 "from_source_item": act_source_item,
                 "relation_type": "amends",
                 "to_candidates": [target_source_item],
+            }
+        )
+    elif amendment_title:
+        relation_claims.append(
+            {
+                "asserted_by": source_system,
+                "diagnostic_message": (
+                    "The publication card declares amendments but does not identify "
+                    "one supported target."
+                ),
+                "evidence_reference": {
+                    "locator": "$.name",
+                    "source_url": card_url,
+                },
+                "from_source_item": act_source_item,
+                "relation_type": "amends",
+                "to_candidates": [],
             }
         )
     return (

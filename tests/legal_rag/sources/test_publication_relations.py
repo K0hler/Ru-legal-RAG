@@ -257,16 +257,27 @@ class PublicationRelationsTest(unittest.TestCase):
             with self.subTest(mutation=mutate):
                 with tempfile.TemporaryDirectory() as temporary_directory:
                     root = Path(temporary_directory)
+                    data_dir = root / "data"
+                    self._acquire_publication(data_dir)
+                    before = {
+                        str(path.relative_to(data_dir)): path.read_bytes()
+                        for path in data_dir.rglob("*")
+                        if path.is_file()
+                    }
                     claims = json.loads(json.dumps(original))
                     mutate(claims["relation_claims"][0])
                     claims_path = root / "claims.json"
                     claims_path.write_text(json.dumps(claims), encoding="utf-8")
-                    data_dir = root / "data"
 
                     with self.assertRaises(ValueError):
                         reconcile_publication_relations(claims_path, data_dir)
 
-                    self.assertFalse(data_dir.exists())
+                    after = {
+                        str(path.relative_to(data_dir)): path.read_bytes()
+                        for path in data_dir.rglob("*")
+                        if path.is_file()
+                    }
+                    self.assertEqual(after, before)
 
     def _acquire_publication(self, data_dir: Path) -> None:
         replay = json.loads(REPLAY.read_text(encoding="utf-8"))

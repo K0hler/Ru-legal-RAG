@@ -3,6 +3,8 @@
 Scope: connector replay fixtures and acquisition lifecycle tests in this directory.
 
 - Default tests must not use the network; replay saved response metadata through a fake transport.
+- Connector failure coverage includes invalid IDs/cards/assets, timeout, retryable
+  network/HTTP failure, and non-retryable HTTP failure.
 - Keep fixture provenance, capture time, rights note, and expected raw SHA-256 together.
 - Verify media type from fixture bytes and archive both raw publication-card JSON and
   the original document asset; failure assertions include the attempted source URL.
