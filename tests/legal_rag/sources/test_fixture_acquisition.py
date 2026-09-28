@@ -93,6 +93,20 @@ class FixtureAcquisitionTest(unittest.TestCase):
             self.assertFalse((data_dir / "runs").exists())
             self.assertEqual(list(data_dir.rglob("*.tmp")), [])
 
+    def test_fixture_media_type_is_detected_from_content(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            metadata = json.loads(FIXTURE_METADATA.read_text(encoding="utf-8"))
+            metadata["media_type"] = "application/pdf"
+            metadata_path = root / "metadata.json"
+            metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+            acquire_fixture(FIXTURE, metadata_path, root / "data")
+
+            asset_path = next((root / "data" / "assets").glob("*.json"))
+            asset = json.loads(asset_path.read_text(encoding="utf-8"))
+            self.assertEqual(asset["media_type"], "text/plain; charset=utf-8")
+
     def test_source_item_lifecycle_preserves_assets_and_reports_every_outcome(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_dir = Path(temporary_directory) / "data"

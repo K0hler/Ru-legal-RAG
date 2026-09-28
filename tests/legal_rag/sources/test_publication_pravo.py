@@ -1,5 +1,6 @@
 import base64
 from contextlib import redirect_stdout
+import hashlib
 from io import StringIO
 import json
 from pathlib import Path
@@ -49,10 +50,11 @@ class PublicationPravoTest(unittest.TestCase):
     def test_cli_replays_document_card_and_original_asset_without_network(self):
         card_url = self.replay["provenance"]["card_url"]
         asset_url = self.replay["provenance"]["asset_url"]
+        card_bytes = json.dumps(self.replay["card"], ensure_ascii=False).encode("utf-8")
         asset_bytes = base64.b64decode(self.replay["asset"]["body_base64"])
         responses = [
             ReplayResponse(
-                json.dumps(self.replay["card"], ensure_ascii=False).encode("utf-8"),
+                card_bytes,
                 card_url,
                 self.replay["card_headers"],
             ),
@@ -80,7 +82,16 @@ class PublicationPravoTest(unittest.TestCase):
             result = json.loads(output.getvalue())
             data_dir = Path(temporary_directory)
             item = json.loads(next((data_dir / "items").glob("*.json")).read_text("utf-8"))
-            asset = json.loads(next((data_dir / "assets").glob("*.json")).read_text("utf-8"))
+            assets = [
+                json.loads(path.read_text("utf-8"))
+                for path in (data_dir / "assets").glob("*.json")
+            ]
+            self.assertEqual(
+                {asset["media_type"] for asset in assets},
+                {"application/json", "application/pdf"},
+            )
+            pdf_asset = next(asset for asset in assets if asset["media_type"] == "application/pdf")
+            card_asset = next(asset for asset in assets if asset["media_type"] == "application/json")
             requested_urls = [call.args[0].full_url for call in urlopen.call_args_list]
 
             self.assertEqual(exit_code, 0)
@@ -99,14 +110,18 @@ class PublicationPravoTest(unittest.TestCase):
             self.assertEqual(item["declared_publication"]["document_number"], "1871")
             self.assertEqual(item["declared_publication"]["publication_date"], "2025-11-28T00:00:00")
             self.assertNotIn("valid_from", item)
-            self.assertEqual(asset["media_type"], "application/pdf")
-            self.assertEqual(asset["sha256"], self.replay["asset"]["expected_sha256"])
-            self.assertEqual(asset["source_url"], asset_url)
-            self.assertEqual(asset["transport_metadata"]["http_status"], 200)
+            self.assertEqual(pdf_asset["sha256"], self.replay["asset"]["expected_sha256"])
+            self.assertEqual(pdf_asset["source_url"], asset_url)
+            self.assertEqual(pdf_asset["transport_metadata"]["http_status"], 200)
             self.assertEqual(
-                asset["transport_metadata"]["headers"]["content-type"],
+                pdf_asset["transport_metadata"]["headers"]["content-type"],
                 "application/octet-stream",
             )
+            card_hash = hashlib.sha256(card_bytes).hexdigest()
+            self.assertEqual(card_asset["sha256"], card_hash)
+            self.assertEqual(card_asset["source_url"], card_url)
+            self.assertEqual((data_dir / "raw" / card_hash).read_bytes(), card_bytes)
+            self.assertEqual(item["declared_publication_asset"], card_hash)
 
     def test_timeout_creates_diagnostic_failed_run(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -139,6 +154,8 @@ class PublicationPravoTest(unittest.TestCase):
             self._assert_failed_run(result, Path(temporary_directory), "http_error", True)
             report = json.loads(Path(result["report"]).read_text(encoding="utf-8"))
             self.assertEqual(report["errors"][0]["http_status"], 503)
+            self.assertIn("source_url", report["errors"][0])
+            self.assertEqual(report["errors"][0]["source_url"], card_url)
             self.assertTrue(error.closed)
 
     def test_invalid_card_creates_failed_run_without_asset(self):

@@ -15,12 +15,14 @@ class PublicationPravoFailure(Exception):
         *,
         retryable: bool,
         http_status: int | None = None,
+        source_url: str | None = None,
     ) -> None:
         super().__init__(message)
         self.reason = reason
         self.message = message
         self.retryable = retryable
         self.http_status = http_status
+        self.source_url = source_url
 
     def as_record(self) -> dict[str, object]:
         record: dict[str, object] = {
@@ -31,6 +33,8 @@ class PublicationPravoFailure(Exception):
         }
         if self.http_status is not None:
             record["http_status"] = self.http_status
+        if self.source_url is not None:
+            record["source_url"] = self.source_url
         return record
 
 
@@ -49,6 +53,7 @@ class PublicationPravoConnector:
                 "invalid_external_id",
                 "electronic publication number must contain 16 digits",
                 retryable=False,
+                source_url=self.base_url,
             )
 
         query = urlencode({"eoNumber": eo_number})
@@ -76,6 +81,7 @@ class PublicationPravoConnector:
                 "invalid_card",
                 f"document card is not valid: {error}",
                 retryable=False,
+                source_url=card_url,
             ) from None
 
         asset_url = f"{self.base_url}/File/Pdf?{query}"
@@ -85,20 +91,25 @@ class PublicationPravoConnector:
                 "invalid_asset",
                 "document asset is not a PDF by content signature",
                 retryable=False,
+                source_url=asset_url,
             )
 
         asset_transport["card_request"] = {
             **card_transport,
             "sha256": hashlib.sha256(card_bytes).hexdigest(),
         }
+        captured_at = _utc_now()
         return {
             "adapter_version": self.adapter_version,
-            "captured_at": _utc_now(),
+            "captured_at": captured_at,
             "declared_act_identity": card["complexName"],
             "declared_edition_label": None,
             "declared_publication": declared_publication,
             "external_id": eo_number,
             "media_type": "application/pdf",
+            "publication_card_bytes": card_bytes,
+            "publication_card_transport_metadata": card_transport,
+            "publication_card_url": card_url,
             "raw_bytes": raw_bytes,
             "request_cursor": eo_number,
             "rights_status": self.rights_status,
@@ -135,12 +146,14 @@ class PublicationPravoConnector:
                 f"HTTP {status}: {reason}",
                 retryable=status == 429 or status >= 500,
                 http_status=status,
+                source_url=url,
             ) from None
         except (TimeoutError, socket.timeout):
             raise PublicationPravoFailure(
                 "timeout",
                 "source request timed out",
                 retryable=True,
+                source_url=url,
             ) from None
         except URLError as error:
             if isinstance(error.reason, (TimeoutError, socket.timeout)):
@@ -153,6 +166,7 @@ class PublicationPravoConnector:
                 reason,
                 message,
                 retryable=True,
+                source_url=url,
             ) from None
 
         return body, {

@@ -20,6 +20,21 @@ def acquire_fixture(
     data_dir = Path(data_dir)
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    raw_bytes = fixture_path.read_bytes()
+    if raw_bytes.startswith(b"%PDF-"):
+        media_type = "application/pdf"
+    else:
+        try:
+            decoded = raw_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            media_type = "application/octet-stream"
+        else:
+            try:
+                json.loads(decoded)
+            except json.JSONDecodeError:
+                media_type = "text/plain; charset=utf-8"
+            else:
+                media_type = "application/json"
     return _persist_success(
         {
             "adapter_version": metadata["adapter_version"],
@@ -28,8 +43,8 @@ def acquire_fixture(
             "declared_edition_label": metadata["declared_edition_label"],
             "declared_publication": None,
             "external_id": metadata["external_id"],
-            "media_type": metadata["media_type"],
-            "raw_bytes": fixture_path.read_bytes(),
+            "media_type": media_type,
+            "raw_bytes": raw_bytes,
             "request_cursor": None,
             "rights_status": metadata["rights_status"],
             "source_system": metadata["source_system"],
@@ -37,6 +52,7 @@ def acquire_fixture(
             "transport_metadata": {
                 "fixture": fixture_path.name,
                 "metadata": metadata_path.name,
+                "declared_media_type": metadata["media_type"],
             },
         },
         data_dir,
@@ -73,44 +89,50 @@ def _persist_success(
     started_at: str,
 ) -> dict[str, str]:
     raw_bytes = fetched["raw_bytes"]
-    raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    raw_sha256 = _persist_asset(
+        data_dir=data_dir,
+        raw_bytes=raw_bytes,
+        captured_at=fetched["captured_at"],
+        media_type=fetched["media_type"],
+        rights_status=fetched["rights_status"],
+        source_url=fetched["source_url"],
+        transport_metadata=fetched["transport_metadata"],
+    )
+    publication_card_sha256 = None
+    if "publication_card_bytes" in fetched:
+        publication_card_sha256 = _persist_asset(
+            data_dir=data_dir,
+            raw_bytes=fetched["publication_card_bytes"],
+            captured_at=fetched["captured_at"],
+            media_type="application/json",
+            rights_status=fetched["rights_status"],
+            source_url=fetched["publication_card_url"],
+            transport_metadata=fetched["publication_card_transport_metadata"],
+            role="declared_publication",
+        )
     source_item = f"{fetched['source_system']}:{fetched['external_id']}"
     item_id = hashlib.sha256(source_item.encode("utf-8")).hexdigest()
 
-    raw_path = data_dir / "raw" / raw_sha256
-    asset_path = data_dir / "assets" / f"{raw_sha256}.json"
     item_path = data_dir / "items" / f"{item_id}.json"
     previous_item = _read_json(item_path) if item_path.exists() else None
     change = None
     if previous_item is None:
         result = "new"
-        asset_sha256s = [raw_sha256]
     elif previous_item["latest_successful_asset"] == raw_sha256:
         result = "unchanged"
-        asset_sha256s = previous_item["asset_sha256s"]
     else:
         result = "changed"
-        asset_sha256s = list(dict.fromkeys([*previous_item["asset_sha256s"], raw_sha256]))
         change = {
             "new_sha256": raw_sha256,
             "old_sha256": previous_item["latest_successful_asset"],
             "source_item": source_item,
         }
 
-    _write_once(raw_path, raw_bytes)
-    _write_json_once(
-        asset_path,
-        {
-            "archive_key": f"raw/{raw_sha256}",
-            "byte_length": len(raw_bytes),
-            "captured_at": fetched["captured_at"],
-            "media_type": fetched["media_type"],
-            "rights_status": fetched["rights_status"],
-            "sha256": raw_sha256,
-            "source_url": fetched["source_url"],
-            "transport_metadata": fetched["transport_metadata"],
-        },
-    )
+    previous_asset_sha256s = previous_item["asset_sha256s"] if previous_item else []
+    current_asset_sha256s = [raw_sha256]
+    if publication_card_sha256 is not None:
+        current_asset_sha256s.append(publication_card_sha256)
+    asset_sha256s = list(dict.fromkeys([*previous_asset_sha256s, *current_asset_sha256s]))
     item = {
         "adapter_version": fetched["adapter_version"],
         "asset_sha256s": asset_sha256s,
@@ -126,6 +148,8 @@ def _persist_success(
     }
     if fetched["declared_publication"] is not None:
         item["declared_publication"] = fetched["declared_publication"]
+    if publication_card_sha256 is not None:
+        item["declared_publication_asset"] = publication_card_sha256
     _write_json(
         item_path,
         item,
@@ -194,6 +218,35 @@ def _record_failed_run(
 
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _persist_asset(
+    *,
+    data_dir: Path,
+    raw_bytes: bytes,
+    captured_at: str,
+    media_type: str,
+    rights_status: str,
+    source_url: str,
+    transport_metadata: dict[str, object],
+    role: str | None = None,
+) -> str:
+    raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    _write_once(data_dir / "raw" / raw_sha256, raw_bytes)
+    asset = {
+        "archive_key": f"raw/{raw_sha256}",
+        "byte_length": len(raw_bytes),
+        "captured_at": captured_at,
+        "media_type": media_type,
+        "rights_status": rights_status,
+        "sha256": raw_sha256,
+        "source_url": source_url,
+        "transport_metadata": transport_metadata,
+    }
+    if role is not None:
+        asset["role"] = role
+    _write_json_once(data_dir / "assets" / f"{raw_sha256}.json", asset)
+    return raw_sha256
 
 
 def _write_json_once(path: Path, value: dict[str, object]) -> None:

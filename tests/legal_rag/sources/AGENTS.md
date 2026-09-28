@@ -4,6 +4,8 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
 
 - Default tests must not use the network; replay saved response metadata through a fake transport.
 - Keep fixture provenance, capture time, rights note, and expected raw SHA-256 together.
+- Verify media type from fixture bytes and archive both raw publication-card JSON and
+  the original document asset; failure assertions include the attempted source URL.
 - Test the observable run report and persisted provenance, not private parsing helpers.
 - Keep one focused lifecycle regression that drives the same source item through
   `new`, `unchanged`, `changed`, and `failed`.
