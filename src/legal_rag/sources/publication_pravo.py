@@ -1,10 +1,32 @@
 from datetime import UTC, datetime
 import hashlib
 import json
+import re
 import socket
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+
+_RUSSIAN_MONTHS = {
+    "января": 1,
+    "февраля": 2,
+    "марта": 3,
+    "апреля": 4,
+    "мая": 5,
+    "июня": 6,
+    "июля": 7,
+    "августа": 8,
+    "сентября": 9,
+    "октября": 10,
+    "ноября": 11,
+    "декабря": 12,
+}
+_GOVERNMENT_DECREE_AMENDMENT = re.compile(
+    r"О внесении изменений в постановление Правительства Российской Федерации от "
+    r"(?P<day>\d{1,2}) (?P<month>[^ ]+) (?P<year>\d{4}) г\. № (?P<number>\d+)",
+    re.IGNORECASE,
+)
 
 
 class PublicationPravoFailure(Exception):
@@ -98,6 +120,11 @@ class PublicationPravoConnector:
             **card_transport,
             "sha256": hashlib.sha256(card_bytes).hexdigest(),
         }
+        discovered_source_items, relation_claims = _discover_source_claims(
+            card,
+            card_url,
+            self.source_system,
+        )
         captured_at = _utc_now()
         return {
             "adapter_version": self.adapter_version,
@@ -105,13 +132,17 @@ class PublicationPravoConnector:
             "declared_act_identity": card["complexName"],
             "declared_edition_label": None,
             "declared_publication": declared_publication,
+            "discovered_source_items": discovered_source_items,
             "external_id": eo_number,
+            "item_kind": "publication",
+            "label": f"Official publication: {card['complexName']}",
             "media_type": "application/pdf",
             "publication_card_bytes": card_bytes,
             "publication_card_transport_metadata": card_transport,
             "publication_card_url": card_url,
             "raw_bytes": raw_bytes,
             "request_cursor": eo_number,
+            "relation_claims": relation_claims,
             "rights_status": self.rights_status,
             "source_system": self.source_system,
             "source_url": asset_url,
@@ -179,3 +210,77 @@ class PublicationPravoConnector:
 
 def _utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _discover_source_claims(
+    card: dict[str, object],
+    card_url: str,
+    source_system: str,
+) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
+    eo_number = card["eoNumber"]
+    authority_names = [authority["name"] for authority in card["signatoryAuthorities"]]
+    if (
+        card["documentType"]["name"] == "Постановление"
+        and "Правительство Российской Федерации" in authority_names
+    ):
+        act_external_id = (
+            f"government-decree:{card['documentDate'][:10]}:{card['number']}"
+        )
+    else:
+        act_external_id = f"{source_system}:{eo_number}"
+    act_source_item = f"declared-act:{act_external_id}"
+    title = card["complexName"]
+    relation_claims = [
+        {
+            "asserted_by": source_system,
+            "evidence_reference": {
+                "locator": "$.eoNumber; $.complexName",
+                "source_url": card_url,
+            },
+            "from_source_item": f"{source_system}:{eo_number}",
+            "relation_type": "publishes",
+            "to_candidates": [act_source_item],
+        }
+    ]
+    amendment_match = _GOVERNMENT_DECREE_AMENDMENT.search(card["name"])
+    item_kind = "amendment" if amendment_match else "act"
+    if amendment_match:
+        month = _RUSSIAN_MONTHS.get(amendment_match["month"].lower())
+        if month is None:
+            raise PublicationPravoFailure(
+                "invalid_card",
+                "document card contains an unsupported Russian month name",
+                retryable=False,
+                source_url=card_url,
+            )
+        target_source_item = (
+            "declared-act:government-decree:"
+            f"{amendment_match['year']}-{month:02d}-{int(amendment_match['day']):02d}:"
+            f"{amendment_match['number']}"
+        )
+        relation_claims.append(
+            {
+                "asserted_by": source_system,
+                "evidence_reference": {
+                    "locator": "$.name",
+                    "source_url": card_url,
+                },
+                "from_source_item": act_source_item,
+                "relation_type": "amends",
+                "to_candidates": [target_source_item],
+            }
+        )
+    return (
+        [
+            {
+                "declared_act_identity": title,
+                "external_id": act_external_id,
+                "item_kind": item_kind,
+                "label": title,
+                "source_item": act_source_item,
+                "source_system": "declared-act",
+                "source_url": card_url,
+            }
+        ],
+        relation_claims,
+    )

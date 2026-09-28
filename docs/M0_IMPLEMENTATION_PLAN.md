@@ -148,6 +148,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-01
 **User stories:** 5–7, 10
+**Implementation status:** completed and verified offline on 28.09.2026
 
 Extend the complete fixture path with changed bytes and transport failure so a source item moves through all four acquisition outcomes without losing its latest successful asset.
 
@@ -164,6 +165,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-02
 **User stories:** 8–10
+**Implementation status:** completed and verified offline on 28.09.2026
 
 Resolve one pilot act from publication records to its official original and discovered amendment publications, preserving each relation as a source claim with evidence.
 

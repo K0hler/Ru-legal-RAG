@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from .acquisition import _write_json_once, _write_once
+from .acquisition import _read_json, _write_json, _write_json_once, _write_once
 
 
 def reconcile_publication_relations(
@@ -24,8 +24,38 @@ def reconcile_publication_relations(
         raise ValueError("relation_claims must be a list")
     if not isinstance(claims.get("provenance"), dict):
         raise ValueError("provenance must be an object")
+    acquired_source_items = claims.get("acquired_source_items", [])
+    if not isinstance(acquired_source_items, list) or any(
+        not isinstance(source_item, str) or not source_item.strip()
+        for source_item in acquired_source_items
+    ):
+        raise ValueError("acquired_source_items must be a list of non-empty strings")
 
-    items = claims["items"]
+    items = list(claims["items"])
+    relation_claims = list(claims["relation_claims"])
+    acquired_inputs = []
+    for source_item in acquired_source_items:
+        item_path = data_dir / "items" / f"{_stable_id(source_item)}.json"
+        if not item_path.exists():
+            raise ValueError(f"acquired source item not found: {source_item}")
+        acquired_item = _read_json(item_path)
+        if acquired_item.get("source_item") != source_item:
+            raise ValueError(f"acquired source item identity conflict: {source_item}")
+        discovered_items = acquired_item.get("discovered_source_items", [])
+        discovered_relations = acquired_item.get("relation_claims", [])
+        if not isinstance(discovered_items, list) or not isinstance(discovered_relations, list):
+            raise ValueError(f"acquired source item has invalid source claims: {source_item}")
+        items.extend([acquired_item, *discovered_items])
+        relation_claims.extend(discovered_relations)
+        acquired_inputs.append(
+            {
+                "declared_publication_asset": acquired_item.get("declared_publication_asset"),
+                "discovered_source_items": discovered_items,
+                "relation_claims": discovered_relations,
+                "source_item": source_item,
+            }
+        )
+
     for item in items:
         if not isinstance(item, dict):
             raise ValueError("each item must be an object")
@@ -45,7 +75,7 @@ def reconcile_publication_relations(
 
     relations = []
     exceptions = []
-    for claim in claims["relation_claims"]:
+    for claim in relation_claims:
         if not isinstance(claim, dict):
             raise ValueError("each relation claim must be an object")
         for field in ("asserted_by", "from_source_item", "relation_type"):
@@ -63,6 +93,11 @@ def reconcile_publication_relations(
         for field in ("locator", "source_url"):
             if not isinstance(evidence.get(field), str) or not evidence[field].strip():
                 raise ValueError(f"evidence_reference {field} must be a non-empty string")
+        if "source_asset_sha256" in evidence and (
+            not isinstance(evidence["source_asset_sha256"], str)
+            or not evidence["source_asset_sha256"].strip()
+        ):
+            raise ValueError("evidence_reference source_asset_sha256 must be a non-empty string")
         if "diagnostic_message" in claim and (
             not isinstance(claim["diagnostic_message"], str)
             or not claim["diagnostic_message"].strip()
@@ -110,16 +145,41 @@ def reconcile_publication_relations(
         exception["exception_id"] = _stable_id(exception)
         exceptions.append(exception)
 
-    reconciliation_id = _stable_id(claims)
+    reconciliation_id = _stable_id(
+        {
+            "acquired_inputs": acquired_inputs,
+            "claims": claims,
+        }
+    )
     reconciliation_path = data_dir / "reconciliations" / f"{reconciliation_id}.json"
     report_path = data_dir / "reports" / "relations" / f"{reconciliation_id}.md"
     result = "unchanged" if reconciliation_path.exists() else "new"
     report = _render_report(claims["act_source_item"], item_by_id, relations, exceptions)
-    item_record_ids = [_stable_id(item) for item in items]
+    canonical_items = []
+    for item in items:
+        canonical_item = _canonical_source_item(item, claims)
+        item_path = data_dir / "items" / f"{_stable_id(item['source_item'])}.json"
+        if item_path.exists():
+            existing_item = _read_json(item_path)
+            for field in ("declared_act_identity", "external_id", "source_system"):
+                if existing_item.get(field) != canonical_item.get(field):
+                    raise ValueError(
+                        f"source item {field} conflict: {item['source_item']}"
+                    )
+            canonical_item = {
+                **canonical_item,
+                **existing_item,
+                "item_kind": existing_item.get("item_kind", canonical_item["item_kind"]),
+                "label": existing_item.get("label", canonical_item["label"]),
+            }
+        canonical_items.append((item_path, canonical_item))
 
-    for item, item_record_id in zip(items, item_record_ids, strict=True):
-        item_path = data_dir / "relation-items" / f"{item_record_id}.json"
-        _write_json_once(item_path, item)
+    for item_path, canonical_item in canonical_items:
+        if item_path.exists():
+            if _read_json(item_path) != canonical_item:
+                _write_json(item_path, canonical_item)
+        else:
+            _write_json_once(item_path, canonical_item)
     for relation in relations:
         relation_path = data_dir / "relations" / f"{relation['relation_id']}.json"
         _write_json_once(relation_path, relation)
@@ -134,7 +194,6 @@ def reconcile_publication_relations(
             "act_source_item": claims["act_source_item"],
             "captured_at": claims["captured_at"],
             "exception_ids": [item["exception_id"] for item in exceptions],
-            "item_record_ids": item_record_ids,
             "item_source_ids": [item["source_item"] for item in items],
             "provenance": claims["provenance"],
             "reconciliation_id": reconciliation_id,
@@ -149,6 +208,34 @@ def reconcile_publication_relations(
         "report": str(report_path.resolve()),
         "result": result,
     }
+
+
+def _canonical_source_item(
+    item: dict[str, object],
+    claims: dict[str, object],
+) -> dict[str, object]:
+    if "asset_sha256s" in item and "latest_successful_asset" in item:
+        return dict(item)
+    canonical_item = {
+        "adapter_version": "relation-reconciliation/1",
+        "asset_sha256s": [],
+        "captured_at": claims["captured_at"],
+        "declared_act_identity": item.get("declared_act_identity", item["label"]),
+        "declared_edition_label": item.get("declared_edition_label"),
+        "external_id": item["external_id"],
+        "item_kind": item["item_kind"],
+        "label": item["label"],
+        "latest_successful_asset": None,
+        "rights_status": claims["provenance"].get(
+            "rights_status",
+            "Unspecified relation-claim provenance",
+        ),
+        "source_item": item["source_item"],
+        "source_system": item["source_system"],
+    }
+    if "source_url" in item:
+        canonical_item["source_url"] = item["source_url"]
+    return canonical_item
 
 
 def _stable_id(value: object) -> str:

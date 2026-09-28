@@ -21,7 +21,7 @@ python -m legal_rag.sources acquire-fixture `
 
 python -m legal_rag.sources acquire-publication `
   --eo-number 0001202511280030 `
-  --data-dir data/m0-02-live-0001202511280030
+  --data-dir data/m0-04
 
 python -m legal_rag.sources reconcile-relations `
   --claims tests/legal_rag/sources/fixtures/pp354_publication_relations.json `

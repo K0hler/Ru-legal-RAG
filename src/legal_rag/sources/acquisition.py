@@ -115,8 +115,13 @@ def _persist_success(
 
     item_path = data_dir / "items" / f"{item_id}.json"
     previous_item = _read_json(item_path) if item_path.exists() else None
+    if previous_item is not None and (
+        previous_item["source_system"] != fetched["source_system"]
+        or previous_item["external_id"] != fetched["external_id"]
+    ):
+        raise ValueError(f"source item identity conflict: {source_item}")
     change = None
-    if previous_item is None:
+    if previous_item is None or previous_item["latest_successful_asset"] is None:
         result = "new"
     elif previous_item["latest_successful_asset"] == raw_sha256:
         result = "unchanged"
@@ -140,6 +145,16 @@ def _persist_success(
         "declared_act_identity": fetched["declared_act_identity"],
         "declared_edition_label": fetched["declared_edition_label"],
         "external_id": fetched["external_id"],
+        "item_kind": fetched.get(
+            "item_kind",
+            previous_item.get("item_kind", "source") if previous_item else "source",
+        ),
+        "label": fetched.get(
+            "label",
+            previous_item.get("label", fetched["declared_act_identity"])
+            if previous_item
+            else fetched["declared_act_identity"],
+        ),
         "latest_successful_asset": raw_sha256,
         "rights_status": fetched["rights_status"],
         "source_item": source_item,
@@ -150,6 +165,21 @@ def _persist_success(
         item["declared_publication"] = fetched["declared_publication"]
     if publication_card_sha256 is not None:
         item["declared_publication_asset"] = publication_card_sha256
+    if "discovered_source_items" in fetched:
+        item["discovered_source_items"] = fetched["discovered_source_items"]
+    if "relation_claims" in fetched:
+        relation_claims = []
+        for relation_claim in fetched["relation_claims"]:
+            evidence_reference = dict(relation_claim["evidence_reference"])
+            if publication_card_sha256 is not None:
+                evidence_reference["source_asset_sha256"] = publication_card_sha256
+            relation_claims.append(
+                {
+                    **relation_claim,
+                    "evidence_reference": evidence_reference,
+                }
+            )
+        item["relation_claims"] = relation_claims
     _write_json(
         item_path,
         item,

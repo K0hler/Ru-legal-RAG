@@ -21,8 +21,14 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Persist a source relation only when one known target is supported by an asserting
   source and evidence reference. Missing or ambiguous targets become deterministic
   exception items; never choose a target by title similarity or legal inference.
-- Keep relation-discovery snapshots in `relation-items/`; only successful acquisition
-  may write `items/`. Validate the complete claim document before persisting anything.
+- Publication-card relation claims use structured fields or an explicit supported
+  amendment-title pattern and point to the archived raw JSON asset; never infer legal
+  effect from meaning.
+- Acquired and discovered records share the canonical `items/` lifecycle. An
+  unacquired discovered item has `latest_successful_asset: null`; reject identity
+  conflicts instead of creating a parallel item namespace.
+- Reconciliation loads every `acquired_source_items` record before writing and
+  validates the complete combined claim document before persisting anything.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
 - Verify source terms and rate limits before enabling bulk acquisition.
 

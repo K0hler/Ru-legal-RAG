@@ -122,6 +122,39 @@ class PublicationPravoTest(unittest.TestCase):
             self.assertEqual(card_asset["source_url"], card_url)
             self.assertEqual((data_dir / "raw" / card_hash).read_bytes(), card_bytes)
             self.assertEqual(item["declared_publication_asset"], card_hash)
+            self.assertIn("discovered_source_items", item)
+            self.assertIn("relation_claims", item)
+            self.assertEqual(
+                item["relation_claims"],
+                [
+                    {
+                        "asserted_by": "publication.pravo.gov.ru",
+                        "evidence_reference": {
+                            "locator": "$.eoNumber; $.complexName",
+                            "source_asset_sha256": card_hash,
+                            "source_url": card_url,
+                        },
+                        "from_source_item": f"publication.pravo.gov.ru:{self.eo_number}",
+                        "relation_type": "publishes",
+                        "to_candidates": [
+                            "declared-act:government-decree:2025-11-25:1871"
+                        ],
+                    },
+                    {
+                        "asserted_by": "publication.pravo.gov.ru",
+                        "evidence_reference": {
+                            "locator": "$.name",
+                            "source_asset_sha256": card_hash,
+                            "source_url": card_url,
+                        },
+                        "from_source_item": "declared-act:government-decree:2025-11-25:1871",
+                        "relation_type": "amends",
+                        "to_candidates": [
+                            "declared-act:government-decree:2011-05-06:354"
+                        ],
+                    },
+                ],
+            )
 
     def test_timeout_creates_diagnostic_failed_run(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

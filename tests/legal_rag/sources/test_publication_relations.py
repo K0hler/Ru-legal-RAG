@@ -1,3 +1,4 @@
+import base64
 from contextlib import redirect_stdout
 from io import StringIO
 import json
@@ -5,23 +6,47 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SRC_ROOT = PROJECT_ROOT / "src"
 FIXTURE = Path(__file__).with_name("fixtures") / "pp354_publication_relations.json"
+REPLAY = Path(__file__).with_name("fixtures") / "publication_pravo_0001202511280030.json"
 
 sys.path.insert(0, str(SRC_ROOT))
 
 from legal_rag.sources.__main__ import main  # noqa: E402
-from legal_rag.sources.acquisition import acquire_fixture  # noqa: E402
+from legal_rag.sources.acquisition import acquire_publication  # noqa: E402
+from legal_rag.sources.publication_pravo import PublicationPravoConnector  # noqa: E402
 from legal_rag.sources.relations import reconcile_publication_relations  # noqa: E402
+
+
+class ReplayResponse:
+    def __init__(self, body: bytes, url: str, headers: dict[str, str]):
+        self._body = body
+        self._url = url
+        self.headers = headers
+        self.status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def geturl(self) -> str:
+        return self._url
+
+    def read(self) -> bytes:
+        return self._body
 
 
 class PublicationRelationsTest(unittest.TestCase):
     def test_cli_persists_relation_chain_exceptions_and_idempotent_report(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_dir = Path(temporary_directory)
+            self._acquire_publication(data_dir)
             outputs = []
             exit_codes = []
             snapshots = []
@@ -55,7 +80,7 @@ class PublicationRelationsTest(unittest.TestCase):
 
             items = [
                 json.loads(path.read_text(encoding="utf-8"))
-                for path in (data_dir / "relation-items").glob("*.json")
+                for path in (data_dir / "items").glob("*.json")
             ]
             self.assertEqual(
                 {item["source_item"] for item in items},
@@ -64,6 +89,15 @@ class PublicationRelationsTest(unittest.TestCase):
                     "official-print:sobranie-zakonodatelstva-rf:2011:22:3168",
                     "declared-act:government-decree:2025-11-25:1871",
                     "publication.pravo.gov.ru:0001202511280030",
+                },
+            )
+            self.assertEqual(
+                {item["source_item"]: item["item_kind"] for item in items},
+                {
+                    "declared-act:government-decree:2011-05-06:354": "act",
+                    "official-print:sobranie-zakonodatelstva-rf:2011:22:3168": "publication",
+                    "declared-act:government-decree:2025-11-25:1871": "amendment",
+                    "publication.pravo.gov.ru:0001202511280030": "publication",
                 },
             )
 
@@ -106,6 +140,29 @@ class PublicationRelationsTest(unittest.TestCase):
                     for relation in relations
                 )
             )
+            self.assertEqual(
+                {
+                    relation["evidence_reference"]["locator"]
+                    for relation in relations
+                },
+                {
+                    "citation: Собрание законодательства Российской Федерации, 2011, № 22, ст. 3168",
+                    "$.eoNumber; $.complexName",
+                    "$.name",
+                },
+            )
+            acquired_relations = [
+                relation
+                for relation in relations
+                if relation["asserted_by"] == "publication.pravo.gov.ru"
+            ]
+            self.assertTrue(
+                all(
+                    (data_dir / "raw" / relation["evidence_reference"]["source_asset_sha256"]).is_file()
+                    for relation in acquired_relations
+                )
+            )
+            self.assertFalse((data_dir / "relation-items").exists())
 
             exceptions = list((data_dir / "exceptions").glob("*.json"))
             self.assertEqual(len(exceptions), 1)
@@ -181,45 +238,13 @@ class PublicationRelationsTest(unittest.TestCase):
             self.assertEqual(exception["candidate_source_items"], ["act:a", "act:b"])
             self.assertFalse((Path(temporary_directory) / "data" / "relations").exists())
 
-    def test_relation_discovery_and_acquisition_do_not_share_item_records(self):
-        metadata = {
-            "adapter_version": "fixture/1",
-            "captured_at": "2026-09-28T03:19:57Z",
-            "declared_act_identity": "Постановление Правительства РФ № 1871",
-            "declared_edition_label": "as published",
-            "external_id": "0001202511280030",
-            "media_type": "application/pdf",
-            "rights_status": "Official publication replay fixture",
-            "source_system": "publication.pravo.gov.ru",
-            "source_url": "http://publication.pravo.gov.ru/document/0001202511280030",
-        }
+    def test_missing_acquired_source_item_is_rejected_before_output(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory) / "data"
+            with self.assertRaisesRegex(ValueError, "acquired source item not found"):
+                reconcile_publication_relations(FIXTURE, data_dir)
 
-        for acquisition_first in (False, True):
-            with self.subTest(acquisition_first=acquisition_first):
-                with tempfile.TemporaryDirectory() as temporary_directory:
-                    root = Path(temporary_directory)
-                    data_dir = root / "data"
-                    asset_path = root / "publication.pdf"
-                    metadata_path = root / "metadata.json"
-                    asset_path.write_bytes(b"%PDF-1.4\nfixture\n")
-                    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
-
-                    if acquisition_first:
-                        acquisition = acquire_fixture(asset_path, metadata_path, data_dir)
-                    reconciliation = reconcile_publication_relations(FIXTURE, data_dir)
-                    if not acquisition_first:
-                        acquisition = acquire_fixture(asset_path, metadata_path, data_dir)
-
-                    self.assertEqual(acquisition["result"], "new")
-                    self.assertEqual(reconciliation["relation_count"], 3)
-                    acquired_item = json.loads(
-                        next((data_dir / "items").glob("*.json")).read_text(encoding="utf-8")
-                    )
-                    self.assertIn("latest_successful_asset", acquired_item)
-                    self.assertEqual(
-                        len(list((data_dir / "relation-items").glob("*.json"))),
-                        4,
-                    )
+            self.assertFalse(data_dir.exists())
 
     def test_invalid_evidence_is_rejected_before_any_output(self):
         original = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -242,6 +267,33 @@ class PublicationRelationsTest(unittest.TestCase):
                         reconcile_publication_relations(claims_path, data_dir)
 
                     self.assertFalse(data_dir.exists())
+
+    def _acquire_publication(self, data_dir: Path) -> None:
+        replay = json.loads(REPLAY.read_text(encoding="utf-8"))
+        card_url = replay["provenance"]["card_url"]
+        asset_url = replay["provenance"]["asset_url"]
+        responses = [
+            ReplayResponse(
+                json.dumps(replay["card"], ensure_ascii=False).encode("utf-8"),
+                card_url,
+                replay["card_headers"],
+            ),
+            ReplayResponse(
+                base64.b64decode(replay["asset"]["body_base64"]),
+                asset_url,
+                replay["asset"]["headers"],
+            ),
+        ]
+        with patch(
+            "legal_rag.sources.publication_pravo.urlopen",
+            side_effect=responses,
+        ):
+            result = acquire_publication(
+                PublicationPravoConnector(timeout=1),
+                replay["card"]["eoNumber"],
+                data_dir,
+            )
+        self.assertEqual(result["result"], "new")
 
 
 if __name__ == "__main__":
