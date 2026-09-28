@@ -223,7 +223,11 @@ class PublicationPravoTest(unittest.TestCase):
 
     def test_unparsed_amendment_target_remains_an_unresolved_source_claim(self):
         replay = json.loads(json.dumps(self.replay))
-        replay["card"]["name"] = "О внесении изменений в отдельные акты Правительства Российской Федерации"
+        replay["card"]["name"] = (
+            "О внесении изменений в постановление Правительства Российской Федерации "
+            "от 6 мая 2011 г. № 354 и постановление Правительства Российской Федерации "
+            "от 13 августа 2006 г. № 491"
+        )
         replay["card"]["complexName"] = replay["card"]["name"]
         card_url = replay["provenance"]["card_url"]
         responses = [
