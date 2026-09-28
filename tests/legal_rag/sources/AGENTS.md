@@ -8,6 +8,9 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
 - Keep fixture provenance, capture time, rights note, and expected raw SHA-256 together.
 - The `actual` replay is synthetic: preserve the observed response shape and official
   act metadata, but do not embed the portal's full consolidated legal text.
+- The `legislation-russia` replay is a synthetic Windows-1251 excerpt of the observed
+  ПП РФ № 354 response. Keep its nested secondary `<title>` regression and do not
+  commit the full live consolidated text.
 - Verify media type from fixture bytes and archive both raw publication-card JSON and
   the original document asset; failure assertions include the attempted source URL.
 - Test the observable run report and persisted provenance, not private parsing helpers.

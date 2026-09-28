@@ -12,6 +12,12 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Archive the `actual` card, redactions response, and consolidated-text response as
   separate immutable assets. Select only one complete official current edition; its
   source-declared date/label is not verified `valid_from` evidence.
+- `LegislationRussiaConnector` supports the M0-06 ПП РФ № 354 pilot by document ID
+  `102147807` through the public `doc_itself` route on the portal's HTTP origin. Do
+  not add HTTPS fallback or follow redirects outside that origin.
+- Archive the original Windows-1251 HTML as the `legislation_document` asset. Use
+  the first document `<title>`, ignore script/style text during identity checks, and
+  do not infer an edition date or temporal coverage from the amendment list.
 - Detect format from content, not filename; retain every fetched response body,
   including publication-card JSON and the document asset, with its own SHA-256.
 - Record source URL, acquisition time, adapter version, declared identity/edition,

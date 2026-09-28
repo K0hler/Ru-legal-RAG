@@ -7,6 +7,7 @@ import tempfile
 import uuid
 
 from .actual_pravo import ActualPravoConnector, ActualPravoFailure
+from .legislation_russia import LegislationRussiaConnector, LegislationRussiaFailure
 from .publication_pravo import PublicationPravoConnector, PublicationPravoFailure
 
 
@@ -107,6 +108,29 @@ def acquire_actual(
     return _persist_success(fetched, data_dir, started_at)
 
 
+def acquire_legislation(
+    connector: LegislationRussiaConnector,
+    document_id: str,
+    data_dir: Path,
+) -> dict[str, str]:
+    started_at = _utc_now()
+    data_dir = Path(data_dir)
+    source_item = f"{connector.source_system}:{document_id}"
+    try:
+        fetched = connector.fetch(document_id)
+    except LegislationRussiaFailure as error:
+        return _record_failed_run(
+            data_dir=data_dir,
+            source=connector.source_system,
+            source_item=source_item,
+            adapter_version=connector.adapter_version,
+            request_cursor=document_id,
+            started_at=started_at,
+            error=error.as_record(),
+        )
+    return _persist_success(fetched, data_dir, started_at)
+
+
 def _persist_success(
     fetched: dict[str, object],
     data_dir: Path,
@@ -114,6 +138,7 @@ def _persist_success(
 ) -> dict[str, str]:
     raw_bytes = fetched["raw_bytes"]
     raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    raw_asset_role = fetched.get("raw_asset_role")
     publication_card_bytes = fetched.get("publication_card_bytes")
     publication_card_sha256 = (
         hashlib.sha256(publication_card_bytes).hexdigest()
@@ -125,6 +150,8 @@ def _persist_success(
         asset["role"]: hashlib.sha256(asset["raw_bytes"]).hexdigest()
         for asset in supporting_assets
     }
+    if raw_asset_role is not None:
+        supporting_asset_sha256s[raw_asset_role] = raw_sha256
     source_item = f"{fetched['source_system']}:{fetched['external_id']}"
     item_id = hashlib.sha256(source_item.encode("utf-8")).hexdigest()
 
@@ -197,6 +224,7 @@ def _persist_success(
         rights_status=fetched["rights_status"],
         source_url=fetched["source_url"],
         transport_metadata=fetched["transport_metadata"],
+        role=raw_asset_role,
     )
     if publication_card_bytes is not None:
         _persist_asset(

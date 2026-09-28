@@ -199,6 +199,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-04
 **User stories:** 8–10, 21
+**Implementation status:** completed and verified offline and by explicit live smoke on 28.09.2026
 
 Acquire and reconcile one Government decree candidate through «Законодательство России», using the same domain contracts and reports as other sources.
 

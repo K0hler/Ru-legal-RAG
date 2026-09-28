@@ -3,8 +3,14 @@ import json
 from pathlib import Path
 import sys
 
-from .acquisition import acquire_actual, acquire_fixture, acquire_publication
+from .acquisition import (
+    acquire_actual,
+    acquire_fixture,
+    acquire_legislation,
+    acquire_publication,
+)
 from .actual_pravo import ActualPravoConnector
+from .legislation_russia import LegislationRussiaConnector
 from .publication_pravo import PublicationPravoConnector
 from .relations import reconcile_publication_relations
 
@@ -24,6 +30,10 @@ def main(argv: list[str] | None = None) -> int:
     actual.add_argument("--document-hash", required=True)
     actual.add_argument("--data-dir", type=Path, required=True)
     actual.add_argument("--timeout", type=float, default=20.0)
+    legislation = commands.add_parser("acquire-legislation")
+    legislation.add_argument("--document-id", required=True)
+    legislation.add_argument("--data-dir", type=Path, required=True)
+    legislation.add_argument("--timeout", type=float, default=20.0)
     relations = commands.add_parser("reconcile-relations")
     relations.add_argument("--claims", type=Path, required=True)
     relations.add_argument("--data-dir", type=Path, required=True)
@@ -41,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
         result = acquire_actual(
             ActualPravoConnector(timeout=arguments.timeout),
             arguments.document_hash,
+            arguments.data_dir,
+        )
+    elif arguments.command == "acquire-legislation":
+        result = acquire_legislation(
+            LegislationRussiaConnector(timeout=arguments.timeout),
+            arguments.document_id,
             arguments.data_dir,
         )
     else:

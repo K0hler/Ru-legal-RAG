@@ -1,0 +1,16 @@
+{
+  "body": "<!doctype html><html><head><meta charset=\"windows-1251\"><title>О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов</title></head><body><p>ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ</p><p>ПОСТАНОВЛЕНИЕ</p><p>от 6 мая 2011 г. № 354</p><p>МОСКВА</p><h1>О предоставлении коммунальных услуг собственникам и пользователям помещений в многоквартирных домах и жилых домов</h1><p>(В редакции постановлений Правительства Российской Федерации)</p><svg><title>Complex</title></svg></body></html>",
+  "document_id": "102147807",
+  "expected_sha256": "4ab8b62df08a1cba3685a1f0afca0b1cbd4fdd470fe73404b3e8c1d224a88e00",
+  "headers": {
+    "Content-Length": "537",
+    "Content-Type": "text/html; charset=windows-1251"
+  },
+  "provenance": {
+    "fixture_kind": "synthetic_replay",
+    "observed_response_bytes": 597738,
+    "observed_at": "2026-09-28T08:45:00Z",
+    "rights_note": "Synthetic excerpt preserving the observed official response shape; full live response remains outside Git.",
+    "source_url": "http://pravo.gov.ru/proxy/ips/?doc_itself=&nd=102147807"
+  }
+}
