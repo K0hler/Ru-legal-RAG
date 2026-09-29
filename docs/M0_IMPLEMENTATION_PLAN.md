@@ -233,6 +233,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-04
 **User stories:** 8–10, 19–21
+**Implementation status:** completed and verified offline on 29.09.2026
 
 Produce a serialized `EditionCandidate` for one reconciled act that M1 can consume without importing connector internals or mistaking source claims for verified legal facts.
 

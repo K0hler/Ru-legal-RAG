@@ -58,5 +58,14 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   match the claim's current asset-role pointer, asset metadata, source URL, and
   archived raw bytes; membership in asset history alone is insufficient.
 - Never infer legal applicability, reconstruct amendments by meaning, or delete the last approved asset after a source failure.
+- Build an M1 handoff only from a persisted reconciliation containing exactly one
+  evidence-backed `edition_candidate -> consolidates -> act` path. Serialize the
+  shared allowlist under `candidates/`; connector transport fields stay in source
+  records and never enter the handoff.
+- Candidate claims cite archived asset SHA-256 values and relation IDs. Validate
+  archived bytes before writing the candidate and keep unknown temporal coverage
+  explicit.
+- A candidate is `unreviewed` unless a separate decision names the `Legal Reviewer`
+  role, reviewer, time, rationale, candidate scope, and known asset/relation evidence.
 - Verify source terms and rate limits before enabling bulk acquisition.
 

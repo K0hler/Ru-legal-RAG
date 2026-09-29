@@ -10,6 +10,7 @@ from .acquisition import (
     acquire_publication,
 )
 from .actual_pravo import ActualPravoConnector
+from .handoff import build_edition_candidate
 from .legislation_russia import LegislationRussiaConnector
 from .publication_pravo import PublicationPravoConnector
 from .relations import reconcile_publication_relations
@@ -37,6 +38,10 @@ def main(argv: list[str] | None = None) -> int:
     relations = commands.add_parser("reconcile-relations")
     relations.add_argument("--claims", type=Path, required=True)
     relations.add_argument("--data-dir", type=Path, required=True)
+    candidate = commands.add_parser("build-candidate")
+    candidate.add_argument("--reconciliation", type=Path, required=True)
+    candidate.add_argument("--data-dir", type=Path, required=True)
+    candidate.add_argument("--review-decision", type=Path)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "acquire-fixture":
@@ -59,8 +64,14 @@ def main(argv: list[str] | None = None) -> int:
             arguments.document_hash,
             arguments.data_dir,
         )
-    else:
+    elif arguments.command == "reconcile-relations":
         result = reconcile_publication_relations(arguments.claims, arguments.data_dir)
+    else:
+        result = build_edition_candidate(
+            arguments.reconciliation,
+            arguments.data_dir,
+            arguments.review_decision,
+        )
     print(json.dumps(result, sort_keys=True))
     return int(result["result"] == "failed")
 

@@ -2,7 +2,7 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-M0-01 through M0-06 are implemented. The fixture-backed path and the
+M0-01 through M0-08 are implemented. The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
 `new`, `unchanged`, `changed`, or `failed` without losing the latest successful
 asset. Changed runs record the old and new SHA-256 without copying raw content into
@@ -19,6 +19,9 @@ verified temporal coverage.
 `documenttext` response separately for the ПП РФ № 354 pilot. It binds the text to
 the card's `hash`, `nd`, `baseid`, and `rdk`, preserves the source-declared edition
 date and label, and keeps verified temporal coverage explicitly unresolved.
+The `build-candidate` handoff serializes one reconciled edition candidate with
+allowlisted source evidence and an explicit review gate, without connector transport
+fields or inferred legal applicability.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -42,6 +45,10 @@ python -m legal_rag.sources acquire-actual `
 python -m legal_rag.sources acquire-legislation `
   --document-hash c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663 `
   --data-dir data/m0-06
+
+python -m legal_rag.sources build-candidate `
+  --reconciliation data/m0-08/reconciliations/<reconciliation-id>.json `
+  --data-dir data/m0-08
 ```
 
 Run its offline acceptance tests with:
