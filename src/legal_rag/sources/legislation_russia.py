@@ -7,18 +7,31 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from .transport import RequestMeter
 
-_APPROVED_DOCUMENT_HASH = (
-    "c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663"
-)
+
 _DOCUMENT_HASH = re.compile(r"[0-9a-f]{64}")
-_ACT_EXTERNAL_ID = "government-decree:2011-05-06:354"
-_TITLE = (
-    "О предоставлении коммунальных услуг собственникам и пользователям помещений "
-    "в многоквартирных домах и жилых домов"
-)
-_ADOPTION = "Постановление Правительства Российской Федерации от 06.05.2011 № 354"
-_DECLARED_ACT_IDENTITY = f'{_ADOPTION} "{_TITLE}"'
+_APPROVED_DOCUMENTS = {
+    "c0f54c3af0cc8f1b02f48f62483afb358baeb55269d4be8e00e69458ebd3a663": {
+        "act_external_id": "government-decree:2011-05-06:354",
+        "adoption": "Постановление Правительства Российской Федерации от 06.05.2011 № 354",
+        "title": (
+            "О предоставлении коммунальных услуг собственникам и пользователям "
+            "помещений в многоквартирных домах и жилых домов"
+        ),
+    },
+    "79a4eeb726366b2c4d5b7c72cd6185c5ca569a8ea77fd7a2e96c0582d95ae4dd": {
+        "act_external_id": "government-decree:2006-08-13:491",
+        "adoption": "Постановление Правительства Российской Федерации от 13.08.2006 № 491",
+        "title": (
+            "Об утверждении Правил содержания общего имущества в многоквартирном доме "
+            "и Правил изменения размера платы за содержание жилого помещения в случае "
+            "оказания услуг и выполнения работ по управлению, содержанию и ремонту общего "
+            "имущества в многоквартирном доме ненадлежащего качества и (или) с перерывами, "
+            "превышающими установленную продолжительность"
+        ),
+    },
+}
 
 
 class LegislationRussiaFailure(Exception):
@@ -85,15 +98,21 @@ def urlopen(request: Request, timeout: float):
 
 class LegislationRussiaConnector:
     source_system = "pravo.gov.ru/legislation-russia"
-    adapter_version = "legislation-russia/2"
+    adapter_version = "legislation-russia/3"
     base_url = "http://ips.pravo.gov.ru"
     rights_status = "Official legal act; verify access terms before bulk acquisition"
     _api_base = f"{base_url}/api/ips/legislation"
 
-    def __init__(self, timeout: float = 20.0) -> None:
+    def __init__(self, timeout: float = 20.0, request_interval: float = 0.0) -> None:
         self.timeout = timeout
+        self._meter = RequestMeter(request_interval)
+
+    @property
+    def metrics(self) -> dict[str, int]:
+        return self._meter.metrics
 
     def fetch(self, document_hash: str) -> dict[str, object]:
+        self._meter.reset()
         if _DOCUMENT_HASH.fullmatch(document_hash) is None:
             raise LegislationRussiaFailure(
                 "invalid_external_id",
@@ -101,10 +120,11 @@ class LegislationRussiaConnector:
                 retryable=False,
                 source_url=self.base_url,
             )
-        if document_hash != _APPROVED_DOCUMENT_HASH:
+        specification = _APPROVED_DOCUMENTS.get(document_hash)
+        if specification is None:
             raise LegislationRussiaFailure(
                 "unsupported_document",
-                "M0-06 supports only the approved Government-decree pilot document",
+                "M0-09 supports only the approved Government-decree pilot documents",
                 retryable=False,
                 source_url=self.base_url,
             )
@@ -115,7 +135,7 @@ class LegislationRussiaConnector:
         )
         card_bytes, card_transport = self._get(card_url)
         card = self._parse_json(card_bytes, "invalid_card", card_url)
-        edition = self._validate_card(card, document_hash, card_url)
+        edition = self._validate_card(card, document_hash, specification, card_url)
 
         text_url = f"{self._api_base}/documenttext?" + urlencode(
             {
@@ -130,21 +150,22 @@ class LegislationRussiaConnector:
 
         card_sha256 = hashlib.sha256(card_bytes).hexdigest()
         edition_date = datetime.strptime(edition["date"], "%d.%m.%Y").date().isoformat()
-        act_source_item = f"declared-act:{_ACT_EXTERNAL_ID}"
+        act_source_item = f"declared-act:{specification['act_external_id']}"
         source_item = f"{self.source_system}:{document_hash}"
+        declared_act_identity = f'{specification["adoption"]} "{specification["title"]}"'
 
         return {
             "adapter_version": self.adapter_version,
             "captured_at": _utc_now(),
-            "declared_act_identity": _DECLARED_ACT_IDENTITY,
+            "declared_act_identity": declared_act_identity,
             "declared_edition_label": edition["redname"],
             "declared_publication": None,
             "discovered_source_items": [
                 {
-                    "declared_act_identity": _DECLARED_ACT_IDENTITY,
-                    "external_id": _ACT_EXTERNAL_ID,
+                    "declared_act_identity": declared_act_identity,
+                    "external_id": specification["act_external_id"],
                     "item_kind": "act",
-                    "label": _DECLARED_ACT_IDENTITY,
+                    "label": declared_act_identity,
                     "source_item": act_source_item,
                     "source_system": "declared-act",
                     "source_url": source_url,
@@ -157,7 +178,7 @@ class LegislationRussiaConnector:
             },
             "external_id": document_hash,
             "item_kind": "edition_candidate",
-            "label": f"Legislation Russia candidate: {_DECLARED_ACT_IDENTITY}",
+            "label": f"Legislation Russia candidate: {declared_act_identity}",
             "media_type": "application/json",
             "raw_asset_role": "legislation_text",
             "raw_bytes": text_bytes,
@@ -214,9 +235,11 @@ class LegislationRussiaConnector:
                 "User-Agent": "LegalRAG-M0/0.6",
             },
         )
+        self._meter.before_request()
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 body = response.read()
+                self._meter.record_response(body)
                 status = response.status
                 response_url = response.geturl()
                 headers = {
@@ -300,14 +323,18 @@ class LegislationRussiaConnector:
     def _validate_card(
         card: dict[str, object],
         document_hash: str,
+        specification: dict[str, str],
         source_url: str,
     ) -> dict[str, object]:
         try:
             if card["hash"] != document_hash:
                 raise ValueError("card identity mismatch")
-            if card["adoption"] != _ADOPTION or card["type"] != "Постановление":
+            if (
+                card["adoption"] != specification["adoption"]
+                or card["type"] != "Постановление"
+            ):
                 raise ValueError("card adoption mismatch")
-            if card["name"] != _TITLE:
+            if card["name"] != specification["title"]:
                 raise ValueError("card title mismatch")
             if not isinstance(card["nd"], str) or not card["nd"].isdigit():
                 raise ValueError("card nd must be a numeric string")

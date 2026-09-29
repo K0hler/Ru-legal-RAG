@@ -44,6 +44,59 @@ class ReplayResponse:
 
 
 class ActualPravoTest(unittest.TestCase):
+    def test_housing_code_uses_the_approved_code_identity(self):
+        fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        document_hash = (
+            "8b4a1920bd1b392ecc9684dc74ddebb02da5af465df06bc4a7ff8c2baf3915ce"
+        )
+        card = json.loads(json.dumps(fixture["card"]))
+        card.update(
+            {
+                "adoptions": [
+                    {
+                        "organ": "",
+                        "onumber": "188-ФЗ",
+                        "odate": "29.12.2004",
+                        "region": "Российской Федерации",
+                        "type": "Кодекс",
+                    }
+                ],
+                "dochash": document_hash,
+                "docid": 80781,
+                "docname": "Жилищный кодекс Российской Федерации",
+                "docpassing": "Кодекс Российской Федерации от 29.12.2004 № 188-ФЗ",
+            }
+        )
+        redactions = json.loads(json.dumps(fixture["redactions"]))
+        redactions.update({"dochash": document_hash, "docid": 80781})
+        bodies = [
+            json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
+            for value in (card, redactions, fixture["redtext"])
+        ]
+        responses = [
+            ReplayResponse(body, "http://actual.pravo.gov.ru/test", fixture["headers"])
+            for body in bodies
+        ]
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            with patch(
+                "legal_rag.sources.actual_pravo.urlopen",
+                side_effect=responses,
+            ):
+                result = acquire_actual(
+                    ActualPravoConnector(timeout=0.01),
+                    document_hash,
+                    data_dir,
+                )
+
+            item = json.loads(next((data_dir / "items").glob("*.json")).read_text("utf-8"))
+            self.assertEqual(result["result"], "new")
+            self.assertEqual(
+                item["relation_claims"][0]["to_candidates"],
+                ["declared-act:code:2004-12-29:188-ФЗ"],
+            )
+
     def test_cli_preserves_candidate_evidence_and_links_it_to_publication_chain(self):
         fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
         document_hash = fixture["document_hash"]
@@ -95,6 +148,14 @@ class ActualPravoTest(unittest.TestCase):
                     results.append(json.loads(stdout.getvalue()))
 
             self.assertEqual([result["result"] for result in results], ["new", "unchanged"])
+            report = json.loads(Path(results[0]["report"]).read_text(encoding="utf-8"))
+            self.assertEqual(
+                report["metrics"],
+                {
+                    "bytes_received": sum(map(len, raw_responses.values())),
+                    "request_count": 3,
+                },
+            )
             self.assertEqual(len(list((data_dir / "raw").iterdir())), 3)
             for name, body in raw_responses.items():
                 sha256 = fixture["expected_sha256"][name]
@@ -350,6 +411,13 @@ class ActualPravoTest(unittest.TestCase):
         cases = (
             ("invalid_id", "not-a-hash", [], "invalid_external_id", False),
             (
+                "unsupported_document",
+                "0" * 64,
+                [],
+                "unsupported_document",
+                False,
+            ),
+            (
                 "invalid_json",
                 document_hash,
                 [ReplayResponse(b"not json", "http://actual.pravo.gov.ru/card", fixture["headers"])],
@@ -422,7 +490,7 @@ class ActualPravoTest(unittest.TestCase):
                 self.assertEqual(len(list((data_dir / "exceptions").glob("*.json"))), 1)
                 self.assertFalse((data_dir / "items").exists())
                 self.assertFalse((data_dir / "raw").exists())
-                if case == "invalid_id":
+                if case in {"invalid_id", "unsupported_document"}:
                     mocked_urlopen.assert_not_called()
 
 

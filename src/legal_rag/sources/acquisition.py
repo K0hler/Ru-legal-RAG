@@ -59,6 +59,7 @@ def acquire_fixture(
         },
         data_dir,
         started_at,
+        {"bytes_received": len(raw_bytes), "request_count": 0},
     )
 
 
@@ -81,8 +82,9 @@ def acquire_publication(
             request_cursor=eo_number,
             started_at=started_at,
             error=error.as_record(),
+            metrics=connector.metrics,
         )
-    return _persist_success(fetched, data_dir, started_at)
+    return _persist_success(fetched, data_dir, started_at, connector.metrics)
 
 
 def acquire_actual(
@@ -104,8 +106,9 @@ def acquire_actual(
             request_cursor=document_hash,
             started_at=started_at,
             error=error.as_record(),
+            metrics=connector.metrics,
         )
-    return _persist_success(fetched, data_dir, started_at)
+    return _persist_success(fetched, data_dir, started_at, connector.metrics)
 
 
 def acquire_legislation(
@@ -127,14 +130,16 @@ def acquire_legislation(
             request_cursor=document_hash,
             started_at=started_at,
             error=error.as_record(),
+            metrics=connector.metrics,
         )
-    return _persist_success(fetched, data_dir, started_at)
+    return _persist_success(fetched, data_dir, started_at, connector.metrics)
 
 
 def _persist_success(
     fetched: dict[str, object],
     data_dir: Path,
     started_at: str,
+    metrics: dict[str, int],
 ) -> dict[str, str]:
     raw_bytes = fetched["raw_bytes"]
     raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
@@ -176,6 +181,7 @@ def _persist_success(
                 "source_url": fetched["source_url"],
                 "stage": "acquisition",
             },
+            metrics=metrics,
         )
 
     previous_raw_sha256 = previous_item["latest_successful_asset"] if previous_item else None
@@ -315,6 +321,7 @@ def _persist_success(
         "counts": counts,
         "errors": [],
         "finished_at": _utc_now(),
+        "metrics": metrics,
         "request_cursor": fetched["request_cursor"],
         "result": result,
         "run_id": run_id,
@@ -342,6 +349,7 @@ def _record_failed_run(
     request_cursor: str,
     started_at: str,
     error: dict[str, object],
+    metrics: dict[str, int],
 ) -> dict[str, str]:
     run_id = str(uuid.uuid4())
     exception_id = str(uuid.uuid4())
@@ -370,6 +378,7 @@ def _record_failed_run(
             "errors": [error],
             "exception_ids": [exception_id],
             "finished_at": created_at,
+            "metrics": metrics,
             "request_cursor": request_cursor,
             "result": "failed",
             "run_id": run_id,

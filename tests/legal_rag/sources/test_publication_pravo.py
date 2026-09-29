@@ -97,6 +97,14 @@ class PublicationPravoTest(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertEqual(result["result"], "new")
+            report = json.loads(Path(result["report"]).read_text(encoding="utf-8"))
+            self.assertEqual(
+                report["metrics"],
+                {
+                    "bytes_received": len(card_bytes) + len(asset_bytes),
+                    "request_count": 2,
+                },
+            )
             self.assertEqual(
                 result["source_item"],
                 f"publication.pravo.gov.ru:{self.eo_number}",

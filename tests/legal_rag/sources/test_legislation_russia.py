@@ -44,6 +44,71 @@ class ReplayResponse:
 
 
 class LegislationRussiaTest(unittest.TestCase):
+    def test_pp491_uses_the_approved_government_decree_identity(self):
+        fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        document_hash = (
+            "79a4eeb726366b2c4d5b7c72cd6185c5ca569a8ea77fd7a2e96c0582d95ae4dd"
+        )
+        title = (
+            "Об утверждении Правил содержания общего имущества в многоквартирном доме "
+            "и Правил изменения размера платы за содержание жилого помещения в случае "
+            "оказания услуг и выполнения работ по управлению, содержанию и ремонту общего "
+            "имущества в многоквартирном доме ненадлежащего качества и (или) с перерывами, "
+            "превышающими установленную продолжительность"
+        )
+        card = json.loads(json.dumps(fixture["card"]))
+        card.update(
+            {
+                "actualrdk": 20,
+                "adoption": (
+                    "Постановление Правительства Российской Федерации "
+                    "от 13.08.2006 № 491"
+                ),
+                "hash": document_hash,
+                "name": title,
+                "nd": "1000000000102108472",
+            }
+        )
+        card["redactions"][0].update(
+            {
+                "date": "01.09.2025",
+                "id": 20,
+                "redname": "на 01.09.2025, актуальная",
+            }
+        )
+        documenttext = {
+            **fixture["documenttext"],
+            "docid": card["nd"],
+            "rdk": 20,
+        }
+        bodies = [
+            json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
+            for value in (card, documenttext)
+        ]
+        responses = [
+            ReplayResponse(body, "http://ips.pravo.gov.ru/test", fixture["headers"])
+            for body in bodies
+        ]
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            with patch(
+                "legal_rag.sources.legislation_russia.urlopen",
+                side_effect=responses,
+            ):
+                result = acquire_legislation(
+                    LegislationRussiaConnector(timeout=0.01),
+                    document_hash,
+                    data_dir,
+                )
+
+            item = json.loads(next((data_dir / "items").glob("*.json")).read_text("utf-8"))
+            self.assertEqual(result["result"], "new")
+            self.assertEqual(
+                item["relation_claims"][0]["to_candidates"],
+                ["declared-act:government-decree:2006-08-13:491"],
+            )
+
     def test_acquisition_archives_card_and_selected_edition_without_inventing_coverage(
         self,
     ):
@@ -94,6 +159,14 @@ class LegislationRussiaTest(unittest.TestCase):
 
             self.assertEqual(
                 [result["result"] for result in results], ["new", "unchanged"]
+            )
+            report = json.loads(Path(results[0]["report"]).read_text(encoding="utf-8"))
+            self.assertEqual(
+                report["metrics"],
+                {
+                    "bytes_received": sum(map(len, raw_responses.values())),
+                    "request_count": 2,
+                },
             )
             self.assertEqual(len(list((data_dir / "raw").iterdir())), 2)
             for name, body in raw_responses.items():

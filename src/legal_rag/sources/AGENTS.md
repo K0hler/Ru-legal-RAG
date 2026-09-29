@@ -6,14 +6,15 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - `PublicationPravoConnector` uses the portal's HTTP-only read API. Do not attempt
   HTTPS fallback, silently switch protocols, hard-code IP addresses, or add an
   undocumented endpoint. Follow redirects only within the same HTTP origin.
-- `ActualPravoConnector` supports the 59-ФЗ pilot by its 64-character portal hash.
+- `ActualPravoConnector` supports the ЖК РФ and 59-ФЗ pilots by their approved
+  64-character portal hashes.
   Keep its undocumented JSON routes private to the adapter, retain the public UI URL
   in source claims, and record exact request URLs only as transport provenance.
 - Archive the `actual` card, redactions response, and consolidated-text response as
   separate immutable assets. Select only one complete official current edition; its
   source-declared date/label is not verified `valid_from` evidence.
-- `LegislationRussiaConnector` supports the M0-06 ПП РФ № 354 pilot by its
-  64-character public-page hash. Keep the JSON card and `documenttext` routes
+- `LegislationRussiaConnector` supports the ПП РФ № 354 and № 491 pilots by their
+  approved 64-character public-page hashes. Keep the JSON card and `documenttext` routes
   private to the adapter, retain the public search URL in source claims, and do not
   follow redirects outside the portal's HTTP origin.
 - The connector targets the new `ips.pravo.gov.ru` test bank only. Treat the
@@ -65,6 +66,13 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - Candidate claims cite archived asset SHA-256 values and relation IDs. Validate
   archived bytes before writing the candidate and keep unknown temporal coverage
   explicit.
+- The M0-09 pilot is exactly five acts and 14 source items: four consolidated
+  candidates plus the SanPiN original and nine located amendment publications.
+  Run two sequential passes with one shared connector per source so the
+  one-request-per-second limit spans adjacent items. Retain per-attempt reports,
+  cap retryable failures at three attempts with backoff, and aggregate requests,
+  received bytes, elapsed time, retries, failures, raw-asset growth, and coverage
+  gaps under `pilot_runs/`.
 - A candidate is `unreviewed` unless a separate decision names the `Legal Reviewer`
   role, reviewer, time, rationale, candidate scope, and known asset/relation evidence.
 - Verify source terms and rate limits before enabling bulk acquisition.

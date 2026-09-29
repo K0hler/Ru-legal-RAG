@@ -13,6 +13,7 @@ from .actual_pravo import ActualPravoConnector
 from .handoff import build_edition_candidate
 from .legislation_russia import LegislationRussiaConnector
 from .publication_pravo import PublicationPravoConnector
+from .pilot import run_pilot
 from .relations import reconcile_publication_relations
 
 
@@ -42,6 +43,9 @@ def main(argv: list[str] | None = None) -> int:
     candidate.add_argument("--reconciliation", type=Path, required=True)
     candidate.add_argument("--data-dir", type=Path, required=True)
     candidate.add_argument("--review-decision", type=Path)
+    pilot = commands.add_parser("run-pilot")
+    pilot.add_argument("--data-dir", type=Path, required=True)
+    pilot.add_argument("--timeout", type=float, default=20.0)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "acquire-fixture":
@@ -66,12 +70,14 @@ def main(argv: list[str] | None = None) -> int:
         )
     elif arguments.command == "reconcile-relations":
         result = reconcile_publication_relations(arguments.claims, arguments.data_dir)
-    else:
+    elif arguments.command == "build-candidate":
         result = build_edition_candidate(
             arguments.reconciliation,
             arguments.data_dir,
             arguments.review_decision,
         )
+    else:
+        result = run_pilot(arguments.data_dir, arguments.timeout)
     print(json.dumps(result, sort_keys=True))
     return int(result["result"] == "failed")
 

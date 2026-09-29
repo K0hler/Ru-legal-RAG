@@ -250,6 +250,7 @@ Acceptance:
 **Type:** AFK
 **Blocked by:** M0-03, M0-05, M0-06, M0-07, M0-08
 **User stories:** 1–10, 31–32
+**Implementation status:** completed and verified offline and live on 29.09.2026
 
 Run the complete M0 acquisition path for all five pilot acts twice and publish one reproducible report of coverage, outcomes, exceptions and acquisition cost.
 
@@ -261,6 +262,14 @@ Acceptance:
 - report identifies missing consolidated editions, amendments and temporal evidence;
 - elapsed time, request counts, bytes, retries and failures are recorded;
 - raw assets remain outside Git.
+
+Live verification used 14 source items across the five acts. The first pass
+reported 14 `new`; the second reported 14 `unchanged`, added zero raw assets and
+reported no duplicate source items. The two passes made 60 requests, received
+21,306,570 bytes in 58.749 seconds, and required no retry. The generated report
+keeps SanPiN consolidated coverage, four amendment chains, and temporal evidence
+for all five acts explicitly unresolved rather than treating source labels as
+legal applicability.
 
 ### M0-10 — Legal review of pilot candidates
 

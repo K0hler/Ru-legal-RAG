@@ -7,6 +7,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from .transport import RequestMeter
+
 
 _RUSSIAN_MONTHS = {
     "января": 1,
@@ -97,10 +99,16 @@ class PublicationPravoConnector:
     base_url = "http://publication.pravo.gov.ru"
     rights_status = "Official legal act; verify access terms before bulk acquisition"
 
-    def __init__(self, timeout: float = 20.0) -> None:
+    def __init__(self, timeout: float = 20.0, request_interval: float = 0.0) -> None:
         self.timeout = timeout
+        self._meter = RequestMeter(request_interval)
+
+    @property
+    def metrics(self) -> dict[str, int]:
+        return self._meter.metrics
 
     def fetch(self, eo_number: str) -> dict[str, object]:
+        self._meter.reset()
         if len(eo_number) != 16 or not eo_number.isdigit():
             raise PublicationPravoFailure(
                 "invalid_external_id",
@@ -215,9 +223,11 @@ class PublicationPravoConnector:
                 "User-Agent": "LegalRAG-M0/0.2",
             },
         )
+        self._meter.before_request()
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 body = response.read()
+                self._meter.record_response(body)
                 status = response.status
                 response_url = response.geturl()
                 headers = {

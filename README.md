@@ -2,7 +2,7 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-M0-01 through M0-08 are implemented. The fixture-backed path and the
+M0-01 through M0-09 are implemented. The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
 `new`, `unchanged`, `changed`, or `failed` without losing the latest successful
 asset. Changed runs record the old and new SHA-256 without copying raw content into
@@ -12,13 +12,14 @@ the canonical `items/` lifecycle and writes evidence-backed `publishes` and
 The publication connector uses the portal's documented HTTP read API without a
 protocol fallback.
 `ActualPravoConnector` archives the portal card, declared-editions response, and
-consolidated-text response separately for the 59-ФЗ pilot. It links the candidate
-to the declared act while keeping the source edition date separate from unknown
-verified temporal coverage.
+consolidated-text response separately for the ЖК РФ and 59-ФЗ pilots. It links
+each candidate to the declared act while keeping the source edition date separate
+from unknown verified temporal coverage.
 `LegislationRussiaConnector` archives the portal's JSON card and selected
-`documenttext` response separately for the ПП РФ № 354 pilot. It binds the text to
-the card's `hash`, `nd`, `baseid`, and `rdk`, preserves the source-declared edition
-date and label, and keeps verified temporal coverage explicitly unresolved.
+`documenttext` response separately for the ПП РФ № 354 and № 491 pilots. It binds
+the text to the card's `hash`, `nd`, `baseid`, and `rdk`, preserves the
+source-declared edition date and label, and keeps verified temporal coverage
+explicitly unresolved.
 The `build-candidate` handoff serializes one reconciled edition candidate with
 allowlisted source evidence and an explicit review gate, without connector transport
 fields or inferred legal applicability.
@@ -49,6 +50,9 @@ python -m legal_rag.sources acquire-legislation `
 python -m legal_rag.sources build-candidate `
   --reconciliation data/m0-08/reconciliations/<reconciliation-id>.json `
   --data-dir data/m0-08
+
+python -m legal_rag.sources run-pilot `
+  --data-dir data/m0-09
 ```
 
 Run its offline acceptance tests with:

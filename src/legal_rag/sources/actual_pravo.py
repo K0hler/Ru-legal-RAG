@@ -7,8 +7,26 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from .transport import RequestMeter
+
 
 _DOCUMENT_HASH = re.compile(r"[0-9a-f]{64}")
+_APPROVED_DOCUMENTS = {
+    "4c8dcb690700cdc95a209ca40db2bb177cfc85916d6cfef83439b8696fbf546f": {
+        "act_external_id": "federal-law:2006-05-02:59-ФЗ",
+        "adoption_date": "02.05.2006",
+        "adoption_number": "59-ФЗ",
+        "adoption_type": "Федеральный закон",
+        "title": "О порядке рассмотрения обращений граждан Российской Федерации",
+    },
+    "8b4a1920bd1b392ecc9684dc74ddebb02da5af465df06bc4a7ff8c2baf3915ce": {
+        "act_external_id": "code:2004-12-29:188-ФЗ",
+        "adoption_date": "29.12.2004",
+        "adoption_number": "188-ФЗ",
+        "adoption_type": "Кодекс",
+        "title": "Жилищный кодекс Российской Федерации",
+    },
+}
 
 
 class ActualPravoFailure(Exception):
@@ -75,21 +93,35 @@ def urlopen(request: Request, timeout: float):
 
 class ActualPravoConnector:
     source_system = "actual.pravo.gov.ru"
-    adapter_version = "actual-pravo/1"
+    adapter_version = "actual-pravo/2"
     base_url = "http://actual.pravo.gov.ru"
     rights_status = (
         "Official consolidated-text candidate; verify access terms before bulk acquisition"
     )
     _api_base = "http://actual.pravo.gov.ru:8000/api/ebpi"
 
-    def __init__(self, timeout: float = 20.0) -> None:
+    def __init__(self, timeout: float = 20.0, request_interval: float = 0.0) -> None:
         self.timeout = timeout
+        self._meter = RequestMeter(request_interval)
+
+    @property
+    def metrics(self) -> dict[str, int]:
+        return self._meter.metrics
 
     def fetch(self, document_hash: str) -> dict[str, object]:
+        self._meter.reset()
         if _DOCUMENT_HASH.fullmatch(document_hash) is None:
             raise ActualPravoFailure(
                 "invalid_external_id",
                 "document hash must contain 64 lowercase hexadecimal characters",
+                retryable=False,
+                source_url=self.base_url,
+            )
+        specification = _APPROVED_DOCUMENTS.get(document_hash)
+        if specification is None:
+            raise ActualPravoFailure(
+                "unsupported_document",
+                "M0-09 supports only the approved federal-law and code pilot documents",
                 retryable=False,
                 source_url=self.base_url,
             )
@@ -98,7 +130,7 @@ class ActualPravoConnector:
         card_url = self._url("card/", {"hash": document_hash})
         card_bytes, card_transport = self._get(card_url)
         card = self._parse_json(card_bytes, "invalid_card", card_url)
-        adoption = self._validate_card(card, document_hash, card_url)
+        self._validate_card(card, document_hash, specification, card_url)
 
         redactions_url = self._url(
             "redactions/",
@@ -135,8 +167,7 @@ class ActualPravoConnector:
                 source_url=redtext_url,
             )
 
-        adopted_at = datetime.strptime(adoption["odate"], "%d.%m.%Y").date().isoformat()
-        act_external_id = f"federal-law:{adopted_at}:{adoption['onumber']}"
+        act_external_id = specification["act_external_id"]
         act_source_item = f"declared-act:{act_external_id}"
         source_item = f"{self.source_system}:{document_hash}"
         act_label = f"{card['docpassing']} \"{card['docname']}\""
@@ -238,9 +269,11 @@ class ActualPravoConnector:
                 "User-Agent": "LegalRAG-M0/0.5",
             },
         )
+        self._meter.before_request()
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 body = response.read()
+                self._meter.record_response(body)
                 status = response.status
                 response_url = response.geturl()
                 headers = {
@@ -306,6 +339,7 @@ class ActualPravoConnector:
     def _validate_card(
         card: dict[str, object],
         document_hash: str,
+        specification: dict[str, str],
         source_url: str,
     ) -> dict[str, str]:
         try:
@@ -327,8 +361,13 @@ class ActualPravoConnector:
                 if not isinstance(adoption.get(field), str) or not adoption[field].strip():
                     raise ValueError(f"adoption {field} must be a non-empty string")
             datetime.strptime(adoption["odate"], "%d.%m.%Y")
-            if adoption["type"] != "Федеральный закон":
-                raise ValueError(f"unsupported act type: {adoption['type']}")
+            if (
+                adoption["type"] != specification["adoption_type"]
+                or adoption["odate"] != specification["adoption_date"]
+                or adoption["onumber"] != specification["adoption_number"]
+                or card["docname"] != specification["title"]
+            ):
+                raise ValueError("approved document identity mismatch")
             return adoption
         except (KeyError, TypeError, ValueError) as error:
             raise ActualPravoFailure(
