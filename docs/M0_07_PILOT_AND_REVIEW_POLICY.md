@@ -109,11 +109,13 @@ On 28 September 2026 the product owner approved:
 - review policy: the Legal Reviewer authority and independent-second-decision
   rule stated above.
 
-These decisions complete M0-07. Separately, M0-10 and M0-11 remain blocked
-until people are assigned to the Legal Reviewer role. Bulk acquisition remains
-blocked while source terms and published rate limits are unconfirmed. The
-SanPiN edition candidate remains unresolved until every official amendment and
-its effective date are reconciled.
+These decisions complete M0-07. On 29 September 2026 the product owner
+explicitly accepted the Legal Reviewer role under identifier
+`legal-reviewer-owner`; the resulting decisions are recorded in
+[M0-10 legal review](M0_10_LEGAL_REVIEW.md). Bulk acquisition remains blocked
+while source terms and published rate limits are unconfirmed. The SanPiN
+edition candidate remains unresolved until every official amendment and its
+effective date are reconciled.
 
 ## 6. Acceptance check
 

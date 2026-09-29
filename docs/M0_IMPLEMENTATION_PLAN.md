@@ -276,6 +276,8 @@ legal applicability.
 **Type:** HITL
 **Blocked by:** M0-09
 **User stories:** 8–10, 16, 21, 29, 32
+**Implementation status:** completed on 29.09.2026 with one rejected candidate,
+four unresolved candidates and a documented timing-measurement deviation
 
 Review the five pilot candidates for act identity, declared edition, source relations, temporal evidence and unresolved gaps, and measure the human effort required.
 
@@ -286,6 +288,12 @@ Acceptance:
 - critical gaps prevent approval;
 - review start/finish time and exception handling time are recorded per act;
 - disputed decisions are sent to the second-review path.
+
+The recorded decisions and evidence are in
+[M0-10 legal review](M0_10_LEGAL_REVIEW.md). Human comparison took approximately
+80 minutes. Exact per-act start/finish timestamps and exception-only minutes
+were not collected by the simplified checklist, so that measurement criterion
+is `partial`; no timestamps were inferred after the fact.
 
 ### M0-11 — Working and closed gold-question sets
 

@@ -11,4 +11,7 @@ Scope: every file under `docs/`.
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a
   stronger role.
+- M0-10 keeps human comparison separate from corpus admission: critical
+  amendment, temporal, consolidated-edition, or case-law-relation gaps remain
+  fail-closed even when the reviewer reports the supplied document as “OK”.
 
