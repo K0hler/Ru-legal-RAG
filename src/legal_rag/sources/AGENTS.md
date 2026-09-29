@@ -14,6 +14,9 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - A generic amendment title is insufficient evidence. For scanned official PDFs,
   store OCR as a derived extraction and bind `amends` to the archived PDF hash and
   page. An unmatched monitored target remains a deterministic exception.
+- The OCR code in `discovery.py` is temporary M0 scaffolding. When the shared OCR
+  pipeline is introduced, make discovery consume its normalized output and remove
+  all application-side Poppler/Tesseract calls, dependencies, tests, and documentation.
 - A newer evidence-backed amendment marks affected edition candidates `stale`.
   Candidate handoff must refuse that state until a newer consolidated edition is
   acquired and reviewed. Ordinary source resynchronization must preserve the stale
