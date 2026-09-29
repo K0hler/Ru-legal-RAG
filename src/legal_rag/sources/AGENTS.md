@@ -6,6 +6,18 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
 - `PublicationPravoConnector` uses the portal's HTTP-only read API. Do not attempt
   HTTPS fallback, silently switch protocols, hard-code IP addresses, or add an
   undocumented endpoint. Follow redirects only within the same HTTP origin.
+- M0-10A publication discovery uses the documented `/api/Documents` day window,
+  stores every returned entry once under `publication_events/`, and acquires
+  Government amendment cards/documents through the existing immutable lifecycle.
+  Overlapping windows may add feed observations but must not duplicate or rewrite
+  event identity. Broaden act types only with matching stable identity rules.
+- A generic amendment title is insufficient evidence. For scanned official PDFs,
+  store OCR as a derived extraction and bind `amends` to the archived PDF hash and
+  page. An unmatched monitored target remains a deterministic exception.
+- A newer evidence-backed amendment marks affected edition candidates `stale`.
+  Candidate handoff must refuse that state until a newer consolidated edition is
+  acquired and reviewed. Ordinary source resynchronization must preserve the stale
+  marker and its evidence instead of reconstructing a falsely current candidate.
 - `ActualPravoConnector` supports the ЖК РФ and 59-ФЗ pilots by their approved
   64-character portal hashes.
   Keep its undocumented JSON routes private to the adapter, retain the public UI URL

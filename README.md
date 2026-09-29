@@ -2,7 +2,8 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-M0-01 through M0-09 are implemented. The fixture-backed path and the
+M0-01 through M0-10A are implemented; M0-10 is the recorded human-review step.
+The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
 `new`, `unchanged`, `changed`, or `failed` without losing the latest successful
 asset. Changed runs record the old and new SHA-256 without copying raw content into
@@ -22,7 +23,9 @@ source-declared edition date and label, and keeps verified temporal coverage
 explicitly unresolved.
 The `build-candidate` handoff serializes one reconciled edition candidate with
 allowlisted source evidence and an explicit review gate, without connector transport
-fields or inferred legal applicability.
+fields or inferred legal applicability. `discover-publications` reads the documented
+official day feed, archives amendment cards and PDFs, records evidence-backed targets
+from the official document, and blocks stale candidates from that handoff.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -53,7 +56,15 @@ python -m legal_rag.sources build-candidate `
 
 python -m legal_rag.sources run-pilot `
   --data-dir data/m0-09
+
+python -m legal_rag.sources discover-publications `
+  --date 2026-09-26 `
+  --data-dir data/m0-09
 ```
+
+Scanned amendment PDFs require `pdftoppm` and Tesseract with the `rus` language
+data on `PATH`. OCR is retained as a derived audit artifact; the relation cites
+the immutable official PDF hash and page.
 
 Run its offline acceptance tests with:
 

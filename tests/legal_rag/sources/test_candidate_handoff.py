@@ -126,6 +126,17 @@ class CandidateHandoffTest(unittest.TestCase):
                 "reviewer-1",
             )
 
+    def test_stale_candidate_is_refused(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            reconciliation_path, candidate_item_path, _ = self._write_records(data_dir)
+            candidate = json.loads(candidate_item_path.read_text(encoding="utf-8"))
+            candidate["candidate_status"] = "stale"
+            self._write_json(candidate_item_path, candidate)
+
+            with self.assertRaisesRegex(ValueError, "stale edition candidate"):
+                self._run_cli(reconciliation_path, data_dir)
+
     def _run_cli(
         self,
         reconciliation_path: Path,

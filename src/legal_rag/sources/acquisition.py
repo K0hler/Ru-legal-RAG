@@ -308,6 +308,21 @@ def _persist_success(
                 }
             )
         item["relation_claims"] = relation_claims
+    if previous_item is not None and previous_item.get("candidate_status") == "stale":
+        item["candidate_status"] = "stale"
+        item["candidate_invalidations"] = previous_item["candidate_invalidations"]
+        unresolved = item.setdefault("unresolved_items", [])
+        for blocker in previous_item.get("unresolved_items", []):
+            if blocker.get("reason") == "newer_amendment_detected" and blocker not in unresolved:
+                unresolved.append(blocker)
+        unresolved.sort(
+            key=lambda record: json.dumps(
+                record,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        )
     _write_json(
         item_path,
         item,

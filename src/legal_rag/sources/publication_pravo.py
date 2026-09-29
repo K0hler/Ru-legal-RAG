@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 import hashlib
 import json
 import re
@@ -106,6 +106,108 @@ class PublicationPravoConnector:
     @property
     def metrics(self) -> dict[str, int]:
         return self._meter.metrics
+
+    def fetch_feed(self, publication_date: date, page: int = 1) -> dict[str, object]:
+        self._meter.reset()
+        if not isinstance(publication_date, date):
+            raise PublicationPravoFailure(
+                "invalid_feed_window",
+                "publication date must be a date",
+                retryable=False,
+                source_url=self.base_url,
+            )
+        if type(page) is not int or page <= 0:
+            raise PublicationPravoFailure(
+                "invalid_feed_page",
+                "publication feed page must be a positive integer",
+                retryable=False,
+                source_url=self.base_url,
+            )
+
+        query = urlencode(
+            {
+                "PeriodType": "day",
+                "Date": publication_date.strftime("%d.%m.%Y"),
+                "PageSize": 200,
+                "Index": page,
+                "SortedBy": 5,
+                "SortDestination": 1,
+            }
+        )
+        feed_url = f"{self.base_url}/api/Documents?{query}"
+        raw_bytes, transport = self._get(feed_url, "application/json")
+        try:
+            feed = json.loads(raw_bytes.decode("utf-8-sig"))
+            if not isinstance(feed, dict) or not isinstance(feed["items"], list):
+                raise ValueError("items must be a list")
+            for field in (
+                "currentPage",
+                "itemsPerPage",
+                "itemsTotalCount",
+                "pagesTotalCount",
+            ):
+                if type(feed[field]) is not int or feed[field] < 0:
+                    raise ValueError(f"{field} must be a non-negative integer")
+            if feed["currentPage"] != page or feed["itemsPerPage"] != 200:
+                raise ValueError("feed pagination does not match the request")
+            expected_date = publication_date.isoformat()
+            seen = set()
+            for item in feed["items"]:
+                if not isinstance(item, dict):
+                    raise ValueError("each feed item must be an object")
+                eo_number = item.get("eoNumber")
+                if (
+                    not isinstance(eo_number, str)
+                    or len(eo_number) != 16
+                    or not eo_number.isdigit()
+                    or eo_number in seen
+                ):
+                    raise ValueError("feed eoNumber must be a unique 16-digit string")
+                seen.add(eo_number)
+                for field in (
+                    "complexName",
+                    "documentDate",
+                    "name",
+                    "number",
+                    "publishDateShort",
+                    "title",
+                ):
+                    if not isinstance(item.get(field), str):
+                        raise ValueError(f"feed item {field} must be a string")
+                for field in ("documentDate", "publishDateShort"):
+                    datetime.fromisoformat(item[field].replace("Z", "+00:00"))
+                if item["publishDateShort"][:10] != expected_date:
+                    raise ValueError("feed item publication date is outside the requested day")
+                if type(item.get("pagesCount")) is not int or item["pagesCount"] <= 0:
+                    raise ValueError("feed item pagesCount must be a positive integer")
+        except (KeyError, TypeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+            raise PublicationPravoFailure(
+                "invalid_feed",
+                f"publication feed is not valid: {error}",
+                retryable=False,
+                source_url=feed_url,
+            ) from None
+
+        date_label = publication_date.isoformat()
+        return {
+            "adapter_version": self.adapter_version,
+            "captured_at": _utc_now(),
+            "declared_act_identity": f"Official publication feed for {date_label}, page {page}",
+            "declared_edition_label": None,
+            "declared_publication": None,
+            "events": feed["items"],
+            "external_id": f"feed:{date_label}:page:{page}",
+            "item_kind": "publication_feed",
+            "label": f"Official publication feed: {date_label}, page {page}",
+            "media_type": "application/json",
+            "pages_total": feed["pagesTotalCount"],
+            "raw_bytes": raw_bytes,
+            "request_cursor": f"{date_label}:page:{page}",
+            "rights_status": self.rights_status,
+            "source_system": self.source_system,
+            "source_url": feed_url,
+            "transport_metadata": transport,
+        }
 
     def fetch(self, eo_number: str) -> dict[str, object]:
         self._meter.reset()

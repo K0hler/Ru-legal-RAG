@@ -21,6 +21,9 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
   items, and an idempotent readable report.
 - Relation tests must also prove malformed evidence writes nothing and discovery does
   not proceed without its required acquired source item.
+- Publication-discovery replay must start from the documented day feed, not a supplied
+  publication number; cover PDF-page evidence, stale-candidate refusal, unresolved
+  targets, and an idempotent overlapping-window replay.
 - Live checks must be explicit CLI commands and must write only to ignored `data/` paths.
 - A first-attempt transport failure must leave no successful source item or raw asset
   behind; after a prior success, it must retain that successful item and asset pointer.

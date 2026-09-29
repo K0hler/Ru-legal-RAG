@@ -58,6 +58,8 @@ def build_edition_candidate(
         raise ValueError("reconciliation must contain exactly one consolidated edition candidate")
     candidate_source_item = candidate_ids.pop()
     candidate_item = items[candidate_source_item]
+    if candidate_item.get("candidate_status") == "stale":
+        raise ValueError("stale edition candidate cannot be handed off")
     claim_relation_ids = sorted(relation["relation_id"] for relation in consolidates)
     claim_asset_sha256s = sorted(
         {

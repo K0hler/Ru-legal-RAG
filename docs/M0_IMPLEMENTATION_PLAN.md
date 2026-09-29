@@ -301,7 +301,7 @@ is `partial`; no timestamps were inferred after the fact.
 **Type:** AFK
 **Blocked by:** M0-10
 **User stories:** 1–10, 21, 31
-**Implementation status:** planned after the M0-10 finding for ПП РФ № 491
+**Implementation status:** completed and verified offline and live on 29.09.2026
 
 Discover newly published amending acts from the official publication journal without a pre-known publication number, resolve affected acts from official evidence, and prevent a superseded candidate from being treated as current.
 
@@ -313,6 +313,18 @@ Acceptance:
 - the previously known ПП РФ № 491 candidate becomes stale or unresolved until a newer consolidated edition is acquired and reviewed;
 - unresolved targets remain visible instead of being silently ignored;
 - replaying an overlapping feed window is idempotent and neither loses nor duplicates publication events.
+
+Live verification queried the documented `/api/Documents` day window for
+26.09.2026 and discovered 13 publication events, including
+`0001202609260011`, without a supplied publication number. The existing
+acquisition lifecycle retained the official card and PDF; derived OCR found the
+ПП РФ № 491 reference on PDF page 3 and produced an evidence-backed `amends`
+relation. The 01.09.2025 candidate is now machine-marked `stale`, and candidate
+handoff refuses it pending a newer consolidated edition and legal review. The
+first accepted run was `new`; the replay was `unchanged` with the same discovery
+ID and no duplicate publication events. A subsequent explicit consolidated-source
+resync still returned the 01.09.2025 label; its immediate replay was `unchanged`,
+and both runs preserved the stale marker and invalidation evidence.
 
 ### M0-11 — Working and closed gold-question sets
 

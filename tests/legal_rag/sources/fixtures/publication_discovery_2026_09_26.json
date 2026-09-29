@@ -1,0 +1,133 @@
+{
+  "provenance": {
+    "feed_url": "http://publication.pravo.gov.ru/api/Documents?PeriodType=day&Date=26.09.2026&PageSize=200&Index=1&SortedBy=5&SortDestination=1",
+    "captured_at": "2026-09-29T13:31:37Z",
+    "rights_status": "Official legal-act metadata; PDF bodies are project-authored transport stubs"
+  },
+  "feed": {
+    "items": [
+      {
+        "eoNumber": "0001202609260011",
+        "hasSvg": false,
+        "zipFileLength": null,
+        "publishDateShort": "2026-09-26T00:00:00",
+        "complexName": "Постановление Правительства Российской Федерации от 26.09.2026 № 1242\n \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "pagesCount": 3,
+        "pdfFileLength": 720191,
+        "jdRegNumber": null,
+        "jdRegDate": null,
+        "name": "О внесении изменений в некоторые акты Правительства Российской Федерации",
+        "number": "1242",
+        "documentDate": "2026-09-26T00:00:00",
+        "signatoryAuthorityId": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3",
+        "documentTypeId": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac",
+        "title": "Постановление Правительства Российской Федерации от 26.09.2026 № 1242<br /> \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "viewDate": "26.09.2026",
+        "id": "7d9b8076-8180-4292-b9f1-48db0ffc49f5"
+      },
+      {
+        "eoNumber": "0001202609260999",
+        "hasSvg": false,
+        "zipFileLength": null,
+        "publishDateShort": "2026-09-26T00:00:00",
+        "complexName": "Постановление Правительства Российской Федерации от 26.09.2026 № 9999\n \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "pagesCount": 1,
+        "pdfFileLength": 99,
+        "jdRegNumber": null,
+        "jdRegDate": null,
+        "name": "О внесении изменений в некоторые акты Правительства Российской Федерации",
+        "number": "9999",
+        "documentDate": "2026-09-26T00:00:00",
+        "signatoryAuthorityId": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3",
+        "documentTypeId": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac",
+        "title": "Постановление Правительства Российской Федерации от 26.09.2026 № 9999<br /> \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "viewDate": "26.09.2026",
+        "id": "00000000-0000-0000-0000-000000009999"
+      }
+    ],
+    "itemsTotalCount": 2,
+    "itemsPerPage": 200,
+    "currentPage": 1,
+    "pagesTotalCount": 1
+  },
+  "documents": [
+    {
+      "card": {
+        "documentType": {
+          "weight": 95,
+          "name": "Постановление",
+          "id": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac"
+        },
+        "signatoryAuthorities": [
+          {
+            "isMain": true,
+            "weight": 93000,
+            "name": "Правительство Российской Федерации",
+            "id": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3"
+          }
+        ],
+        "eoNumber": "0001202609260011",
+        "hasSvg": false,
+        "zipFileLength": null,
+        "publishDateShort": "2026-09-26T00:00:00",
+        "complexName": "Постановление Правительства Российской Федерации от 26.09.2026 № 1242\n \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "pagesCount": 3,
+        "pdfFileLength": 720191,
+        "jdRegNumber": null,
+        "jdRegDate": null,
+        "name": "О внесении изменений в некоторые акты Правительства Российской Федерации",
+        "number": "1242",
+        "documentDate": "2026-09-26T00:00:00",
+        "signatoryAuthorityId": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3",
+        "documentTypeId": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac",
+        "title": "Постановление Правительства Российской Федерации от 26.09.2026 № 1242<br /> \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "viewDate": "26.09.2026",
+        "id": "7d9b8076-8180-4292-b9f1-48db0ffc49f5"
+      },
+      "asset_body_base64": "JVBERi0xLjQKTTAtMTBBIHRhcmdldAolJUVPRgo=",
+      "ocr_pages": [
+        "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ. Постановление от 26 сентября 2026 г. № 1242.",
+        "ИЗМЕНЕНИЯ, которые вносятся в акты Правительства Российской Федерации.",
+        "2. Пункт 2 Правил содержания общего имущества в многоквартирном доме, утвержденных — постановлением — Правительства — Российской Федерации от 13 августа 2006 г. № 491, дополнить подпунктом."
+      ]
+    },
+    {
+      "card": {
+        "documentType": {
+          "weight": 95,
+          "name": "Постановление",
+          "id": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac"
+        },
+        "signatoryAuthorities": [
+          {
+            "isMain": true,
+            "weight": 93000,
+            "name": "Правительство Российской Федерации",
+            "id": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3"
+          }
+        ],
+        "eoNumber": "0001202609260999",
+        "hasSvg": false,
+        "zipFileLength": null,
+        "publishDateShort": "2026-09-26T00:00:00",
+        "complexName": "Постановление Правительства Российской Федерации от 26.09.2026 № 9999\n \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "pagesCount": 1,
+        "pdfFileLength": 99,
+        "jdRegNumber": null,
+        "jdRegDate": null,
+        "name": "О внесении изменений в некоторые акты Правительства Российской Федерации",
+        "number": "9999",
+        "documentDate": "2026-09-26T00:00:00",
+        "signatoryAuthorityId": "8005d8c9-4b6d-48d3-861a-2a37e69fccb3",
+        "documentTypeId": "fd5a8766-f6fd-4ac2-8fd9-66f414d314ac",
+        "title": "Постановление Правительства Российской Федерации от 26.09.2026 № 9999<br /> \"О внесении изменений в некоторые акты Правительства Российской Федерации\"",
+        "viewDate": "26.09.2026",
+        "id": "00000000-0000-0000-0000-000000009999"
+      },
+      "asset_body_base64": "JVBERi0xLjQKTTAtMTBBIHVucmVzb2x2ZWQKJSVFT0YK",
+      "ocr_pages": [
+        "Изменения в акты Правительства Российской Федерации без ссылки на акт из пилотного реестра."
+      ]
+    }
+  ]
+}

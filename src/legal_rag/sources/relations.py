@@ -64,6 +64,9 @@ def reconcile_publication_relations(
             if evidence_role is None:
                 expected_role = "declared_publication"
                 expected_sha256 = acquired_item.get("declared_publication_asset")
+            elif evidence_role == "primary_document":
+                expected_role = None
+                expected_sha256 = acquired_item.get("latest_successful_asset")
             elif isinstance(evidence_role, str) and evidence_role.strip():
                 expected_role = evidence_role
                 expected_sha256 = supporting_assets.get(evidence_role)

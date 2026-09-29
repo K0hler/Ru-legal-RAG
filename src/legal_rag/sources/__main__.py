@@ -1,4 +1,5 @@
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 import sys
@@ -10,6 +11,7 @@ from .acquisition import (
     acquire_publication,
 )
 from .actual_pravo import ActualPravoConnector
+from .discovery import discover_official_publications
 from .handoff import build_edition_candidate
 from .legislation_russia import LegislationRussiaConnector
 from .publication_pravo import PublicationPravoConnector
@@ -28,6 +30,10 @@ def main(argv: list[str] | None = None) -> int:
     publication.add_argument("--eo-number", required=True)
     publication.add_argument("--data-dir", type=Path, required=True)
     publication.add_argument("--timeout", type=float, default=20.0)
+    discovery = commands.add_parser("discover-publications")
+    discovery.add_argument("--date", type=date.fromisoformat, required=True)
+    discovery.add_argument("--data-dir", type=Path, required=True)
+    discovery.add_argument("--timeout", type=float, default=20.0)
     actual = commands.add_parser("acquire-actual")
     actual.add_argument("--document-hash", required=True)
     actual.add_argument("--data-dir", type=Path, required=True)
@@ -54,6 +60,15 @@ def main(argv: list[str] | None = None) -> int:
         result = acquire_publication(
             PublicationPravoConnector(timeout=arguments.timeout),
             arguments.eo_number,
+            arguments.data_dir,
+        )
+    elif arguments.command == "discover-publications":
+        result = discover_official_publications(
+            PublicationPravoConnector(
+                timeout=arguments.timeout,
+                request_interval=1.0,
+            ),
+            arguments.date,
             arguments.data_dir,
         )
     elif arguments.command == "acquire-actual":
