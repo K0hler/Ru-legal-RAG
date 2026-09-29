@@ -276,8 +276,8 @@ legal applicability.
 **Type:** HITL
 **Blocked by:** M0-09
 **User stories:** 8–10, 16, 21, 29, 32
-**Implementation status:** completed on 29.09.2026 with one rejected candidate,
-four unresolved candidates and a documented timing-measurement deviation
+**Implementation status:** completed on 29.09.2026 with two rejected candidates,
+three unresolved candidates and a documented timing-measurement deviation
 
 Review the five pilot candidates for act identity, declared edition, source relations, temporal evidence and unresolved gaps, and measure the human effort required.
 
