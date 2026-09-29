@@ -102,7 +102,8 @@ M0-07 human pilot decisions ─────────────────�
 M0-04 → M0-08 source-to-corpus handoff              │
 M0-03 + M0-05 + M0-06 + M0-07 + M0-08 → M0-09 pilot
 M0-09 → M0-10 legal review
-M0-10 → M0-11 gold set
+M0-10 → M0-10A official-publication discovery
+M0-10A → M0-11 gold set
 M0-11 → M0-12 M0 gate report
 ```
 
@@ -295,10 +296,28 @@ The recorded decisions and evidence are in
 were not collected by the simplified checklist, so that measurement criterion
 is `partial`; no timestamps were inferred after the fact.
 
+### M0-10A — Official-publication discovery and candidate invalidation
+
+**Type:** AFK
+**Blocked by:** M0-10
+**User stories:** 1–10, 21, 31
+**Implementation status:** planned after the M0-10 finding for ПП РФ № 491
+
+Discover newly published amending acts from the official publication journal without a pre-known publication number, resolve affected acts from official evidence, and prevent a superseded candidate from being treated as current.
+
+Acceptance:
+
+- a feed window spanning 26.09.2026 discovers publication `0001202609260011` (ПП РФ № 1242) without ConsultantPlus or a manually supplied publication number;
+- the official card and document are acquired through the existing immutable raw-asset lifecycle;
+- official document content produces an evidence-backed `amends` relation to ПП РФ № 491 despite the generic amendment title;
+- the previously known ПП РФ № 491 candidate becomes stale or unresolved until a newer consolidated edition is acquired and reviewed;
+- unresolved targets remain visible instead of being silently ignored;
+- replaying an overlapping feed window is idempotent and neither loses nor duplicates publication events.
+
 ### M0-11 — Working and closed gold-question sets
 
 **Type:** HITL
-**Blocked by:** M0-10
+**Blocked by:** M0-10A
 **User stories:** 29–30
 
 Create 30–50 manually checked questions tied to the reviewed pilot material, split into a working set and an immutable closed gate set for later parser/retrieval evaluation.
@@ -338,6 +357,7 @@ Acceptance:
 | Change detection | alternate fixture → `changed` | compare a naturally updated item when available |
 | Failure safety | timeout fixture → `failed`, latest success unchanged | controlled unreachable endpoint |
 | Source relations | deterministic relation fixture | reviewer inspects one publication chain |
+| Official amendment discovery | feed fixture discovers № 1242, links № 491 and invalidates its candidate | live API window discovers publication `0001202609260011` without a pre-known ID |
 | Temporal uncertainty | missing evidence → unknown/unresolved | reviewer checks source evidence |
 | Five-act coverage | report schema and counts | legal review of all five candidates |
 | Gold split | schema, uniqueness and frozen membership | second review of disputed labels |
@@ -349,6 +369,7 @@ M0 passes only when:
 - the second pilot run classifies all acquisition outcomes without corrupting successful state;
 - every candidate has official provenance and raw SHA-256;
 - no accepted candidate depends on a commercial-aggregator export;
+- official publication discovery can reveal and apply candidate-invalidating amendments without a pre-known publication ID;
 - missing edition, amendment or temporal evidence remains explicit;
 - five-act human review and 30–50 gold questions are completed under the recorded policy;
 - actual time, cost and error data exist for planning M1–M2;
