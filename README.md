@@ -3,6 +3,9 @@
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
 M0-01 through M0-10A are implemented; M0-10 is the recorded human-review step.
+M0-11 has a retained 40-question draft and an offline validation/freeze gate;
+human label and local-storage approval are pending. See
+[the gold-set status and review procedure](docs/M0_11_GOLD_SET.md).
 The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
 `new`, `unchanged`, `changed`, or `failed` without losing the latest successful

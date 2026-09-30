@@ -331,6 +331,8 @@ and both runs preserved the stale marker and invalidation evidence.
 **Type:** HITL
 **Blocked by:** M0-10A
 **User stories:** 29–30
+**Implementation status:** preparation and freeze gate implemented and verified
+on 30.09.2026; legal label review and local-storage approval pending, not complete
 
 Create 30–50 manually checked questions tied to the reviewed pilot material, split into a working set and an immutable closed gate set for later parser/retrieval evaluation.
 
@@ -342,6 +344,12 @@ Acceptance:
 - disputed labels receive a second review;
 - closed labels are not exposed to implementation-time tuning;
 - licensing and storage decision for the dataset is recorded.
+
+The retained packet has 40 questions, split into 20 working and 20 closed items
+before retrieval tuning. The tracked membership contains IDs only; actual
+queries, labels and source assets remain local ignored data. Validation checks
+evidence hashes, coordinates, leakage groups and reviewer decisions; freeze
+refuses all 40 pending labels. See [M0-11 gold set](M0_11_GOLD_SET.md).
 
 ### M0-12 — M0 gate report and contract freeze
 

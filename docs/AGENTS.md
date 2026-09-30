@@ -20,4 +20,8 @@ Scope: every file under `docs/`.
 - Before contradicting a reviewer on a time-sensitive control page, inspect its
   cache metadata and verify the current response against the primary official
   publication; a cached commercial page is not live-edition evidence.
+- M0-11 tracks ID membership and schema/status only; actual working/closed
+  queries and labels stay under ignored local data. Technical validation and
+  snapshot lookup do not approve legal labels or unblock M0-12 without human
+  label review and storage approval.
 
