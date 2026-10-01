@@ -223,8 +223,8 @@
     "tests/legal_rag/sources/test_m0_gate.py": "cfc71d6701552cea1d49b6bbdb4572090ba6d8569cbda5824b1093b949330e96",
     "data/m0-09-live-20260929-v2/pilot_runs/1534d4bd-36cc-46ed-a712-d10e93e6877f/report.json": "ee0480eaf5960b4ed32a102fe6411170b11bb97ab8e203b5a1fb4b67acb9faee",
     "docs/M0_07_PILOT_AND_REVIEW_POLICY.md": "9949c57c750f6e4b5e0f4971fcef825bbfbed69757ff2fa6ba8f4f543786b77b",
-    "docs/M0_10_LEGAL_REVIEW.md": "36ec14f1cc41e48245fd0cf796811f70dbf9be55bc315f392bbce52f09fca376",
-    "docs/M0_11_GOLD_SET.md": "e45651bdd0af5b746172915353b053654fc6904670816b1b418d3db7aa6749d5",
+    "docs/M0_10_LEGAL_REVIEW.md": "d096253ec61ac5872f0c86557676f9d025611a82530a14c7152d5d2647c07495",
+    "docs/M0_11_GOLD_SET.md": "185be58a34af169c3294f5a95dac137098543186bfdfa50905a594d94a73a65e",
     "docs/M0_11_GOLD_SPLIT.json": "ac6ccdbc164428fb122e8f496d63114c1aa67f56af9565d26d31f367f8d06369",
     "data/m0-12-gate/offline-checks.txt": "5cee2fc4bc9d2c646cb0c47a26963773e755a65cf0bfa69122e9a2faa7159ffb",
     "data/m0-12-gate/handoff-replay.json": "b0aad2e7b05de7d5fd03b1120f6aebfb9fe1a5719b3303d4e54c82edcbbdd424",
@@ -621,11 +621,23 @@
       "rationale": "All critical gaps prevent reviewed corpus admission."
     },
     "M0-10.4": {
-      "status": "fail",
+      "status": "pass",
       "evidence": [
         "candidate_review"
       ],
-      "rationale": "FAIL: only approximate per-act minutes exist; exact start/finish and exception-only time were not captured. Repeat the human review with those measurements; never infer historical timestamps."
+      "rationale": "Accepted as completed by explicit product-owner instruction on 2026-10-01. Exact start/finish and exception-only minutes use not_recorded placeholders; approximate per-act effort is retained. No repeat legal review is required for the missing measurements.",
+      "measurement_placeholders": {
+        "review_started_at": "not_recorded",
+        "review_finished_at": "not_recorded",
+        "exception_minutes": "not_recorded"
+      },
+      "acceptance_override": {
+        "decision": "accept_as_completed",
+        "approved_by": "product owner",
+        "approved_on": "2026-10-01",
+        "authority": "Direct user instruction in this chat",
+        "scope": "Missing review-time measurements only; use placeholders and waive repeat review"
+      }
     },
     "M0-10.5": {
       "status": "pass",
@@ -850,12 +862,12 @@
       "rationale": "Missing consolidated, amendment and temporal evidence stays explicit and blocks admission."
     },
     "M0-GATE.6": {
-      "status": "fail",
+      "status": "pass",
       "evidence": [
         "candidate_review",
         "gold_review"
       ],
-      "rationale": "Gold review is complete, but the five-act review omitted the required timing measurements (M0-10.4); the recorded policy does not waive this requirement."
+      "rationale": "Five-act human review and gold review are complete. The product owner explicitly accepted the M0-10.4 timing placeholders on 2026-10-01; no repeat review is required for that measurement deviation."
     },
     "M0-GATE.7": {
       "status": "pass",
@@ -884,6 +896,6 @@
     "Acquisition resource cost is measured as requests, bytes and wall time above. Monetary cost, engineer-hours, OCR-only time, electricity and a complete all-run cost ledger were not recorded; they remain unknown, not zero. The pilot does not use a billed LLM API. Bulk-source access remains blocked under the recorded source policy.",
     "M0-11 metadata records 30 reviewed labels, 15 working / 15 closed, zero outstanding disputes and private-local storage approval at 2026-10-01T19:54:03+05:00. Complete dataset/working/closed/split/review files are verified by hash only; the closed labels are never loaded.",
     "The retained M0-08 handoff replay produces the same candidate bytes and ID on new then unchanged. The synthetic offline example freezes edition-candidate/1 byte serialization. Both are contract verification, not approval of PP No. 354.",
-    "The M0-10 measurement failure is binding: exact per-act review start/finish and exception-only minutes are absent. A human Legal Reviewer must repeat the affected review with those measurements and update its decisions; M1 remains blocked until the report is reassessed. Source/legal coverage gaps remain admission blockers independently."
+    "On 2026-10-01 the product owner explicitly accepted not_recorded placeholders for the missing M0-10 review start/finish and exception-only minutes, and counted the measurement criterion as completed. No repeat legal review is required for this deviation; the M0 gate passes and M1 may start. Source/legal coverage gaps remain admission blockers independently."
   ]
 }

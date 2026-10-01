@@ -1,7 +1,7 @@
 # M0 Implementation Plan — official-source acquisition and contracts
 
 **Дата:** 27 сентября 2026 года
-**Статус:** M0-12 реализован; итоговый M0 gate — `fail`, переход к M1 заблокирован
+**Статус:** M0 завершён; итоговый gate — `pass`, переход к M1 разрешён
 **Основание:** [PRD v0.1](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md)
 
 ## 1. Цель M0
@@ -293,8 +293,10 @@ Acceptance:
 The recorded decisions and evidence are in
 [M0-10 legal review](M0_10_LEGAL_REVIEW.md). Human comparison took approximately
 80 minutes. Exact per-act start/finish timestamps and exception-only minutes
-were not collected by the simplified checklist, so that measurement criterion
-is `partial`; no timestamps were inferred after the fact.
+were not collected by the simplified checklist. On 01.10.2026 the product owner
+explicitly accepted `not_recorded` placeholders and counted this criterion as
+completed. No repeat review is required for the missing measurements; no historical
+timestamps were inferred.
 
 ### M0-10A — Official-publication discovery and candidate invalidation
 
@@ -360,7 +362,8 @@ reserved for the gate. See [M0-11 gold set](M0_11_GOLD_SET.md).
 **Blocked by:** none; M0-11 completed on 01.10.2026
 **User stories:** 31–33
 **Implementation status:** implemented on 01.10.2026; report and contract freeze
-are reproducible, while the M0 gate fails on the missing M0-10 timing measurement
+are reproducible and the M0 gate passes after the product-owner acceptance of
+M0-10 timing placeholders
 
 Generate the final M0 report from recorded runs, reviews and gold-set metadata, then freeze the acquisition and source-to-corpus contracts used to enter M1.
 
@@ -374,12 +377,11 @@ Acceptance:
 - no FTS, vector search, UI or agent work is included to make the gate appear complete.
 
 The [gate report](M0_GATE_REPORT.md) evaluates all 70 slice criteria and eight
-milestone conditions, and blocks M1
-on M0-10's missing exact per-act timestamps and exception-only minutes. The
-[versioned contracts](M0_CONTRACTS.md) and [freeze manifest](M0_CONTRACT_FREEZE.json)
-retain the implemented acquisition and `edition-candidate/1` boundary. Repeating
-the required human measurements and reassessing the gate is a prerequisite,
-not a deferred M1 task.
+milestone conditions as `pass`; M1 may start. The product owner explicitly
+accepted `not_recorded` placeholders for M0-10 timing on 01.10.2026 and waived
+repeat review for that measurement deviation. The [versioned contracts](M0_CONTRACTS.md)
+and [freeze manifest](M0_CONTRACT_FREEZE.json) retain the implemented acquisition
+and `edition-candidate/1` boundary.
 
 ## 7. Verification matrix
 

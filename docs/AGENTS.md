@@ -26,7 +26,9 @@ Scope: every file under `docs/`.
   with reviewer, time, rationales and storage decision unblocks M0-12.
 - M0-12's `assets/generate_m0_gate.py` renders all plan criteria from the tracked
   assessment and checks pinned evidence/code/fixture hashes. Exit 2 blocks M1;
-  never convert missing M0-10 review timestamps into inferred measurements.
+  M0-10 timing uses `not_recorded` placeholders, explicitly accepted by the
+  product owner on 01.10.2026. Count that measurement criterion as completed
+  without repeat review; never present the placeholders as measured timestamps.
   Closed gold files are read as bytes for hashing only. The contract freeze
   records existing unversioned acquisition formats without inventing embedded
   schema versions; incompatible handoff changes require a new version.

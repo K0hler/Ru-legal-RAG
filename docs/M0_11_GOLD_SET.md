@@ -70,4 +70,5 @@ The approval is bounded:
 - closed labels must not be used for parser, retrieval or prompt tuning;
 - positive snapshot labels do not remove the separate M0-10 admission blockers;
 - M0-11 is complete; M0-12 reporting is now implemented. The separate
-  [M0 gate](M0_GATE_REPORT.md) blocks M1 on M0-10's missing timing measurements.
+  [M0 gate](M0_GATE_REPORT.md) passes after the product owner accepted M0-10 timing
+  placeholders; M1 may start.

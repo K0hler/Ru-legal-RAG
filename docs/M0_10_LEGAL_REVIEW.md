@@ -77,8 +77,20 @@ time of 04:53:44 on 29.09.2026. A direct no-cache request returned the current
 The simplified checklist requested approximate minutes, not timestamps.
 Consequently, per-act start/finish times and exception-only minutes were not
 captured; the two 20-minute estimates include the ПП РФ № 491 and 59-ФЗ
-exception handling. This part of the M0-10 acceptance criterion is recorded as
-`partial`, not reconstructed from chat or file times.
+exception handling. Exact measurements remain `not_recorded`, not reconstructed
+from chat or file times.
+
+On 1 October 2026 the product owner explicitly instructed the project to use
+placeholders and count this criterion as completed. The timing deviation is
+accepted for the M0 gate; no repeat legal review is required for it.
+
+| Act | Review start | Review finish | Exception-only minutes |
+|---|---|---|---|
+| ЖК РФ | `not_recorded` | `not_recorded` | `not_recorded` |
+| ПП РФ № 354 | `not_recorded` | `not_recorded` | `not_recorded` |
+| ПП РФ № 491 | `not_recorded` | `not_recorded` | `not_recorded` |
+| 59-ФЗ | `not_recorded` | `not_recorded` | `not_recorded` |
+| СанПиН 2.1.3684-21 | `not_recorded` | `not_recorded` | `not_recorded` |
 
 No reviewer disagreement remains: the reviewer’s ПП РФ № 491 observation is
 confirmed and the earlier engineering objection is withdrawn; the 59-ФЗ note
@@ -93,5 +105,5 @@ required** and the candidate remains excluded until both decisions are stored.
 | Every candidate has `reviewed`, `rejected` or `unresolved` with rationale | Pass: two `rejected`, three `unresolved`. |
 | No coverage inferred from name, capture time or label | Pass: human comparison, M0-09 gap evidence and exception checks are recorded separately. |
 | Critical gaps prevent approval | Pass: no candidate with a critical gap was marked `reviewed`. |
-| Start/finish and exception time recorded per act | Partial: approximate per-act effort is retained; exact timestamps and exception-only minutes were not collected. |
+| Start/finish and exception time recorded per act | Pass by explicit product-owner acceptance on 01.10.2026: `not_recorded` placeholders retain the missing measurements; repeat review is waived. |
 | Disputes use an independent second reviewer | Pass as policy; no unresolved dispute exists. A future challenge is fail-closed and requires another human Legal Reviewer. |

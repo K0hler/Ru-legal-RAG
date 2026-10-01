@@ -3,8 +3,9 @@
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
 M0-12 reporting and contract freeze are implemented. The [M0 gate](docs/M0_GATE_REPORT.md)
-is `fail`: M0-10 did not record exact per-act review timestamps and exception-only
-minutes. M1 remains blocked pending a measured human review and gate reassessment.
+is `pass`; M0 is accepted and M1 may start. The product owner accepted
+`not_recorded` placeholders for the missing M0-10 timing measurements; no repeat
+legal review is required for that measurement deviation.
 The retained M0-11 v2 gold set contains 30
 Legal Reviewer-approved questions split 15/15 into working and closed sets;
 the two-hour review and local-storage approval are recorded.
