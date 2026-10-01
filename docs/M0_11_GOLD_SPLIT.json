@@ -1,7 +1,7 @@
 {
-  "closed_sha256": "49ddac246148d67774086224d7543ada0c340e1128bccf1d38061960a931621b",
+  "closed_sha256": "cb3b0d3e73b1541fd1004aaba9b82566813ec492826b577ce902aaf5449bbc26",
   "dataset_id": "m0-11-pilot-v2",
-  "dataset_sha256": "6f34fc89d3067d6d570e7ac1184554259c8b38d6dd5dbc741610d6712c55512a",
+  "dataset_sha256": "8a49020f2d1b91ea12ebbeb44a7e277a78fd08a9bd23a282be73367deb288034",
   "members": {
     "closed": [
       "M0-11-V2-002",
@@ -41,5 +41,5 @@
   "recorded_on": "2026-10-01",
   "split_sha256": "73a5a7521dc89e1588e03b345a453dad7f5a44598b76a4df7b09aa71d65ad05f",
   "status": "draft_pending_legal_review",
-  "working_sha256": "6925f02ffac76b81e72b8d222f6b0e4cbaa301ced9b4c266ec2fe81693dee3da"
+  "working_sha256": "b82746700cd47b21c120238d32714a739083bf820d9a254d4e1b241d75dbd6c3"
 }

@@ -19,4 +19,8 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   mode. Expected values must be user-facing answers or refusals, not evaluator
   instructions; evidence spans must stop at the last provision needed to
   support the answer.
+- Keep the expected article, part, clause, subclause, or annex address in the
+  hidden label. Do not disclose it in the user-shaped query merely as a lookup
+  hint; retain a document identifier only when it is the subject of an
+  applicability/date question or is needed to disambiguate the request.
 

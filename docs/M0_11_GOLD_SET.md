@@ -20,13 +20,19 @@ A second full author audit checked all 30 records against one checklist and
 corrected 14 of them. The corrections separate refusal causes, narrow questions
 to the cited provisions, remove evaluator instructions from expected answers,
 restore omitted legal conditions, and tighten one overlong evidence span. The
-local `full-audit.md` records the result for every ID. Existing human `ОК` marks
-on the five unchanged working questions were preserved; all labels still await
-completion of the Legal Reviewer gate.
+local `full-audit.md` records the result for every ID.
+
+The subsequent Legal Reviewer pass established that a user-shaped query must
+not disclose the gold article, part, clause, subclause, or annex merely as a
+lookup hint. Ten queries were rewritten accordingly. Here `exact_reference`
+means that the hidden label resolves to one exact provision; it does not mean
+that the query contains that provision's address. Existing `ОК` marks remain
+only on records left unchanged by this pass; every rewritten record was returned
+to pending review. All labels still await completion of the Legal Reviewer gate.
 
 | Query class | Count |
 |---|---:|
-| Exact reference | 6 |
+| Exact single-provision target | 6 |
 | Paraphrase | 7 |
 | Exception or negation | 8 |
 | Confirmed date | 2 |

@@ -339,7 +339,9 @@ Create 30–50 manually checked questions tied to the reviewed pilot material, s
 Acceptance:
 
 - each item has query class, expected act/address, edition claim, source span or explicit no-answer label;
-- set covers exact reference, paraphrase, exception/negation, confirmed date, missing coverage and one cross-reference;
+- set covers exact single-provision targets whose address remains in the label,
+  paraphrase, exception/negation, confirmed date, missing coverage and one
+  cross-reference;
 - working and closed membership is recorded before retrieval tuning;
 - disputed labels receive a second review;
 - closed labels are not exposed to implementation-time tuning;
