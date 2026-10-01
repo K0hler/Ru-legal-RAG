@@ -11,4 +11,8 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   frozen snapshots are for authoring, legal review or explicit gate evaluation.
   Keep raw hashes, transcription method and span offsets with each label. Local
   evaluation is the proposed scope; public redistribution is not approved.
+- When revising gold drafts, keep the shared dataset, working export, private
+  preparation script and review-template hash consistent. Preserve human review
+  annotations; do not regenerate a checklist over the reviewer's edits. Record
+  corrections separately and never turn an editorial correction into approval.
 

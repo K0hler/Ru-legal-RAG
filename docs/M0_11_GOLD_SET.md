@@ -25,9 +25,11 @@ the split.
 | Explicit cross-reference | 3 |
 
 The draft dataset SHA-256 is
-`34c3269230afda541489f1b90be11af9c068411206e35be5ed02ec301406c4c5`.
+`40f612caf42bfce35de79572245f50856433ac244dd71533a7e3bea890edc467`.
 The canonical split SHA-256 is
 `b6528c5be031aa248e670b914f225cbcdeff0129e0cc3f7683ac36e602a59d6f`.
+Working-question wording was revised during human review on 1 October 2026;
+source spans, split membership and existing reviewer annotations were preserved.
 These hashes use UTF-8 JSON, sorted keys, two-space indentation and a trailing
 newline, as implemented by `legal_rag.corpus.gold.digest`.
 
