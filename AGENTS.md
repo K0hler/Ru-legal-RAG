@@ -18,6 +18,7 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
 - Treat [`docs/LEGAL_SOURCES_POLICY.md`](docs/LEGAL_SOURCES_POLICY.md) as the source-admission policy.
 - Keep implemented behavior, target architecture, research findings, and hypotheses explicitly separate.
 - Keep the repository root limited to project-wide entry points and configuration.
+- Do not use the `law-housing-utilities-law` skill in this project; rely on this repository's sources and instructions instead.
 
 ## Development workflow
 
