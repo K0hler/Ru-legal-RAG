@@ -26,6 +26,11 @@ class CandidateHandoffTest(unittest.TestCase):
             first = self._run_cli(reconciliation_path, data_dir)
             candidate_path = Path(first["candidate"])
             first_bytes = candidate_path.read_bytes()
+            self.assertEqual(
+                first_bytes,
+                (Path(__file__).parent / "fixtures/edition_candidate_v1.json").read_bytes(),
+                "edition-candidate/1 changed; version and review the contract before updating the fixture",
+            )
             second = self._run_cli(reconciliation_path, data_dir)
 
             self.assertEqual(first["result"], "new")

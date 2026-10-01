@@ -22,6 +22,9 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
 
 ## Development workflow
 
+- Before starting M1, regenerate the [M0 gate report](docs/M0_GATE_REPORT.md).
+  A failed or unresolved gate blocks the transition; implementation completion
+  alone does not waive an acceptance criterion.
 - During the current early-development phase, work directly on `main`. Create a
   separate branch or worktree only when the user explicitly requests isolation.
 - After each implemented plan item, update the nearest applicable `AGENTS.md` with

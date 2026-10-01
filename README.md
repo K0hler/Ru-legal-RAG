@@ -2,9 +2,12 @@
 
 Repository skeleton for the M0-M2 vertical slice: reproducible acquisition of official legal sources, deterministic corpus compilation, and exact/full-text retrieval with verifiable evidence coordinates.
 
-M0-01 through M0-11 are complete. The retained M0-11 v2 gold set contains 30
+M0-12 reporting and contract freeze are implemented. The [M0 gate](docs/M0_GATE_REPORT.md)
+is `fail`: M0-10 did not record exact per-act review timestamps and exception-only
+minutes. M1 remains blocked pending a measured human review and gate reassessment.
+The retained M0-11 v2 gold set contains 30
 Legal Reviewer-approved questions split 15/15 into working and closed sets;
-the two-hour review and local-storage approval are recorded. M0-12 is unblocked.
+the two-hour review and local-storage approval are recorded.
 See [the gold-set record](docs/M0_11_GOLD_SET.md).
 The fixture-backed path and the
 `PublicationPravoConnector` store immutable raw bytes and provenance, then report
@@ -73,7 +76,12 @@ Run its offline acceptance tests with:
 
 ```powershell
 python -m unittest discover -s tests/legal_rag/sources -p "test_*.py" -v
+python docs/assets/generate_m0_gate.py
 ```
+
+The gate command verifies retained local evidence and the frozen contracts,
+regenerates the report and writes `data/m0-12-gate/gate.json`. Exit code `2`
+means the M0 gate blocks M1. See [the frozen contracts](docs/M0_CONTRACTS.md).
 
 ## Map
 

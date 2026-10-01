@@ -25,6 +25,10 @@ Scope: connector replay fixtures and acquisition lifecycle tests in this directo
   publication number; cover PDF-page evidence, stale-candidate refusal, unresolved
   targets, and an idempotent overlapping-window replay.
 - Live checks must be explicit CLI commands and must write only to ignored `data/` paths.
+- `edition_candidate_v1.json` is a project-authored synthetic handoff, reproduced
+  byte-for-byte by the existing candidate regression. Gate tests cover fail,
+  unresolved, missing/changed evidence and acceptance-list completeness; neither
+  test path loads private gold queries or labels.
 - A first-attempt transport failure must leave no successful source item or raw asset
   behind; after a prior success, it must retain that successful item and asset pointer.
   In both cases it writes a complete exception item linked from the failed run.

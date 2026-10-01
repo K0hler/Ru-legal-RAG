@@ -1,7 +1,7 @@
 # M0 Implementation Plan — official-source acquisition and contracts
 
 **Дата:** 27 сентября 2026 года
-**Статус:** опубликован в Linear для исполнения
+**Статус:** M0-12 реализован; итоговый M0 gate — `fail`, переход к M1 заблокирован
 **Основание:** [PRD v0.1](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md)
 
 ## 1. Цель M0
@@ -359,6 +359,8 @@ reserved for the gate. See [M0-11 gold set](M0_11_GOLD_SET.md).
 **Type:** AFK
 **Blocked by:** none; M0-11 completed on 01.10.2026
 **User stories:** 31–33
+**Implementation status:** implemented on 01.10.2026; report and contract freeze
+are reproducible, while the M0 gate fails on the missing M0-10 timing measurement
 
 Generate the final M0 report from recorded runs, reviews and gold-set metadata, then freeze the acquisition and source-to-corpus contracts used to enter M1.
 
@@ -370,6 +372,14 @@ Acceptance:
 - M1 handoff contract is versioned and reproducible;
 - failed gate blocks M1 instead of being converted to a future TODO;
 - no FTS, vector search, UI or agent work is included to make the gate appear complete.
+
+The [gate report](M0_GATE_REPORT.md) evaluates all 70 slice criteria and eight
+milestone conditions, and blocks M1
+on M0-10's missing exact per-act timestamps and exception-only minutes. The
+[versioned contracts](M0_CONTRACTS.md) and [freeze manifest](M0_CONTRACT_FREEZE.json)
+retain the implemented acquisition and `edition-candidate/1` boundary. Repeating
+the required human measurements and reassessing the gate is a prerequisite,
+not a deferred M1 task.
 
 ## 7. Verification matrix
 

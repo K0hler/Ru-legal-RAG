@@ -1,0 +1,148 @@
+{
+  "act_identity_claim": {
+    "declared_identity": "Test Act",
+    "source_asset_sha256s": [
+      "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca"
+    ],
+    "source_item": "declared-act:test",
+    "source_relation_ids": [
+      "relation-consolidates"
+    ]
+  },
+  "candidate_id": "9478742a5f8c465e57e2382f7f0ff71d185761f145479a444a01392484dc8529",
+  "edition_claim": {
+    "captured_at": "2026-09-29T07:00:00Z",
+    "claimed_edition_date": "2026-09-01",
+    "claimed_edition_label": "Edition 01.09.2026",
+    "snapshot_asset_sha256": "688ee4a37917474b9289083541408abc1625c26c7fcdb7823e01d7df02b7b6b6",
+    "source_asset_sha256s": [
+      "688ee4a37917474b9289083541408abc1625c26c7fcdb7823e01d7df02b7b6b6",
+      "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca"
+    ],
+    "source_item": "ips.pravo.gov.ru:test-hash",
+    "source_relation_ids": [
+      "relation-consolidates"
+    ]
+  },
+  "reconciliation_id": "reconciliation-test",
+  "review_decision": null,
+  "review_status": "unreviewed",
+  "schema_version": "edition-candidate/1",
+  "source_evidence": {
+    "assets": [
+      {
+        "archive_key": "raw/688ee4a37917474b9289083541408abc1625c26c7fcdb7823e01d7df02b7b6b6",
+        "byte_length": 20,
+        "captured_at": "2026-09-29T07:00:00Z",
+        "media_type": "application/json",
+        "rights_status": "Pilot use only",
+        "sha256": "688ee4a37917474b9289083541408abc1625c26c7fcdb7823e01d7df02b7b6b6",
+        "source_url": "http://example.invalid/evidence"
+      },
+      {
+        "archive_key": "raw/6a910af2a8c01b3d69ac410d438b76b09bbc940ef47a827432bb118f1bad5982",
+        "byte_length": 21,
+        "captured_at": "2026-09-29T07:00:00Z",
+        "media_type": "application/json",
+        "rights_status": "Pilot use only",
+        "sha256": "6a910af2a8c01b3d69ac410d438b76b09bbc940ef47a827432bb118f1bad5982",
+        "source_url": "http://example.invalid/evidence"
+      },
+      {
+        "archive_key": "raw/d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca",
+        "byte_length": 24,
+        "captured_at": "2026-09-29T07:00:00Z",
+        "media_type": "application/json",
+        "rights_status": "Pilot use only",
+        "sha256": "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca",
+        "source_url": "http://example.invalid/evidence"
+      }
+    ],
+    "exceptions": [
+      "exception-amendment"
+    ],
+    "items": [
+      {
+        "declared_act_identity": "Test Act",
+        "item_kind": "act",
+        "label": "Test Act",
+        "source_item": "declared-act:test",
+        "source_system": "declared-act"
+      },
+      {
+        "declared_act_identity": "Test Act",
+        "item_kind": "edition_candidate",
+        "label": "Test edition candidate",
+        "source_item": "ips.pravo.gov.ru:test-hash",
+        "source_system": "ips.pravo.gov.ru",
+        "source_url": "http://ips.pravo.gov.ru/search/test-hash"
+      },
+      {
+        "declared_act_identity": "Test Act",
+        "item_kind": "publication",
+        "label": "Official publication",
+        "source_item": "publication.pravo.gov.ru:0000000000000000",
+        "source_system": "publication.pravo.gov.ru",
+        "source_url": "http://publication.pravo.gov.ru/document/0000000000000000"
+      }
+    ],
+    "relations": [
+      {
+        "asserted_by": "ips.pravo.gov.ru",
+        "evidence_reference": {
+          "locator": "$.hash; $.nd; $.adoption",
+          "source_asset_sha256": "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca",
+          "source_url": "http://ips.pravo.gov.ru/search/test-hash"
+        },
+        "from_source_item": "ips.pravo.gov.ru:test-hash",
+        "relation_id": "relation-consolidates",
+        "relation_type": "consolidates",
+        "review_state": "source_claim",
+        "to_source_item": "declared-act:test"
+      },
+      {
+        "asserted_by": "publication.pravo.gov.ru",
+        "evidence_reference": {
+          "locator": "$.eoNumber",
+          "source_asset_sha256": "6a910af2a8c01b3d69ac410d438b76b09bbc940ef47a827432bb118f1bad5982",
+          "source_url": "http://publication.pravo.gov.ru/document/0000000000000000"
+        },
+        "from_source_item": "publication.pravo.gov.ru:0000000000000000",
+        "relation_id": "relation-publishes",
+        "relation_type": "publishes",
+        "review_state": "source_claim",
+        "to_source_item": "declared-act:test"
+      }
+    ]
+  },
+  "temporal_evidence": {
+    "source_asset_sha256s": [
+      "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca"
+    ],
+    "source_relation_ids": [
+      "relation-consolidates"
+    ],
+    "status": "temporal_coverage_unknown",
+    "valid_from": null,
+    "valid_to": null
+  },
+  "unresolved_items": [
+    {
+      "diagnostic_message": "Effective dates were not verified.",
+      "reason": "temporal_coverage_unknown",
+      "source_asset_sha256s": [
+        "d508ca73c9f7815d04b9edd45553fe37d376739074ada3a60a28503bed114cca"
+      ],
+      "source_relation_ids": [
+        "relation-consolidates"
+      ]
+    },
+    {
+      "diagnostic_message": "One amendment target is unresolved.",
+      "exception_id": "exception-amendment",
+      "reason": "missing_relation_target",
+      "source_asset_sha256s": [],
+      "source_relation_ids": []
+    }
+  ]
+}
