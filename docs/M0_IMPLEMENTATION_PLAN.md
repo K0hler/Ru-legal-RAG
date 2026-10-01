@@ -331,8 +331,8 @@ and both runs preserved the stale marker and invalidation evidence.
 **Type:** HITL
 **Blocked by:** M0-10A
 **User stories:** 29–30
-**Implementation status:** v2 draft rebuilt on 01.10.2026; legal label review
-and local-storage approval pending, not complete
+**Implementation status:** completed on 01.10.2026; the Legal Reviewer accepted
+all 30 labels, recorded 120 review minutes and approved local private storage
 
 Create 30–50 manually checked questions tied to the reviewed pilot material, split into a working set and an immutable closed gate set for later parser/retrieval evaluation.
 
@@ -348,15 +348,16 @@ Acceptance:
 - licensing and storage decision for the dataset is recorded.
 
 The retained v2 packet has 30 realistic legal queries, split into 15 working
-and 15 closed items before retrieval tuning. Queries, labels and source assets
-remain local ignored data; the tracked manifest contains only IDs, membership
-and hashes. All 30 labels still require human legal review. See
-[M0-11 gold set](M0_11_GOLD_SET.md).
+and 15 closed items before retrieval tuning. Queries, labels, source assets and
+the completed review remain local ignored data; the tracked manifest contains
+only IDs, membership and hashes. All 30 labels are `reviewed`; the working set
+is available for implementation-time evaluation and the closed set remains
+reserved for the gate. See [M0-11 gold set](M0_11_GOLD_SET.md).
 
 ### M0-12 — M0 gate report and contract freeze
 
 **Type:** AFK
-**Blocked by:** M0-11
+**Blocked by:** none; M0-11 completed on 01.10.2026
 **User stories:** 31–33
 
 Generate the final M0 report from recorded runs, reviews and gold-set metadata, then freeze the acquisition and source-to-corpus contracts used to enter M1.

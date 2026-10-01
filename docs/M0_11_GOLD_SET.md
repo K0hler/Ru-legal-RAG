@@ -2,7 +2,8 @@
 
 **Rebuilt:** 1 October 2026
 
-**Status:** draft; 30 labels and the local-storage decision await Legal Reviewer approval. M0-12 remains blocked.
+**Status:** complete; all 30 labels are `reviewed`, the two-hour Legal Reviewer
+check is recorded, and local private storage is approved. M0-12 is unblocked.
 
 ## What changed
 
@@ -26,9 +27,9 @@ The subsequent Legal Reviewer pass established that a user-shaped query must
 not disclose the gold article, part, clause, subclause, or annex merely as a
 lookup hint. Ten queries were rewritten accordingly. Here `exact_reference`
 means that the hidden label resolves to one exact provision; it does not mean
-that the query contains that provision's address. Existing `ОК` marks remain
-only on records left unchanged by this pass; every rewritten record was returned
-to pending review. All labels still await completion of the Legal Reviewer gate.
+that the query contains that provision's address. Every rewritten record was
+returned to pending review and subsequently rechecked. The final review accepts
+all 30 labels.
 
 | Query class | Count |
 |---|---:|
@@ -43,26 +44,29 @@ to pending review. All labels still await completion of the Legal Reviewer gate.
 
 The local packet is `data/m0-11-gold/`. It contains:
 
-- `working.json` and `working-review.md` — 15 questions available only after legal approval for implementation-time evaluation;
+- `working.json` and `working-review.md` — 15 reviewed questions available for implementation-time evaluation;
 - `closed.json` and `closed-review.md` — 15 questions reserved for the gate;
-- `dataset.draft.json`, `split.json`, retained evidence and `review.template.json` — authoring and review material;
+- `dataset.draft.json`, `split.json`, retained evidence and `review.template.json` — authoring material and the blank review template;
+- `review.json` — the completed Legal Reviewer decisions, time and storage approval;
 - `verification.json` — the recorded hashes and structural checks.
 
 [The tracked manifest](M0_11_GOLD_SPLIT.json) fixes the 15/15 membership and the
-SHA-256 of the complete, working, closed and split JSON files. It deliberately
-contains no query text or labels. No runtime validator or synthetic gold test is
-needed: this is review data, not production corpus behavior.
+SHA-256 of the complete, working, closed, split and review JSON files. It
+deliberately contains no query text or labels. No runtime validator or synthetic
+gold test is needed: this is review data, not production corpus behavior.
 
-## Remaining human gate
+## Completed human gate
 
-The designated `legal-reviewer-owner` must review every question, answer or
-refusal, act/address, edition claim and source span; record actual review time;
-and approve or reject local private storage. A disputed label requires a second
-Legal Reviewer who is neither the author nor the first reviewer.
+- Reviewer: `legal-reviewer-owner` (`Legal Reviewer`).
+- Decision time: 1 October 2026 at 19:54:03 UTC+05:00.
+- Review effort including corrections: 120 minutes.
+- Decisions: 30 `reviewed`, 0 `rejected`, 0 pending.
+- Storage: approved for private local evaluation; no public redistribution.
+- Disputes: none remain, so no independent second review is required.
 
-Until that happens:
+The approval is bounded:
 
-- no label is legally approved;
-- neither split may be used to claim retrieval quality;
-- the closed labels must not be used for parser, retrieval or prompt tuning;
-- M0-11 and M0-12 remain incomplete.
+- working labels may be used for implementation-time evaluation;
+- closed labels must not be used for parser, retrieval or prompt tuning;
+- positive snapshot labels do not remove the separate M0-10 admission blockers;
+- M0-11 is complete and M0-12 is unblocked, not yet complete.
