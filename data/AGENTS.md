@@ -12,4 +12,7 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
 - The tracked M0-11 manifest fixes IDs, split membership and local-file hashes.
   Any content change creates a new draft and requires fresh Legal Reviewer
   approval; a hash match alone is not approval.
+- Name annexed rules separately from the approving act: use “Rules approved by
+  Government Resolution No. 354/491”, never “Rules No. 354/491”. The number
+  belongs to the resolution, not to the rules.
 
