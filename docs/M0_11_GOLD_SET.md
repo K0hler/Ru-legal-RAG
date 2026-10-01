@@ -16,6 +16,14 @@ every `no_answer` label points to an unresolved M0-10 coverage or applicability
 gap. A positive snapshot label does not approve a `LegalEdition` or establish
 that the cited text governs a particular dispute.
 
+A second full author audit checked all 30 records against one checklist and
+corrected 14 of them. The corrections separate refusal causes, narrow questions
+to the cited provisions, remove evaluator instructions from expected answers,
+restore omitted legal conditions, and tighten one overlong evidence span. The
+local `full-audit.md` records the result for every ID. Existing human `ОК` marks
+on the five unchanged working questions were preserved; all labels still await
+completion of the Legal Reviewer gate.
+
 | Query class | Count |
 |---|---:|
 | Exact reference | 6 |

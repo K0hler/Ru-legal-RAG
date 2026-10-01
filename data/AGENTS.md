@@ -15,4 +15,8 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
 - Name annexed rules separately from the approving act: use “Rules approved by
   Government Resolution No. 354/491”, never “Rules No. 354/491”. The number
   belongs to the resolution, not to the rules.
+- Audit each M0-11 label for one unambiguous question and one matching failure
+  mode. Expected values must be user-facing answers or refusals, not evaluator
+  instructions; evidence spans must stop at the last provision needed to
+  support the answer.
 
