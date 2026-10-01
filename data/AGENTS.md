@@ -15,4 +15,7 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   preparation script and review-template hash consistent. Preserve human review
   annotations; do not regenerate a checklist over the reviewer's edits. Record
   corrections separately and never turn an editorial correction into approval.
+- Cross-reference questions distinguish the originating provision from its
+  target reference. Include the source context needed to resolve phrases such
+  as "these organisations"; the target address alone is not a source-text result.
 
