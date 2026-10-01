@@ -9,8 +9,4 @@ Scope: automated tests and checked fixtures.
   must reject it before writing derived records.
 - Keep working examples separate from the closed gate set; do not use closed labels for tuning.
 - Never require live network access in the default test run. Record live-source checks as explicit integration tests.
-- M0-11 gold regression uses project-authored synthetic questions only. Run it
-  with `python -m unittest discover -s tests/legal_rag/corpus -p 'test_*.py' -v`.
-  Verify pending-review refusal, evidence corruption/path escape, split leakage,
-  hash-bound decisions, independent second review and immutable freeze replay.
 
