@@ -5,6 +5,12 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
 - `data/` content is ignored by default; only this instruction file is tracked.
 - Never commit secrets, licensed aggregator exports, private case files, or large generated indexes.
 - Treat raw assets as immutable. Store derived artifacts separately and link them by hash and build metadata.
+- M1-02's original inventory/review packet under `m1/inputs/m1-02/` remains
+  immutable. The owner's explicit consent is a separate record under
+  `m1/reviews/m1-02-owner-consent/`, with allowed exact-asset permissions and
+  hash-identical archive-local copies for compiler references. The permitted
+  59-FZ manifest under `m1/inputs/m1-02-permitted/` supports only the diagnostic
+  control target; it does not establish historical or legal admission.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

@@ -60,4 +60,11 @@ Scope: every file under `docs/`.
   rejected M0 candidates and the 59-FZ case-law-sensitive blocker; M1-02 acceptance
   requires separate human inventory/permission decisions. Repeats are immutable
   and must not overwrite a human record; use a new output directory for new evidence.
+- On 02.10.2026 the owner explicitly consented to all five diagnostic processing
+  requests and inventory acceptance with disclosed gaps. Record this in the
+  separate `data/m1/reviews/m1-02-owner-consent/decision.json`; retain the original
+  pending packet. Respect that consent for the approved scope without asking
+  again. The permitted 59-FZ input is ready for M1-03's control-date diagnostic
+  path only; historical coverage and all substantive legal admission remain
+  unresolved. Timestamp the recording honestly, not an invented chat-message time.
 

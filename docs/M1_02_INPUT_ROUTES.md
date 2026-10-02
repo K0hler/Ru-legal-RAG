@@ -1,8 +1,10 @@
 # M1-02: ten input routes and human review request
 
 **Prepared:** 2 October 2026.
-**Status:** engineering inventory and bounded acquisition verified; required
-human inventory/permission decisions are pending. M1-02 is not yet accepted.
+**Status:** engineering inventory and bounded acquisition verified; the owner
+accepted the inventory with its disclosed gaps and authorized diagnostic
+processing of all five acts on 2 October 2026. Substantive completeness and
+dated legal-admission checks remain unresolved; M1-02 is not fully accepted.
 No dated edition is legally admitted.
 
 ## Retained engineering result
@@ -39,14 +41,32 @@ Local artifacts:
   Their signer and timestamp are null; `pending` cannot pass M1-01's permission
   validation. No user or Legal Reviewer signature is inferred from implementation
   authorization or the historical M0 review.
+- [Owner consent](../data/m1/reviews/m1-02-owner-consent/decision.json) records
+  the explicit chat message “Я даю согласие на все”, its explained scope, exact
+  inventory content/file hashes, ten row dispositions and five separately
+  authorized permission records. The record uses `legal-reviewer-owner`, the
+  previously accepted owner/reviewer identifier. Its UTC timestamp is the time
+  the decision was recorded; the exact chat-message time was not supplied.
+- Allowed permissions are under `data/m1/reviews/m1-02-owner-consent/permissions/`.
+  Identical hash-checked copies under `data/m1-02-sources/reviews/m1-02-owner-consent/`
+  allow the compiler to resolve them within its declared archive root.
+  The original pending packet remains immutable historical evidence.
+- [Permitted 59-FZ input](../data/m1/inputs/m1-02-permitted/federal-law-59-2026-10-01.json)
+  passes M1-01's `load_input` validation for a diagnostic snapshot at the control
+  target only. The JSON/HTML extraction profile remains pending M1-03. The later
+  text cannot be passed as a `2025-01-01` input; that request is refused.
+- [Consent verification](../data/m1/reviews/m1-02-owner-consent/verification.json)
+  confirms the raw hashes, unchanged source/archive records and original packet,
+  allowed permission, retained legal blockers and refusal of the historical target.
 
 ## Ten checks
 
 These are proposed source routes with explicit blockers, not admitted inputs.
 `selected_date_basis` is null for all ten rows. Every row retains its original
-[M0-10 decision](M0_10_LEGAL_REVIEW.md), reviewer `legal-reviewer-owner`, pending
-processing permission, unverified amendment completeness and unverified
-date/territory evidence.
+[M0-10 decision](M0_10_LEGAL_REVIEW.md), reviewer `legal-reviewer-owner`, unverified
+amendment completeness and unverified date/territory evidence. The separate owner
+decision clears the processing-permission and inventory-acceptance requests;
+the immutable original inventory still describes their earlier pending state.
 
 | Act | 2025-01-01 | 2026-10-01 |
 |---|---|---|
@@ -76,24 +96,28 @@ each date, including:
 - The original's full approving text, sanitary rules, nine appendices and tables;
   each earlier amendment's affected provisions, dates, dependencies and scope.
 
-## Human decisions still required
+## Owner consent and remaining legal checks
 
-The owner and the human Legal Reviewer must sign the exact inventory hash,
-role, UTC timestamp, rationale and row-level dispositions. They may accept an
-inventory containing explicitly unresolved routes; those rows stay blocked in
-later reports and the final gate. Inventory acceptance does not establish
-amendment completeness or legal applicability.
+The owner explicitly consented after the diagnostic scope and 59-FZ issue were
+explained. The separate decision binds the inventory hash, role, recording time,
+rationale and all ten row dispositions. The inventory is accepted with unresolved
+routes; those rows stay blocked in later legal reports and the final gate.
+Inventory acceptance does not establish amendment completeness or applicability.
 
-Processing permission is a separate decision tied to the exact raw assets and
-diagnostic scope. The approved bounded-pilot access policy is the proposed basis;
-it does not grant bulk use or automatically sign an extraction permission.
+Diagnostic processing permission is now explicitly allowed for the exact listed
+raw assets of all five acts. The prior bounded-pilot source policy and this chat
+consent are its recorded basis. No further consent is needed for the same approved
+diagnostic scope. Bulk-service access terms remain unresolved.
 
-The owner and reviewer must explicitly keep or resolve the 59-FZ blocker:
+The decision retains the 59-FZ legal-admission blocker pending concrete evidence
+and review of
 [No. 48-FZ special application](http://ips.pravo.gov.ru/search/e1a7d76abfd409ca7d2cc0188226889cc76f796f651d171d42ece8014910f008)
 and [Constitutional Court No. 19-P of 18.07.2012](https://rg.ru/documents/2012/08/03/ks1807-dok.html)
 are distinct effects. Their raw evidence is not retained by this slice.
-Permission to diagnose 59-FZ does not resolve them. No court subsystem, reduced
-act scope or change to the earlier admission decision is implemented.
+Permission to diagnose 59-FZ does not resolve them. The later legislative
+implementation must also be checked before proposing the remaining effect for
+review. No court subsystem, reduced act scope or change to the earlier admission
+decision is implemented.
 
 ## Reproduction and acceptance
 
@@ -113,10 +137,10 @@ a separate signed record and its exact byte hash in the appropriate input.
 
 | M1-02 acceptance | State |
 |---|---|
-| Ten rows have a route or explicit blocker; SanPiN reconstructs for both dates | Engineering verified; human acceptance pending. |
+| Ten rows have a route or explicit blocker; SanPiN reconstructs for both dates | Engineering verified; owner accepted the inventory with its disclosed gaps. |
 | Nine amendments checked for completeness; new required documents retained | All known publications replayed, prior official chain cross-checked and search gaps recorded; human completeness check remains unresolved. |
-| Historical input independently justified, with bounded extension evidence if needed | No later snapshot reused and no adapter changed; four historical routes explicitly blocked. |
-| Processing permission separate from admission; owner/reviewer address the 59-FZ blocker | Separate pending templates and explicit decision request prepared; signatures pending. |
+| Historical input independently justified, with bounded extension evidence if needed | No later snapshot reused and no adapter changed; four historical routes explicitly blocked and accepted as unresolved. |
+| Processing permission separate from admission; owner/reviewer address the 59-FZ blocker | Five exact-asset permissions explicitly allowed; separate owner decision retains the 59-FZ admission blocker. |
 
 Four focused inventory tests cover the ten-row/permission/temporal blockers,
 corrupt and mispointed evidence, distinct card/PDF URLs, immutable replay and
