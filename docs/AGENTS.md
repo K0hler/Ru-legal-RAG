@@ -18,6 +18,13 @@ Scope: every file under `docs/`.
   after the historical target, including ones published earlier. A later
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
+- Follow `M1_IMPLEMENTATION_PLAN.md` for the current 15-slice decomposition.
+  Its schemas, CLI and Docling/RapidOCR baseline are target decisions, not
+  implemented behavior. Qualify the pinned runtime/models before PDF rollout;
+  discovery consumes shared extraction artifacts without importing heavy OCR.
+  Keep M1's ten legal checks and closed-gold isolation separate from engineering
+  completion. Compatible frozen-source changes need a reviewed update and replay,
+  not a hash refresh that hides drift.
 - Distinguish the legacy and new test versions of the integrated bank; do not
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a
