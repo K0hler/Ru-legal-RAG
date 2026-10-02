@@ -7,6 +7,12 @@ Scope: every file under `docs/`.
 - Update `docs/README.md` when adding, renaming, or moving a document.
 - Keep deterministic diagram sources beside rendered assets when both exist.
 - Do not present a planned component as deployed without current code or runtime evidence.
+- PRD v0.2 assigns edition reconstruction to M1. Processing permission is
+  separate from legal admission; rejected/stale inputs may produce diagnostic
+  drafts without changing M0-10 decisions or bypassing the frozen handoff.
+  The original-plus-amendments input needs its own versioned contract. SanPiN
+  reconstruction requires a chosen date, a verified amendment bundle, reviewed
+  operations, official evidence and an explicit Legal Reviewer decision.
 - Distinguish the legacy and new test versions of the integrated bank; do not
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a
