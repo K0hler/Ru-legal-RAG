@@ -3,6 +3,7 @@
 **Prepared:** 2 October 2026.
 **Status:** target implementation plan; no M1 slice is implemented or legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
+**Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
 
 ## 1. Outcome And Scope
