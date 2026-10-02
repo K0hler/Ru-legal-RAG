@@ -13,6 +13,11 @@ Scope: every file under `docs/`.
   The original-plus-amendments input needs its own versioned contract. SanPiN
   reconstruction requires a chosen date, a verified amendment bundle, reviewed
   operations, official evidence and an explicit Legal Reviewer decision.
+- M1 covers all five pilot acts in full at 2026-10-01 and 2025-01-01: ten
+  act/date checks, with legal admission for each. Exclude changes effective
+  after the historical target, including ones published earlier. A later
+  snapshot needs evidence-backed reconstruction before historical admission;
+  the owner's choice of dates is not legal approval or complete history.
 - Distinguish the legacy and new test versions of the integrated bank; do not
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a
