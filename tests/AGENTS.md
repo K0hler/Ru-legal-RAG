@@ -15,4 +15,9 @@ Scope: automated tests and checked fixtures.
   Fixture text and permission bytes are hash-pinned and exempt from Git newline
   conversion. Keep raw/approved-state snapshots in negative tests, and verify
   full text/byte accounting through the observable CLI artifacts.
+- M1-02 inventory checks are in `legal_rag/corpus/test_input_inventory.py` and
+  exercise the documentation generator against project-authored synthetic
+  archives. Verify ten distinct blocked rows, separate unsigned permissions,
+  corrupt/mispointed evidence, publication card versus PDF URLs and immutable
+  replay protecting human records. Do not load private gold or require a network.
 

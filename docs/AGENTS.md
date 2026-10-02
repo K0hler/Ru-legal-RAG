@@ -51,4 +51,13 @@ Scope: every file under `docs/`.
   Closed gold files are read as bytes for hashing only. The contract freeze
   records existing unversioned acquisition formats without inventing embedded
   schema versions; incompatible handoff changes require a new version.
+- M1-02's `assets/generate_m1_inventory.py` prepares the ten act/date rows from
+  retained source metadata and validated raw hashes without extracting legal text
+  or changing frozen adapters. Search observations and the full review packet
+  remain local. Pending permission templates have no signature/time and cannot
+  authorize extraction. Known-ID replay, advertised history and empty search
+  results do not prove completeness or historical applicability. Preserve the
+  rejected M0 candidates and the 59-FZ case-law-sensitive blocker; M1-02 acceptance
+  requires separate human inventory/permission decisions. Repeats are immutable
+  and must not overwrite a human record; use a new output directory for new evidence.
 

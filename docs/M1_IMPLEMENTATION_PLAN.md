@@ -1,7 +1,7 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Status:** M1-01 engineering slice implemented and verified; M1-02–M1-15 remain planned. No pilot edition is legally accepted by this document.
+**Status:** M1-01 implemented and verified; M1-02 engineering inventory/acquisition verified, required human decisions pending; M1-03–M1-15 remain planned. No pilot edition is legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
@@ -161,7 +161,7 @@ was regenerated at implementation start: `pass`, 78/78, no evidence problems.
 
 ### M1-02: Establish The Ten Input Routes
 
-**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** planned.
+**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** engineering inventory and bounded acquisition verified on 2 October 2026; human inventory/permission decisions pending. See [the retained result and remaining checks](M1_02_INPUT_ROUTES.md). M1-02 is not yet accepted.
 
 Prepare a local inventory for every act/date: official text route, required originals/amendments, URLs/hashes, search coverage and known gaps, permission, date/territory evidence, responsible reviewer and original M0-10 decision. The human lawyer confirms completeness and legal evidence, not the engineer or extractor.
 
@@ -432,4 +432,4 @@ Re-estimate after M1-02 (input routes/gaps), M1-04 (pages, speed, errors and run
 
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**Next implementation task:** M1-02, after the completed M1-01 engineering slice. This document grants no legal approval or M2 transition; later implementation/dependency claims require their own evidence.
+**Next implementation task:** finish M1-02's human inventory/permission decisions; M1-03 requires a separately permitted retained text input. This document grants no legal approval or M2 transition; later implementation/dependency claims require their own evidence.
