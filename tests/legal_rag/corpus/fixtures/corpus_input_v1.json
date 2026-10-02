@@ -1,0 +1,39 @@
+{
+  "act_identity_claim": {
+    "declared_identity": "Учебный акт М1-01"
+  },
+  "admission_blockers": [
+    "synthetic_fixture_only",
+    "amendment_inventory_incomplete"
+  ],
+  "admission_status": "unreviewed",
+  "archive_root": "..",
+  "assets": [
+    {
+      "declared_identity": "Учебный акт М1-01",
+      "evidence": {
+        "locator": "utf8:bytes:0:424",
+        "source_asset_sha256": "2a6ad78f04f0cb3c782ce899b77cd83849ed01bfb47f479274633cf60a19a1a6",
+        "source_url": "https://example.invalid/legal-rag/m1-01/sample-act"
+      },
+      "role": "original",
+      "sha256": "2a6ad78f04f0cb3c782ce899b77cd83849ed01bfb47f479274633cf60a19a1a6",
+      "source_item": "fixture:m1-01-sample-act",
+      "source_url": "https://example.invalid/legal-rag/m1-01/sample-act"
+    }
+  ],
+  "kind": "original_amendments",
+  "manifest_hash": "5486e99e82ad2cb36a5410bda919de46ab268e075af9a245dc46fa5038f607ed",
+  "processing_permission": {
+    "path": "reviews/fixture-permission.json",
+    "sha256": "151dbe944e8d81ca3c83a21cf9b4b3d56f97959d92475c6d76b6a6bfeabddc1f"
+  },
+  "schema_version": "corpus-input/1",
+  "target_dates": [
+    "2025-01-01",
+    "2026-10-01"
+  ],
+  "unresolved_questions": [
+    "Fixture dates exercise the CLI; legal applicability is unverified."
+  ]
+}

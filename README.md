@@ -34,6 +34,18 @@ fields or inferred legal applicability. `discover-publications` reads the docume
 official day feed, archives amendment cards and PDFs, records evidence-backed targets
 from the official document, and blocks stale candidates from that handoff.
 
+M1-01 implements a separate diagnostic corpus CLI: validated versioned input
+and processing permission, UTF-8 fixture extraction, identity/structure drafts,
+full text accounting and an offline HTML report. Repeated compilation returns
+`new` then `unchanged`. It preserves source/admission blockers and does not grant
+legal approval. See the [implemented contract and replay](docs/M1_01_FIXTURE_DRAFT.md).
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1
+python -m unittest discover -s tests/legal_rag/corpus -p "test_*.py"
+```
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.sources acquire-fixture `

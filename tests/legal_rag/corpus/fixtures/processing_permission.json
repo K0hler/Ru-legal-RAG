@@ -1,0 +1,12 @@
+{
+  "act_identity": "Учебный акт М1-01",
+  "authorized_at": "2026-10-02T00:00:00Z",
+  "authorized_by": "synthetic-fixture-author",
+  "decision": "allowed",
+  "rights_basis": "Project-authored fixture; synthetic permission, not a legal decision.",
+  "schema_version": "processing-permission/1",
+  "scope": "diagnostic",
+  "source_asset_sha256s": [
+    "2a6ad78f04f0cb3c782ce899b77cd83849ed01bfb47f479274633cf60a19a1a6"
+  ]
+}

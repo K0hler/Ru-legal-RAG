@@ -1,0 +1,12 @@
+{
+  "adapter_version": "fixture/1",
+  "captured_at": "2026-10-02T00:00:00Z",
+  "declared_act_identity": "Учебный акт М1-01",
+  "declared_edition_label": "synthetic-original-v1",
+  "expected_sha256": "2a6ad78f04f0cb3c782ce899b77cd83849ed01bfb47f479274633cf60a19a1a6",
+  "external_id": "m1-01-sample-act",
+  "media_type": "text/plain; charset=utf-8",
+  "rights_status": "Project-authored synthetic fixture; redistribution permitted",
+  "source_system": "fixture",
+  "source_url": "https://example.invalid/legal-rag/m1-01/sample-act"
+}

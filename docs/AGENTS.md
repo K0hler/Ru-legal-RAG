@@ -19,8 +19,9 @@ Scope: every file under `docs/`.
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
 - Follow `M1_IMPLEMENTATION_PLAN.md` for the current 15-slice decomposition.
-  Its schemas, CLI and Docling/RapidOCR baseline are target decisions, not
-  implemented behavior. Qualify the pinned runtime/models before PDF rollout;
+  M1-01's fixture-only contracts/compile CLI are implemented and documented in
+  `M1_01_FIXTURE_DRAFT.md`; later schemas/commands and Docling/RapidOCR remain
+  target decisions. Qualify the pinned runtime/models before PDF rollout;
   discovery consumes shared extraction artifacts without importing heavy OCR.
   Keep M1's ten legal checks and closed-gold isolation separate from engineering
   completion. Compatible frozen-source changes need a reviewed update and replay,

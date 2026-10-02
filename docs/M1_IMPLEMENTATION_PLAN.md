@@ -1,7 +1,7 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Status:** target implementation plan; no M1 slice is implemented or legally accepted by this document.
+**Status:** M1-01 engineering slice implemented and verified; M1-02–M1-15 remain planned. No pilot edition is legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
@@ -141,7 +141,7 @@ For each completed slice: update its actual status here with the check and retai
 
 ### M1-01: Fixture To Reviewable Draft
 
-**Type:** AFK. **Dependencies:** regenerated passing M0 gate. **Status:** planned.
+**Type:** AFK. **Dependencies:** regenerated passing M0 gate. **Status:** implemented on 2 October 2026; diagnostic fixture only, no legal admission.
 
 Implement the smallest complete corpus CLI path with a project-authored act fixture: validated `corpus-input/1`, one text extraction, an identity/structure draft, accounting, a minimal HTML report and repeated `new` then `unchanged`. Keep uncertain structure as an unresolved block. Only add the records used by this path.
 
@@ -152,6 +152,12 @@ Acceptance:
 - Two CLI runs on retained `data/m1/` produce the same manifest/draft IDs and content hashes without duplicate content. The report opens offline and shows evidence and blockers.
 
 Verify: new focused `tests/legal_rag/corpus/test_input_and_compile.py`, existing candidate-handoff tests, and retained fixture CLI replay. Full legal parsing and approval are not claimed here.
+
+Implemented evidence: [contracts and replay](M1_01_FIXTURE_DRAFT.md), eight
+focused offline corpus tests and retained `data/m1/fixture-replay-first.json` /
+`fixture-replay-second.json` (`new` then `unchanged`, identical hashes/IDs).
+The original source handoff and frozen fixture remain unchanged. M0 entry gate
+was regenerated at implementation start: `pass`, 78/78, no evidence problems.
 
 ### M1-02: Establish The Ten Input Routes
 
@@ -353,7 +359,7 @@ Verify: offline gate positive/negative tests, regenerated M0 compatibility gate,
 
 ## 6. CLI And Verification Contract
 
-The following interface is planned, not currently runnable. Implement commands only in the slice that owns their behavior. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
+`compile` is implemented for the M1-01 UTF-8 diagnostic fixture profile. Other commands and source-format profiles below remain planned. Implement commands only in the slice that owns their behavior. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -381,10 +387,15 @@ python -m unittest discover -s tests/legal_rag/sources -p "test_*.py" -v
 python docs/assets/generate_m0_gate.py
 ```
 
-Future M1 checks, once their files exist:
+Implemented M1-01 checks:
 
 ```powershell
 python -m unittest discover -s tests/legal_rag/corpus -p "test_*.py" -v
+```
+
+Future M1 milestone check, once its file exists:
+
+```powershell
 python docs/assets/generate_m1_gate.py
 ```
 
@@ -421,4 +432,4 @@ Re-estimate after M1-02 (input routes/gaps), M1-04 (pages, speed, errors and run
 
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**First implementation task:** M1-01, after rerunning the M0 entry check. This document authorizes no completed-code claim, dependency installation, legal approval or M2 transition.
+**Next implementation task:** M1-02, after the completed M1-01 engineering slice. This document grants no legal approval or M2 transition; later implementation/dependency claims require their own evidence.

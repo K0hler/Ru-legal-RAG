@@ -1,0 +1,1 @@
+"""Deterministic diagnostic corpus compilation."""
