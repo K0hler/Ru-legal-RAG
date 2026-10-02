@@ -11,6 +11,13 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   hash-identical archive-local copies for compiler references. The permitted
   59-FZ manifest under `m1/inputs/m1-02-permitted/` supports only the diagnostic
   control target; it does not establish historical or legal admission.
+- The owner-facing M1-02 packet under `m1/reviews/m1-02-review-v1/` contains
+  separate bounded research acquisitions, raw evidence, readable derived views,
+  page images and a blank human response form. Preserve the original inventory,
+  owner consent and source pointers. Store returned findings separately; verify
+  their packet hash and scope before applying a human decision. Changed evidence
+  needs a new packet version. These readable exports are review aids, not compiler
+  inputs, approved reconstructed text or qualified production OCR.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

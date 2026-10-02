@@ -67,4 +67,12 @@ Scope: every file under `docs/`.
   again. The permitted 59-FZ input is ready for M1-03's control-date diagnostic
   path only; historical coverage and all substantive legal admission remain
   unresolved. Timestamp the recording honestly, not an invented chat-message time.
+- M1-02's owner-facing packet is built by `assets/build_m1_02_review.py` under
+  `data/m1/reviews/m1-02-review-v1/`. The owner remains the assigned Legal Reviewer;
+  present readable Russian questions, official documents, exact page/provision
+  references and a response form. Its source-review scope excludes final edition
+  admission. Bounded historical research assets do not extend production adapters
+  or waive frozen M0 checks. Preserve returned findings separately against the
+  packet hash; draft autosave and technical QA are not human decisions. Never infer
+  completed review time from an export timestamp or elapsed browser session.
 

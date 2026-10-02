@@ -7,6 +7,54 @@ processing of all five acts on 2 October 2026. Substantive completeness and
 dated legal-admission checks remain unresolved; M1-02 is not fully accepted.
 No dated edition is legally admitted.
 
+## Owner-facing review packet
+
+The owner reconfirmed that they will perform the already assigned
+`legal-reviewer-owner` role and return their own findings. On 2 October 2026 a
+Russian-language [local review packet](../data/m1/reviews/m1-02-review-v1/index.html)
+was prepared with 30 evidence documents, 13 questions and nine separate SanPiN
+amendment rows. Its [offline ZIP](../data/m1/reviews/m1-02-review-v1/M1-02-review-package.zip)
+includes the PDFs, readable text views, raw responses and acquisition records.
+A [plain response template](../data/m1/reviews/m1-02-review-v1/Форма-ответа.md)
+is available when the browser form is inconvenient.
+
+The form has empty decisions, per-question rationale fields, browser-local draft
+storage, report text for copying into this chat, optional JSON/TXT downloads and
+JSON answer restoration. A completed source-review report requires all 22
+decisions and rationales; an insufficient-evidence decision preserves the blocker.
+The exported scope explicitly excludes final `LegalEdition` admission. Review
+start time is recorded only when the reviewer clicks Start; an export timestamp
+is not fabricated review duration.
+
+New bounded evidence preparation obtained four historical text candidates from
+the edition identifiers already present in the official retained selectors:
+Housing Code 01.09.2024, No. 354 01.09.2024, No. 491 14.09.2024 and 59-FZ
+01.09.2023. Each historical response repeated with identical bytes. These are
+separate human-review research assets; production historical adapters, M0
+contracts, source pointers and the original M1-02 inventory were not changed.
+The candidate labels alone do not establish applicability on 01.01.2025.
+
+New official publication acquisitions of 48-FZ, 80-FZ, 547-FZ and No. 931 each
+returned `new` then `unchanged`. The packet also contains the official-bank
+consolidated 48-FZ, the legacy-bank text of Decree No. 763 and the official
+publication of Constitutional Court No. 19-P in Rossiyskaya Gazeta. The direct
+Court-site requests failed certificate validation; validation was not bypassed.
+Publication-feed validation/search gaps are retained in the research records.
+
+The SanPiN table proposes each amendment's date basis, dispositions for both
+targets, affected provisions and conditions, with PDF page links and expandable
+original page images. No. 11's PDF page 3 explicitly states commencement on
+31.12.2024. Dates calculated under Decree No. 763 remain proposals requiring
+review of special rules. Temporary OCR assisted inspection of these scans only;
+it is not an implemented production extraction path or M1-04 qualification.
+
+Rebuild from the retained local evidence with
+`python docs/assets/build_m1_02_review.py`. The builder validates raw hashes and
+all question/document/page references. Returned human decisions must be retained
+separately and checked against `packet.json`'s content hash; never infer approval
+from preparing the packet or a technical form test. Changed evidence requires a
+new review packet and an explicit human disposition.
+
 ## Retained engineering result
 
 The M0 gate was regenerated: `pass`, 78/78 criteria, no evidence problems.
@@ -60,6 +108,10 @@ Local artifacts:
   allowed permission, retained legal blockers and refusal of the historical target.
 
 ## Ten checks
+
+This table describes the immutable initial inventory. The later owner-facing
+packet above adds unreviewed historical candidates; it does not rewrite those
+original rows or resolve their legal blockers.
 
 These are proposed source routes with explicit blockers, not admitted inputs.
 `selected_date_basis` is null for all ten rows. Every row retains its original

@@ -161,7 +161,7 @@ was regenerated at implementation start: `pass`, 78/78, no evidence problems.
 
 ### M1-02: Establish The Ten Input Routes
 
-**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** engineering inventory/acquisition verified and owner consent recorded on 2 October 2026. The inventory is accepted with gaps and all five diagnostic permissions are allowed; substantive completeness/applicability checks remain unresolved. See [the retained result and remaining checks](M1_02_INPUT_ROUTES.md). M1-02 is not fully accepted; a separately permitted 59-FZ diagnostic input is ready for M1-03.
+**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** engineering inventory/acquisition verified and owner consent recorded on 2 October 2026. The inventory is accepted with gaps and all five diagnostic permissions are allowed; substantive completeness/applicability checks remain unresolved. The owner-facing evidence packet is prepared for `legal-reviewer-owner`, with four separately retained historical candidates, official exception evidence and a blank response form. See [the retained result and remaining checks](M1_02_INPUT_ROUTES.md). M1-02 is not fully accepted; a separately permitted 59-FZ diagnostic input is ready for M1-03.
 
 Prepare a local inventory for every act/date: official text route, required originals/amendments, URLs/hashes, search coverage and known gaps, permission, date/territory evidence, responsible reviewer and original M0-10 decision. The human lawyer confirms completeness and legal evidence, not the engineer or extractor.
 
