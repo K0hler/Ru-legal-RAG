@@ -24,6 +24,13 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   Preserve v1, its consent and user responses. A v2 reply concerns only its named
   question; never treat it as approval of unrelated missing evidence or the ten
   unfinished editions. Browser QA answers are synthetic and must not be imported.
+- The actual v2 human response received on 12.10.2026 is retained separately as
+  `human-review.json`, with its hash/scope validation in
+  `human-review-verification.json`. Preserve the reviewer's supplied timestamp
+  and rationale. It confirms only `59-ks19p-after-80` at both targets;
+  `edition_admission` remains false. Keep original inventory/packets immutable
+  and distinguish this received decision from synthetic browser QA or a later
+  runtime relation import.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

@@ -5,7 +5,47 @@
 accepted the inventory with its disclosed gaps and authorized diagnostic
 processing of all five acts on 2 October 2026. Substantive completeness and
 dated legal-admission checks remain unresolved; M1-02 is not fully accepted.
-No dated edition is legally admitted.
+The focused 19-P-after-80-FZ legal classification was confirmed by the owner as
+Legal Reviewer on 12 October 2026. No dated edition is legally admitted.
+
+## Received human decision
+
+The assigned `legal-reviewer-owner` returned the [human decision](../data/m1/reviews/m1-02-review-v2/human-review.json)
+with `decision: confirmed` for `59-ks19p-after-80`, covering 2025-01-01 and
+2026-10-01. The supplied recording time is `2026-10-12T10:08:31.056Z`; no review
+duration is inferred. The complete rationale and four engineering open items
+are retained verbatim.
+
+The confirmed qualification uses 59-FZ Article 1 part 4 and Article 2 part 1 as
+amended by 80-FZ for the expanded applicants and addressees on both targets.
+Retain a separate link to Constitutional Court No. 19-P: regional guarantees
+may supplement federal guarantees without creating new obligations or
+restrictions on individuals' or legal entities' rights. The court annotation is
+an addressed interpretation and source relation; it does not by itself establish
+that the entire consolidated 59-FZ text is wrong.
+
+The [verification receipt](../data/m1/reviews/m1-02-review-v2/human-review-verification.json)
+binds the actual human response to v2 packet hash
+`78999703f930d605078090726c984da3006010887ba25e7490f7daf5c852d0c1`,
+the retained v1 packet hash and the original inventory content hash. The role,
+question, rationale, targets and scope match; all 30 raw evidence assets and
+readable views match their packet hashes. The original inventory, source records
+and both review packets remain unchanged.
+
+This specific human-classification request is resolved; do not request it again
+for the same evidence and scope. No runtime case-law relation has been imported
+and no edition has been admitted (`edition_admission: false`). Historical M0
+candidate blockers are preserved as originally recorded. Engineering must still:
+
+- Prove amendment-chain completeness and applicability of all four historical
+  candidates; a later consolidated text cannot replace the 2025-01-01 input.
+- Complete the No. 491 chain after 2025-09-01, establish the general No. 354
+  edition and check No. 931's special-regime conditions at the control target.
+- Verify the nine discovered SanPiN amendments, their exact operations and
+  special commencement rules; Decree No. 763 calculations remain proposals
+  until the special rules are checked.
+- Prepare full diagnostic/reconstructed texts. Final admission of all five acts
+  at both dates remains a separate review of completed results.
 
 ## Focused owner review packet v2
 
@@ -21,7 +61,7 @@ document preview needs a server, network access, new tab or PDF plugin. While th
 preview server runs, the retained v1 document/page/raw URLs are still available.
 The original v1 packet and its browser-local answers are preserved.
 
-The reviewer has **one required decision**, replacing the previous 22 replies:
+The packet requested **one required decision**, replacing the previous 22 replies:
 classify the remaining effect of Constitutional Court No. 19-P after the changes
 introduced by 80-FZ. The packet supplies the proposed conclusion, three short
 source excerpts and buttons opening the precise source paragraphs/pages. It

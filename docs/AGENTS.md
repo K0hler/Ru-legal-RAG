@@ -84,4 +84,12 @@ Scope: every file under `docs/`.
   Missing evidence stays engineering work and remains blocked. This does not
   waive final review of all ten complete editions. Verify actual offline document
   opening with `assets/check_m1_02_review_v2.js`, not just file/link existence.
+- On 12.10.2026 `legal-reviewer-owner` confirmed v2's specific 19-P-after-80-FZ
+  classification for both targets. The actual response and hash/scope receipt are
+  separate `human-review.json` / `human-review-verification.json` files under
+  `data/m1/reviews/m1-02-review-v2/`; preserve the supplied recording timestamp,
+  rationale and original packets. This question is resolved for the bound scope
+  without repeat confirmation. Engineering completeness/applicability and all ten
+  final admissions remain open; recording the decision imports no runtime relation
+  and does not rewrite historical source/candidate blockers.
 
