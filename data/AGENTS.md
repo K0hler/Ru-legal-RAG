@@ -42,6 +42,12 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   Six exact `corpus-input/1` diagnostic manifests are under `inputs/`; their
   archive-local permission copies match the row records. Four historical research
   candidates are separate and are not silently registered as approved inputs.
+- M1-03 diagnostic native drafts, full replay observations and browser QA remain
+  under `m1/pilot_runs/m1-03/`. Preserve successive development outputs; compiler
+  artifacts are immutable and a changed report needs a fresh output directory.
+  The permitted 59-FZ input and original admission blockers remain read-only.
+  Native coordinates refer to `/redtext` scalar characters; these local drafts
+  are neither legally admitted editions nor historical reconstruction evidence.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

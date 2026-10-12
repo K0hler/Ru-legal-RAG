@@ -102,4 +102,9 @@ Scope: every file under `docs/`.
   conditions stay distinct. No. 2's SanPiN targets are 282, 283, 286; 272 is a
   reference in the other sanitary rules. Bounded feed inspection preserves three
   strict validation failures and never proves all historical amendments absent.
+- M1-03's implemented profile and full native 59-FZ replay are documented in
+  `M1_03_NATIVE_TEXT.md`. Report engineering accounting and determinism separately
+  from legal admission. Keep JSON-scalar character locations distinct from raw
+  bytes/PDF pages. Preserve earlier manifests and their historical questions;
+  expose the original excerpt for every provision in the offline report.
 

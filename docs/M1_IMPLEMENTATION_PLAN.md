@@ -1,7 +1,7 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Status:** M1-01 and M1-02 implemented and verified. M1-02's ten input routes are complete with owner-accepted unresolved edition rows, exact diagnostic permissions and the confirmed 19-P-after-80-FZ decision. Full extraction/reconstruction/applicability review remains M1-03–M1-15 work. No pilot edition is legally accepted by this document.
+**Status:** M1-01 through M1-03 implemented and verified. M1-02's ten input routes are complete with owner-accepted unresolved edition rows, exact diagnostic permissions and the confirmed 19-P-after-80-FZ decision. M1-03 compiles the full permitted 59-FZ diagnostic snapshot with native locators and repeatable accounting. PDF extraction/reconstruction/applicability review remains M1-04–M1-15 work. No pilot edition is legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
@@ -175,7 +175,7 @@ Verify: human-signed inventory/permission records and raw-hash validation for ea
 
 ### M1-03: Full Native-Text Diagnostic Path For 59-FZ
 
-**Type:** AFK. **Dependencies:** M1-01 and a permitted retained text input. **Status:** planned.
+**Type:** AFK. **Dependencies:** M1-01 and a permitted retained text input. **Status:** implemented on 12 October 2026; full control-target diagnostic snapshot, no legal admission.
 
 Extract the saved JSON/HTML response through its explicit source format profile (`redtext`, then HTML text nodes), perform recorded deterministic cleanup, build `ActIdentity` before the legal tree, and compile the entire retained 59-FZ text as a diagnostic snapshot.
 
@@ -186,6 +186,14 @@ Acceptance:
 - Golden-tree tests use small permitted/synthetic examples and reviewed expected structure, not the closed question set. The retained full-text build is repeatable and still carries M0 admission blockers.
 
 Verify: focused extraction, cleanup, identity and AST tests plus two full retained builds. This is not yet the historical or control edition's legal approval.
+
+Implemented evidence: [native profile, accounting and replay](M1_03_NATIVE_TEXT.md),
+eight synthetic native tests and local `data/m1/pilot_runs/m1-03/verification-v4.json`.
+Two independent full builds are byte-identical; a same-directory repeat is
+`unchanged`. All 293 source tokens are accounted for, including all 18 articles,
+50 parts, 21 numbered items and 24 notes, with no structural exceptions in the
+retained text. The source archive, input permission, original blockers and
+frozen fixture/handoff remain unchanged.
 
 ### M1-04: Qualify And Retain Shared PDF/OCR
 

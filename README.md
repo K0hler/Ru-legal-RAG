@@ -40,6 +40,11 @@ full text accounting and an offline HTML report. Repeated compilation returns
 `new` then `unchanged`. It preserves source/admission blockers and does not grant
 legal approval. See the [implemented contract and replay](docs/M1_01_FIXTURE_DRAFT.md).
 
+M1-03 adds the full permitted 59-FZ diagnostic JSON/HTML path, with native
+source locators, explicit cleanup mappings, legal structure and retained notes.
+Two independent full builds match; admission and date coverage remain unresolved.
+See the [native-text implementation and replay](docs/M1_03_NATIVE_TEXT.md).
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1

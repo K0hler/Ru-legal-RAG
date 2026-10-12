@@ -22,4 +22,18 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   whitespace. Repeats verify every immutable artifact before reporting
   `unchanged`; never overwrite a conflicting record or write into raw/approved
   state. Run corpus tests, frozen handoff regressions and retained CLI replay.
+- M1-03 adds `native_text.py`: the explicit saved JSON `/redtext` HTML profile
+  and bound 59-FZ structure parser. Validate identity from the preamble and
+  unique final presidential signing fields before addresses; body references
+  cannot repair a conflicting signature. Standalone notes are document-level;
+  only a note in the same source paragraph inherits the provision address.
+  Native offsets are Unicode positions inside
+  the decoded JSON scalar, never raw JSON bytes or physical PDF pages. Retain
+  every text/entity token, entity/whitespace mappings, notes and original HTML;
+  source-marked superscripts affect addresses without changing visible digits.
+  Unknown numbering/boundaries (including multiple numbered provisions separated
+  by a break in one paragraph), duplicate addresses and unsupported lists/tables
+  stop targeting and remain unresolved. Keep original source/admission blockers.
+  Eight synthetic native tests and the full two-build replay are documented in
+  `docs/M1_03_NATIVE_TEXT.md`; the earlier fixture artifacts stay byte-identical.
 

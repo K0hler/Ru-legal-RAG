@@ -29,4 +29,10 @@ Scope: automated tests and checked fixtures.
   project-authored temporary evidence/review fixtures. Verify read-only repeat,
   corruption, path escape, duplicate/date rows, exact permission asset scope and
   reviewer-role refusal; synthetic confirmation never approves real editions.
+- M1-03 native checks are in `legal_rag/corpus/test_native_text.py`. Use the
+  project-authored HTML and literal expected address order; verify entity and
+  whitespace maps, original scalar locators, one-time token accounting, unknown
+  context/duplicate/identity refusal, retained notes and split superscripts.
+  Full retained 59-FZ verification stays local under `data/m1/pilot_runs/m1-03/`;
+  it must not read closed questions or imply dated legal approval.
 

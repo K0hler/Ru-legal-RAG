@@ -331,8 +331,15 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
         if manifest["edition_candidate"]["review_status"] == "rejected":
             blockers.add("rejected")
     for asset in manifest["assets"]:
+        if asset["metadata"]["media_type"].split(";", 1)[0] == "application/json":
+            from .native_text import extract_native, native_tree
+
+            extraction = extract_native(asset, raw[asset["sha256"]])
+            extractions.append(extraction)
+            trees.append(native_tree(asset, extraction))
+            continue
         if asset["metadata"]["media_type"] != "text/plain; charset=utf-8":
-            raise ValueError("M1-01 extraction supports UTF-8 plain text only")
+            raise ValueError("unsupported extraction format; use UTF-8 fixture or native redtext JSON")
         text = raw[asset["sha256"]].decode("utf-8")
         extraction = {
             "schema_version": "text-extraction/1", "source_asset_sha256": asset["sha256"],
@@ -352,7 +359,7 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
     draft = {
         "schema_version": "edition-draft/1", "input_hash": manifest["manifest_hash"],
         "validated_input_hash": content_hash(manifest), "extraction_ids": [item["extraction_id"] for item in extractions],
-        "parser_version": PARSER_VERSION, "target_date": target_date, "scope": "diagnostic_snapshot",
+        "parser_version": "+".join(sorted({tree["parser_version"] for tree in trees})), "target_date": target_date, "scope": "diagnostic_snapshot",
         "content_hash": content_hash(content), "content": content, "blockers": sorted(blockers),
         "admission_status": manifest["admission_status"], "legal_admission": "not_requested",
     }
@@ -425,13 +432,22 @@ def _report(manifest: dict, draft: dict) -> str:
         asset = next(asset for asset in manifest["assets"] if asset["sha256"] == tree["source_asset_sha256"])
         blocks = sorted([*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]],
                         key=lambda block: block["source_span"]["char_start"])
-        rows = "".join("<tr><td>" + escape(block.get("address", block.get("reason", ""))) + "</td><td>"
-                       + escape(block["source_span"]["locator"]) + "</td><td><pre>" + escape(block["text"])
-                       + "</pre></td></tr>" for block in blocks)
+        document_rows, excluded_rows = [], []
+        excluded_ids = {block["block_id"] for block in tree["excluded_blocks"] if "block_id" in block}
+        for block in blocks:
+            row = ("<tr><td>" + escape(block.get("address", block.get("reason", ""))) + "</td><td>"
+                   + escape(block["source_span"]["locator"]) + "</td><td><pre>" + escape(block["text"])
+                   + "</pre>" + ("<details><summary>Original source text and HTML</summary><pre>"
+                     + escape(block["original_text"]) + "</pre><pre>" + escape(block["original_html"])
+                     + "</pre></details>" if "original_html" in block else "") + "</td></tr>")
+            (excluded_rows if block.get("block_id") in excluded_ids else document_rows).append(row)
+        exclusions = ("<details><summary>Excluded source tokens and reasons</summary><table>"
+                      + "".join(excluded_rows) + "</table></details>") if excluded_rows else ""
         sections.append(f"<h2>{escape(tree['namespace'])}</h2><p>SHA-256: {asset['sha256']}</p>"
                         f"<p>Source: {escape(asset['source_url'])}; evidence: {escape(asset['evidence']['locator'])}</p>"
                         f"<pre>{escape(json.dumps(tree['accounting'], sort_keys=True, indent=2))}</pre>"
-                        f"<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>{rows}</table>")
+                        "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
+                        + "".join(document_rows) + "</table>" + exclusions)
     blockers = "".join("<li>" + escape(item) + "</li>" for item in draft["blockers"])
     return ("<!doctype html><html lang='en'><meta charset='utf-8'><title>Legal RAG diagnostic draft</title>"
             "<style>body{font:16px system-ui;max-width:1100px;margin:32px auto;padding:0 20px}"
