@@ -75,4 +75,13 @@ Scope: every file under `docs/`.
   or waive frozen M0 checks. Preserve returned findings separately against the
   packet hash; draft autosave and technical QA are not human decisions. Never infer
   completed review time from an export timestamp or elapsed browser session.
+- Use `assets/build_m1_02_review_v2.py` for the latest M1-02 reviewer packet.
+  It embeds all evidence in one HTML file; document buttons open an in-page reader
+  without network/new tabs/PDF plugins. Preserve v1 and any returned answers.
+  The owner requested minimum reviewer work: engineers perform factual checks and
+  prepare evidence; request only the remaining specific legal classification,
+  with short excerpts and a proposed rationale that explicit agreement may accept.
+  Missing evidence stays engineering work and remains blocked. This does not
+  waive final review of all ten complete editions. Verify actual offline document
+  opening with `assets/check_m1_02_review_v2.js`, not just file/link existence.
 

@@ -20,4 +20,9 @@ Scope: automated tests and checked fixtures.
   archives. Verify ten distinct blocked rows, separate unsigned permissions,
   corrupt/mispointed evidence, publication card versus PDF URLs and immutable
   replay protecting human records. Do not load private gold or require a network.
+- `docs/assets/check_m1_02_review_v2.js` is an explicit local browser regression
+  check for the owner packet. It disables network after page load, exercises all
+  embedded documents/PDF navigation and report gates, and resets its synthetic
+  answer in an isolated session. It is not human legal approval or a default
+  network-dependent unit test.
 

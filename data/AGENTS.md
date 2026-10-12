@@ -18,6 +18,12 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   their packet hash and scope before applying a human decision. Changed evidence
   needs a new packet version. These readable exports are review aids, not compiler
   inputs, approved reconstructed text or qualified production OCR.
+- `m1/reviews/m1-02-review-v2/` is the focused standalone successor to v1.
+  Its embedded content and one proposed legal classification are hash-bound;
+  rendered PDF pages are review aids linked to the unchanged original hashes.
+  Preserve v1, its consent and user responses. A v2 reply concerns only its named
+  question; never treat it as approval of unrelated missing evidence or the ten
+  unfinished editions. Browser QA answers are synthetic and must not be imported.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

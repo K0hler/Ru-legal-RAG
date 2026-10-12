@@ -7,7 +7,52 @@ processing of all five acts on 2 October 2026. Substantive completeness and
 dated legal-admission checks remain unresolved; M1-02 is not fully accepted.
 No dated edition is legally admitted.
 
-## Owner-facing review packet
+## Focused owner review packet v2
+
+**Revised:** 12 October 2026. The owner reported that document links in the open
+HTML did not work and requested minimal reviewer effort. The live preview's
+localhost server had stopped; the cached v1 HTML still appeared but its relative
+document URLs could not load. Filesystem-link checks had not covered this failure.
+
+The [v2 standalone HTML](../data/m1/reviews/m1-02-review-v2/index.html) embeds all
+30 evidence documents. Text views open inside the page; all pages of all 15 PDFs
+are available as rendered images, with the original PDFs also embedded. No
+document preview needs a server, network access, new tab or PDF plugin. While the
+preview server runs, the retained v1 document/page/raw URLs are still available.
+The original v1 packet and its browser-local answers are preserved.
+
+The reviewer has **one required decision**, replacing the previous 22 replies:
+classify the remaining effect of Constitutional Court No. 19-P after the changes
+introduced by 80-FZ. The packet supplies the proposed conclusion, three short
+source excerpts and buttons opening the precise source paragraphs/pages. It
+explains that human legal classification is required by the accepted project
+review policy, not by a separate statutory permission to read or compare laws.
+Agreement actively accepts the displayed proposal as rationale; corrections or
+insufficient evidence require a comment. No decision is preselected.
+
+Engineering owns hash/identity checks, historical selector verification,
+comparison of the affected 59-FZ paragraphs, directly stated commencement dates,
+source discovery and missing amendment/date evidence. The builder confirms that
+59-FZ Article 1 part 4 and Article 2 part 1 match character-for-character in the
+retained historical and control views. These factual findings are distinct from
+whole-edition applicability and admission. The already accepted 48-FZ
+special-application classification is not presented as a new permission request.
+
+Missing chains, historical applicability, SanPiN operations/special dates and
+full reconstructed output remain explicit engineering work. Reducing repeated
+review fields does not waive the ten act/date checks, source completeness or the
+final human admission in M1-13. A v2 response cannot approve an unfinished edition
+or clear unrelated blockers. Its hash binds the scope, source hashes, excerpts,
+embedded document content and proposed interpretation.
+
+Rebuild with `python docs/assets/build_m1_02_review_v2.py`. Regression check:
+load the page in an isolated Playwright CLI session, then run
+`playwright-cli run-code --filename docs/assets/check_m1_02_review_v2.js`.
+This check disables the browser network, opens all 30 documents, inspects every
+PDF's first/last image, verifies rendered HTML and report refusal/scope, and
+restores an unanswered form. Technical QA creates no human legal-review record.
+
+## Previous owner-facing review packet v1 (retained)
 
 The owner reconfirmed that they will perform the already assigned
 `legal-reviewer-owner` role and return their own findings. On 2 October 2026 a
