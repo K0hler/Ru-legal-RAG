@@ -25,4 +25,8 @@ Scope: automated tests and checked fixtures.
   embedded documents/PDF navigation and report gates, and resets its synthetic
   answer in an isolated session. It is not human legal approval or a default
   network-dependent unit test.
+- M1-02 closure checks are in `legal_rag/corpus/test_m1_02_closure.py`. Use only
+  project-authored temporary evidence/review fixtures. Verify read-only repeat,
+  corruption, path escape, duplicate/date rows, exact permission asset scope and
+  reviewer-role refusal; synthetic confirmation never approves real editions.
 

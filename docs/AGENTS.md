@@ -92,4 +92,14 @@ Scope: every file under `docs/`.
   without repeat confirmation. Engineering completeness/applicability and all ten
   final admissions remain open; recording the decision imports no runtime relation
   and does not rewrite historical source/candidate blockers.
+- M1-02 closes the input-route inventory with declared admission blockers, not
+  M1's full-text or ten-edition legal-review work. The 12 October result is in
+  `M1_02_CLOSURE.md` and `data/m1/inputs/m1-02-completion/closure.json`;
+  validate it read-only with `assets/validate_m1_02_closure.py`. It retains 27 new
+  official publications, a fresh two-pass pilot and independent historical
+  candidates. The new bank now includes No. 1242 in No. 491; preserve the old
+  stale/rejected archive. No. 354's general text and No. 1979/931 application
+  conditions stay distinct. No. 2's SanPiN targets are 282, 283, 286; 272 is a
+  reference in the other sanitary rules. Bounded feed inspection preserves three
+  strict validation failures and never proves all historical amendments absent.
 

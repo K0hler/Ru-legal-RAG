@@ -31,6 +31,17 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   `edition_admission` remains false. Keep original inventory/packets immutable
   and distinguish this received decision from synthetic browser QA or a later
   runtime relation import.
+- `m1/inputs/m1-02-completion/` retains the 12 October routing result, separate
+  official acquisitions, source research, ten exact-asset diagnostic permission
+  records and a hash-bound closure matrix. Permissions record continuing owner
+  authorization and actual record-creation time; they are not fresh human legal
+  admission decisions. Validate all 463 bindings before using the result. Preserve
+  earlier inventories, permissions, packets and the rejected/stale M0 candidates.
+  Every matrix row still carries explicit edition-admission blockers and its next
+  M1 slice; new acquisition does not approve a `LegalEdition`.
+  Six exact `corpus-input/1` diagnostic manifests are under `inputs/`; their
+  archive-local permission copies match the row records. Four historical research
+  candidates are separate and are not silently registered as approved inputs.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

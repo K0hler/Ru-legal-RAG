@@ -1,12 +1,12 @@
 # M1-02: ten input routes and human review request
 
 **Prepared:** 2 October 2026.
-**Status:** engineering inventory and bounded acquisition verified; the owner
-accepted the inventory with its disclosed gaps and authorized diagnostic
-processing of all five acts on 2 October 2026. Substantive completeness and
-dated legal-admission checks remain unresolved; M1-02 is not fully accepted.
-The focused 19-P-after-80-FZ legal classification was confirmed by the owner as
-Legal Reviewer on 12 October 2026. No dated edition is legally admitted.
+**Status:** M1-02 completed as the ten-route inventory with accepted unresolved
+edition rows on 12 October 2026. See the [closure evidence and current matrix](M1_02_CLOSURE.md).
+The owner authorized all five diagnostic acts and accepted inventory gaps on
+2 October; the focused 19-P-after-80-FZ qualification was confirmed on 12 October.
+Full text/operation/applicability work remains in M1-03–M1-13. No dated edition is
+legally admitted. The sections below retain the earlier packets and requests.
 
 ## Received human decision
 
@@ -275,9 +275,14 @@ a separate signed record and its exact byte hash in the appropriate input.
 | M1-02 acceptance | State |
 |---|---|
 | Ten rows have a route or explicit blocker; SanPiN reconstructs for both dates | Engineering verified; owner accepted the inventory with its disclosed gaps. |
-| Nine amendments checked for completeness; new required documents retained | All known publications replayed, prior official chain cross-checked and search gaps recorded; human completeness check remains unresolved. |
-| Historical input independently justified, with bounded extension evidence if needed | No later snapshot reused and no adapter changed; four historical routes explicitly blocked and accepted as unresolved. |
-| Processing permission separate from admission; owner/reviewer address the 59-FZ blocker | Five exact-asset permissions explicitly allowed; separate owner decision retains the 59-FZ admission blocker. |
+| Nine amendments checked for completeness; new required documents retained | Latest official chain cross-checked and all 26 pages of the bounded eight-day feed inspected; nine SanPiN publications replayed, 27 further source/application publications retained. Full historical completeness is not claimed. |
+| Historical input independently justified, with bounded extension evidence if needed | Four independent historical responses and unchanged replays retained, nearby commencement evidence acquired; no later snapshot reused and no production adapter changed. Final date applicability stays blocked. |
+| Processing permission separate from admission; owner/reviewer address the 59-FZ blocker | Exact-asset diagnostic records retained for all ten rows; the actual v2 human decision resolves the named 19-P qualification. Runtime relation import and full edition admission remain later work. |
+
+The final [M1-02 closure](M1_02_CLOSURE.md) supersedes this initial matrix's
+pending request state without overwriting its records. Closure completes source
+routing with declared blockers, as the plan allows; all ten dated editions still
+require the full later review.
 
 Four focused inventory tests cover the ten-row/permission/temporal blockers,
 corrupt and mispointed evidence, distinct card/PDF URLs, immutable replay and

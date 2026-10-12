@@ -1,7 +1,7 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Status:** M1-01 implemented and verified; M1-02 inventory/acquisition verified, owner diagnostic consent recorded and the focused 19-P-after-80-FZ legal classification confirmed on 12 October 2026; substantive completeness/applicability checks remain unresolved. M1-03–M1-15 remain planned. No pilot edition is legally accepted by this document.
+**Status:** M1-01 and M1-02 implemented and verified. M1-02's ten input routes are complete with owner-accepted unresolved edition rows, exact diagnostic permissions and the confirmed 19-P-after-80-FZ decision. Full extraction/reconstruction/applicability review remains M1-03–M1-15 work. No pilot edition is legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
@@ -161,7 +161,7 @@ was regenerated at implementation start: `pass`, 78/78, no evidence problems.
 
 ### M1-02: Establish The Ten Input Routes
 
-**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** engineering inventory/acquisition verified and owner consent recorded on 2 October 2026. The inventory is accepted with gaps and all five diagnostic permissions are allowed. On 12 October `legal-reviewer-owner` confirmed the focused v2 classification of the remaining 19-P effect after 80-FZ for both targets; that specific human decision is complete. Substantive completeness/applicability checks and missing evidence remain engineering work. See [the retained decision and remaining checks](M1_02_INPUT_ROUTES.md). M1-02 is not fully accepted; a separately permitted 59-FZ diagnostic input is ready for M1-03.
+**Type:** HITL plus bounded acquisition. **Dependencies:** M1-01. **Status:** completed input-route inventory on 12 October 2026, with the owner's accepted unresolved edition rows and diagnostic authorization. Ten rows, 463 evidence bindings, 27 newly acquired publications (`new` then `unchanged`), fresh two-pass pilot, six validated diagnostic compiler inputs and the actual `legal-reviewer-owner` 19-P decision are retained in [the closure report](M1_02_CLOSURE.md). Independent historical candidates replace the earlier missing-source state without claiming final applicability. Unfinished structure, operations, coverage/application review and all ten edition admissions remain explicit downstream blockers. The permitted 59-FZ control input is ready for M1-03.
 
 Prepare a local inventory for every act/date: official text route, required originals/amendments, URLs/hashes, search coverage and known gaps, permission, date/territory evidence, responsible reviewer and original M0-10 decision. The human lawyer confirms completeness and legal evidence, not the engineer or extractor.
 
@@ -284,6 +284,11 @@ Acceptance:
 - All approved texts/annexes are accounted for. Both full dated drafts rebuild deterministically and explain their included/excluded changes and differences.
 
 Verify: retained discovery-to-new-input regression, No. 491 profile/effective-date tests and two builds for each date. Frozen source handoff still rejects the old stale candidate.
+
+The 12 October M1-02 acquisition now supplies an official 26.09.2026 candidate
+including No. 1242. Prefer that newly acquired source when its dated coverage is
+verified; keep the original 01.09.2025 candidate rejected/stale. See
+[source hashes and comparison](M1_02_CLOSURE.md).
 
 ### M1-11: Housing Code And Dated 59-FZ
 
