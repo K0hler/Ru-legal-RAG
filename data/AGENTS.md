@@ -48,6 +48,16 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   The permitted 59-FZ input and original admission blockers remain read-only.
   Native coordinates refer to `/redtext` scalar characters; these local drafts
   are neither legally admitted editions nor historical reconstruction evidence.
+- The Housing Code parser controls are retained under
+  `m1/experiments/dedoc-housing-code-20261012-v1/` and
+  `m1/experiments/parser-alternatives-housing-code-20261012-v1/`. The latter uses
+  the same immutable HTML for isolated Docling, Unstructured and DocSlicer runs;
+  installed environments are under `m1/tool-environments/`. Preserve raw outputs
+  and read `COMPARISON.md` / `comparison.json` before interpreting counts. Generic
+  text blocks or heading trees are not legal article/part/item nodes. DocSlicer's
+  browser mode omits two CSS-hidden editorial paragraphs; its static control
+  keeps the text but collapses this document to one block. New settings/runs need
+  separate outputs; this experiment is not production integration or admission.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
