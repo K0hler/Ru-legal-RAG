@@ -68,6 +68,15 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   nested provisions, legal paragraphs, note scope and other documents remain
   unqualified. Attribute this source-specific adapter to the experiment, not to
   native library features, and retain the weaker plain/HTML branches as evidence.
+- The direct simplification probe is under
+  `m1/experiments/bs4-dedoc-housing-code-20261013-v1/`. BeautifulSoup alone retains
+  source paragraph IDs/W9 ranges and produces the same normalized TXT content
+  as the previous best chain, excluding whitespace. Pinned Dedoc passes the
+  same 243 article/number/section-chapter controls and retains 996 notes;
+  Unstructured adds no measured benefit for this exact HTML. The raw Dedoc JSON
+  still has temporary dotted number spellings. Keep the separate source-number
+  components/display ledger; bare dotted strings are not provision identities.
+  This is not production integration, nested-structure qualification or admission.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
