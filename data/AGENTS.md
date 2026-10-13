@@ -73,10 +73,19 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   source paragraph IDs/W9 ranges and produces the same normalized TXT content
   as the previous best chain, excluding whitespace. Pinned Dedoc passes the
   same 243 article/number/section-chapter controls and retains 996 notes;
-  Unstructured adds no measured benefit for this exact HTML. The raw Dedoc JSON
-  still has temporary dotted number spellings. Keep the separate source-number
-  components/display ledger; bare dotted strings are not provision identities.
+  Unstructured adds no measured benefit for this exact HTML. Use dotted article
+  numbers as strings with explicit article kind and parent scope; retain the
+  source-number components/display ledger. Bare strings are not provision IDs.
   This is not production integration, nested-structure qualification or admission.
+- The two-document follow-up benchmark is under
+  `m1/experiments/parser-benchmark-html-20261013-v1/`. The unchanged normalizer
+  and pinned Dedoc run three sequential passes on Decrees 354/491 and repeat
+  the Housing Code. Warm normalization-plus-parse times are about 1.40/0.18/1.56
+  seconds, excluding process startup and JSON IO. Text/notes survive, but attached
+  rules stay raw text under preceding provisions, and superscript point/subpoint
+  numbers remain unqualified. Independent prefix controls are not full AST
+  accuracy. TXT flattens 354's table and omits embedded formula images; retain
+  their source controls. Do not promote the pipeline from article-only scores.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
