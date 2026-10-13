@@ -58,6 +58,16 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   browser mode omits two CSS-hidden editorial paragraphs; its static control
   keeps the text but collapses this document to one block. New settings/runs need
   separate outputs; this experiment is not production integration or admission.
+- The follow-up chain probe is under
+  `m1/experiments/parser-pipeline-housing-code-20261013-v1/`. A fresh Unstructured
+  pass feeds separately retained HTML/TXT inputs to pinned Dedoc and DocSlicer.
+  Plain TXT restores all Housing Code article boundaries in Dedoc. The best
+  experimental branch adds 41 canonical article-number dots only where original
+  W9 ranges prove superscript semantics; its ledger and paragraph alignment remain
+  separate from raw inputs. Its 243 article/number/section-chapter controls pass;
+  nested provisions, legal paragraphs, note scope and other documents remain
+  unqualified. Attribute this source-specific adapter to the experiment, not to
+  native library features, and retain the weaker plain/HTML branches as evidence.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
