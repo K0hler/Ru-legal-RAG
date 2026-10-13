@@ -45,6 +45,13 @@ source locators, explicit cleanup mappings, legal structure and retained notes.
 Two independent full builds match; admission and date coverage remain unresolved.
 See the [native-text implementation and replay](docs/M1_03_NATIVE_TEXT.md).
 
+A separate [Housing Code HTML diagnostic parser](docs/HOUSING_HTML_PARSER.md)
+reads raw UTF-8 HTML into a source-bound hierarchy with superscript numbering,
+retained notes, exact character locators, explicit unsupported regions and an
+inert offline report. It does not admit an edition or change the permission-gated
+compiler. Run `python -m legal_rag.corpus.housing_html --input <html> --output-dir <fresh-dir>`
+with `PYTHONPATH=src`; use pytest for its synthetic regression suite.
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1
