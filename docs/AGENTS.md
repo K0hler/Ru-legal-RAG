@@ -18,7 +18,10 @@ Scope: every file under `docs/`.
   after the historical target, including ones published earlier. A later
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
-- Follow `M1_IMPLEMENTATION_PLAN.md` for the current 15-slice decomposition.
+- Follow `M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
+  (M1-01–M1-15 plus M1-03A) and 13 milestone gates. The owner approved the
+  parser-transfer requirement on 13.10.2026. M1-03A is the next slice: shared
+  structure with act-type profiles, not another parser bound to one act.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
   `M1_01_FIXTURE_DRAFT.md`; later schemas/commands and Docling/RapidOCR remain
   target decisions. Qualify the pinned runtime/models before PDF rollout;
@@ -26,6 +29,17 @@ Scope: every file under `docs/`.
   Keep M1's ten legal checks and closed-gold isolation separate from engineering
   completion. Compatible frozen-source changes need a reviewed update and replay,
   not a hash refresh that hides drift.
+- Separate source-format adapters from the shared legal structure engine.
+  Production profiles must not select/permit acts by hard-coded number, date,
+  title, filename or source hash. Extract identity and compare the evidence-bound
+  input claim; keep conflicts and unsupported structure unresolved.
+  G13 requires two distinct non-pilot acts per supported family/source-format
+  combination, not development examples, different editions or renamed fixtures.
+  Pin final parser/profile versions, check independent structural controls and
+  repeated full-document runs, and retain failures before changing rules.
+  These permitted diagnostic documents do not enlarge the ten edition admissions
+  or authorize reading closed retrieval gold. Missing/failed transfer evidence
+  blocks M1/M2; M1-03A, M1-06 and M1-09 own the profile checks.
 - Distinguish the legacy and new test versions of the integrated bank; do not
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a

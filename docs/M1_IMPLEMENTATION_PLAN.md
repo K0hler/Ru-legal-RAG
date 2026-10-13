@@ -1,9 +1,10 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Status:** M1-01 through M1-03 implemented and verified. M1-02's ten input routes are complete with owner-accepted unresolved edition rows, exact diagnostic permissions and the confirmed 19-P-after-80-FZ decision. M1-03 compiles the full permitted 59-FZ diagnostic snapshot with native locators and repeatable accounting. PDF extraction/reconstruction/applicability review remains M1-04–M1-15 work. No pilot edition is legally accepted by this document.
+**Revised:** 13 October 2026, following the owner's approval to require parser reuse beyond the five pilot acts. Added M1-03A without renumbering existing slices; the plan now has 16 slices and 13 milestone gate criteria.
+**Status:** M1-01 through M1-03 implemented and verified. M1-02's ten input routes are complete with owner-accepted unresolved edition rows, exact diagnostic permissions and the confirmed 19-P-after-80-FZ decision. M1-03 compiles the full permitted 59-FZ diagnostic snapshot with native locators and repeatable accounting. The separate [Housing Code HTML parser](HOUSING_HTML_PARSER.md) is also implemented, but both structure profiles bind a specific act; they do not satisfy the new M1-03A reuse requirement. Shared legal parsing and transfer checks remain planned, alongside M1-04–M1-15. No pilot edition is legally accepted by this document.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
-**Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1), private Trello board published on 2 October 2026: 15 slice cards, 62 slice acceptance items and 12 milestone gate items. Publication is not implementation or legal acceptance; verify live card state before updating it.
+**Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
 
 ## 1. Outcome And Scope
@@ -23,6 +24,8 @@ The agreed pilot is the full text of all five acts, including tables and annexes
 These are ten independent admission checks, not a requirement for ten different texts. Identical text may share content artifacts, but evidence and applicability must cover each date separately. Neither target date means "current today" or proves an interval between the dates.
 
 Included: local CLI, versioned JSON, native text extraction, shared PDF/OCR, deterministic cleanup, identity and legal structure, human-confirmed amendment operations, date-specific reconstruction, a self-contained HTML review report, legal admission, measurements and a gate report.
+
+M1 also delivers a shared `LegalStructureParser` with reusable act-type profiles: federal law, code, government resolution, and sanitary rules with their approving act. Reuse must be demonstrated on additional real acts outside the five-act pilot. These are engineering validation inputs, not additional dated-edition admission checks. Supported source formats and structure classes are explicit; M1 does not promise correct parsing of every legal document or automatic amendment interpretation.
 
 Excluded: PostgreSQL/FTS and retrieval (M2), chunking, embeddings, LLM-based legal interpretation, universal amendment automation, a complete edition history, court-practice ingestion, continuous monitoring, a web service, React, queues, agents and import of other local projects. A known court-related admission blocker is not waived by this exclusion.
 
@@ -80,6 +83,18 @@ If installation, table recovery, provenance or repeatability fails, retain the q
 
 The shared result is our own versioned artifact, not a Docling object in the legal domain. `sources` consumes this artifact through a small reader; it does not import the heavy compiler/OCR runtime. Integration is an explicit staged CLI workflow: acquire PDF, extract it, then replay bounded discovery against the matching extraction. A missing extraction produces an actionable exception, not an inferred amendment target.
 
+### Shared Legal Structure And Transfer Checks
+
+Source-format adapters produce `text-extraction/1`; the shared structure engine consumes that artifact and an explicit act-type profile. Keep JSON/HTML decoding and PDF/OCR outside legal numbering and parent selection. Reuse ordered traversal, addresses, source mappings, accounting, exceptions and deterministic serialization across profiles. Profile rules describe a document family, never a particular act number, date, title, filename or source hash.
+
+Extract identity fields from the document and compare them with the evidence-bound input claim before assigning addresses. The expected identity is input data, not a production-code constant. A new act within a supported family/format must use the same versioned engine and profile without code changes, act-specific configuration or per-document correction rules. Source-format differences require an explicit adapter, not another legal parser for each act. Unsupported or ambiguous content remains visible and prevents a claim of supported coverage.
+
+For every declared family/source-format combination, retain full diagnostic runs on at least **two distinct non-pilot acts** not used to develop its rules. Different editions of one act, amendments to a pilot act, synthetic identity substitutions and fragments of one document do not count as different validation acts. Acquire official assets through `sources`, bind URLs/hashes and processing permission, and freeze engine/profile versions before parsing the validation bodies. This corpus is separate from closed retrieval gold; do not read closed questions or labels.
+
+Validate full text/region accounting, extracted identity, numbering, sibling order, parent relationships, tables/annexes where supported, unresolved content and source locators against independently prepared structural controls. An output with all text unresolved, a false address/parent or an unresolved critical structure cannot pass. Run each full input twice with identical versions and compare content IDs/hashes. If a failure requires a rule change, retain the failed run, add a regression and use two other reserved acts to validate the new version; do not relabel development examples as transfer evidence.
+
+Record the matrix of supported families/formats and validation assets in `parser-transfer-report/1`, with version/hash bindings, structural-control results, exceptions, repeat comparisons and explicit limitations. M1-03A owns the federal-law/code checks; M1-06 and M1-09 add sanitary-rules and government-resolution checks. M1-14 reruns the complete matrix, and M1-15 rejects missing or failed mandatory evidence under G13. Engineering transfer success never grants legal admission.
+
 ### Minimal Persistent Contracts
 
 These are decisions for M1; schemas and fixtures are introduced with their first consumer, not as a model-only framework.
@@ -93,6 +108,7 @@ These are decisions for M1; schemas and fixtures are introduced with their first
 | `edition-draft/1` | Input/extraction/parser/ledger hashes and versions, target date and scope, resulting tree, included/excluded/unresolved operations, lineage, content hash and blockers |
 | `corpus-review/1` | Exact draft/evidence/ledger hashes, reviewer/role, decision, rationale, UTC time with offset, admitted date/scope and conditions, exception dispositions and independent decision when disputed |
 | `corpus-build/1` | Immutable approved canonical payload references, review-decision hashes, supported act/date checks and explicit limitations; no unreviewed draft hidden inside approved output |
+| `parser-transfer-report/1` | Declared act-family/source-format coverage; engine/profile/extractor versions and hashes; two distinct non-pilot validation acts per supported combination with permission/source/control bindings; structural results, exceptions and repeat comparisons |
 | `m1-pilot-report/1`, `m1-gate/1` | Ten-check matrix, repeat comparisons, measurements and evidence-backed criteria; missing or unresolved mandatory evidence cannot produce `pass` |
 
 Do not modify the meaning of `edition-candidate/1`. M1-01 consumes a valid non-stale frozen candidate where available, or uses the new diagnostic manifest for a retained asset/bundle. The latter has its own evidence/permission validation and does not impersonate a `consolidates` relation. Connector-specific `nd`, `rdk`, `baseid` and transport internals stay outside shared contracts.
@@ -120,20 +136,23 @@ AFK means engineering can implement and verify the slice independently; it never
 | M1-01 | AFK | passing M0 gate | Versioned fixture-to-draft CLI and minimal report |
 | M1-02 | HITL + bounded acquisition | M1-01 | Ten-check source/permission/coverage matrix |
 | M1-03 | AFK | M1-01; permitted text input from M1-02 | Full 59-FZ diagnostic AST with native locators |
+| M1-03A | AFK + structural review | M1-03; permitted native validation inputs | Shared structure engine, federal-law/code profiles and transfer evidence |
 | M1-04 | AFK + reviewed transcription | M1-01; permitted PDF inputs from M1-02 | Qualified shared PDF/OCR extraction and runtime record |
 | M1-05 | AFK + contract review | M1-04 | Discovery migration, M0 compatibility replay |
-| M1-06 | AFK + structural review | M1-03, M1-04; permitted SanPiN inputs | Complete SanPiN base/amendment trees and accounting |
+| M1-06 | AFK + structural review | M1-03A, M1-04; permitted SanPiN/validation inputs | Sanitary-rules profile, full trees and transfer evidence |
 | M1-07 | HITL | M1-02, M1-06 | Reviewed SanPiN operations and date evidence |
 | M1-08 | AFK | M1-07 | SanPiN reconstruction for both target dates |
-| M1-09 | AFK + HITL | M1-02, M1-03, M1-04, M1-08 | No. 354 dated drafts and applicability evidence |
+| M1-09 | AFK + HITL | M1-02, M1-03A, M1-04, M1-08 | Government profile/transfer evidence, No. 354 dated drafts |
 | M1-10 | AFK + HITL | M1-02, M1-05, M1-09 | No. 491 dated drafts, stale-source reconciliation |
-| M1-11 | AFK + HITL | M1-02, M1-03, M1-08 | Housing Code and 59-FZ dated drafts |
+| M1-11 | AFK + HITL | M1-02, M1-03A, M1-08 | Housing Code and 59-FZ dated drafts using shared profiles |
 | M1-12 | AFK | M1-08 through M1-11 | Complete review report and hash-bound approval path |
 | M1-13 | HITL | M1-12 | Ten legal admission decisions or explicit blockers |
-| M1-14 | AFK + measured HITL | M1-05, M1-13 | Two-pass full pilot and measurement report |
+| M1-14 | AFK + measured HITL | M1-03A, M1-05, M1-13; all profile transfer checks | Two-pass full pilot, transfer matrix and measurement report |
 | M1-15 | AFK + acceptance decision | M1-14 | Evidence-backed M1 gate and M2 handoff |
 
 Start M1-02 as soon as M1-01 finishes; missing inputs for one act do not prevent independent diagnostic engineering for another permitted input. A dependency on that inventory requires the verified route/permission for the act being processed, not resolution of unrelated rows. Record unresolved matrix rows instead of pretending every input route is complete. Implement and commit one engineering slice before starting the next; the table is not authorization to spawn agents or parallel development threads.
+
+After the completed M1-03, implement M1-03A before extending legal structure to another pilot act. M1-04 is physical extraction qualification and can proceed independently of this parser dependency; its output must meet the shared extraction contract. Later acts extend reusable profiles only for new structural classes, with transfer checks in the owning slice.
 
 For each completed slice: update its actual status here with the check and retained artifact path, update the nearest applicable `AGENTS.md`, run focused acceptance/regression checks, and make a focused commit on `main`. Never mark legal acceptance from an engineering test. Keep the plan rolling; change a later slice only when observed evidence warrants it.
 
@@ -195,6 +214,27 @@ Two independent full builds are byte-identical; a same-directory repeat is
 retained text. The source archive, input permission, original blockers and
 frozen fixture/handoff remain unchanged.
 
+### M1-03A: Shared Legal Parser And Native Transfer Checks
+
+**Type:** AFK plus structural review. **Dependencies:** M1-03, existing Housing Code HTML implementation and permitted native validation inputs. **Status:** planned; next implementation task. The owner approved this plan correction on 13 October 2026; no shared parser implementation or transfer acceptance is claimed.
+
+Replace the act-bound structure paths with one engine and reusable federal-law/code profiles. Keep source-specific extraction and existing diagnostic commands as adapters. Read number/date/title from source evidence and the input claim; retain identity-conflict guards without restricting production code to 59-FZ or 188-FZ. Preserve earlier immutable artifacts; changed parser versions create new drafts rather than rewriting old results.
+
+Implementation sequence:
+- [ ] Add focused regressions in `tests/legal_rag/corpus/test_structure.py`: two different consistent act identities use the same profile; a conflicting identity stays unresolved; section/chapter/article/part/item numbering and superscripts preserve parents and source spans. Demonstrate the current act-bound failure before replacing it.
+- [ ] Introduce the common traversal/profile entry point in `src/legal_rag/corpus/structure.py`; adapt `native_text.py`, `housing_html.py` and `compiler.py` only where necessary to delegate structure. Keep profile rules together until a real separation is needed; no plugin framework, per-act modules or new runtime dependency.
+- [ ] Re-run retained 59-FZ and Housing Code inputs with the new version. Check semantic structure/locator equivalence, every source token/region, notes, unsupported content and immutable-output behavior; old IDs/hashes need not match a new parser version, but each version must repeat deterministically.
+- [ ] Freeze the native family/format matrix and profile versions; validate two other full federal laws and two other full codes using the transfer protocol above. Retain independently checked structural controls, failures, repeat comparisons and `parser-transfer-report/1` under ignored `data/m1/pilot_runs/`.
+- [ ] Run corpus regressions, frozen source/handoff checks and the M0 gate; update actual scope/status and nearest `AGENTS.md`, then commit the completed slice on `main`.
+
+Acceptance:
+- One engine handles both native profiles; no act number/date/title/hash in production code selects or permits a particular document. Identity and source-format validation still reject conflicts and unsupported inputs.
+- Existing full native inputs retain reviewed structural behavior, original evidence and all admission blockers. Diagnostic Housing Code parsing does not become a dated or legally admitted edition.
+- All declared native family/format combinations pass the independent two-act transfer protocol without code changes, document-specific rules or unresolved critical structure. Synthetic fixtures supplement, never replace, the real-document runs.
+- New parser/profile versions are explicit; repeated runs match; original archives, previous drafts and frozen M0 evidence remain intact.
+
+Verify: focused shared-profile tests, existing native/Housing Code corpus tests, retained full-input replays, source/handoff regressions, `python docs/assets/generate_m0_gate.py` and the hash-bound transfer report. PDF/OCR and additional structure families remain the responsibility of M1-04/M1-06/M1-09.
+
 ### M1-04: Qualify And Retain Shared PDF/OCR
 
 **Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** planned.
@@ -207,6 +247,7 @@ Acceptance:
 - A reviewed page sample yields measured character/word error rates and a categorized list of critical numeral, negation and table errors. Confidence is diagnostic, never legal approval.
 - Two fresh extractions with the pinned configuration are compared after defined canonicalization. A cache hit alone does not prove engine determinism. Unexplained output drift blocks qualification.
 - Failed, corrupted or unsupported PDFs give structured exceptions and preserve prior artifacts. Focused default tests consume saved/synthetic extraction fixtures without downloading weights or requiring the OCR runtime.
+- The retained `text-extraction/1` output feeds the M1-03A structure engine; extraction never embeds act-specific legal numbering or identity rules. PDF support is declared only for family/format combinations later validated through the same transfer protocol.
 
 Verify: extractor contract/error tests, an explicit offline-with-models runtime smoke, fresh-run comparison and full-document extraction report. Do not invent an OCR accuracy threshold before this baseline; no unresolved critical error may reach approval.
 
@@ -227,15 +268,16 @@ Verify: source tests, both discovery stages on retained official PDFs, frozen ca
 
 ### M1-06: Full SanPiN Base And Amendment Structure
 
-**Type:** AFK plus structural review. **Dependencies:** M1-03, M1-04 and permitted inputs. **Status:** planned.
+**Type:** AFK plus structural review. **Dependencies:** M1-03A, M1-04 and permitted pilot/validation inputs. **Status:** planned.
 
-Compile the original and amendment texts into reviewable trees using a bounded SanPiN profile. Distinguish the approving resolution, the sanitary rules and their nine retained original annexes; verify actual document boundaries rather than assuming every annex is present.
+Compile the original and amendment texts with the shared engine and a reusable sanitary-rules profile. Distinguish the approving resolution, the sanitary rules and their nine retained original annexes; verify actual document boundaries rather than assuming every annex is present. SanPiN 2.1.3684-21 is a pilot instance, not a hard-coded profile identity.
 
 Acceptance:
 - Full page/text accounting, legal numbering and order, table row/column/cell spans, units, footnotes and annex boundaries are visible. Repeated page headers are only excluded with an explicit service-text reason.
 - Duplicate addresses in different approved texts do not collide. Identity/structure uncertainty blocks operation targeting while remaining visible in the draft.
 - Reviewer-checked tree/table examples cover each observed structure class; all full documents, not only sample pages, undergo coverage reconciliation and exception review.
 - A correction references exact source/extraction spans and records before/after values; no "cleanup" silently repairs a legal number or wording.
+- Validate the sanitary-rules family on two distinct non-pilot acts for each declared input format, including supported annex/table structure, and extend `parser-transfer-report/1`. Reuse the shared engine rather than implementing a SanPiN-specific traversal.
 
 Verify: SanPiN AST/table/accounting tests, complete retained compilation twice, and a structural review record. Structural review is necessary but not sufficient for dated legal admission.
 
@@ -269,14 +311,15 @@ Verify: reconstruction/temporal negative tests, two independent rebuilds per tar
 
 ### M1-09: Government Resolution No. 354 At Both Dates
 
-**Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03, M1-04, M1-08. **Status:** planned.
+**Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03A, M1-04, M1-08. **Status:** planned.
 
-Extend only the observed government-resolution profile (`doctext` JSON/HTML where supplied), reuse the common extraction/operation engine, and compile a suitable official snapshot or reviewed reconstruction for each date.
+Add a reusable government-resolution profile to the shared structure engine and an explicit `doctext` JSON/HTML adapter where supplied. Reuse common extraction/operation behavior and compile a suitable official snapshot or reviewed reconstruction for each date; No. 354 is an input identity, not a parser rule.
 
 Acceptance:
 - Separate approving act, Rules and annex namespaces; preserve the complete text, tables, notes and ordering. Add focused golden-tree cases for newly observed structure only.
 - The retained unsuitable snapshot's displayed date does not become verified coverage. The replacement route reconciles required amendments and explicit territorial/provision conditions with official evidence and human decisions.
 - Both dates have full drafts, change dispositions, evidence-backed diff and repeated identical content hashes; historical coverage is independent of the current connector's selection.
+- Freeze the government profile and validate two distinct resolutions outside the five-act pilot for each supported format; check approving act, approved texts, tables/annexes and numbering under the shared transfer protocol.
 
 Verify: No. 354 profile/temporal tests and retained full-text builds for both dates. Unresolved general-versus-territorial coverage remains an admission blocker.
 
@@ -284,7 +327,7 @@ Verify: No. 354 profile/temporal tests and retained full-text builds for both da
 
 **Type:** AFK plus HITL. **Dependencies:** M1-02, M1-05, M1-09. **Status:** planned.
 
-Reuse the government profile and reconcile the discovered No. 1242 amendment and every other required change against suitable inputs for both target dates.
+Reuse the government profile from M1-09 without No. 491-specific parser rules, and reconcile the discovered No. 1242 amendment and every other required change against suitable inputs for both target dates. A new structural class requires a reviewed family-profile extension and renewed transfer evidence; identity differences alone require no code change.
 
 Acceptance:
 - Old stale/rejected input remains historical diagnostic evidence. New acquisition and legal review, not a flag reset, establish a replacement route.
@@ -300,15 +343,16 @@ verified; keep the original 01.09.2025 candidate rejected/stale. See
 
 ### M1-11: Housing Code And Dated 59-FZ
 
-**Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03, M1-08. **Status:** planned.
+**Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03A, M1-08. **Status:** planned.
 
-Complete the remaining four act/date checks. Add the bounded code profile for Housing Code sections/chapters/articles/parts and reuse the established federal-law profile for 59-FZ. Prefer proved official historical snapshots; use the reviewed operation path only where needed.
+Complete the remaining four act/date checks using the shared code and federal-law profiles accepted in M1-03A. Reuse their section/chapter/article/part behavior without Housing Code/59-FZ identity constants. Prefer proved official historical snapshots; use the reviewed operation path only where needed. The existing standalone Housing Code diagnostic parser is prior engineering evidence, not completion of these dated-edition checks.
 
 Acceptance:
 - Complete texts, numbering (including inserted article numbers), nested provisions, notes and references preserve identity and source locators. New parser rules have small tests and retained full-text validation.
 - Both routes reconcile date-specific amendments and application conditions; a matching displayed date or text comparison is not alone an admission decision.
 - The existing 59-FZ special-application/case-law-sensitive issue has a specific, evidenced human disposition or remains a blocker. Do not bypass it by declaring court practice outside scope or suppressing affected text.
 - Full dated drafts and explainable diffs exist for both acts; repeated builds match. If text is identical, separately prove coverage for both dates.
+- Any new source format or structural rule extends the relevant family/format matrix and repeats its two-act transfer checks. A later pilot run cannot rely on transfer evidence from a different parser/profile version.
 
 Verify: code/federal-law profile tests, full retained builds and explicit applicability records. No court-practice module or arbitrary scope reduction is introduced.
 
@@ -347,7 +391,7 @@ Verify: hash-bound human review records, ten-check admission matrix and exceptio
 
 ### M1-14: Two-Pass Pilot And Measured Cost
 
-**Type:** AFK plus measured HITL. **Dependencies:** M1-05, M1-13. **Status:** planned.
+**Type:** AFK plus measured HITL. **Dependencies:** M1-03A, M1-05, M1-13 and all profile transfer checks. **Status:** planned.
 
 Run the full retained five-act/two-date workflow through the real CLI, not only temporary tests. Publish the reviewed canonical build, repeat with identical inputs/versions/decisions, and retain comparisons and measurements.
 
@@ -356,6 +400,7 @@ Acceptance:
 - Measure acquisition separately from extraction/OCR, compilation, reconstruction, report generation, review and exception resolution. Record page/asset/provision counts, exceptions, OCR modes, elapsed time, peak RAM/VRAM where measured, output/model sizes and monetary cost or `not_applicable` with rationale.
 - Record cold/fresh and cached paths distinctly, sample counts and hardware/runtime. Do not present cache latency as OCR speed, derive p95 from two runs, or reuse the accepted M0 timing placeholders as M1 measurements.
 - Inject a failure after a previously approved build and prove that raw files, approved payloads and any published-build pointer remain unchanged. Reverify shared-discovery evidence and the source contract replay.
+- Re-run the complete transfer matrix with the same final engine/profile versions used for the pilot: two distinct non-pilot acts per supported family/format, independent structural controls and identical repeated content. Measure engineering validation separately from the ten legal admission checks; preserve diagnostic status of validation documents.
 
 Verify: retained `m1-pilot-report/1`, machine-readable repeat comparisons, measured reviewer records and focused failure/replay tests. Set further numeric performance targets only after reviewing this measured baseline.
 
@@ -367,7 +412,7 @@ Implement `docs/assets/generate_m1_gate.py`, tracked criterion/contract records 
 
 Acceptance:
 - Every criterion below is rendered with `pass`, `fail` or `unresolved`, evidence references/hashes and a rationale. Missing/corrupt evidence, a missing act/date, scope mismatch or legal blocker prevents `pass`; exit `2` blocks M2.
-- Checks bind the report to input/schema/extractor/parser/model versions, exact approved build and review hashes. Negative tests demonstrate that deleting a mandatory review or altering an asset invalidates acceptance.
+- Checks bind the report to input/schema/extractor/parser/model versions, exact approved build and review hashes. Negative tests demonstrate that deleting a mandatory review or altering an asset invalidates acceptance; missing/failed transfer evidence, pilot/development acts reused as validation and parser/profile-version drift also reject G13.
 - Closed gold content is not deserialized; if continuity requires its hash, read bytes only. M1 does not run a closed retrieval evaluation without a retrieval system.
 - M2 receives only `corpus-build/1` approved entities/provisions, evidence locators, supported date/scope and review references. No database or retrieval implementation is added to prove this handoff.
 - Update actual component status and plan completion after evidence passes. Owner records milestone acceptance; a request to reduce scope requires an explicit earlier PRD/criterion change, not a post-hoc waiver.
@@ -376,7 +421,7 @@ Verify: offline gate positive/negative tests, regenerated M0 compatibility gate,
 
 ## 6. CLI And Verification Contract
 
-`compile` is implemented for the M1-01 UTF-8 diagnostic fixture profile. Other commands and source-format profiles below remain planned. Implement commands only in the slice that owns their behavior. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
+`compile` is implemented for the M1-01 UTF-8 diagnostic fixture and M1-03 saved `redtext` JSON/HTML profile. The separate Housing Code HTML CLI is diagnostic. Shared act-type dispatch belongs to M1-03A; `extract`, `approve` and `run-pilot` below remain planned. Implement commands only in the slice that owns their behavior. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -422,7 +467,7 @@ Text accounting has two layers: every source page/region/text node is located or
 
 ## 7. M1 Gate Criteria
 
-These twelve criteria operationalize PRD section 10 without lowering its scope. M1-15 expands them into evidence checks, not new discretionary quality thresholds.
+These thirteen criteria operationalize PRD section 10 without lowering its scope. G13 records the owner-approved 13 October parser-transfer requirement; it does not enlarge the ten legal admission checks. M1-15 expands the criteria into evidence checks, not new discretionary quality thresholds.
 
 | ID | Criterion | Principal evidence/slices |
 |---|---|---|
@@ -438,8 +483,11 @@ These twelve criteria operationalize PRD section 10 without lowering its scope. 
 | G10 | Self-contained review report supports independent text/operation/date/evidence inspection | Offline report checks, reviewer record and escaping tests |
 | G11 | Actual compilation/OCR, review and exception costs are measured, with run context and limitations | M1-04, M1-13, M1-14 measurement records |
 | G12 | Bundle input is versioned/replayable; shared extraction replaces temporary OCR and preserves M0-10A behavior | Contract fixtures, discovery replay, reviewed freeze change and M0 reassessment |
+| G13 | One shared parser with reusable federal-law, code, government-resolution and sanitary-rules profiles passes two distinct non-pilot acts per declared family/format without code changes, act-specific rules or unresolved critical structure | M1-03A, M1-06, M1-09, M1-11, M1-14; final-version `parser-transfer-report/1`, independent structural controls and repeated full-document runs |
 
 A missing required source, unresolved rights, unknown legal date/condition, unsupported critical structure/edit, disputed legal decision or absent reviewer evidence blocks the relevant check and therefore M1 acceptance. Engineering tasks can progress independently, but no partial success is called a complete five-act pilot.
+
+Missing or failed mandatory transfer evidence also blocks M1 acceptance and the M2 handoff. Success on the five pilot acts alone cannot satisfy G13, and passing transfer checks cannot substitute for their ten legal admissions.
 
 ## 8. Effort And Stop Conditions
 
@@ -447,6 +495,8 @@ Do not give a fixed calendar promise before seeing the historical inputs and OCR
 
 Re-estimate after M1-02 (input routes/gaps), M1-04 (pages, speed, errors and runtime), and M1-07 (operations and human-review effort). Each estimate separates engineering, acquisition/permissions, human legal work and unresolved blockers. The accepted M0 review-time deviation is historical and does not excuse new M1 measurement.
 
+The 13 October revision adds real-document acquisition, structural controls and transfer runs; include their engineering/review effort separately, and re-estimate after M1-03A. Do not reuse the earlier five-act estimate as if these checks cost nothing.
+
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**Next implementation task:** M1-03 using its separately permitted retained 59-FZ input; M1-02's unresolved legal evidence remains blocked and must be resolved for final acceptance. This document grants no legal approval or M2 transition; later implementation/dependency claims require their own evidence.
+**Next implementation task:** M1-03A: shared legal structure and native federal-law/code transfer checks. M1-03 remains completed as the earlier act-bound diagnostic slice; M1-02's unresolved legal evidence remains blocked and must be resolved for final acceptance. This document grants no legal approval or M2 transition; later implementation/dependency claims require their own evidence.
