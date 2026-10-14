@@ -37,3 +37,17 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   Eight synthetic native tests and the full two-build replay are documented in
   `docs/M1_03_NATIVE_TEXT.md`; the earlier fixture artifacts stay byte-identical.
 
+- `html_preparation.py` implements the parser-independent preparatory part of
+  M1-03A, not its legal structure engine or transfer gate. `prepare-html` reuses
+  the diagnostic input/permission contract for one JSON `/redtext` or `/doctext`
+  asset. Keep originals, source blockers and immutable replay. BeautifulSoup /
+  tinycss2 are optional dependencies in `requirements-html.txt`, imported lazily
+  by the CLI. Infer indices only from supported common/inline CSS hints; never
+  map `H`/`T` directly to heading levels. Respect `!important` between class and
+  inline hints; refuse body/content parsed inside `head` before exclusions.
+  Preserve unknown content, note markers,
+  tables, image resources and reference attributes. The sidecar maps opening-tag
+  anchors, not complete text/provision spans; downstream adapters must still
+  retain exact text provenance. See `docs/HTML_PREPARATION.md` and its four-input
+  preservation replay; passing these development controls does not satisfy G13.
+

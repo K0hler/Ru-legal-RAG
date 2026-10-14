@@ -52,6 +52,14 @@ inert offline report. It does not admit an edition or change the permission-gate
 compiler. Run `python -m legal_rag.corpus.housing_html --input <html> --output-dir <fresh-dir>`
 with `PYTHONPATH=src`; use pytest for its synthetic regression suite.
 
+The [parser-independent HTML preparer](docs/HTML_PREPARATION.md) accepts the
+permission-bound native JSON inputs before a downstream parser is chosen. It
+preserves text, indices, notes, tables, images and references, with original/output
+opening-tag maps. Install `requirements-html.txt`, then use
+`python -m legal_rag.corpus prepare-html --input <manifest> --target-date <date> --output-dir <dir>`.
+Four retained-input preservation checks pass; legal hierarchy and M1-03A transfer
+qualification remain the next work.
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1

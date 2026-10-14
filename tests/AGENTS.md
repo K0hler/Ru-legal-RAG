@@ -36,3 +36,13 @@ Scope: automated tests and checked fixtures.
   Full retained 59-FZ verification stays local under `data/m1/pilot_runs/m1-03/`;
   it must not read closed questions or imply dated legal approval.
 
+- `legal_rag/corpus/test_html_preparation.py` tests the optional BS4/tinycss2
+  preparer with authored HTML and the existing synthetic permission archive.
+  Verify original/prepared opening anchors, exact text/order, indices, notes,
+  tables/images/links, unsupported CSS preservation and immutable CLI replay.
+  Include legacy CSS comments, media-rule isolation and adjacent whitespace;
+  all three are observed native-HTML failure modes. Full retained-input controls
+  stay local and are preservation checks, not legal-structure or G13 evidence.
+  Reject body/content parsed under `head` before writing, and check `!important`
+  priority across simple class and inline declarations to avoid false indices.
+

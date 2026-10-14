@@ -7,6 +7,10 @@ Scope: every file under `docs/`.
 - Update `docs/README.md` when adding, renaming, or moving a document.
 - Keep deterministic diagram sources beside rendered assets when both exist.
 - Do not present a planned component as deployed without current code or runtime evidence.
+- `HTML_PREPARATION.md` documents the implemented parser-independent preparation
+  slice. Keep its four-input preservation evidence separate from M1-03A legal
+  hierarchy and G13 qualification. Opening-tag maps are not full token/provision
+  locators; common CSS hints are not computed rendering or arbitrary-CSS support.
 - PRD v0.2 assigns edition reconstruction to M1. Processing permission is
   separate from legal admission; rejected/stale inputs may produce diagnostic
   drafts without changing M0-10 decisions or bypassing the frozen handoff.

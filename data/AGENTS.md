@@ -86,6 +86,13 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   numbers remain unqualified. Independent prefix controls are not full AST
   accuracy. TXT flattens 354's table and omits embedded formula images; retain
   their source controls. Do not promote the pipeline from article-only scores.
+- The parser-independent preparation replay is under
+  `m1/experiments/html-preparation-20261014-v1/`. `verification.json` names four
+  passing content-addressed outputs; retain earlier failed prototypes separately.
+  Original JSON scalar HTML, prepared HTML, source/output opening anchors and
+  validated input are separate files. Preserve source status and permission;
+  this replay checks text/notes/indices/tables/images/references and determinism,
+  not legal hierarchy, date validity, admission or non-pilot G13 transfer.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
