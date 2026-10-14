@@ -131,3 +131,9 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   `shared-v4/former-failure-replays.json` but are not new qualification acts.
   Housing item `1.1-1` and its inline note have a documented semantic correction;
   preserve both the original and corrected drafts. No edition admission changes.
+
+- `m1/pilot_runs/m1-03a-original-four-status-v1/acceptance.json` records the
+  corrected stage acceptance: fail, 2/4. Original No. 354/491 inputs fail the
+  actual compiler before derived writes; 59-FZ/Housing repeats are unchanged.
+  The prior code/law transfer report is subset evidence and cannot close
+  M1-03A. Retain all earlier results rather than rewriting the failed history.

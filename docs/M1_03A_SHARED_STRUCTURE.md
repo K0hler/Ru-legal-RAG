@@ -1,8 +1,27 @@
 # M1-03A: shared native legal structure
 
-**Implemented:** 14 October 2026. The native federal-law/code engineering
-slice is complete. This does not admit a legal edition or complete the
-milestone-wide G13 matrix for future PDF, sanitary-rules or resolution profiles.
+**Status: reopened / incomplete, 14 October 2026.** The previous statement
+that M1-03A was complete is withdrawn. The implemented federal-law/code
+component passes its recorded checks, but only **two of the four original
+retained HTML documents** pass the complete compiler path. Additional transfer
+documents do not replace this acceptance set. No legal edition is admitted.
+
+## Mandatory original-input acceptance
+
+| Original retained input | HTML preparation | Complete legal structure |
+|---|---|---|
+| 59-FZ | pass | pass |
+| Housing Code | pass | pass |
+| Government Resolution No. 354 | pass | fail: `/doctext` and resolution structure unsupported |
+| Government Resolution No. 491 | pass | fail: `/doctext` and resolution structure unsupported |
+
+Current evidence: `data/m1/pilot_runs/m1-03a-original-four-status-v1/acceptance.json`.
+The actual compiler calls give **fail, 2/4**, not stage completion. Closing
+M1-03A requires full parsing of all four through the common pipeline, including
+the hierarchy of approved texts/annexes, source accounting and explicit
+table/formula/image handling. Renaming preservation or subset transfer results
+as full acceptance is not permitted. Passing this minimum set does not replace
+the independent transfer checks for every declared native family/format.
 
 ## Implementation
 
@@ -61,9 +80,9 @@ visible digits and source coordinates are unchanged. The report contains
 the two affected before/after node records. All 243 article numbers/HTML
 anchors also match the previously prepared independent controls.
 
-## Frozen full-document transfer
+## Partial evidence: frozen federal-law/code transfer
 
-Final evidence is retained under
+Federal-law/code evidence is retained under
 `data/m1/pilot_runs/m1-03a-transfer-v4-controls-v2/`:
 `freeze.json`, `controls/*.json`, per-act `result.json`, two complete builds,
 offline reports and `parser-transfer-report.json` (`parser-transfer-report/1`).
@@ -103,7 +122,7 @@ unsupported tables and region-only blockers.
 
 ## Verification and limits
 
-Final checks on 14 October: **166 tests passed** across the complete default
+Checks at commit `c97831e`: **166 tests passed** across the complete default
 suite; Ruff passed; M0 gate passed all **78** criteria with no evidence problems.
 The final transfer report SHA-256 is
 `787caa154894b8bd7188ad8983ec989294235d2fbb0ad0ccdbf7b692edd51f24`.
@@ -115,7 +134,8 @@ the retained verification scripts, then `python docs/assets/generate_m0_gate.py`
 The frozen M0 adapters/handoff are unchanged. Raw archives, previous drafts,
 rejected/stale statuses and original admission blockers remain intact.
 
-This qualifies the declared native profiles on the recorded inputs. It does
+These checks qualify the recorded federal-law/code subset, not M1-03A as a
+whole. They do
 not guarantee arbitrary HTML, infer missing structure, implement other act
 families, resolve every editorial note's scope, reconstruct historical
 editions or establish legal applicability. Unsupported structures remain

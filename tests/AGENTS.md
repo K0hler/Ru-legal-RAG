@@ -55,3 +55,9 @@ Scope: automated tests and checked fixtures.
   and retain independent DOM controls and failed cohorts. A corrected control
   reader must retain `<br/>` whitespace; do not change production code to agree
   with a reference reader that dropped it. Native transfer never reads gold.
+
+- M1-03A completion requires a full retained-input acceptance run on the
+  original four HTML documents, including No. 354 and No. 491 through the
+  same compiler. Preparation-only preservation and additional federal-law/code
+  tests are supplemental. A missing path or unresolved critical structure
+  means stage failure even when the complete default test suite is green.

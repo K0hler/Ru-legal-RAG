@@ -66,3 +66,11 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   after frozen versions; earlier failed acts remain development controls.
   See `docs/M1_03A_SHARED_STRUCTURE.md`; standalone note scope, dated editions,
   PDF/OCR and other act families are not qualified by this native evidence.
+
+- Closure correction, 14 October 2026: M1-03A is incomplete until the same
+  common pipeline fully parses all four original retained HTML inputs (59-FZ,
+  Housing Code, Government Resolutions No. 354 and No. 491). Current acceptance
+  is fail, 2/4: `/doctext` and native resolution structure remain unsupported.
+  Do not substitute preparation preservation, passing unit tests or unrelated
+  transfer laws/codes for this mandatory set. Keep the existing subset and
+  transfer evidence, but never report it as completion of the whole stage.

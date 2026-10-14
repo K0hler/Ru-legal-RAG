@@ -2,8 +2,9 @@
 
 Implemented on 14 October 2026 as a preparatory part of M1-03A. The subsequent
 [shared native legal engine](M1_03A_SHARED_STRUCTURE.md) and its four-act native
-transfer checks are now implemented. Milestone-wide G13 remains open for the
-other planned families/formats.
+transfer checks are implemented as partial evidence. M1-03A remains open:
+its full compiler path passes only two of the four original HTML inputs.
+Milestone-wide G13 also remains open for the other required families/formats.
 
 ## Implementation
 
