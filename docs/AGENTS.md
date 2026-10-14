@@ -26,8 +26,9 @@ Scope: every file under `docs/`.
   the owner's choice of dates is not legal approval or complete history.
 - Follow `M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
   (M1-01–M1-15 plus M1-03A) and 13 milestone gates. The owner approved the
-  parser-transfer requirement on 13.10.2026. M1-03A is the next slice: shared
-  structure with act-type profiles, not another parser bound to one act.
+  parser-transfer requirement on 13.10.2026. M1-03A is implemented for shared native federal-law/code structure; see
+  `M1_03A_SHARED_STRUCTURE.md` for its frozen four-act transfer and retained
+  earlier failures. M1-04 is the next planned extraction slice.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
   `M1_01_FIXTURE_DRAFT.md`; later schemas/commands and Docling/RapidOCR remain
   target decisions. Qualify the pinned runtime/models before PDF rollout;
@@ -128,3 +129,10 @@ Scope: every file under `docs/`.
   bytes/PDF pages. Preserve earlier manifests and their historical questions;
   expose the original excerpt for every provision in the offline report.
 
+
+- M1-03A qualifies the recorded native actual.pravo `/redtext` profiles only.
+  Keep its corrected independent DOM controls (br whitespace) separate from
+  production rule changes and earlier failed cohorts. A native engineering
+  pass is not the milestone-wide G13 pass, arbitrary HTML support, PDF/OCR
+  qualification or legal admission. Document the Housing item `1.1-1` semantic
+  correction rather than claiming unqualified legacy node equivalence.

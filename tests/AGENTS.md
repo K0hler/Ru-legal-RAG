@@ -46,3 +46,12 @@ Scope: automated tests and checked fixtures.
   Reject body/content parsed under `head` before writing, and check `!important`
   priority across simple class and inline declarations to avoid false indices.
 
+
+- M1-03A adds `corpus/test_structure.py`: authored cross-act identities,
+  scalar/raw adapter equivalence, literal hierarchy/number controls, scoped
+  `§` nodes, Roman/uppercase headings, hyphenated superscripts, invalid zero
+  components, break-boundary refusal, textual notes and region-only blockers.
+  Keep the full transfer corpus local, freeze before parsing validation bodies,
+  and retain independent DOM controls and failed cohorts. A corrected control
+  reader must retain `<br/>` whitespace; do not change production code to agree
+  with a reference reader that dropped it. Native transfer never reads gold.

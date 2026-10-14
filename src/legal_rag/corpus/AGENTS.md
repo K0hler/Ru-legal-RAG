@@ -51,3 +51,18 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   retain exact text provenance. See `docs/HTML_PREPARATION.md` and its four-input
   preservation replay; passing these development controls does not satisfy G13.
 
+
+- M1-03A replaces the act-bound traversals with `structure.py`, one
+  `legal-structure/4` engine and `federal-law/4` / `code/4` profiles. Select by
+  source identity evidence, never by act constants. The native JSON adapter
+  (`actual-redtext-html/2`) reuses the raw HTML lexer and rebinds exact spans to
+  `/redtext` and the JSON asset hash. Raw diagnostic `--identity` is optional;
+  source-only identity is not claim verification or legal admission.
+  Roman/decimal/superscript/hyphen numbering and scoped chapter paragraphs (`§`,
+  `subchapter`) share the same traversal. Rejected boundaries clear context;
+  unmarked textual editorial notes are still notes, and nontext regions must
+  add `unresolved_structure` and appear in the report. Preserve previous
+  outputs. Final native transfer evidence uses four fresh non-pilot acts,
+  after frozen versions; earlier failed acts remain development controls.
+  See `docs/M1_03A_SHARED_STRUCTURE.md`; standalone note scope, dated editions,
+  PDF/OCR and other act families are not qualified by this native evidence.

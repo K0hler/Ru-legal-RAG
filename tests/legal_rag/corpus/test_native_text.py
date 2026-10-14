@@ -209,7 +209,7 @@ class NativeTextTest(unittest.TestCase):
 
     def test_unrecognized_numbering_and_table_stop_targeting(self):
         cases = [(label, HTML.replace("1) Первый пункт;", label + " Неизвестная нумерация.</p><p>1) Не продолжать старую часть;"))
-                 for label in ("0.", "1.0.", "1.1)")]
+                 for label in ("0.", "1.0.", "1.0)")]
         cases.append(("table", HTML.replace("<p>1) Первый пункт;</p>", "<table><tr><td><p>1) Первый пункт;</p></td></tr></table>")))
         cases.append(("two_parts_after_br", HTML.replace("1) Первый пункт;", "2. Первая часть.<br>3. Вторая часть.</p><p>1) Не угадывать часть;")))
         for name, html in cases:
@@ -231,6 +231,18 @@ class NativeTextTest(unittest.TestCase):
             self.assertFalse(tree["unresolved_blocks"])
             self.assertTrue(any(n["text"] == "Статья 99. Не правовая норма" and n["reason"] == "non_document_text"
                                 for n in tree["excluded_blocks"]))
+
+    def test_nontext_region_alone_blocks_structure_and_is_visible_in_report(self):
+        html = HTML.replace('<p id="a2">', '<img src="formula.png"/><p id="a2">')
+        with tempfile.TemporaryDirectory() as temporary:
+            path = self.prepare(Path(temporary) / "archive", html)
+            code, result = self.run_cli(path, Path(temporary) / "derived")
+            self.assertEqual(code, 0, result)
+            tree = json.loads(Path(result["draft"]).read_bytes())["content"]["trees"][0]
+            self.assertFalse(tree["unresolved_blocks"])
+            self.assertEqual(len(tree["unresolved_regions"]), 1)
+            self.assertIn("unresolved_structure", result["blockers"])
+            self.assertIn("formula.png", Path(result["report"]).read_text("utf-8"))
 
 
 if __name__ == "__main__":

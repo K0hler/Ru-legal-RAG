@@ -6,10 +6,10 @@ import json
 import re
 
 from .compiler import content_hash
+from .structure import build_structure
 
 
-EXTRACTOR_VERSION = "actual-redtext-html/1"
-PARSER_VERSION = "native-59-structure/1"
+EXTRACTOR_VERSION = "actual-redtext-html/2"
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 
@@ -120,143 +120,26 @@ def extract_native(asset: dict, payload: bytes) -> dict:
     html = response.get("redtext")
     if not isinstance(html, str) or not html.strip():
         raise ValueError("native response needs non-empty redtext HTML")
-    parser = _NativeHTML(html, asset["sha256"])
-    parser.feed(html)
-    parser.close()
-    if parser.stack or not parser.saw_body:
-        raise ValueError("incomplete native HTML document")
-    blocks = []
-    for group in parser.groups:
-        tokens = group["tokens"]
-        original = "".join(token["decoded_text"] for token in tokens)
-        text, mapping = _cleanup(original)
-        span = {**tokens[0]["source_span"], "char_end": tokens[-1]["source_span"]["char_end"]}
+    from .housing_html import extract_html
+
+    raw = extract_html(html.encode("utf-8"))
+    for entry in [*raw["text_nodes"], *raw["blocks"], *raw["unsupported_regions"]]:
+        span = entry["source_span"]
+        span.update(source_asset_sha256=asset["sha256"], json_pointer="/redtext",
+                    offset_unit="unicode_codepoints_in_decoded_json_scalar")
+        span["html_locator"] = "/redtext" + span["html_locator"]
         span["locator"] = f"{span['html_locator']}:chars:{span['char_start']}:{span['char_end']}"
-        decoding, offset = [], 0
-        for token in tokens:
-            decoding.append({"text_node_id": token["text_node_id"], "decoded_start": offset,
-                             "decoded_end": offset + len(token["decoded_text"]),
-                             "operation": "copy" if token["raw_text"] == token["decoded_text"] else "entity_or_break"})
-            offset += len(token["decoded_text"])
-        # Preserve visible spelling; the address separately records a source-marked exponent.
-        prefix = "".join(("^" if token["superscript"] and (index == 0 or not tokens[index - 1]["superscript"]) else "")
-                         + token["decoded_text"] for index, token in enumerate(tokens))
-        blocks.append({"block_id": len(blocks), "text": text, "original_text": original,
-                       "original_html": html[span["char_start"]:span["char_end"]],
-                       "source_span": span, "locator": span["locator"], "text_node_ids": [t["text_node_id"] for t in tokens],
-                       "decoding_mapping": decoding, "cleanup_mapping": mapping,
-                       "numbering_text": _cleanup(prefix)[0], "note": group["note"],
-                       "unsupported_structure": group["unsupported"],
-                       "ambiguous_boundary": bool(re.search(
-                           r"[\r\n]\s*(?:Статья [0-9]+\.|[0-9]+(?:[.^][0-9]+)*[.)]|[а-яa-z]\))\s", original)),
-                       "exclusion_reason": group["reason"], "paragraph": group["paragraph"],
-                       "html_id": group["html_id"], "bbox": None, "table_cells": [], "unresolved_regions": []})
+        if "block_id" in entry:
+            entry["locator"] = span["locator"]
     extraction = {"schema_version": "text-extraction/1", "source_asset_sha256": asset["sha256"],
                   "extractor_version": EXTRACTOR_VERSION,
                   "config": {"profile": "actual.pravo.redtext", "json_pointer": "/redtext",
-                             "cleanup": "entity-decode-collapse-whitespace/1", "superscript_class": "W9"},
-                  "models": [], "text_nodes": parser.text_nodes,
-                  "pages": [{"page": None, "mode": "native_text", "confidence": None, "blocks": blocks}]}
+                             "cleanup": "entity-decode-collapse-whitespace/1", "superscript_classes": ["W9", "WB"]},
+                  "models": [], "text_nodes": raw["text_nodes"], "unsupported_regions": raw["unsupported_regions"],
+                  "pages": [{"page": None, "mode": "native_text", "confidence": None, "blocks": raw["blocks"]}]}
     extraction["extraction_id"] = content_hash(extraction)
     return extraction
 
 
 def native_tree(asset: dict, extraction: dict) -> dict:
-    blocks = extraction["pages"][0]["blocks"]
-    visible = [block for block in blocks if not block["exclusion_reason"] and not block["note"]]
-    article_indices = [index for index, block in enumerate(visible) if re.match(r"Статья [0-9]", block["text"])]
-    preamble_blocks = visible[:article_indices[0]] if article_indices else []
-    preamble = [block["text"] for block in preamble_blocks]
-    signing_indices = [index for index, block in enumerate(visible)
-                       if article_indices and index > article_indices[-1]
-                       and block["text"].startswith("Президент Российской Федерации")]
-    signature = visible[signing_indices[0]:] if len(signing_indices) == 1 else []
-    numbers = [block["text"] for block in signature if re.match(r"№\s*[0-9]", block["text"])]
-    dates = [block["text"] for block in signature if re.fullmatch(r"[0-9]+ [а-я]+ [0-9]{4} года", block["text"])]
-    claim = _cleanup(asset["declared_identity"])[0]
-    claimed = re.fullmatch(r'Федеральный закон от 02\.05\.2006 № 59-ФЗ "([^"]+)"', claim)
-    identity_matches = bool(claimed and "ФЕДЕРАЛЬНЫЙ ЗАКОН" in preamble and claimed[1] in preamble
-                            and numbers == ["№ 59-ФЗ"] and dates == ["2 мая 2006 года"])
-    identity = {"act_id": content_hash({"declared_identity": asset["declared_identity"]}),
-                "declared_identity": asset["declared_identity"],
-                "status": "claim_matches_header" if identity_matches else "unresolved",
-                "evidence_block_ids": [b["block_id"] for b in [*preamble_blocks, *signature] if b["text"] in {
-                    "ФЕДЕРАЛЬНЫЙ ЗАКОН", "№ 59-ФЗ", "2 мая 2006 года", claimed[1] if claimed else ""}]}
-    namespace = "act" if asset["role"] != "amendment" else "amendment/" + asset["sha256"]
-    nodes, unresolved, excluded, addresses = [], [], [], set()
-    article = part = item = last = last_paragraph = None
-    counters = {}
-
-    def numbered(parent, kind):
-        key = (parent, kind)
-        counters[key] = counters.get(key, 0) + 1
-        return f"{parent}/{kind}/{counters[key]}"
-
-    for block in blocks:
-        entry = {key: block[key] for key in ("text", "source_span", "text_node_ids", "original_text", "original_html", "block_id")}
-        if block["exclusion_reason"] or not block["text"]:
-            excluded.append({**entry, "reason": block["exclusion_reason"] or "whitespace"})
-            continue
-        text = block["text"]
-        kind = address = None
-        reason = "unsupported_or_ambiguous_native_structure"
-        heading = re.fullmatch(r"Статья ([1-9][0-9]*(?:\.[1-9][0-9]*)?)\. .+", text)
-        part_match = re.match(r"^([1-9][0-9]*(?:[.^][1-9][0-9]*)?)\.\s", block["numbering_text"])
-        item_match = re.match(r"^([1-9][0-9]*)\)\s", text)
-        subitem = re.match(r"^([а-яa-z])\)\s", text)
-        if not identity_matches:
-            reason = "identity_unresolved"
-        elif block["paragraph"] is None:
-            reason = "unaddressed_document_text"
-        elif block["unsupported_structure"]:
-            reason = "unsupported_native_table_or_list"
-        elif block["ambiguous_boundary"]:
-            reason = "multiple_native_provision_boundaries"
-        elif block["note"] or text.startswith(("Примечание", "(В редакции", "(Особенности", "(С учетом")):
-            parent = last if last and last_paragraph == block["paragraph"] else namespace
-            kind, address = "note", numbered(parent, "note")
-        elif heading:
-            kind, address = "article", namespace + "/article/" + heading[1]
-            article, part, item = address, None, None
-        elif text.startswith(("Статья", "Приложение", "Глава", "Раздел", "Таблица")):
-            article = part = item = last = None
-        elif text in {"РОССИЙСКАЯ ФЕДЕРАЦИЯ", "ФЕДЕРАЛЬНЫЙ ЗАКОН", claimed[1], "№ 59-ФЗ", "2 мая 2006 года", "Москва, Кремль"} or text.startswith(("Принят Государственной Думой", "Одобрен Советом Федерации", "Президент Российской Федерации")):
-            kind, address = "header", numbered(namespace, "header")
-            article = part = item = None
-        elif article and part_match:
-            kind, address = "part", article + "/part/" + part_match[1].replace("^", ".")
-            part, item = address, None
-        elif article and item_match:
-            kind, address = "item", (part or article) + "/item/" + item_match[1]
-            item = address
-        elif article and subitem and (item or part):
-            kind, address = "subitem", (item or part) + "/subitem/" + subitem[1]
-        elif article and not re.match(r"^(?:\d+(?:[.^]\d+)*[.)]|[а-яa-zA-ZА-Я][.)]\s)", text):
-            kind, address = "paragraph", numbered(item or part or article, "paragraph")
-        if address in addresses:
-            reason, kind, address = "duplicate_address", None, None
-            article = part = item = last = None
-        if kind:
-            addresses.add(address)
-            parent = address.rsplit("/", 2)[0] if kind != "article" else namespace
-            nodes.append({**entry, "kind": kind, "address": address, "parent_address": parent,
-                          "provision_id": content_hash({"extraction_id": extraction["extraction_id"], "address": address})})
-            if kind != "note":
-                last = address
-                last_paragraph = block["paragraph"]
-        else:
-            unresolved.append({**entry, "kind": "unresolved_block", "reason": reason})
-            article = part = item = last = None
-    token_sizes = {t["text_node_id"]: len(t["raw_text"]) for t in extraction["text_nodes"]}
-    accounting = {"total_source_chars": sum(token_sizes.values()), "total_text_nodes": len(token_sizes),
-                  "total_chars": sum(len(b["text"]) for b in blocks)}
-    for name, entries in (("parsed", nodes), ("unresolved", unresolved), ("excluded", excluded)):
-        accounting[name + "_source_chars"] = sum(token_sizes[i] for b in entries for i in b["text_node_ids"])
-        accounting[name + "_text_nodes"] = sum(len(b["text_node_ids"]) for b in entries)
-        accounting[name + "_chars"] = sum(len(b["text"]) for b in entries)
-    return {"schema_version": "legal-ast/1", "parser_version": PARSER_VERSION,
-            "extraction_id": extraction["extraction_id"], "source_asset_sha256": asset["sha256"],
-            "role": asset["role"], "identity_decision": identity, "namespace": namespace,
-            "nodes": nodes, "unresolved_blocks": unresolved, "excluded_blocks": excluded,
-            "cleanup_mapping": [{"block_id": b["block_id"], "mapping": b["cleanup_mapping"]} for b in blocks],
-            "accounting": accounting}
+    return build_structure(extraction, asset["declared_identity"], asset["role"])

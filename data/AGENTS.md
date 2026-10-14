@@ -100,7 +100,7 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   inline-group fold recovers 243/243 article numbers, without legal heading
   classification. Keep raw native outputs distinct from that evaluation export.
   Preservation/number gains do not qualify hierarchy, full nested provisions or
-  G13. The next implementation remains the shared M1-03A legal structure engine.
+  G13. M1-03A now supplies the shared legal structure engine; its native transfer evidence is separate from these preparer experiments.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for
@@ -120,3 +120,14 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   hint; retain a document identifier only when it is the subject of an
   applicability/date question or is needed to disambiguate the request.
 
+
+- M1-03A final development replay is `m1/pilot_runs/m1-03a-shared-v4/`;
+  transfer cohorts `/m1-03a-transfer-v1` through `v4` retain frozen code,
+  permissions, full source assets, independent controls, failures and repeat
+  outputs. `m1-03a-transfer-v4-controls-v2` corrects only the DOM reference's
+  dropped br whitespace; it uses the unchanged v4 production code and original
+  v4 input/archive bindings. Its `parser-transfer-report.json` is the accepted
+  native engineering evidence. Earlier code failures replay successfully under
+  `shared-v4/former-failure-replays.json` but are not new qualification acts.
+  Housing item `1.1-1` and its inline note have a documented semantic correction;
+  preserve both the original and corrected drafts. No edition admission changes.

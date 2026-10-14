@@ -1,4 +1,4 @@
-"""Diagnostic raw UTF-8 Housing Code HTML; not an edition-admission compiler."""
+"""Raw UTF-8 legal HTML adapter and diagnostic report; no edition admission."""
 
 import argparse
 import hashlib
@@ -8,15 +8,13 @@ import re
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime
 from html import escape
 from pathlib import Path
 
-from .compiler import content_hash
 from .native_text import _cleanup, _NativeHTML
+from .structure import SUP_DIGITS, build_structure
 
 EXTRACTOR_VERSION = "raw-legal-html/1"
-PARSER_VERSION = "housing-code-html/1"
 
 
 class _RawHTML(_NativeHTML):
@@ -215,347 +213,10 @@ def extract_html(payload: bytes) -> dict:
     }
 
 
-NUMBER = r"[1-9][0-9]*(?:[.^][1-9][0-9]*)*"
-SUP_DIGITS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
-
-
-def _number_fields(number: str) -> dict:
-    base, separator, exponent = number.partition("^")
-    return {
-        "number_canonical": number.replace("^", "."),
-        "number_display": base + (exponent.translate(SUP_DIGITS) if separator else ""),
-        "number_components": {"base": base, "superscript": exponent or None},
-    }
-
-
-def _is_note(block: dict) -> bool:
-    return bool(block["note"] or set(block["classes"]) & {"A", "F"})
-
-
-def _identity(blocks: list[dict]) -> dict:
-    visible = [
-        b for b in blocks if b["text"] and not _is_note(b) and not b["exclusion_reason"]
-    ]
-    indices = [i for i, b in enumerate(visible) if b["text"].startswith("Статья ")]
-    signatures = [
-        i
-        for i, b in enumerate(visible)
-        if indices
-        and i > indices[-1]
-        and b["text"].startswith("Президент Российской Федерации")
-    ]
-    signature = visible[signatures[0] :] if len(signatures) == 1 else []
-    preamble = visible[: indices[0]] if indices else []
-    titles = [
-        b
-        for b in preamble
-        if "Z" in b["classes"] and b["text"] == "Жилищный кодекс Российской Федерации"
-    ]
-    numbers = [b["text"] for b in signature if re.match(r"№\s*\d", b["text"])]
-    dates = [
-        b["text"]
-        for b in signature
-        if re.fullmatch(r"\d+ [а-я]+ \d{4} года", b["text"])
-    ]
-    matches = (
-        len(titles) == 1
-        and numbers == ["№ 188-ФЗ"]
-        and dates == ["29 декабря 2004 года"]
-    )
-    return {
-        "status": "source_identity_matches" if matches else "unresolved",
-        "title": titles[0]["text"] if titles else None,
-        "number": "188-ФЗ" if matches else None,
-        "signing_date": "2004-12-29" if matches else None,
-        "signature_block_ids": [b["block_id"] for b in signature],
-        "evidence_block_ids": [b["block_id"] for b in [*titles, *signature]],
-        "meaning": "source identity only; no authenticity, edition coverage or legal admission",
-    }
-
-
-def _note_fields(block: dict) -> dict:
-    text = block["text"]
-    date = re.search(r"\bс\s+(\d{2}\.\d{2}\.\d{4})", text)
-    effective = None
-    if date:
-        try:
-            effective = datetime.strptime(date[1], "%d.%m.%Y").date().isoformat()
-        except ValueError:
-            pass
-    if "F" in block["classes"]:
-        kind = "future_change"
-    elif re.search(r"утратил[аои]?\s+силу", text, re.I):
-        kind = "repeal_notice"
-    elif "несоответствии Конституции" in text:
-        kind = "constitutional_application"
-    elif "Особенности применения" in text:
-        kind = "application"
-    elif re.search(r"В редакции|Дополнение|изменяющих", text, re.I):
-        kind = "amendment_history"
-    else:
-        kind = "editorial"
-    return {"note_type": kind, "effective_date_claim": effective}
-
-
-def build_tree(extraction: dict) -> dict:
-    """Build source-bound diagnostic addresses; never infer an effective edition."""
-    blocks = extraction["blocks"]
-    identity = _identity(blocks)
-    nodes: list[dict] = []
-    unresolved: list[dict] = []
-    excluded: list[dict] = []
-    counters: Counter = Counter()
-    addresses = set()
-    anchor_paragraphs: dict[str, set[int]] = {}
-    for block in blocks:
-        if block["html_id"]:
-            anchor_paragraphs.setdefault(block["html_id"], set()).add(
-                block["paragraph"]
-            )
-    duplicate_anchors = {
-        key for key, values in anchor_paragraphs.items() if len(values) > 1
-    }
-    paragraph_text: dict[int, str] = {}
-    for block in blocks:
-        if block["paragraph"] is not None:
-            # Notes cannot supply markers, but their breaks still separate norms.
-            text = block["original_text"]
-            if _is_note(block):
-                text = re.sub(r"\S", "", text)
-            paragraph_text[block["paragraph"]] = (
-                paragraph_text.get(block["paragraph"], "") + text
-            )
-    ambiguous_paragraphs = {
-        paragraph
-        for paragraph, text in paragraph_text.items()
-        if re.search(
-            r"[\r\n]\s*(?:(?:Статья|Глава)\s+\d|(?:РАЗДЕЛ|Раздел)\s+"
-            r"[IVXLCDM\d]|\d+(?:[.^]\d+)*[.)](?:\s|$)|[а-я]\)(?:\s|$))",
-            text,
-        )
-    }
-    section = chapter = article = part = item = subitem = None
-    last = last_paragraph = None
-    regions = extraction.get("unsupported_regions", [])
-    unresolved_regions: list[dict] = []
-    region_paragraphs = {r["paragraph"] for r in regions if r["paragraph"] is not None}
-    signing_ids = set(identity["signature_block_ids"])
-    first_article = next(
-        (b["block_id"] for b in blocks if b["text"].startswith("Статья ")), len(blocks)
-    )
-
-    def numbered(parent, kind):
-        counters[(parent, kind)] += 1
-        return f"{parent}/{kind}/{counters[(parent, kind)]}"
-
-    events = sorted(
-        [*blocks, *regions], key=lambda e: e["source_span"]["char_start"]
-    )
-    for block in events:
-        if "region_id" in block:
-            unresolved_regions.append(block)
-            article = part = item = subitem = last = None
-            continue
-        entry = {
-            k: block[k]
-            for k in (
-                "block_id",
-                "text",
-                "display_text",
-                "original_text",
-                "original_html",
-                "html_start",
-                "html_end",
-                "html_id",
-                "source_span",
-                "text_node_ids",
-                "paragraph",
-            )
-        }
-        if block["exclusion_reason"] or not block["text"]:
-            excluded.append(
-                {**entry, "reason": block["exclusion_reason"] or "whitespace"}
-            )
-            continue
-        text, numbering = block["text"], block["numbering_text"]
-        classes = set(block["classes"])
-        kind = address = parent = None
-        fields = {}
-        reason = "unsupported_or_ambiguous_structure"
-        if identity["status"] != "source_identity_matches":
-            reason = "identity_unresolved"
-        elif block["html_id"] in duplicate_anchors:
-            reason = "duplicate_html_id"
-        elif block["unsupported_structure"]:
-            reason = "unsupported_table_or_list"
-        elif block["paragraph"] in region_paragraphs:
-            reason = "unsupported_nontext_or_structure"
-        elif block["paragraph"] is None:
-            reason = "unaddressed_document_text"
-        elif block["paragraph"] in ambiguous_paragraphs:
-            reason = "multiple_provision_markers"
-        elif _is_note(block):
-            parent = last if last and last_paragraph == block["paragraph"] else "act"
-            kind, address = "note", numbered(parent, "note")
-            fields = {
-                **_note_fields(block),
-                "scope_status": "same_paragraph" if parent != "act" else "unresolved",
-            }
-        elif (
-            block["block_id"] < first_article
-            and not classes & {"H", "T"}
-            or block["block_id"] in signing_ids
-        ):
-            kind, parent = "header", "act"
-            address = numbered(parent, kind)
-            article = part = item = subitem = None
-        elif "T" in classes and (
-            match := re.fullmatch(
-                r"РАЗДЕЛ ([IVXLCDM]+(?:\^[1-9][0-9]*)?)\s+(.+)", numbering
-            )
-        ):
-            kind, parent = "section", "act"
-            fields = {**_number_fields(match[1]), "title": match[2]}
-            address = f"act/section/{fields['number_canonical']}"
-            section, chapter, article, part, item, subitem = (
-                address,
-                None,
-                None,
-                None,
-                None,
-                None,
-            )
-        elif "H" in classes and (
-            match := re.fullmatch(rf"Глава ({NUMBER})\.\s+(.+)", numbering)
-        ):
-            kind, parent = "chapter", section or "act"
-            fields = {**_number_fields(match[1]), "title": match[2]}
-            address = f"act/chapter/{fields['number_canonical']}"
-            chapter, article, part, item, subitem = address, None, None, None, None
-        elif "H" in classes and (
-            match := re.fullmatch(rf"Статья ({NUMBER})\.(?:\s+(.+))?", numbering)
-        ):
-            kind, parent = "article", chapter or section or "act"
-            fields = {**_number_fields(match[1]), "title": match[2]}
-            address = f"act/article/{fields['number_canonical']}"
-            article, part, item, subitem = address, None, None, None
-        elif classes & {"H", "T"} or re.match(
-            r"^(?:Статья|Глава|Раздел|РАЗДЕЛ|Приложение|§)(?:\s|$)", text
-        ):
-            reason = "unknown_heading"
-            if "T" in classes or text.startswith(("Раздел", "РАЗДЕЛ")):
-                section = chapter = None
-            elif text.startswith("Глава"):
-                chapter = None
-        elif article and (match := re.match(rf"^({NUMBER})\.(?:\s|$)", numbering)):
-            kind, parent = "part", article
-            fields = _number_fields(match[1])
-            address = f"{parent}/part/{fields['number_canonical']}"
-            part, item, subitem = address, None, None
-        elif article and (match := re.match(rf"^({NUMBER})\)(?:\s|$)", numbering)):
-            kind, parent = "item", part or article
-            fields = _number_fields(match[1])
-            address = f"{parent}/item/{fields['number_canonical']}"
-            item, subitem = address, None
-        elif article and item and (match := re.match(r"^([а-я])\)\s", numbering)):
-            kind, parent = "subitem", item
-            fields = _number_fields(match[1])
-            address = f"{parent}/subitem/{fields['number_canonical']}"
-            subitem = address
-        elif article and re.match(
-            r"^(?:\d+(?:[.^]\d+)*[.)]|[а-яa-zA-ZА-Я][.)]\s)", numbering
-        ):
-            reason = "unknown_numbering"
-        elif article:
-            kind, parent = "paragraph", subitem or item or part or article
-            address = numbered(parent, kind)
-            fields = {
-                "ordinal": counters[(parent, kind)],
-                "ordinal_is_diagnostic": True,
-            }
-        if address in addresses:
-            if kind == "section":
-                section = chapter = None
-            elif kind == "chapter":
-                chapter = None
-            reason, kind = "duplicate_address", None
-        if kind:
-            addresses.add(address)
-            nodes.append(
-                {
-                    **entry,
-                    **fields,
-                    "kind": kind,
-                    "address": address,
-                    "parent_address": parent,
-                    "node_id": content_hash(
-                        {
-                            "source": extraction["source_asset_sha256"],
-                            "profile": PARSER_VERSION,
-                            "address": address,
-                        }
-                    ),
-                    "legal_status": "unverified",
-                }
-            )
-            if kind != "note":
-                last, last_paragraph = address, block["paragraph"]
-        else:
-            unresolved.append({**entry, "kind": "unresolved_block", "reason": reason})
-            # Rejected boundaries still invalidate old parents, regardless of
-            # which earlier guard rejected them; never establish a new parent.
-            boundary_text = paragraph_text.get(block["paragraph"], text)
-            if not _is_note(block):
-                if "T" in classes or re.search(
-                    r"(?:^|[\r\n])\s*(?:Раздел|РАЗДЕЛ)(?:\s|$)", boundary_text
-                ):
-                    section = chapter = None
-                elif re.search(r"(?:^|[\r\n])\s*Глава(?:\s|$)", boundary_text):
-                    chapter = None
-            article = part = item = subitem = last = None
-    by_address = {n["address"]: n for n in nodes}
-    for node in nodes:
-        node["status_claims"] = []
-        node["children"] = []
-    for node in nodes:
-        parent_node = by_address.get(node["parent_address"])
-        if parent_node:
-            parent_node["children"].append(node["address"])
-            if node["kind"] == "note" and node["note_type"] == "repeal_notice":
-                parent_node["status_claims"].append("repeal_notice")
-    assigned = [i for b in [*nodes, *unresolved, *excluded] for i in b["text_node_ids"]]
-    expected = [t["text_node_id"] for t in extraction["text_nodes"]]
-    accounting = {
-        "total_text_nodes": len(expected),
-        "total_unsupported_regions": len(regions),
-        "regions_exactly_once": Counter(r["region_id"] for r in unresolved_regions)
-        == Counter(r["region_id"] for r in regions),
-        "exactly_once": Counter(assigned) == Counter(expected),
-        "counts_by_kind": dict(Counter(n["kind"] for n in nodes)),
-        "unresolved_blocks": len(unresolved),
-        "excluded_blocks": len(excluded),
-    }
-    for name, entries in (
-        ("parsed", nodes),
-        ("unresolved", unresolved),
-        ("excluded", excluded),
-    ):
-        accounting[name + "_text_nodes"] = sum(len(b["text_node_ids"]) for b in entries)
-        accounting[name + "_chars"] = sum(len(b["text"]) for b in entries)
-    return {
-        "schema_version": "housing-html-ast/1",
-        "parser_version": PARSER_VERSION,
-        "source_asset_sha256": extraction["source_asset_sha256"],
-        "identity_decision": identity,
-        "edition_admission": False,
-        "valid_from": None,
-        "valid_to": None,
-        "nodes": nodes,
-        "unresolved_blocks": unresolved,
-        "unresolved_regions": unresolved_regions,
-        "excluded_blocks": excluded,
-        "accounting": accounting,
-    }
+def build_tree(extraction: dict, declared_identity: str | None = None) -> dict:
+    """Compatibility envelope for the raw HTML diagnostic command."""
+    tree = build_structure(extraction, declared_identity)
+    return {**tree, "schema_version": "housing-html-ast/1"}
 
 
 def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
@@ -666,7 +327,7 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
         "structure_complete": not expected_regions
         and not tree.get("unresolved_regions", [])
         and not tree["unresolved_blocks"]
-        and tree["identity_decision"]["status"] == "source_identity_matches",
+        and tree["identity_decision"]["status"] in {"source_identity_matches", "claim_matches_header"},
         "counts_by_kind": dict(Counter(n["kind"] for n in tree["nodes"])),
         "text_node_count": len(tokens),
         "unresolved_block_count": len(tree["unresolved_blocks"]),
@@ -677,7 +338,7 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
         ),
         "edition_admission": False,
         "limitations": [
-            "Bound Housing Code HTML profile, not arbitrary acts or PDF.",
+            "Shared native federal-law/code grammar; unsupported structures remain unresolved; no PDF qualification.",
             "Unnumbered paragraph ordinals and parents are syntactic diagnostics, not certified legal paragraph numbers.",
             "Standalone note scope is unresolved; source claims do not establish legal applicability.",
             "Complete token accounting is not independent legal AST accuracy; dated admission remains blocked.",
@@ -688,6 +349,7 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
 LABELS = {
     "section": "Раздел",
     "chapter": "Глава",
+    "subchapter": "Параграф главы",
     "article": "Статья",
     "part": "Часть",
     "item": "Пункт",
@@ -701,6 +363,7 @@ LABELS = {
 def render_report(tree: dict, validation: dict) -> str:
     """An inert offline tree: original HTML is escaped, never executed."""
     nodes = {n["address"]: n for n in tree["nodes"]}
+    title = escape(tree["identity_decision"].get("title") or "Документ")
 
     def render(node):
         kind = node["kind"]
@@ -743,7 +406,7 @@ def render_report(tree: dict, validation: dict) -> str:
     return (
         '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
         '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;">'
-        "<title>ЖК РФ — диагностика структуры</title><style>"
+        f"<title>{title} — диагностика структуры</title><style>"
         "body{font:16px/1.5 system-ui,sans-serif;color:#17212e;background:#f7f9fc;max-width:1200px;padding:24px;margin:auto}"
         "h1{font-size:27px}.warning{border-left:4px solid #bd7621;padding:12px;background:#fff0d8}"
         ".node{margin:8px 0 8px 16px;padding:8px;border-left:2px solid #cbd5e1}"
@@ -751,7 +414,7 @@ def render_report(tree: dict, validation: dict) -> str:
         "small{color:#576579}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}"
         ".note{background:#eef2f6}.source{margin-top:8px}nav a{display:inline-block;padding:3px 8px;color:#17499a}"
         ":target{outline:2px solid #3980dc}</style></head><body>"
-        '<h1>ЖК РФ: дерево документа</h1><p class="warning">Диагностический разбор, не юридически допущенная редакция. '
+        f'<h1>{title}: дерево документа</h1><p class="warning">Диагностический разбор, не юридически допущенная редакция. '
         "Даты действия не установлены. Ненумерованные абзацы и их родители требуют контрольной проверки.</p>"
         "<details><summary>Проверки и счётчики</summary><pre>"
         + summary
@@ -766,13 +429,13 @@ def render_report(tree: dict, validation: dict) -> str:
     )
 
 
-def parse_file(source: Path, output: Path) -> dict:
+def parse_file(source: Path, output: Path, declared_identity: str | None = None) -> dict:
     source, output = source.resolve(), output.resolve()
     if source.is_relative_to(output) or output == source.parent:
         raise ValueError("output overlaps source directory")
     payload = source.read_bytes()
     extraction = extract_html(payload)
-    tree = build_tree(extraction)
+    tree = build_tree(extraction, declared_identity)
     validation = validate(extraction, tree, payload)
     if not validation["integrity_pass"]:
         raise ValueError(
@@ -825,9 +488,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--identity", help="Optional identity claim to compare with source signing fields")
     args = parser.parse_args(argv)
     try:
-        result = parse_file(args.input, args.output_dir)
+        result = parse_file(args.input, args.output_dir, args.identity)
     except (ValueError, OSError, KeyError, TypeError) as error:
         print(
             json.dumps({"result": "failed", "error": str(error)}, ensure_ascii=False),

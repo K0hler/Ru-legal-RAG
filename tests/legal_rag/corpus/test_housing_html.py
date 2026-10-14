@@ -32,7 +32,8 @@ HTML = """<html><body><p class="Z">Жилищный кодекс Российс�
 def parse(html=HTML):
     from legal_rag.corpus.housing_html import build_tree
 
-    return build_tree(extract_html(html.encode("utf-8")))
+    claim = 'Кодекс Российской Федерации от 29.12.2004 № 188-ФЗ "Жилищный кодекс Российской Федерации"'
+    return build_tree(extract_html(html.encode("utf-8")), claim)
 
 
 def test_block_locator_covers_all_tokens_and_validation_rejects_stale_coordinates():
@@ -242,7 +243,7 @@ def test_identity_evidence_cannot_come_from_notes(field, note_class):
 
 def test_literal_hierarchy_and_notes():
     tree = parse()
-    assert tree["identity_decision"]["status"] == "source_identity_matches"
+    assert tree["identity_decision"]["status"] == "claim_matches_header"
     assert tree["edition_admission"] is False
     assert tree["valid_from"] is None
     nodes = tree["nodes"]
@@ -314,7 +315,7 @@ def test_raw_html_coordinates_and_source_numbering():
     [
         ("<p>1. Повторная часть.</p>", "duplicate_address"),
         ('<p id="part">3. Повторный HTML anchor.</p>', "duplicate_html_id"),
-        ('<p class="H">§ 1. Нераспознанная граница</p>', "unknown_heading"),
+        ('<p class="H">Подраздел 1. Нераспознанная граница</p>', "unknown_heading"),
         ("<p>0. Неподдерживаемая нумерация.</p>", "unknown_numbering"),
         ("<p>3. Первая часть.<br/>4. Вторая часть.</p>", "multiple_provision_markers"),
         (
@@ -455,7 +456,8 @@ def test_cli_refuses_source_overlap_and_retains_unresolved_draft(tmp_path, capsy
     assert main(["--input", str(source), "--output-dir", str(tmp_path)]) == 2
     capsys.readouterr()
     output = tmp_path / "derived"
-    assert main(["--input", str(source), "--output-dir", str(output)]) == 2
+    claim = 'Кодекс Российской Федерации от 29.12.2004 № 188-ФЗ "Жилищный кодекс Российской Федерации"'
+    assert main(["--input", str(source), "--output-dir", str(output), "--identity", claim]) == 2
     result = json.loads(capsys.readouterr().out)
     assert result["result"] == "new"
     assert not result["structure_complete"]

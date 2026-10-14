@@ -1,7 +1,9 @@
 # Parser-independent HTML preparation
 
-Implemented on 14 October 2026 as a preparatory part of M1-03A. The legal
-structure engine, non-pilot transfer qualification and G13 remain open.
+Implemented on 14 October 2026 as a preparatory part of M1-03A. The subsequent
+[shared native legal engine](M1_03A_SHARED_STRUCTURE.md) and its four-act native
+transfer checks are now implemented. Milestone-wide G13 remains open for the
+other planned families/formats.
 
 ## Implementation
 
@@ -124,12 +126,13 @@ numbers readable. The fold uses no source classes, expected addresses or legal
 rules. The raw native JSON and strict fragment-level metrics remain separate.
 This is an evaluation adapter, not an integrated production legal parser.
 
-The preparation therefore improves number evidence, while legal hierarchy remains
-unqualified. Dedoc still fails to classify 15 source articles as article nodes;
-Docling still supplies generic text/inline units. The next M1-03A component is the
-shared legal block classifier/tree builder, with reusable act-type profiles,
-source-bound addresses and independent parent/transfer controls. No edition is
-admitted by this comparison. Startup was affected by host memory pressure, so
+In this comparison the preparation improves number evidence; the generic-reader
+outputs do not qualify legal hierarchy. Dedoc still fails to classify 15 source
+articles as article nodes; Docling still supplies generic text/inline units.
+The subsequent [M1-03A component](M1_03A_SHARED_STRUCTURE.md) now implements
+the shared legal block classifier/tree builder, source-bound addresses and
+independent parent/transfer controls. No edition is admitted by this comparison.
+Startup was affected by host memory pressure, so
 the retained single-run times are not a performance ranking.
 
 ## Existing libraries checked through Exa

@@ -1,5 +1,8 @@
 # M1-03: full native-text diagnostic compilation of 59-FZ
 
+**14 October 2026 update:** the original act-bound traversal below is superseded by the [shared M1-03A engine](M1_03A_SHARED_STRUCTURE.md). Previous artifacts remain immutable; the existing command is retained as an adapter.
+
+
 **Implemented:** 12 October 2026. **Scope:** the owner-permitted retained
 59-FZ input at the diagnostic target `2026-10-01`. Engineering completion
 does not establish historical coverage, applicability or legal admission.

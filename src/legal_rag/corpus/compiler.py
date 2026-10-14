@@ -351,7 +351,7 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
         extraction["extraction_id"] = content_hash(extraction)
         extractions.append(extraction)
         trees.append(_tree(asset, text, extraction["extraction_id"]))
-    if any(tree["unresolved_blocks"] for tree in trees):
+    if any(tree["unresolved_blocks"] or tree.get("unresolved_regions") for tree in trees):
         blockers.add("unresolved_structure")
     if any(tree["identity_decision"]["status"] == "unresolved" for tree in trees):
         blockers.add("identity_unresolved")
@@ -443,11 +443,16 @@ def _report(manifest: dict, draft: dict) -> str:
             (excluded_rows if block.get("block_id") in excluded_ids else document_rows).append(row)
         exclusions = ("<details><summary>Excluded source tokens and reasons</summary><table>"
                       + "".join(excluded_rows) + "</table></details>") if excluded_rows else ""
+        regions = "".join(
+            "<details><summary>" + escape(region["reason"]) + "</summary><p>"
+            + escape(region["source_span"]["locator"]) + "</p><pre>"
+            + escape(region["original_html"]) + "</pre></details>"
+            for region in tree.get("unresolved_regions", []))
         sections.append(f"<h2>{escape(tree['namespace'])}</h2><p>SHA-256: {asset['sha256']}</p>"
                         f"<p>Source: {escape(asset['source_url'])}; evidence: {escape(asset['evidence']['locator'])}</p>"
                         f"<pre>{escape(json.dumps(tree['accounting'], sort_keys=True, indent=2))}</pre>"
                         "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
-                        + "".join(document_rows) + "</table>" + exclusions)
+                        + "".join(document_rows) + "</table>" + exclusions + regions)
     blockers = "".join("<li>" + escape(item) + "</li>" for item in draft["blockers"])
     return ("<!doctype html><html lang='en'><meta charset='utf-8'><title>Legal RAG diagnostic draft</title>"
             "<style>body{font:16px system-ui;max-width:1100px;margin:32px auto;padding:0 20px}"
