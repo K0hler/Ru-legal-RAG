@@ -11,6 +11,8 @@ Scope: every file under `docs/`.
   slice. Keep its four-input preservation evidence separate from M1-03A legal
   hierarchy and G13 qualification. Opening-tag maps are not full token/provision
   locators; common CSS hints are not computed rendering or arbitrary-CSS support.
+  Its downstream Housing Code control improves number evidence, not legal-tree
+  coverage; Docling inline-group evaluation is distinct from native heading types.
 - PRD v0.2 assigns edition reconstruction to M1. Processing permission is
   separate from legal admission; rejected/stale inputs may produce diagnostic
   drafts without changing M0-10 decisions or bypassing the frozen handoff.

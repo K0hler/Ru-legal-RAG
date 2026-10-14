@@ -93,6 +93,14 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   validated input are separate files. Preserve source status and permission;
   this replay checks text/notes/indices/tables/images/references and determinism,
   not legal hierarchy, date validity, admission or non-pilot G13 transfer.
+- `m1/experiments/html-preparation-parsers-housing-code-20261014-v1/` retains a
+  fresh raw/prepared HTML pair for Docling 2.138.0 and pinned Dedoc 2.8. Dedoc's
+  native article count stays 228/243 while correct numbers improve 189 to 228.
+  Docling retains 419 native super-script fragments; an experimental native
+  inline-group fold recovers 243/243 article numbers, without legal heading
+  classification. Keep raw native outputs distinct from that evaluation export.
+  Preservation/number gains do not qualify hierarchy, full nested provisions or
+  G13. The next implementation remains the shared M1-03A legal structure engine.
 - Small redistributable test fixtures may be committed only after their source, license, and expected hash are documented.
 - M0-11 questions, labels and evidence remain local. Only a legally approved
   working export may be used for implementation; the closed set is reserved for

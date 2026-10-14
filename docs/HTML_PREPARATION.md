@@ -101,6 +101,37 @@ ambiguous and media CSS, legacy comments, whitespace boundaries, original/output
 anchors, `!important`, head-content refusal, both portal fields, CLI/date refusal
 and immutable protected output.
 
+## Downstream parser control: 14 October 2026
+
+A fresh raw/prepared HTML comparison on the complete Housing Code is retained at
+`data/m1/experiments/html-preparation-parsers-housing-code-20261014-v1/`.
+Both engines use identical active settings per pair; no TXT conversion, number
+repair or legal postprocessor is supplied to either parser.
+
+| Control | Raw HTML | Prepared HTML |
+|---|---:|---:|
+| Docling 2.138.0: article numbers readable from native data | 202/243 | 243/243 |
+| Docling: source structural headings assigned heading types | 0/276 | 0/276 |
+| Docling: native `formatting.script=super` fragments | 0 | 419 |
+| Dedoc 2.8: native `article` nodes | 228/243 | 228/243 |
+| Dedoc: correct numbers among those native article nodes | 189/228 | 228/228 |
+| Source note texts retained, each engine | 996/996 | 996/996 |
+
+Docling's prepared output has 368 native inline groups. The experimental export
+folds their children in native order and carries their native super-script ranges;
+this gives all 2,295 source paragraph units and makes the 41 composite article
+numbers readable. The fold uses no source classes, expected addresses or legal
+rules. The raw native JSON and strict fragment-level metrics remain separate.
+This is an evaluation adapter, not an integrated production legal parser.
+
+The preparation therefore improves number evidence, while legal hierarchy remains
+unqualified. Dedoc still fails to classify 15 source articles as article nodes;
+Docling still supplies generic text/inline units. The next M1-03A component is the
+shared legal block classifier/tree builder, with reusable act-type profiles,
+source-bound addresses and independent parent/transfer controls. No edition is
+admitted by this comparison. Startup was affected by host memory pressure, so
+the retained single-run times are not a performance ranking.
+
 ## Existing libraries checked through Exa
 
 | Library | Relevant capability | Fit for this preparation |
