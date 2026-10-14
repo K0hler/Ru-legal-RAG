@@ -14,7 +14,7 @@ from pathlib import Path
 from .native_text import _cleanup, _NativeHTML
 from .structure import SUP_DIGITS, build_structure
 
-EXTRACTOR_VERSION = "raw-legal-html/1"
+EXTRACTOR_VERSION = "raw-legal-html/2"
 
 
 class _RawHTML(_NativeHTML):
@@ -42,6 +42,7 @@ class _RawHTML(_NativeHTML):
             region = {
                 "region_id": len(self.unsupported_regions),
                 "tag": tag,
+                "attributes": dict(attrs),
                 "paragraph": paragraph,
                 "reason": "unsupported_nontext_or_structure",
                 "source_span": {
@@ -53,10 +54,31 @@ class _RawHTML(_NativeHTML):
                 },
             }
             self.unsupported_regions.append(region)
+            if tag == "table":
+                region["rows"] = []
+                region["nested"] = sum(e["tag"] == "table" for e in self.stack) > 1
             if tag == "img":
                 self.finish_region(region, region["source_span"]["char_end"])
             else:
                 self.stack[-1]["unsupported_region"] = region
+        table = next((e.get("unsupported_region") for e in reversed(self.stack)
+                      if e["tag"] == "table"), None)
+        if table is not None and tag in {"tr", "td", "th"}:
+            element = {"source_span": {**table["source_span"], "char_start": start},
+                       "tag": tag, "attributes": dict(attrs)}
+            self.stack[-1]["table_element"] = element
+            if tag == "tr":
+                element.update(row=len(table["rows"]), cells=[])
+                table["rows"].append(element)
+            else:
+                row = next(e["table_element"] for e in reversed(self.stack) if e["tag"] == "tr")
+                element.update(row=row["row"], cell=len(row["cells"]))
+                for name in ("rowspan", "colspan"):
+                    value = dict(attrs).get(name, "1")
+                    if not re.fullmatch(r"[1-9][0-9]*", value):
+                        raise ValueError("invalid table span")
+                    element[name] = int(value)
+                row["cells"].append(element)
         if tag == "p":
             self.paragraphs[self.paragraph_count] = {
                 "start": start,
@@ -71,12 +93,33 @@ class _RawHTML(_NativeHTML):
         )
         region["original_html"] = self.html[span["char_start"] : end]
 
+    @staticmethod
+    def table_grid(table):
+        occupied = set()
+        for row in table["rows"]:
+            column = 0
+            for cell in row["cells"]:
+                while (row["row"], column) in occupied:
+                    column += 1
+                cell["column"] = column
+                for r in range(row["row"], row["row"] + cell["rowspan"]):
+                    for c in range(column, column + cell["colspan"]):
+                        if (r, c) in occupied or r >= len(table["rows"]):
+                            raise ValueError("overlapping or overflowing table grid")
+                        occupied.add((r, c))
+                column += cell["colspan"]
+
     def handle_endtag(self, tag):
         if self.stack and self.stack[-1]["tag"] == tag:
             region = self.stack[-1].get("unsupported_region")
             if region is not None:
                 end = self.html.index(">", self.scalar_offset()) + 1
                 self.finish_region(region, end)
+                if tag == "table":
+                    self.table_grid(region)
+            element = self.stack[-1].get("table_element")
+            if element is not None:
+                self.finish_region(element, self.html.index(">", self.scalar_offset()) + 1)
         if tag == "p":
             self.paragraphs[self.paragraph_count]["end"] = (
                 self.html.index(">", self.scalar_offset()) + 1
@@ -84,6 +127,8 @@ class _RawHTML(_NativeHTML):
         super().handle_endtag(tag)
 
     def token(self, raw, decoded, kind="text"):
+        cell = next((e["table_element"] for e in reversed(self.stack)
+                     if e["tag"] in {"td", "th"} and "table_element" in e), None)
         annotation = next(
             (
                 e.get("raw_start")
@@ -96,6 +141,8 @@ class _RawHTML(_NativeHTML):
             if self.groups[-1]["tokens"][-1].get("annotation_start") != annotation:
                 self.groups[-1]["key"] = None
         super().token(raw, decoded, kind)
+        if cell is not None:
+            self.groups[-1]["table_cell"] = cell
         token = self.text_nodes[-1]
         token["annotation_start"] = annotation
         token["references"] = [
@@ -176,6 +223,9 @@ def extract_html(payload: bytes) -> dict:
         blocks.append(
             {
                 "references": list(references.values()),
+                "table_cell": ({k: group["table_cell"][k] for k in
+                                ("row", "cell", "column", "rowspan", "colspan")}
+                               if "table_cell" in group else None),
                 "block_id": len(blocks),
                 "paragraph": group["paragraph"],
                 "html_id": group["html_id"],
@@ -236,7 +286,8 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
     expected_regions = region_parser.unsupported_regions
     if extraction.get("unsupported_regions", []) != expected_regions:
         problems.append("source_region_coverage")
-    if tree.get("unresolved_regions", []) != expected_regions:
+    assigned_regions = [*tree.get("parsed_regions", []), *tree.get("unresolved_regions", [])]
+    if sorted(assigned_regions, key=lambda r: r["region_id"]) != expected_regions:
         problems.append("region_accounting_or_mapping")
     tokens = extraction["text_nodes"]
     if [t["text_node_id"] for t in tokens] != list(range(len(tokens))):
@@ -284,8 +335,21 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
             problems.append(f"block_mapping:{block['block_id']}")
     entries = [*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]]
     blocks_by_id = {b["block_id"]: b for b in extraction["blocks"]}
+    regions_by_id = {r["region_id"]: r for r in expected_regions}
     for entry in entries:
         span = entry["source_span"]
+        if entry["block_id"] is None:
+            if entry["kind"] in {"image", "table"}:
+                source = regions_by_id.get(entry.get("region_id"))
+                valid = source is not None and all(entry.get(k) == v for k, v in source.items())
+            elif entry["kind"] == "quote":
+                source = blocks_by_id.get(entry.get("anchor_block_id"))
+                valid = source is not None and span == source["source_span"]
+            else:
+                valid = False
+            if not valid or entry["text_node_ids"]:
+                problems.append("ast_structural_anchor_mapping")
+            continue
         source_block = blocks_by_id.get(entry["block_id"])
         if (
             source_block is None
@@ -301,14 +365,25 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
     assigned = [i for b in entries for i in b["text_node_ids"]]
     if Counter(assigned) != Counter(range(len(tokens))):
         problems.append("token_accounting")
-    if Counter(b["block_id"] for b in entries) != Counter(
+    if Counter(b["block_id"] for b in entries if b["block_id"] is not None) != Counter(
         b["block_id"] for b in extraction["blocks"]
     ):
         problems.append("block_accounting")
+    if Counter(n.get("region_id") for n in tree["nodes"] if n["kind"] in {"image", "table"}) != Counter(
+        r["region_id"] for r in tree.get("parsed_regions", [])
+    ):
+        problems.append("ast_region_accounting")
     by_address = {n["address"]: n for n in tree["nodes"]}
     if len(by_address) != len(tree["nodes"]):
         problems.append("duplicate_addresses")
     for node in tree["nodes"]:
+        children = [by_address[a] for a in node["children"] if a in by_address]
+        offsets = [n["source_span"]["char_start"] for n in children]
+        if offsets != sorted(offsets):
+            problems.append(f"child_source_order:{node['address']}")
+        if [n["address"] for n in children] != [n["address"] for n in tree["nodes"]
+                                                if n["parent_address"] == node["address"]]:
+            problems.append(f"child_mapping:{node['address']}")
         parent = node["parent_address"]
         if parent != "act" and parent not in by_address:
             problems.append(f"missing_parent:{node['address']}")
@@ -324,8 +399,8 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
         "source_asset_sha256": digest,
         "integrity_pass": not problems,
         "problems": problems,
-        "structure_complete": not expected_regions
-        and not tree.get("unresolved_regions", [])
+        "structure_complete": not problems and not tree.get("unresolved_regions", [])
+        and not tree.get("structural_issues", [])
         and not tree["unresolved_blocks"]
         and tree["identity_decision"]["status"] in {"source_identity_matches", "claim_matches_header"},
         "counts_by_kind": dict(Counter(n["kind"] for n in tree["nodes"])),
@@ -338,7 +413,7 @@ def validate(extraction: dict, tree: dict, payload: bytes) -> dict:
         ),
         "edition_admission": False,
         "limitations": [
-            "Shared native federal-law/code grammar; unsupported structures remain unresolved; no PDF qualification.",
+            "Shared native legal grammar; unsupported structures remain unresolved; no PDF qualification.",
             "Unnumbered paragraph ordinals and parents are syntactic diagnostics, not certified legal paragraph numbers.",
             "Standalone note scope is unresolved; source claims do not establish legal applicability.",
             "Complete token accounting is not independent legal AST accuracy; dated admission remains blocked.",
@@ -357,6 +432,17 @@ LABELS = {
     "paragraph": "Абзац (диагностический)",
     "header": "Реквизиты",
     "note": "Примечание",
+    "point": "Пункт",
+    "approved_text": "Утверждённый текст",
+    "annex": "Приложение",
+    "heading": "Заголовок",
+    "notes_section": "Нормативные примечания",
+    "normative_note": "Нормативное примечание",
+    "footnote": "Сноска",
+    "quote": "Цитируемый текст изменения",
+    "table": "Таблица",
+    "table_cell": "Ячейка таблицы",
+    "image": "Изображение из источника",
 }
 
 
@@ -376,12 +462,17 @@ def render_report(tree: dict, validation: dict) -> str:
             else ""
         )
         children = "".join(render(nodes[a]) for a in node["children"])
+        resource = ""
+        if kind == "image":
+            src = node["attributes"].get("src", "")
+            if re.fullmatch(r"data:image/(?:png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=\s]+", src):
+                resource = f'<img src="{escape(src, quote=True)}" alt="Исходное изображение: формула или обозначение"/>'
         return (
-            f'<details class="node {kind}" id="n{node["block_id"]}"{opened}>'
+            f'<details class="node {kind}" id="n{node["node_id"]}"{opened}>'
             f"<summary>{escape(label)}</summary><p>{escape(node['display_text'])}</p>"
             f"<small>{escape(node['address'])} | источник: {escape(str(node['html_id']))} | "
             f"символы {node['html_start']}:{node['html_end']}{escape(scope)}</small>"
-            '<details class="source"><summary>Исходный HTML</summary><pre>'
+            + resource + '<details class="source"><summary>Исходный HTML</summary><pre>'
             + escape(node["original_html"])
             + "</pre></details>"
             + children
@@ -389,7 +480,7 @@ def render_report(tree: dict, validation: dict) -> str:
         )
 
     toc = " ".join(
-        f'<a href="#n{n["block_id"]}">{escape(n["number_display"])}</a>'
+        f'<a href="#n{n["node_id"]}">{escape(n["number_display"])}</a>'
         for n in tree["nodes"]
         if n["kind"] == "article"
     )
@@ -405,7 +496,7 @@ def render_report(tree: dict, validation: dict) -> str:
     summary = escape(json.dumps(validation, ensure_ascii=False, indent=2))
     return (
         '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
-        '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;">'
+        '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src data:">'
         f"<title>{title} — диагностика структуры</title><style>"
         "body{font:16px/1.5 system-ui,sans-serif;color:#17212e;background:#f7f9fc;max-width:1200px;padding:24px;margin:auto}"
         "h1{font-size:27px}.warning{border-left:4px solid #bd7621;padding:12px;background:#fff0d8}"
@@ -413,7 +504,7 @@ def render_report(tree: dict, validation: dict) -> str:
         "summary{cursor:pointer;overflow-wrap:anywhere}.section>summary,.chapter>summary,.article>summary{font-weight:650}"
         "small{color:#576579}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}"
         ".note{background:#eef2f6}.source{margin-top:8px}nav a{display:inline-block;padding:3px 8px;color:#17499a}"
-        ":target{outline:2px solid #3980dc}</style></head><body>"
+        "img{max-width:100%;height:auto}:target{outline:2px solid #3980dc}</style></head><body>"
         f'<h1>{title}: дерево документа</h1><p class="warning">Диагностический разбор, не юридически допущенная редакция. '
         "Даты действия не установлены. Ненумерованные абзацы и их родители требуют контрольной проверки.</p>"
         "<details><summary>Проверки и счётчики</summary><pre>"

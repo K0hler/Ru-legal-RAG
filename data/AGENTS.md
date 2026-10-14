@@ -121,19 +121,32 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   applicability/date question or is needed to disambiguate the request.
 
 
-- M1-03A final development replay is `m1/pilot_runs/m1-03a-shared-v4/`;
+- M1-03A historical law/code replay is `m1/pilot_runs/m1-03a-shared-v4/`;
   transfer cohorts `/m1-03a-transfer-v1` through `v4` retain frozen code,
   permissions, full source assets, independent controls, failures and repeat
   outputs. `m1-03a-transfer-v4-controls-v2` corrects only the DOM reference's
   dropped br whitespace; it uses the unchanged v4 production code and original
-  v4 input/archive bindings. Its `parser-transfer-report.json` is the accepted
-  native engineering evidence. Earlier code failures replay successfully under
+  v4 input/archive bindings. Its `parser-transfer-report.json` is historical
+  law/code evidence. Earlier code failures replay successfully under
   `shared-v4/former-failure-replays.json` but are not new qualification acts.
   Housing item `1.1-1` and its inline note have a documented semantic correction;
   preserve both the original and corrected drafts. No edition admission changes.
 
 - `m1/pilot_runs/m1-03a-original-four-status-v1/acceptance.json` records the
-  corrected stage acceptance: fail, 2/4. Original No. 354/491 inputs fail the
-  actual compiler before derived writes; 59-FZ/Housing repeats are unchanged.
-  The prior code/law transfer report is subset evidence and cannot close
-  M1-03A. Retain all earlier results rather than rewriting the failed history.
+  historical corrected acceptance: fail, 2/4. Keep that failure immutable.
+  `m1-03a-original-four-v8/acceptance.json` now passes all four complete compiler
+  paths with two identical fresh builds, unchanged repeats and 345 protected
+  prior/source files unchanged. Resolution354 retains 2 approved texts, 5 annexes,
+  a 28-row/64-cell table and 93 images; Resolution491 retains 2 approved texts,
+  an annex and 6 images. Source images are not transcribed mathematical content.
+- `m1-03a-resolution-transfer-v1` through `v3` retain failed/unqualified shapes:
+  quoted entire annex, Cyrillic-lookalike Roman heading, legacy merged paragraphs
+  and an independent numeric-footnote reader stopped by an asterisk. Never
+  relabel those acts as qualification. Resolution25 was retained but unparsed in
+  v1; its first frozen-code full validation in v3 passed. It and Resolution416
+  remain held-out validation bodies; no rules were developed from their text.
+- Final current native matrix: `m1-03a-resolution-transfer-v5/parser-transfer-report.json`
+  passes two laws, two codes and Resolutions25/416 with `legal-structure/7`,
+  government profile `/3`. Six final-version full builds repeat identically;
+  57 protected source records remain unchanged. Earlier bodies remain held-out
+  validation, not newly acquired acts or legal admissions; keep all failures.

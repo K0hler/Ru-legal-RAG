@@ -61,3 +61,10 @@ Scope: automated tests and checked fixtures.
   same compiler. Preparation-only preservation and additional federal-law/code
   tests are supplemental. A missing path or unresolved critical structure
   means stage failure even when the complete default test suite is green.
+- `corpus/test_resolution_structure.py` covers source-derived government
+  identities, approved/annex/quote scopes, both numeric/letter nesting orders,
+  normative notes, numeric-footnote handling/refusal of other markers, table
+  topology/ownership, image order and inert raster preview. Test nested ASCII
+  and Russian quotation marks, unclosed quotation refusal, duplicate boundaries,
+  immutable permission-bound compiler replay and preserved admission blockers.
+  An unsupported heading inside a quotation is an exception, never a crash.

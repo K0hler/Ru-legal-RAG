@@ -26,11 +26,12 @@ Scope: every file under `docs/`.
   the owner's choice of dates is not legal approval or complete history.
 - Follow `M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
   (M1-01–M1-15 plus M1-03A) and 13 milestone gates. The owner approved the
-  parser-transfer requirement on 13.10.2026. M1-03A is reopened and incomplete: its federal-law/code component is partial
-  evidence. All four original HTML inputs (59-FZ, Housing Code, No. 354,
-  No. 491) must pass full parsing before closure. Additional transfer acts or
-  HTML preparation checks cannot replace this acceptance set. See
-  `M1_03A_SHARED_STRUCTURE.md`; finish the missing native resolution path first.
+  parser-transfer requirement on 13.10.2026. M1-03A native engineering now
+  passes all four original HTML inputs (59-FZ, Housing Code, No. 354, No. 491)
+  and two non-pilot acts per declared family/format. Keep `original-four-v8`
+  acceptance separate from `resolution-transfer-v5` qualification; preparation
+  or additional acts cannot replace the mandatory original set. See
+  `M1_03A_SHARED_STRUCTURE.md`; preserve the earlier premature-closure correction.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
   `M1_01_FIXTURE_DRAFT.md`; later schemas/commands and Docling/RapidOCR remain
   target decisions. Qualify the pinned runtime/models before PDF rollout;
@@ -132,10 +133,12 @@ Scope: every file under `docs/`.
   expose the original excerpt for every provision in the offline report.
 
 
-- The implemented M1-03A component qualifies the recorded federal-law/code
-  actual.pravo `/redtext` subset only; the overall stage remains incomplete.
-  Keep its corrected independent DOM controls (br whitespace) separate from
-  production rule changes and earlier failed cohorts. A native engineering
-  pass is not the milestone-wide G13 pass, arbitrary HTML support, PDF/OCR
-  qualification or legal admission. Document the Housing item `1.1-1` semantic
-  correction rather than claiming unqualified legacy node equivalence.
+- The final M1-03A native matrix uses `legal-structure/7`, law/code profiles `/5`
+  and `government-resolution/3`: two retained held-out laws, two codes, and
+  Resolutions25/416. These are full repeated compiler runs with independent
+  controls; they are not six newly acquired bodies. Keep earlier failures
+  (quoted whole annex, Cyrillic-lookalike Roman marker, legacy merged paragraphs,
+  unqualified footnote shape) visible. Native engineering is not milestone-wide
+  G13 completion, arbitrary HTML support, PDF/OCR qualification or legal admission.
+  Source raster formulas remain images; numeric footnote support does not imply
+  other markers. Retain the Housing item `1.1-1` semantic correction.

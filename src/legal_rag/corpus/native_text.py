@@ -1,4 +1,4 @@
-"""Bounded actual.pravo redtext/HTML profile; all offsets address the JSON scalar."""
+"""Saved actual.pravo HTML scalars; offsets address the evidence-bound field."""
 
 from html import unescape
 from html.parser import HTMLParser
@@ -9,7 +9,7 @@ from .compiler import content_hash
 from .structure import build_structure
 
 
-EXTRACTOR_VERSION = "actual-redtext-html/2"
+EXTRACTOR_VERSION = "actual-native-html/3"
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 
@@ -112,28 +112,34 @@ class _NativeHTML(HTMLParser):
 
 
 def extract_native(asset: dict, payload: bytes) -> dict:
-    if asset["evidence"]["locator"] not in {"$.redtext", "/redtext"}:
-        raise ValueError("native profile requires /redtext evidence")
+    locator = asset["evidence"]["locator"]
+    if locator not in {"$.redtext", "/redtext", "$.doctext", "/doctext"}:
+        raise ValueError("native profile requires /redtext or /doctext evidence")
+    field = locator.removeprefix("$.").removeprefix("/")
     response = json.loads(payload.decode("utf-8"))
     if not isinstance(response, dict) or response.get("error") is not None:
         raise ValueError("invalid native source response")
-    html = response.get("redtext")
+    html = response.get(field)
     if not isinstance(html, str) or not html.strip():
-        raise ValueError("native response needs non-empty redtext HTML")
+        raise ValueError(f"native response needs non-empty {field} HTML")
     from .housing_html import extract_html
 
     raw = extract_html(html.encode("utf-8"))
-    for entry in [*raw["text_nodes"], *raw["blocks"], *raw["unsupported_regions"]]:
+    entries = [*raw["text_nodes"], *raw["blocks"], *raw["unsupported_regions"]]
+    for region in raw["unsupported_regions"]:
+        for row in region.get("rows", []):
+            entries.extend([row, *row["cells"]])
+    for entry in entries:
         span = entry["source_span"]
-        span.update(source_asset_sha256=asset["sha256"], json_pointer="/redtext",
+        span.update(source_asset_sha256=asset["sha256"], json_pointer="/" + field,
                     offset_unit="unicode_codepoints_in_decoded_json_scalar")
-        span["html_locator"] = "/redtext" + span["html_locator"]
+        span["html_locator"] = "/" + field + span["html_locator"]
         span["locator"] = f"{span['html_locator']}:chars:{span['char_start']}:{span['char_end']}"
         if "block_id" in entry:
             entry["locator"] = span["locator"]
     extraction = {"schema_version": "text-extraction/1", "source_asset_sha256": asset["sha256"],
                   "extractor_version": EXTRACTOR_VERSION,
-                  "config": {"profile": "actual.pravo.redtext", "json_pointer": "/redtext",
+                  "config": {"profile": "actual.pravo." + field, "json_pointer": "/" + field,
                              "cleanup": "entity-decode-collapse-whitespace/1", "superscript_classes": ["W9", "WB"]},
                   "models": [], "text_nodes": raw["text_nodes"], "unsupported_regions": raw["unsupported_regions"],
                   "pages": [{"page": None, "mode": "native_text", "confidence": None, "blocks": raw["blocks"]}]}

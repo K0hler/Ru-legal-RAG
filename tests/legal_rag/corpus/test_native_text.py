@@ -33,7 +33,7 @@ HTML = '''<!doctype html><html><head><title>Portal</title>
 
 
 class NativeTextTest(unittest.TestCase):
-    def prepare(self, root, html=HTML, *, locator="$.redtext", response=None):
+    def prepare(self, root, html=HTML, *, locator="$.redtext", response=None, identity=IDENTITY):
         payload = json_bytes({"redtext": html, "error": None} if response is None else response)
         digest = hashlib.sha256(payload).hexdigest()
         source = root / "fixture.json"
@@ -41,28 +41,28 @@ class NativeTextTest(unittest.TestCase):
         root.mkdir(parents=True)
         source.write_bytes(payload)
         metadata = {"adapter_version": "fixture/1", "captured_at": "2026-10-12T00:00:00Z",
-                    "declared_act_identity": IDENTITY, "declared_edition_label": "synthetic-native",
+                    "declared_act_identity": identity, "declared_edition_label": "synthetic-native",
                     "expected_sha256": digest, "external_id": "native-59", "media_type": "application/json",
                     "rights_status": "Project-authored synthetic fixture; redistribution permitted",
                     "source_system": "fixture", "source_url": "https://example.invalid/native-59"}
         metadata_path.write_bytes(json_bytes(metadata))
         acquire_fixture(source, metadata_path, root)
         permission = {"schema_version": "processing-permission/1", "decision": "allowed",
-                      "scope": "diagnostic", "act_identity": IDENTITY, "source_asset_sha256s": [digest],
+                      "scope": "diagnostic", "act_identity": identity, "source_asset_sha256s": [digest],
                       "authorized_by": "synthetic-author", "authorized_at": "2026-10-12T00:00:00Z",
                       "rights_basis": metadata["rights_status"]}
         permission_path = root / "reviews/permission.json"
         permission_path.parent.mkdir()
         permission_path.write_bytes(json_bytes(permission))
         manifest = {"schema_version": "corpus-input/1", "kind": "official_consolidated",
-                    "act_identity_claim": {"declared_identity": IDENTITY}, "target_dates": ["2026-10-01"],
+                    "act_identity_claim": {"declared_identity": identity}, "target_dates": ["2026-10-01"],
                     "archive_root": ".", "admission_status": "unresolved",
                     "admission_blockers": ["case_law_sensitive_effect_unresolved"], "unresolved_questions": [],
                     "processing_permission": {"path": "reviews/permission.json",
                                               "sha256": hashlib.sha256(permission_path.read_bytes()).hexdigest()},
                     "assets": [{"sha256": digest, "source_item": "fixture:native-59",
                                 "source_url": metadata["source_url"], "role": "consolidated",
-                                "declared_identity": IDENTITY,
+                                "declared_identity": identity,
                                 "evidence": {"source_asset_sha256": digest, "source_url": metadata["source_url"],
                                              "locator": locator}}]}
         manifest["manifest_hash"] = manifest_digest(manifest)

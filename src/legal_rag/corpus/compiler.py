@@ -351,7 +351,7 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
         extraction["extraction_id"] = content_hash(extraction)
         extractions.append(extraction)
         trees.append(_tree(asset, text, extraction["extraction_id"]))
-    if any(tree["unresolved_blocks"] or tree.get("unresolved_regions") for tree in trees):
+    if any(tree["unresolved_blocks"] or tree.get("unresolved_regions") or tree.get("structural_issues") for tree in trees):
         blockers.add("unresolved_structure")
     if any(tree["identity_decision"]["status"] == "unresolved" for tree in trees):
         blockers.add("identity_unresolved")

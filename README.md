@@ -57,8 +57,12 @@ permission-bound native JSON inputs before a downstream parser is chosen. It
 preserves text, indices, notes, tables, images and references, with original/output
 opening-tag maps. Install `requirements-html.txt`, then use
 `python -m legal_rag.corpus prepare-html --input <manifest> --target-date <date> --output-dir <dir>`.
-Four retained-input preservation checks pass; legal hierarchy and M1-03A transfer
-qualification remain the next work.
+All four original HTML inputs now pass full diagnostic parsing through the
+[shared legal engine](docs/M1_03A_SHARED_STRUCTURE.md): 59-FZ, Housing Code,
+Government Resolutions No. 354 and No. 491. Approved texts, annexes, source table
+topology and image formulas retain their own source-bound structure. Native
+transfer qualification and unsupported shapes are recorded separately; these
+diagnostics do not admit dated legal editions.
 
 ```powershell
 $env:PYTHONPATH = "src"
