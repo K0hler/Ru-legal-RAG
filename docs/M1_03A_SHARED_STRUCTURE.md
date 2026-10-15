@@ -6,6 +6,13 @@ the native transfer matrix passes two non-pilot acts per family/format. These
 are distinct acceptance checks. No legal edition is admitted.
 The previous premature closure and corrected 2/4 failure remain in the history.
 
+**Coverage update, 15 October 2026:** an owner-requested, preselected six-act
+expansion probe passes only **3/6** with the unchanged compiler. The historical
+4/4 original-input and six-act qualification results remain valid for their
+recorded bodies; they do not establish family-wide HTML coverage. See the new
+coverage experiment below before describing this implementation as reusable
+across arbitrary acts.
+
 ## Mandatory original-input acceptance
 
 | Original retained input | HTML preparation | Complete legal structure |
@@ -189,6 +196,52 @@ Original-four acceptance SHA-256:
 `77cab175c67f4f2d762eb84729831d7893779a10c91f23237b288e8f543a2221`.
 Final transfer-report SHA-256:
 `8c4e6b94c89f3bbad7b1b11e959878b26fe8a2a4be3a1e9e2314f87259f7583f`.
+
+## Additional coverage experiment, 15 October 2026
+
+The owner requested more HTML documents downloaded through M0 and compiled
+without first changing rules. Six acts were selected before reading their full
+bodies: two federal laws, two codes and two government resolutions. All six
+official downloads succeeded. Frozen M0 transport, card/edition validators and
+immutable acquisition persistence were reused; the pilot-only production
+`fetch()` allowlists were not expanded. Metadata-driven diagnostic orchestration
+and exact-asset permissions remain local to the experiment.
+
+The compiler stayed at commit `55b93ca`, `legal-structure/7`. Each complete input
+was compiled twice into fresh directories and repeated unchanged. All six
+retained exact source accounting, raw/native adapter equivalence and integrity;
+59 source/prior-artifact files and all frozen production-code hashes remained
+unchanged. Success additionally requires a complete hierarchy and matching
+independent source controls, not merely successful CLI execution.
+
+| New complete input | Result | Structural evidence |
+|---|---|---|
+| 23.11.2009 No. 261-FZ, energy efficiency | fail | 39 unresolved blocks: quoted foreign articles inside amendments are not scoped by the law profile |
+| 21.11.2011 No. 323-FZ, health protection | pass | 113 source articles, 14 chapters; independent controls match |
+| 30.04.1999 No. 81-FZ, Merchant Shipping Code | pass | 468 source articles, 31 chapters, 22 chapter paragraphs; controls match |
+| 07.03.2001 No. 24-FZ, Inland Water Transport Code | pass | 187 source articles, 20 chapters; controls match |
+| 14.05.2013 No. 410, gas equipment | fail | 25 unresolved blocks and an unclosed amendment quotation; annex reference includes an edition qualifier |
+| 28.01.2006 No. 47, residential-premises status | fail | 134 unresolved blocks, six unsupported table regions; annexes refer to a Regulation and nested forms |
+
+No.261-FZ exposes a legal-structure gap, rather than an HTML decoding failure:
+the source quotes articles 9.16 and 23.71 of another act. The law profile does not
+create the required separate quotation scope. No.410's annex title reference
+contains an additional "in the edition of" qualifier, so exact title binding
+fails. No.47 needs Regulation/annex/form relationships, a mixed-marker paragraph
+and table content handled within those scopes. The existing independent
+government reference reader also stops at the two unfamiliar annex citations;
+its failure is retained separately, not treated as evidence of successful parsing.
+
+Full local evidence: `data/m1/pilot_runs/native-expansion-20261015-v1/` contains
+the pre-body selection/frozen hashes, source search/cards/edition responses,
+M0 acquisition archive, original HTML, input permissions, both compiler builds,
+complete ASTs and exceptions, independent controls/errors, `results.json` and
+a readable `index.html`. Result SHA-256:
+`1dbb6bf995de58f98eb079a3c8ede083f05a3e6358732667ac678dd6e70582bd`.
+No failed input was substituted and no parser fix was included in this probe.
+These are diagnostic source snapshots; article counts do not certify current
+legal applicability or dated editions. General native-HTML coverage remains
+partial and requires further shared-profile work.
 
 ### Earlier subset verification
 

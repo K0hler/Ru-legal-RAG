@@ -150,3 +150,14 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   government profile `/3`. Six final-version full builds repeat identically;
   57 protected source records remain unchanged. Earlier bodies remain held-out
   validation, not newly acquired acts or legal admissions; keep all failures.
+- The owner-requested 15 October expansion experiment is
+  `m1/pilot_runs/native-expansion-20261015-v1/`. Six acts were preselected and
+  downloaded using frozen M0 transport/validators/persistence, with unchanged
+  compiler `55b93ca`: 3/6 pass (323-FZ, Merchant Shipping Code81-FZ, Inland Water
+  Transport Code24-FZ); 261-FZ, Resolutions410/47 fail structural checks. Each has
+  two identical fresh builds and an unchanged repeat; source text/integrity is
+  retained even for failed legal structure. Keep the initial full failures and
+  independent-reader errors immutable. Unknown annex references and quoted
+  amendments require future common rules; do not repair or replace these bodies
+  inside the frozen baseline. This probe limits general coverage claims and
+  does not cancel or broaden the earlier exact-input acceptance evidence.
