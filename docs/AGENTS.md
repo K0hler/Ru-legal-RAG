@@ -142,3 +142,10 @@ Scope: every file under `docs/`.
   G13 completion, arbitrary HTML support, PDF/OCR qualification or legal admission.
   Source raster formulas remain images; numeric footnote support does not imply
   other markers. Retain the Housing item `1.1-1` semantic correction.
+- The separate preselected native-HTML expansion probe on 15 October 2026 passes
+  only 3/6 with the frozen `55b93ca` compiler. All six retain source integrity;
+  No.261-FZ, No.410 and No.47 retain structural failures. Historical 4/4 and
+  transfer results do not establish arbitrary-act coverage. The owner's pause
+  and self-contained Russian continuation context are recorded in
+  `M1_03A_PARSER_HANDOFF_2026-10-15.md`; the proposed LLM hybrid and new experiment
+  are unapproved, unimplemented options.
