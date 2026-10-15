@@ -71,3 +71,6 @@ Files: adapter, focused tests, локальный replay driver, русский 
   существующий механизм supporting_assets. Миграции исторических записей нет.
 - Выполнение последовательно в текущем чате; подтверждение архитектуры уже дано.
 - Task 1: RED — новый модуль отсутствует; GREEN — шесть focused replay controls.
+- Task 1: complete — `8edad85`, source suite 51 passed; M0 gate 78/78.
+- Task 2: RED — отсутствовал адаптер; затем два дополнительных отказа
+  (пропущенный номер, bool вместо уровня). Добавлены строгие guards.

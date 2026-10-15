@@ -1,5 +1,10 @@
 # Test instructions
 
+- `corpus/test_official_structure.py` checks the opt-in v2 path, source selectors,
+  permission scope, sidecar numbering/ranges, note scope and exactly-once media/
+  text accounting. Negative bindings must write no derived files; the original
+  v1 replay and frozen M0 gate remain required.
+
 Scope: automated tests and checked fixtures.
 
 - Mirror the `src/legal_rag/` module layout.

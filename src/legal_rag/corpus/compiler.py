@@ -25,7 +25,7 @@ def content_hash(value: object) -> str:
 def manifest_digest(manifest: dict) -> str:
     """Hash portable content; paths locate evidence but are not its identity."""
     payload = {key: value for key, value in manifest.items() if key not in {"archive_root", "manifest_hash"}}
-    for key in ("processing_permission", "edition_candidate"):
+    for key in ("processing_permission", "edition_candidate", "structure_bundle"):
         if payload.get(key) is not None:
             payload[key] = {"sha256": payload[key]["sha256"]}
     for key in ("assets", "admission_blockers", "unresolved_questions", "target_dates"):
@@ -120,9 +120,12 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
         "schema_version", "kind", "act_identity_claim", "target_dates", "archive_root", "assets",
         "processing_permission", "admission_status", "admission_blockers", "unresolved_questions",
         "manifest_hash",
-    }, optional={"edition_candidate"})
-    if manifest["schema_version"] != "corpus-input/1":
+    }, optional={"edition_candidate", "structure_bundle"})
+    version = manifest["schema_version"]
+    if version not in {"corpus-input/1", "corpus-input/2"}:
         raise ValueError("unknown corpus-input version")
+    if (version == "corpus-input/2") != ("structure_bundle" in manifest):
+        raise ValueError("only corpus-input/2 requires a structure bundle")
     if _text(manifest["kind"]) not in {"official_consolidated", "original_amendments"}:
         raise ValueError("unknown input kind")
     identity = _text(_object(manifest["act_identity_claim"], {"declared_identity"})["declared_identity"])
@@ -142,7 +145,8 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
         digest = _hash(reference["sha256"])
         if digest in raw:
             raise ValueError("duplicate input asset")
-        if _text(reference["role"]) not in {"consolidated", "original", "amendment"}:
+        allowed_roles = {"consolidated", "original", "amendment"} | ({"official_structure"} if version == "corpus-input/2" else set())
+        if _text(reference["role"]) not in allowed_roles:
             raise ValueError("unknown asset role")
         asset, payload = _asset(root, digest)
         source_item = _text(reference["source_item"])
@@ -179,8 +183,11 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
         assets.append({**reference, "metadata": asset})
         raw[digest] = payload
     roles = [asset["role"] for asset in assets]
-    if manifest["kind"] == "official_consolidated" and roles != ["consolidated"]:
+    expected_roles = ["consolidated", "official_structure"] if version == "corpus-input/2" else ["consolidated"]
+    if manifest["kind"] == "official_consolidated" and sorted(roles) != expected_roles:
         raise ValueError("official_consolidated requires one consolidated asset")
+    if version == "corpus-input/2" and manifest["kind"] != "official_consolidated":
+        raise ValueError("structure bundle only supports consolidated input")
     if manifest["kind"] == "original_amendments" and (roles.count("original") != 1 or "consolidated" in roles):
         raise ValueError("original_amendments requires one original and optional amendments")
     permission, permission_hash = _reference(root, manifest["processing_permission"])
@@ -203,11 +210,17 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
         if manifest["kind"] != "official_consolidated":
             raise ValueError("original/amendments input cannot impersonate a consolidated candidate")
         candidate, _ = _reference(root, manifest["edition_candidate"])
-        _validate_candidate(root, candidate, assets[0], identity)
+        _validate_candidate(root, candidate, next(a for a in assets if a["role"] == "consolidated"), identity)
+    structure_bundle = None
+    if version == "corpus-input/2":
+        structure_bundle, _ = _reference(root, manifest["structure_bundle"])
+        from .official_binding import validate_binding
+
+        validate_binding(root, structure_bundle, assets)
     if _hash(manifest["manifest_hash"]) != manifest_digest(manifest):
         raise ValueError("manifest hash mismatch")
     normalized = {
-        "schema_version": "corpus-input/1", "manifest_hash": manifest["manifest_hash"],
+        "schema_version": version, "manifest_hash": manifest["manifest_hash"],
         "kind": manifest["kind"], "act_identity_claim": manifest["act_identity_claim"],
         "target_dates": dates, "assets": sorted(assets, key=lambda asset: (asset["role"] == "amendment", asset["sha256"])),
         "processing_permission": {"sha256": permission_hash, "record": permission},
@@ -216,6 +229,8 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
         "edition_candidate": candidate,
         "candidate_bytes_sha256": manifest.get("edition_candidate", {}).get("sha256") if candidate else None,
     }
+    if structure_bundle is not None:
+        normalized["structure_bundle"] = structure_bundle
     return normalized, raw, root
 
 
@@ -331,12 +346,23 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
         if manifest["edition_candidate"]["review_status"] == "rejected":
             blockers.add("rejected")
     for asset in manifest["assets"]:
+        if asset["role"] == "official_structure":
+            continue
         if asset["metadata"]["media_type"].split(";", 1)[0] == "application/json":
             from .native_text import extract_native, native_tree
 
             extraction = extract_native(asset, raw[asset["sha256"]])
             extractions.append(extraction)
-            trees.append(native_tree(asset, extraction))
+            if "structure_bundle" in manifest:
+                from .official_structure import build_official_tree
+
+                binding = manifest["structure_bundle"]
+                field = asset["evidence"]["locator"].removeprefix("$.").removeprefix("/")
+                html = json.loads(raw[asset["sha256"]])[field]
+                trees.append(build_official_tree(asset, extraction, html, raw[binding["structure_sha256"]],
+                                                binding["structure_sha256"], binding["source_system"]))
+            else:
+                trees.append(native_tree(asset, extraction))
             continue
         if asset["metadata"]["media_type"] != "text/plain; charset=utf-8":
             raise ValueError("unsupported extraction format; use UTF-8 fixture or native redtext JSON")

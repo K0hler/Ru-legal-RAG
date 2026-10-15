@@ -1,5 +1,16 @@
 # Corpus compilation module
 
+- `corpus-input/2` adds exactly one `official_structure` asset plus a hashed
+  `structure_bundle` reference. `official_binding.py` verifies source membership,
+  archived edition evidence and both private transport selectors before writes;
+  both text/structure hashes must be explicitly permitted. V1 remains unchanged.
+- `official_structure.py` emits `legal-ast/2`: source units carry sidecar pointers,
+  full scalar spans and canonical/display numbers; lexical child blocks own
+  tokens exactly once. Validate level/prefix/range/number agreement and reject
+  malformed structures. Keep table/image regions once; raster transcription is
+  unverified. Notes retain structural containment separately from legal scope;
+  standalone editorial notes remain document-level with unresolved scope.
+
 Scope: extraction, cleanup, legal structure, canonical entities, review gates, and corpus builds.
 
 - `LegalAct` is stable identity; `LegalEdition` is a specific verified snapshot; `LegalProvision` belongs to exactly one edition.
