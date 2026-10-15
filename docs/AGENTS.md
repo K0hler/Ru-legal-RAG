@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `M1_03A_STRUCTURE_AUDIT_2026-10-15.md` records the subsequent implementation
+  of independent HTML reconciliation, bounded superscript sibling recovery and
+  coarse form/amendment payloads. Preserve the earlier integration/triage as
+  historical evidence. Distinguish normalized and source-declared ranges, critical
+  missing provisions and optional segmentation. Seven development inputs and
+  injected faults do not establish new G13 coverage or universal error detection.
+
 - `M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md` is an analysis/proposal, not a
   deployed gate change. Two No.354 6² provisions need distinct addresses and full
   payload scopes; No.47's inline form list and seven amendment-quote cases may

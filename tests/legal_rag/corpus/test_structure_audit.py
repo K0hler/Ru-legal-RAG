@@ -107,3 +107,19 @@ def test_compiler_report_shows_audit_findings(tmp_path):
     path, _ = prepare(tmp_path / "archive")
     result = compile_input(path, "2026-10-15", tmp_path / "derived")
     assert "Независимая проверка структуры" in Path(result["report"]).read_text(encoding="utf-8")
+
+
+def test_missing_html_heading_blocks_full_compiler_readiness(tmp_path, monkeypatch):
+    import json
+
+    from legal_rag.corpus.compiler import compile_input
+    import test_official_structure as fixtures
+
+    monkeypatch.setattr(fixtures, "HTML", HTML.replace('<p id="end">Конец.</p>',
+        '<p id="end">Конец.</p><p id="missing">Глава XIV. Пропущена источником</p>'))
+    path, _ = fixtures.prepare(tmp_path / "archive")
+    result = compile_input(path, "2026-10-15", tmp_path / "derived")
+    draft = json.loads(Path(result["draft"]).read_bytes())
+    assert "unresolved_structure" in result["blockers"]
+    assert draft["content"]["trees"][0]["structure_audit"]["critical_count"] > 0
+    assert "unmatched_marker" in Path(result["report"]).read_text(encoding="utf-8")

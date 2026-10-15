@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 
 
-VERSION = "html-structure-audit/1"
+VERSION = "html-structure-audit/2"
 NUMBER = r"[0-9]+(?:[.^-][0-9]+)*"
 ROMAN = r"[IVXLCDM]+(?:[.^-][0-9]+)*"
 SUPERSCRIPT = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
@@ -47,6 +47,8 @@ def scan_html(html):
                 kind, number, delimiter = "numbered", numeric[1], numeric[2]
             elif letter:
                 kind, number, delimiter = "letter", letter[1].casefold(), ")"
+            elif re.match(r"^[0-9]+(?:\^[^\s]+|[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)[.)](?:\s|$)", prefix):
+                kind, number, delimiter = "unknown_numbered", None, None
             elif re.match(r"^(?:Статья|Глава|Раздел|§)(?:\s|$)", prefix, re.I):
                 kind, number, delimiter = "unknown_heading", None, None
             else:
@@ -121,6 +123,10 @@ def audit_tree(candidates, nodes, unresolved, excluded):
             finding("unmatched_marker", "critical", candidate, block)
 
     for node in nodes:
+        if node.get("structure_origin") == "html_recovery":
+            finding("explicit_sibling_recovered", "info", node=node)
+        if node.get("content_context") == "amendment_payload" and node.get("block_id") is not None:
+            finding("amendment_payload_preserved", "warning", node=node)
         parent = by_address.get(node["parent_address"])
         if parent is None and node["parent_address"] != "act":
             finding("missing_parent", "critical", node=node)

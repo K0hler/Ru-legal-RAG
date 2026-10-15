@@ -1,7 +1,21 @@
 # Corpus compilation module
 
+- `official-structure/4` recovers only explicit superscript successors of an
+  established point, with matching paragraph style, a known parent, no nested
+  crossing or address collision, and no protected quote/form payload. Derived
+  nodes have `structure_origin=html_recovery`, HTML evidence and no official
+  source ID/state; trimmed neighbors retain `source_declared_span`. Sidecar
+  `/data/N` pointers keep original row indices after insertion. Media and inline
+  notes follow the full recovered scope, not only its opening paragraph.
+- Complete inline amendment payloads and standalone quoted-term definitions
+  may remain whole paragraphs in their source provision, with an audit warning
+  and no precise quote node. Known form lists may remain multiline paragraphs.
+  Unclosed/crossing quotes, unknown headings and uncertain own markers still
+  block readiness. Recovery is bounded; passing seven development acts is not
+  new G13 qualification, dated admission or proof of universal detection.
+
 - `structure_audit.py` inventories raw HTML markers independently of sidecar
-  traversal/regex. `official-structure/3` records `structure-audit/1` findings
+  traversal/regex. The official route records `structure-audit/1` findings
   with evidence, critical/warning counts and a candidate digest. Critical missing
   markers, type/parent/range errors block readiness; form/table/quoted content is
   distinguished from missing own provisions. The v1 route remains unchanged.

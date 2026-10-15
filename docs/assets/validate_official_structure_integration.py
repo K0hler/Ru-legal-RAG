@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 PROJECT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT / "src"))
 from legal_rag.corpus.compiler import compile_input, json_bytes, load_input, manifest_digest  # noqa: E402
+from legal_rag.corpus.native_text import extract_native  # noqa: E402
+from legal_rag.corpus.official_structure import build_official_tree  # noqa: E402
 from legal_rag.sources.acquisition import _persist_asset  # noqa: E402
 
 PREFLIGHT = PROJECT / "data/m1/experiments/official-structure-20261015-v1/preflight.json"
@@ -128,13 +130,44 @@ def controls(tree, record):
     dom_counts = (len(soup.find_all("table")), len(soup.find_all("tr")), len(soup.find_all(["td", "th"])))
     parsed_counts = (len(tables), sum(len(r["rows"]) for r in tables), sum(len(row["cells"]) for r in tables for row in r["rows"]))
     result = {"source_nodes": len(source), "all_source_ids_preserved": [n["source_id"] for n in source] == [r["id"] for r in rows],
+        "source_pointers_preserved": all(n["source_structure_evidence"]["json_pointer"] == f"/data/{i}" for i, n in enumerate(source)),
         "whole_body_matches_dom": body_matches, "tables_match_dom": dom_counts == parsed_counts,
         "images_match_dom": [i.get("src") for i in soup.find_all("img")] == [r["attributes"].get("src") for r in regions if r["tag"] == "img"],
         "table_counts": parsed_counts, "images": len(soup.find_all("img")), "counts_by_kind": tree["accounting"]["counts_by_kind"],
         "tokens_exactly_once": tree["accounting"]["exactly_once"], "regions_exactly_once": tree["accounting"]["regions_exactly_once"],
-        "unresolved_blocks": len(tree["unresolved_blocks"]), "structural_issues": tree["structural_issues"]}
+        "unresolved_blocks": len(tree["unresolved_blocks"]), "structural_issues": tree["structural_issues"],
+        "audit_critical": tree["structure_audit"]["critical_count"], "audit_warnings": tree["structure_audit"]["warning_count"],
+        "audit_info": tree["structure_audit"]["info_count"], "recovered_nodes": tree["accounting"]["recovered_nodes"]}
     result["technical_pass"] = all(result[k] for k in ("all_source_ids_preserved", "whole_body_matches_dom", "tables_match_dom",
-                                                       "images_match_dom", "tokens_exactly_once", "regions_exactly_once"))
+                                                       "images_match_dom", "tokens_exactly_once", "regions_exactly_once", "source_pointers_preserved"))
+    return result
+
+
+def mutation_controls(record, destination):
+    """Probe a retained act without changing its archive or using closed labels."""
+    manifest, raw, _ = load_input(PROJECT / record["input"], record["target_date_claim"])
+    asset = manifest["assets"][0]
+    html = json.loads(raw[asset["sha256"]])[record["locator"][2:]]
+    original = json.loads((PROJECT / record["response_file"]).read_bytes())
+    last = original["data"][-1]
+    # Omit a real leaf; separately append previously unseen decimal/Roman markers.
+    soup = BeautifulSoup(html, "html.parser")
+    anchor = str(soup.find(id=last["npe"]))
+    result = {}
+    for name, injection in (("removed_source_leaf", ""), ("new_roman_heading", '<p id="mutation">Раздел XIV. Контроль</p>'),
+                            ("new_decimal_point", '<p id="mutation">47.3. Контроль</p>')):
+        changed = json.loads(json.dumps(original))
+        if not injection:
+            changed["data"].pop()
+        mutated_html = html if not injection else html.replace(anchor, anchor + injection)
+        assert not injection or mutated_html != html
+        payload = json_bytes({record["locator"][2:]: mutated_html})
+        mutated_asset = {**asset, "sha256": hashlib.sha256(payload).hexdigest()}
+        sidecar = json_bytes(changed)
+        tree = build_official_tree(mutated_asset, extract_native(mutated_asset, payload), mutated_html,
+                                   sidecar, hashlib.sha256(sidecar).hexdigest(), "actual.pravo.gov.ru")
+        write(destination / (name + ".json"), tree["structure_audit"])
+        result[name] = tree["structure_audit"]["critical_count"] > 0 and "structure_audit_failed" in tree["structural_issues"]
     return result
 
 
@@ -145,6 +178,9 @@ def main():
     args = parser.parse_args()
     if args.output_dir.exists():
         raise ValueError("use a new output directory; prior attempts are immutable")
+    code_paths = [Path(__file__), *sorted((PROJECT / "src/legal_rag/corpus").glob("*.py")),
+                  PROJECT / "src/legal_rag/sources/structure_bundle.py"]
+    code_hashes = {str(p.relative_to(PROJECT)): sha(p) for p in code_paths}
     preflight = json.loads(PREFLIGHT.read_bytes())
     live_bundles = []
     if args.live_bundles_dir:
@@ -202,15 +238,32 @@ def main():
     if "gas" in trees:
         annex = next(n for n in trees["gas"]["nodes"] if n.get("source_id") == "zf1_uf2")
         witnesses["unnumbered_annex_preserved"] = annex["number_canonical"] is None
+        witnesses["definitions_without_false_quote"] = all(not any(n["kind"] == "quote" and n["source_span"]["char_start"]
+            == b["html_start"] for n in trees["gas"]["nodes"]) for b in trees["gas"]["nodes"]
+            if b.get("html_id") in {"p297", "p299"} and b.get("block_id") is not None)
+    if "government-decree-354" in trees:
+        tree = trees["government-decree-354"]
+        recovered = [n for n in tree["nodes"] if n.get("structure_origin") == "html_recovery"]
+        witnesses["two_superscript_siblings"] = len(recovered) == 2 and {n["number_canonical"] for n in recovered} == {"6.2"}
+        for n in recovered:
+            old = next(b for b in tree["nodes"] if b.get("source_id") == n["recovery_evidence"]["previous_source_id"])
+            witnesses["sibling_" + n["recovery_evidence"]["html_id"]] = (old["parent_address"] == n["parent_address"]
+                and old["source_span"]["char_end"] == n["source_span"]["char_start"]
+                and old["source_declared_span"]["char_end"] == n["source_span"]["char_end"])
+        formula_point = next((n for n in recovered if "/annex/2/" in n["address"]), None)
+        witnesses["formula_ten_images_in_recovered_point"] = formula_point is not None and sum(n["kind"] == "image"
+            and n["parent_address"] == formula_point["address"] for n in tree["nodes"]) == 10
+    mutations = mutation_controls(next(r for r in preflight["records"] if r["document"] == "federal-law-59"), args.output_dir / "mutations")
     for path, expected in protected.items():
         assert sha(PROJECT / path) == expected, path
-    summary = {"schema_version": "official-structure-integration-check/1", "documents": results, "witnesses": witnesses,
+    assert code_hashes == {str(p.relative_to(PROJECT)): sha(p) for p in code_paths}, "code changed during replay"
+    summary = {"schema_version": "official-structure-integration-check/2", "documents": results, "witnesses": witnesses,
+        "mutations": mutations,
         "protected_files_verified": len(protected), "closed_gold_access": False,
         "approved_code_delta": "compiler.py integration; original experiment code hashes remain unchanged in its preflight",
         "source_nodes": sum(r.get("controls", {}).get("source_nodes", 0) for r in results),
-        "code_sha256s": {str(p.relative_to(PROJECT)): sha(p) for p in [Path(__file__),
-            *sorted((PROJECT / "src/legal_rag/corpus").glob("*.py")), PROJECT / "src/legal_rag/sources/structure_bundle.py"]}}
-    summary["technical_pass"] = all(r.get("controls", {}).get("technical_pass") for r in results) and all(witnesses.values()) and len(witnesses) == 5
+        "code_sha256s": code_hashes}
+    summary["technical_pass"] = all(r.get("controls", {}).get("technical_pass") for r in results) and all(witnesses.values()) and len(witnesses) == 10 and all(mutations.values())
     summary["structural_readiness"] = all(not r.get("controls", {}).get("unresolved_blocks")
         and not r.get("controls", {}).get("structural_issues") and "error" not in r for r in results)
     write(args.output_dir / "results.json", summary)

@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 from .structure import _identity, _note_fields
 
-VERSION = "official-structure/3"
+VERSION = "official-structure/4"
 VOID = set("area base br col embed hr img input link meta param source track wbr".split())
 KINDS = {"раздел": "section", "глава": "chapter", "статья": "article",
          "часть": "part", "пункт": "item", "подпункт": "subitem", "приложение": "annex"}
@@ -102,7 +102,7 @@ def normalized_units(html, rows, family):
     nodes, stack, seen = [], [], set()
     sibling_end = {}
     marker_checks = []
-    for row in rows:
+    for row_index, row in enumerate(rows):
         if (not isinstance(row, dict) or type(row.get("lvl")) is not int or row["lvl"] < 0
                 or any(not isinstance(row.get(k), str) or not row[k] for k in ("id", "np", "npe", "caption", "unit"))):
             raise ValueError("invalid sidecar node fields")
@@ -156,7 +156,7 @@ def normalized_units(html, rows, family):
                               "source_prefix": source_text[:160]})
         path = [*(parent["provision_path"] if parent else []),
                 {"kind": kind, "number": canonical, "source_id": row["id"]}]
-        n = {"source_id": row["id"], "parent_source_id": pid,
+        n = {"source_id": row["id"], "source_row_index": row_index, "parent_source_id": pid,
              "kind": kind, "number_canonical": canonical, "number_display": display,
              "caption": row["caption"], "level": row["lvl"], "source_state": row.get("state"),
              "source_unit": row["unit"], "np": row["np"], "npe": row["npe"],
@@ -188,6 +188,14 @@ class Owners:
             n = self.by_id.get(n["parent_source_id"])
         return None
 
+    def in_form(self, source_id):
+        node = self.by_id.get(source_id)
+        while node:
+            if node["kind"] == "annex" and "(форма)" in node["caption"].casefold():
+                return True
+            node = self.by_id.get(node["parent_source_id"])
+        return False
+
 
 def build_official_tree(asset, extraction, html, sidecar, structure_sha256, source_system):
     if hashlib.sha256(sidecar).hexdigest() != structure_sha256:
@@ -206,7 +214,21 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
     identity = _identity(blocks, asset["declared_identity"])
     if identity["status"] != "claim_matches_header":
         raise ValueError("official structure requires resolved source identity")
-    units, checks, _ = normalized_units(html, response["data"], identity["family"])
+    units, checks, soup = normalized_units(html, response["data"], identity["family"])
+    owners = Owners(units)
+    for unit in units:
+        parent = owners.by_id.get(unit["parent_source_id"])
+        number = unit["number_canonical"]
+        suffix = f"{unit['kind']}/{number}" if number else f"source/{unit['source_id']}"
+        unit["address"] = (parent["address"] if parent else "act") + "/" + suffix
+    from .structure_audit import audit_tree, scan_html
+    from .structure_completion import complete_units
+    from .structure_recovery import recover_siblings
+
+    candidates = scan_html(html)
+    _, preliminary_owners, _, preliminary_invalid, preliminary_coarse = complete_units(blocks, owners)
+    recovered = recover_siblings(candidates, units, owners, blocks,
+        set(preliminary_owners) | preliminary_invalid | preliminary_coarse, soup)
     owners = Owners(units)
     nodes, unresolved, excluded, issues = [], [], [], []
     parsed_regions, unresolved_regions = [], []
@@ -236,21 +258,24 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
         nodes.append(node)
         return node
 
-    for index, unit in enumerate(units):
+    for unit in units:
         parent = owners.by_id.get(unit["parent_source_id"])
         parent_address = parent["address"] if parent else "act"
         number = unit["number_canonical"]
         suffix = f"{unit['kind']}/{number}" if number else f"source/{unit['source_id']}"
         unit["address"] = parent_address + "/" + suffix
+        fields = ({"structure_origin": "html_recovery", "recovery_evidence": unit["recovery_evidence"]}
+                  if unit.get("structure_origin") else {"source_id": unit["source_id"],
+                      "source_structure_evidence": {"source_asset_sha256": structure_sha256,
+                          "json_pointer": "/data/" + str(unit["source_row_index"])}})
+        if "source_declared_range" in unit:
+            fields["source_declared_span"] = span(*unit["source_declared_range"])
         add({"source_span": span(unit["html_start"], unit["html_end"])}, unit["kind"], unit["address"], parent_address,
-            source_id=unit["source_id"], source_unit=unit["source_unit"], source_state=unit["source_state"],
+            source_unit=unit["source_unit"], source_state=unit["source_state"], **fields,
             number_canonical=number, number_display=unit["number_display"], number_is_explicit=number is not None,
-            caption=unit["caption"], source_structure_evidence={"source_asset_sha256": structure_sha256,
-                "json_pointer": "/data/" + str(index)})
+            caption=unit["caption"])
 
-    from .structure_completion import complete_units
-
-    completion, completed_owners, completion_issues, invalid_blocks = complete_units(blocks, owners)
+    completion, completed_owners, completion_issues, invalid_blocks, coarse_blocks = complete_units(blocks, owners)
     issues.extend(completion_issues)
     for node in completion:
         fields = {key: value for key, value in node.items() if key not in {"kind", "address", "parent", "start", "end", "level"}}
@@ -336,7 +361,10 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
                                        region_addresses[table["region_id"]])
         parent = completed_owners.get(block["block_id"], parent)
         kind = "table_cell" if table else "paragraph"
-        if block["paragraph"] in ambiguous_paragraphs or block["block_id"] in invalid_blocks or (block["block_id"] not in completed_owners
+        form = owner and owners.in_form(owner["source_id"])
+        if block["block_id"] in coarse_blocks:
+            block["content_context"] = "amendment_payload"
+        if (block["paragraph"] in ambiguous_paragraphs and not form) or block["block_id"] in invalid_blocks or (not form and block["block_id"] not in completed_owners
                 and not (table and parent in row_addresses.values())
                 and block["html_id"] not in unit_starts and MARKER.match(block["numbering_text"])
                 and (owner is None or owner["kind"] not in {"normative_note", "notes_section"}) and "N" not in block["classes"]):
@@ -345,9 +373,7 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
                                "source_container_address": parent})
         else:
             add(block, kind, f"{parent}/{kind}/{block['block_id']}", parent)
-    from .structure_audit import audit_tree, scan_html
-
-    audit = audit_tree(scan_html(html), nodes, unresolved, excluded)
+    audit = audit_tree(candidates, nodes, unresolved, excluded)
     audit["source_asset_sha256"] = asset["sha256"]
     if audit["critical_count"]:
         issues.append("structure_audit_failed")
@@ -367,7 +393,8 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
                     == Counter(r["region_id"] for r in extraction["unsupported_regions"]),
                   "total_text_nodes": len(extraction["text_nodes"]), "total_chars": sum(len(b["text"]) for b in blocks),
                   "total_unsupported_regions": len(extraction["unsupported_regions"]),
-                  "counts_by_kind": dict(Counter(n["kind"] for n in nodes)), "source_nodes": len(units),
+                  "counts_by_kind": dict(Counter(n["kind"] for n in nodes)), "source_nodes": len(response["data"]),
+                  "recovered_nodes": len(recovered),
                   "number_checks": sum(c["expected_number"] is not None for c in checks),
                   "unresolved_blocks": len(unresolved), "excluded_blocks": len(excluded)}
     for name, entries in (("parsed", nodes), ("unresolved", unresolved), ("excluded", excluded)):

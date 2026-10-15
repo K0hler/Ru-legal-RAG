@@ -1,5 +1,12 @@
 # Test instructions
 
+- `corpus/test_structure_recovery.py` checks unseen superscript sibling numbers,
+  full formula/table/note scope, original row pointers and declared ranges;
+  reject ambiguous/style/nested/colliding markers, quotes and form contexts.
+  Inline amendment and quoted-term paragraphs must have no false quote node;
+  unclosed payloads remain blocked. Retained real mutation controls belong in
+  the offline replay, never in default tests or closed-gold fixtures.
+
 - `corpus/test_structure_audit.py` exercises the independent HTML inventory,
   unseen superscript/decimal/Roman markers, no inferred numbering gaps, wrong
   kinds/parents/ranges, deterministic reports and the compiler HTML audit view.

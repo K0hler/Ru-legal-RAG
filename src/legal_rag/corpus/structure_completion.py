@@ -46,7 +46,7 @@ def complete_units(blocks, owners):
         ps.append({"blocks": bs, "text": " ".join(b["numbering_text"] for b in bs),
                    "start": first["html_start"], "end": last["html_end"],
                    "owner": owners.find(first["source_span"]["char_start"], last["source_span"]["char_end"])})
-    specs, ownership, issues, invalid = [], {}, [], set()
+    specs, ownership, issues, invalid, coarse = [], {}, [], set(), set()
 
     def spec(kind, address, parent, start, end, **fields):
         entry = {"kind": kind, "address": address, "parent": parent, "start": start, "end": end, **fields}
@@ -67,6 +67,14 @@ def complete_units(blocks, owners):
             owner = owners.by_id.get(ps[j]["owner"])
             if not owner or ps[j]["owner"] != p["owner"]:
                 issues.append("amendment_quote_owner_unresolved")
+                continue
+            # Keep a complete inline command/payload or a quoted-term definition
+            # in its source provision. Do not assert a precise inner quote span.
+            definition = re.match(r'^["«“][^"»”]+["»”]\s*[-–—]\s', tail)
+            if ((j == i and offset or definition)
+                    and re.search(re.escape(DELIMITERS[tail[0]]) + r'[\s.;,]*$', tail)):
+                coarse.update(b["block_id"] for b in ps[j]["blocks"])
+                consumed.add(j)
                 continue
             balance, finish, finish_offset = 0, None, None
             for k in range(j, len(ps)):
@@ -193,4 +201,4 @@ def complete_units(blocks, owners):
                  number_canonical=number, number_display=number, content_context="form", number_is_explicit=True)
             for b in q["blocks"]:
                 ownership[b["block_id"]] = child
-    return specs, ownership, sorted(set(issues)), invalid
+    return specs, ownership, sorted(set(issues)), invalid, coarse

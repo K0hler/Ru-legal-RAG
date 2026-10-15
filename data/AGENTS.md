@@ -2,6 +2,13 @@
 
 Scope: local corpora, raw downloads, fixtures, manifests, and generated databases.
 
+- `m1/pilot_runs/independent-structure-audit-20261015-v2/` is the final frozen-code
+  seven-input replay for official-structure/4: 3906 source nodes plus two derived
+  siblings, preserved raw pointers/text/media, ten witnesses and three injected
+  faults. V1 is preliminary because code changed during execution; retain its
+  attempt-status record and all earlier audit probes. These are development
+  controls, not G13 heldout acts, source corrections or legal admission.
+
 - `m1/experiments/official-structure-20261015-v1/` is the owner-authorized local
   follow-up to the sidecar research. `preflight.json` fixes seven permitted inputs
   and 147 protected hashes; retain attempts 01–05 and their adapter snapshots.
