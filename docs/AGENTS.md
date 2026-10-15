@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md` is an analysis/proposal, not a
+  deployed gate change. Two No.354 6² provisions need distinct addresses and full
+  payload scopes; No.47's inline form list and seven amendment-quote cases may
+  use coarser verbatim paragraphs under the correct provision. Two No.410 cases
+  are false quote boundaries around defined terms. Do not equate optional inline
+  segmentation with missing own provisions or silently remove real parent errors.
+
 - `M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md` documents the implemented
   opt-in M0 bundle/v2-input route and seven full compiler replays. Keep technical
   preservation separate from unresolved No.354 siblings and mixed quote bounds
