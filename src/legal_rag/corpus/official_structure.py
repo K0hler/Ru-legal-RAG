@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 from .structure import _identity, _note_fields
 
-VERSION = "official-structure/2"
+VERSION = "official-structure/3"
 VOID = set("area base br col embed hr img input link meta param source track wbr".split())
 KINDS = {"раздел": "section", "глава": "chapter", "статья": "article",
          "часть": "part", "пункт": "item", "подпункт": "subitem", "приложение": "annex"}
@@ -345,6 +345,17 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
                                "source_container_address": parent})
         else:
             add(block, kind, f"{parent}/{kind}/{block['block_id']}", parent)
+    from .structure_audit import audit_tree, scan_html
+
+    audit = audit_tree(scan_html(html), nodes, unresolved, excluded)
+    audit["source_asset_sha256"] = asset["sha256"]
+    if audit["critical_count"]:
+        issues.append("structure_audit_failed")
+        critical_ids = {f.get("block_id") for f in audit["findings"] if f["severity"] == "critical" and f.get("block_id") is not None}
+        for node in nodes[:]:
+            if node.get("block_id") in critical_ids:
+                nodes.remove(node)
+                unresolved.append({**node, "kind": "unresolved_block", "reason": "structure_audit_failed"})
     by_address = {n["address"]: n for n in nodes}
     for node in nodes:
         if node["parent_address"] in by_address:
@@ -371,5 +382,5 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
             "nodes": nodes, "unresolved_blocks": unresolved, "unresolved_regions": unresolved_regions,
             "structural_issues": issues, "parsed_regions": parsed_regions, "excluded_blocks": excluded,
             "cleanup_mapping": [{"block_id": b["block_id"], "mapping": b["cleanup_mapping"]} for b in blocks],
-            "accounting": accounting}
+            "accounting": accounting, "structure_audit": audit}
 

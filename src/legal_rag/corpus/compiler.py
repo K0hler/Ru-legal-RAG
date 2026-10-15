@@ -474,10 +474,20 @@ def _report(manifest: dict, draft: dict) -> str:
             + escape(region["source_span"]["locator"]) + "</p><pre>"
             + escape(region["original_html"]) + "</pre></details>"
             for region in tree.get("unresolved_regions", []))
+        audit_html = ""
+        if audit := tree.get("structure_audit"):
+            findings = "".join("<tr>" + "".join("<td>" + escape(str(value)) + "</td>" for value in (
+                f["severity"], f["code"], f.get("html_id", f.get("address", "")), f.get("excerpt", ""),
+                f.get("source_span", {}).get("locator", ""))) + "</tr>" for f in audit["findings"])
+            audit_html = ("<h3>Независимая проверка структуры</h3>"
+                f"<p>Проверено маркеров: {audit['candidates_checked']}; критических замечаний: {audit['critical_count']}; "
+                f"предупреждений: {audit['warning_count']}.</p>"
+                "<table><tr><th>Важность</th><th>Причина</th><th>Фрагмент</th><th>Текст</th><th>Координаты</th></tr>"
+                + findings + "</table>")
         sections.append(f"<h2>{escape(tree['namespace'])}</h2><p>SHA-256: {asset['sha256']}</p>"
                         f"<p>Source: {escape(asset['source_url'])}; evidence: {escape(asset['evidence']['locator'])}</p>"
                         f"<pre>{escape(json.dumps(tree['accounting'], sort_keys=True, indent=2))}</pre>"
-                        "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
+                        + audit_html + "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
                         + "".join(document_rows) + "</table>" + exclusions + regions)
     blockers = "".join("<li>" + escape(item) + "</li>" for item in draft["blockers"])
     return ("<!doctype html><html lang='en'><meta charset='utf-8'><title>Legal RAG diagnostic draft</title>"

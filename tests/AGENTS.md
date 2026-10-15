@@ -1,5 +1,10 @@
 # Test instructions
 
+- `corpus/test_structure_audit.py` exercises the independent HTML inventory,
+  unseen superscript/decimal/Roman markers, no inferred numbering gaps, wrong
+  kinds/parents/ranges, deterministic reports and the compiler HTML audit view.
+  Keep the scanner independent from official JSON and parser marker patterns.
+
 - `corpus/test_official_structure.py` checks the opt-in v2 path, source selectors,
   permission scope, sidecar numbering/ranges, note scope and exactly-once media/
   text accounting. Negative bindings must write no derived files; the original

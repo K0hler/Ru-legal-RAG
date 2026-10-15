@@ -1,5 +1,11 @@
 # Corpus compilation module
 
+- `structure_audit.py` inventories raw HTML markers independently of sidecar
+  traversal/regex. `official-structure/3` records `structure-audit/1` findings
+  with evidence, critical/warning counts and a candidate digest. Critical missing
+  markers, type/parent/range errors block readiness; form/table/quoted content is
+  distinguished from missing own provisions. The v1 route remains unchanged.
+
 - `corpus-input/2` adds exactly one `official_structure` asset plus a hashed
   `structure_bundle` reference. `official_binding.py` verifies source membership,
   archived edition evidence and both private transport selectors before writes;

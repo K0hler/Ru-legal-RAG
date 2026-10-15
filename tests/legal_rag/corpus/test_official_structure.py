@@ -225,8 +225,8 @@ def test_form_list_is_not_promoted_to_article_items():
     html = HTML.replace('<p id="p1">2<sup>1</sup>. Текст.</p>', '<p id="p1">Приложение к акту:</p>')
     html = html.replace('а) Первая строка.', 'а) Результаты испытаний;')
     html = html.replace('<p class="A" id="note">', '<p id="letter_b">б) Заключения экспертов.</p><p class="A" id="note">')
-    rows = [{"id": "form", "np": "a1", "npe": "end", "unit": "вложение", "caption": "ПРАВИЛА проверки", "lvl": 0},
-            {"id": "form_u2", "np": "p1", "npe": "end", "unit": "приложение", "caption": "ПРИЛОЖЕНИЕ № 2. АКТ (форма)", "lvl": 1}]
+    rows = [{"id": "article1", "np": "a1", "npe": "a1", "unit": "статья", "caption": "Статья 1", "lvl": 0},
+            {"id": "form2", "np": "p1", "npe": "end", "unit": "приложение", "caption": "ПРИЛОЖЕНИЕ № 2. АКТ (форма)", "lvl": 0}]
     html = html.replace('<p id="p1">Приложение к акту:</p>', '<p id="p1">ПРИЛОЖЕНИЕ № 2</p><p>Приложение к акту:</p>')
     result = tree(html, rows)
     items = [n for n in result["nodes"] if n["kind"] == "list_item"]
