@@ -1,5 +1,12 @@
 # Source acquisition module
 
+- `structure_bundle.py` is an opt-in `official-structure-bundle/1` acquisition
+  wrapper. It reuses frozen adapters and lifecycle without changing their files
+  or `edition-candidate/1`. Both requests use the selected edition; archive the
+  exact sidecar as `official_structure`, then an immutable binding record under
+  `structure_bundles/`. Invalid sidecars fail before persistence. Existing pilot
+  allowlists and source-admission restrictions still apply.
+
 Scope: official-source connectors, acquisition runs, immutable raw assets, and source relations.
 
 - Connectors are read-only adapters around one external source contract.

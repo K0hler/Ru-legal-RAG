@@ -1,5 +1,9 @@
 # Source acquisition test instructions
 
+- `test_structure_bundle.py` replays both banks with authored sidecars and the
+  unchanged frozen fixtures. Check exact bytes, same-edition selectors, repeat
+  identity and failed refresh preserving all prior source/bundle state.
+
 Scope: connector replay fixtures and acquisition lifecycle tests in this directory.
 
 - Default tests must not use the network; replay saved response metadata through a fake transport.
