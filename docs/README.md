@@ -31,6 +31,7 @@
 
 ## Исследования и прежние планы
 
+- [Parser options after Documind](M1_03A_PARSER_OPTIONS_2026-10-15.md) — seven verified official structure sidecars, exact retained-text checks, and an open-source shortlist with implementation limits; no production integration.
 - [Documind auto-schema experiment](M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md) — local full-document capacity checks and separate schema-generation controls; no production integration or legal admission.
 - [Анализ ARLC 2026](ARLC_2026_LEGAL_RAG_ANALYSIS.md)
 - [Обзор литературы Legal RAG 2026](legal_rag_2026_literature_review_ru.md)

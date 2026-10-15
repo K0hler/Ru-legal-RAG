@@ -155,3 +155,11 @@ Scope: every file under `docs/`.
   (Gemma/Qwen, stock/guided) fail the legal-schema gate. No downstream extraction
   or production integration was performed. This bounds the tested configuration,
   not every possible model/provider, and does not close M1-03A or qualify PDF/OCR.
+- The broader 15 October parser research is in `M1_03A_PARSER_OPTIONS_2026-10-15.md`.
+  Both official banks expose separate typed structure sidecars. Seven retained
+  inputs / 3,906 nodes pass anchor/parent checks and fresh text responses match
+  the original assets byte for byte. This is source research, not a production
+  adapter or G13 completion. Source `unit=вложение` can also mean notes, so do not
+  equate it with approved text. Indigo has automatic hierarchy import upstream
+  of Bluebell; PageIndex Flash can build an outline without an LLM. Neither fact
+  establishes Russian legal-leaf coverage or supersedes preserved failures.

@@ -2,6 +2,14 @@
 
 Scope: local corpora, raw downloads, fixtures, manifests, and generated databases.
 
+- `m1/research/parser-search-20261015-v2/` retains the broader parser search,
+  pinned external code/frontend snapshots and official structure sidecars for
+  seven existing diagnostic inputs. Keep `official-structure-anchor-checks.json`
+  separate from `official-fresh-text-checks.json`: valid anchors do not by
+  themselves prove an unchanged edition. All seven text responses matched the
+  retained raw assets exactly. This is bounded source research, not a compiler
+  input-contract update, legal admission or full semantic qualification.
+
 - `data/` content is ignored by default; only this instruction file is tracked.
 - Never commit secrets, licensed aggregator exports, private case files, or large generated indexes.
 - Treat raw assets as immutable. Store derived artifacts separately and link them by hash and build metadata.
