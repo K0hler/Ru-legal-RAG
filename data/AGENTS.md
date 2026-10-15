@@ -161,3 +161,15 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   amendments require future common rules; do not repair or replace these bodies
   inside the frozen baseline. This probe limits general coverage claims and
   does not cancel or broaden the earlier exact-input acceptance evidence.
+
+- The authorized Documind schema-layer experiment is retained under
+  `m1/experiments/documind-housing-code-20261015-v1/`, with the upstream checkout
+  pinned at `f258286fc1026c1a6cd2b3f624906453681e7c87`. Preserve complete input,
+  paragraph maps, token/memory preflights, every raw LLM response and unsuccessful
+  generated schema. Full Housing Code stock requests exceed the declared context
+  windows of the tested local Gemma/Qwen models; the smaller complete 59-FZ
+  schema controls do not replace that gate or the four original-document checks.
+  This profile supplies complete retained text directly to Documind autoschema;
+  it does not qualify its PDF/OCR front end, full extraction, production parsing,
+  transfer or legal admission. Read the dated Documind report before interpreting
+  an HTTP 200 or `finish_reason=stop` as a usable legal schema.

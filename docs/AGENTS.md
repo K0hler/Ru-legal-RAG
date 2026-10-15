@@ -149,3 +149,9 @@ Scope: every file under `docs/`.
   and self-contained Russian continuation context are recorded in
   `M1_03A_PARSER_HANDOFF_2026-10-15.md`; the proposed LLM hybrid and new experiment
   are unapproved, unimplemented options.
+- The separately owner-authorized local Documind schema-layer probe is documented
+  in `M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md`. Full Housing Code stock requests
+  exceed both tested models' declared contexts; four complete 59-FZ schema controls
+  (Gemma/Qwen, stock/guided) fail the legal-schema gate. No downstream extraction
+  or production integration was performed. This bounds the tested configuration,
+  not every possible model/provider, and does not close M1-03A or qualify PDF/OCR.
