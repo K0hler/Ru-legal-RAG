@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 from .structure import _identity, _note_fields
 
-VERSION = "official-structure/1"
+VERSION = "official-structure/2"
 VOID = set("area base br col embed hr img input link meta param source track wbr".split())
 KINDS = {"раздел": "section", "глава": "chapter", "статья": "article",
          "часть": "part", "пункт": "item", "подпункт": "subitem", "приложение": "annex"}
@@ -111,6 +111,8 @@ def normalized_units(html, rows, family):
         seen.add(row["id"])
         if row["np"] not in anchors or row["npe"] not in anchors:
             raise ValueError("missing HTML anchor")
+        if any(anchors[key]["tag"] not in {"p", "table", "tr", "td", "th"} for key in (row["np"], row["npe"])):
+            raise ValueError("unsupported inline structure anchor")
         while stack and stack[-1]["level"] >= row["lvl"]:
             stack.pop()
         parent = stack[-1] if stack else None
@@ -191,6 +193,8 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
     if hashlib.sha256(sidecar).hexdigest() != structure_sha256:
         raise ValueError("structure hash mismatch")
     response = json.loads(sidecar)
+    if not isinstance(response, dict):
+        raise ValueError("invalid official structure object")
     actual = source_system == "actual.pravo.gov.ru"
     if source_system not in {"actual.pravo.gov.ru", "pravo.gov.ru/legislation-russia"}:
         raise ValueError("unsupported official structure source")
@@ -244,6 +248,20 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
             caption=unit["caption"], source_structure_evidence={"source_asset_sha256": structure_sha256,
                 "json_pointer": "/data/" + str(index)})
 
+    from .structure_completion import complete_units
+
+    completion, completed_owners, completion_issues, invalid_blocks = complete_units(blocks, owners)
+    issues.extend(completion_issues)
+    for node in completion:
+        fields = {key: value for key, value in node.items() if key not in {"kind", "address", "parent", "start", "end", "level"}}
+        add({"source_span": span(node["start"], node["end"]), "original_html": html[node["start"]:node["end"]]},
+            node["kind"], node["address"], node["parent"], **fields)
+
+    def completed_parent(start, end, fallback):
+        containing = [n for n in completion if n["start"] <= start < end <= n["end"]
+                      and n["address"].startswith(fallback + "/")]
+        return max(containing, key=lambda n: n["address"].count("/"))["address"] if containing else fallback
+
     region_addresses = {}
     for region in extraction["unsupported_regions"]:
         start, end = (region["source_span"][key] for key in ("char_start", "char_end"))
@@ -251,6 +269,7 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
             raise ValueError("region locator mismatch")
         owner = owners.by_id.get(owners.find(start, end))
         parent = owner["address"] if owner else "act"
+        parent = completed_parent(start, end, parent)
         if region.get("nested") or region["tag"] not in {"table", "img"}:
             unresolved_regions.append(copy.deepcopy(region))
             continue
@@ -262,8 +281,34 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
         parsed_regions.append({**copy.deepcopy(region), "owner_address": parent})
 
     unit_starts = {u["np"] for u in units}
+    row_addresses = {}
+    for region in parsed_regions:
+        if region["tag"] != "table":
+            continue
+        previous = 0
+        for row_index, row in enumerate(region["rows"]):
+            if not row["cells"]:
+                continue
+            first = row["cells"][0]["source_span"]
+            first_blocks = [b for b in blocks if first["char_start"] <= b["source_span"]["char_start"] < first["char_end"]]
+            marker = re.match(r"^([1-9][0-9]*)\.\s", " ".join(b["numbering_text"] for b in first_blocks))
+            if not marker or int(marker[1]) != previous + 1:
+                continue
+            previous = int(marker[1])
+            parent = region_addresses[region["region_id"]]
+            address = parent + "/row_item/" + marker[1]
+            start, end = (row["source_span"][k] for k in ("char_start", "char_end"))
+            add({"source_span": span(start, end), "original_html": html[start:end]}, "table_row_item", address, parent,
+                number_canonical=marker[1], number_display=marker[1], number_is_explicit=True)
+            row_addresses[(region["region_id"], row_index)] = address
     normative_paragraphs = {b["paragraph"] for b in blocks if b["text"] and not b["note"]
                             and not b["exclusion_reason"] and not set(b["classes"]) & {"A", "F"}}
+    paragraph_text = {}
+    for b in blocks:
+        if not b["note"] and not set(b["classes"]) & {"A", "F"}:
+            paragraph_text[b["paragraph"]] = paragraph_text.get(b["paragraph"], "") + b["original_text"]
+    ambiguous_paragraphs = {key for key, text in paragraph_text.items() if re.search(
+        r"[\r\n]\s*(?:Статья\s+\d|Глава\s+[IVXLCDM\d]|Раздел\s+[IVXLCDM\d]|\d+(?:[.^-]\d+)*[.)]\s|[а-я]\)\s)", text, re.I)}
     for original in blocks:
         block = copy.deepcopy(original)
         start, end = (block["source_span"][key] for key in ("char_start", "char_end"))
@@ -276,6 +321,10 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
         note = bool(block["note"] or set(block["classes"]) & {"A", "F"})
         if note:
             same_paragraph = block["paragraph"] in normative_paragraphs
+            paragraph_targets = {completed_owners[b["block_id"]] for b in blocks if b["paragraph"] == block["paragraph"]
+                                 and b["block_id"] in completed_owners}
+            if same_paragraph and len(paragraph_targets) == 1:
+                parent = paragraph_targets.pop()
             add(block, "note", f"{parent}/note/{block['block_id']}", parent if same_paragraph else "act",
                 **_note_fields(block), scope_status="same_paragraph" if same_paragraph else "unresolved",
                 source_container_address=parent)
@@ -283,11 +332,16 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
         table = next((r for r in parsed_regions if r["tag"] == "table"
                       and r["source_span"]["char_start"] <= start < end <= r["source_span"]["char_end"]), None)
         if table:
-            parent = region_addresses[table["region_id"]]
+            parent = row_addresses.get((table["region_id"], block.get("table_cell", {}).get("row")),
+                                       region_addresses[table["region_id"]])
+        parent = completed_owners.get(block["block_id"], parent)
         kind = "table_cell" if table else "paragraph"
-        if (block["html_id"] not in unit_starts and MARKER.match(block["numbering_text"])
-                and owner and owner["kind"] not in {"normative_note", "notes_section"} and "N" not in block["classes"]):
-            unresolved.append({**block, "kind": "unresolved_block", "reason": "numbered_unit_without_sidecar_node",
+        if block["paragraph"] in ambiguous_paragraphs or block["block_id"] in invalid_blocks or (block["block_id"] not in completed_owners
+                and not (table and parent in row_addresses.values())
+                and block["html_id"] not in unit_starts and MARKER.match(block["numbering_text"])
+                and (owner is None or owner["kind"] not in {"normative_note", "notes_section"}) and "N" not in block["classes"]):
+            reason = "multiple_provision_markers" if block["paragraph"] in ambiguous_paragraphs else "incomplete_quote_scope" if block["block_id"] in invalid_blocks else "numbered_unit_without_sidecar_node"
+            unresolved.append({**block, "kind": "unresolved_block", "reason": reason,
                                "source_container_address": parent})
         else:
             add(block, kind, f"{parent}/{kind}/{block['block_id']}", parent)

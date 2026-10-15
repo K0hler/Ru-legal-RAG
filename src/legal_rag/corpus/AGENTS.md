@@ -10,6 +10,16 @@
   malformed structures. Keep table/image regions once; raster transcription is
   unverified. Notes retain structural containment separately from legal scope;
   standalone editorial notes remain document-level with unresolved scope.
+- `official-structure/2` completes quoted articles/parts under their amending
+  source item and form sections/list items plus numbered table rows. Media and
+  inline notes inherit the completed scope. Mixed quote boundaries inside one
+  paragraph remain structural blockers; unsupported inline source anchors fail
+  and multiple markers across breaks stay unresolved. Missing source siblings
+  must not become children of the previous provision by adjacency.
+- Bundle v2 uses its per-capture transport evidence; v1 uses historical asset
+  metadata, checking the response URL when present. Check IPS body selectors too.
+  All seven replayed acts preserve source nodes/text/media; this is diagnostic
+  development coverage, not a new G13 qualification or legal admission.
 
 Scope: extraction, cleanup, legal structure, canonical entities, review gates, and corpus builds.
 

@@ -3,6 +3,9 @@
 - `test_structure_bundle.py` replays both banks with authored sidecars and the
   unchanged frozen fixtures. Check exact bytes, same-edition selectors, repeat
   identity and failed refresh preserving all prior source/bundle state.
+- Include changed-edition redirects, duplicate empty selectors and identical
+  text/structure bytes across distinct editions. V2 bindings must retain each
+  capture; immutable asset metadata keeps its first capture, and v1 still loads.
 
 Scope: connector replay fixtures and acquisition lifecycle tests in this directory.
 

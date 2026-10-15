@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- `M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md` documents the implemented
+  opt-in M0 bundle/v2-input route and seven full compiler replays. Keep technical
+  preservation separate from unresolved No.354 siblings and mixed quote bounds
+  in three acts. V2 bindings preserve per-acquisition transport when bytes are
+  shared by editions; legacy v1 research traces remain explicitly limited.
+  Old frozen M0 files and v1 outputs are unchanged; M1-03A/G13/legal admission
+  are not closed by this integration.
+
 Scope: every file under `docs/`.
 
 - Keep confirmed implementation, target architecture, external research, and hypotheses visibly distinct.

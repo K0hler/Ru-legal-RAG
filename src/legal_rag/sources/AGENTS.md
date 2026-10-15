@@ -1,11 +1,15 @@
 # Source acquisition module
 
-- `structure_bundle.py` is an opt-in `official-structure-bundle/1` acquisition
+- `structure_bundle.py` is an opt-in `official-structure-bundle/2` acquisition
   wrapper. It reuses frozen adapters and lifecycle without changing their files
   or `edition-candidate/1`. Both requests use the selected edition; archive the
   exact sidecar as `official_structure`, then an immutable binding record under
   `structure_bundles/`. Invalid sidecars fail before persistence. Existing pilot
   allowlists and source-admission restrictions still apply.
+- Bundle v2 stores per-acquisition text/structure transport captures. Never use
+  a content-addressed asset's first transport as the sole selector for a later
+  edition with identical bytes. Require matching request/response selectors;
+  keep v1 bindings readable without rewriting archived metadata.
 
 Scope: official-source connectors, acquisition runs, immutable raw assets, and source relations.
 

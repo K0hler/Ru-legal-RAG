@@ -4,15 +4,26 @@ import hashlib
 import json
 from urllib.parse import parse_qs, urlsplit
 
-from .compiler import _asset, _inside, _object, _read
+from .compiler import _asset, _hash, _inside, _object, _read, _text
 
 
 def validate_binding(root, bundle, assets):
     _object(bundle, {"schema_version", "source_system", "source_item", "document_hash", "source_url",
-                     "selector", "text_sha256", "structure_sha256", "edition_evidence_sha256"})
-    if bundle["schema_version"] != "official-structure-bundle/1":
+                     "selector", "text_sha256", "structure_sha256", "edition_evidence_sha256"}, optional={"transport_evidence"})
+    for field in ("schema_version", "source_system", "source_item", "source_url"):
+        _text(bundle[field])
+    for field in ("document_hash", "text_sha256", "structure_sha256", "edition_evidence_sha256"):
+        _hash(bundle[field])
+    if bundle["schema_version"] not in {"official-structure-bundle/1", "official-structure-bundle/2"}:
         raise ValueError("unknown structure bundle version")
+    current = bundle["schema_version"] == "official-structure-bundle/2"
+    if current:
+        _object(bundle.get("transport_evidence"), {"text", "structure"})
+    elif "transport_evidence" in bundle:
+        raise ValueError("legacy bundle cannot contain per-capture transport")
     selector = _object(bundle["selector"], {"database", "document_id", "edition_id"})
+    for field in ("database", "document_id"):
+        _text(selector[field])
     actual = bundle["source_system"] == "actual.pravo.gov.ru"
     if bundle["source_system"] not in {"actual.pravo.gov.ru", "pravo.gov.ru/legislation-russia"}:
         raise ValueError("unsupported structure source")
@@ -32,10 +43,13 @@ def validate_binding(root, bundle, assets):
         if asset["evidence"]["locator"] not in {locator, "/" + locator[2:]}:
             raise ValueError("structure bundle scalar mismatch")
         metadata = _read(_inside(root, f"assets/{asset['sha256']}.json"))
-        request = metadata.get("transport_metadata", {}).get("request_url", "")
-        url = urlsplit(request)
-        query = {name: values for name, values in parse_qs(url.query).items()}
         text = key == "text_sha256"
+        capture = bundle["transport_evidence"]["text" if text else "structure"] if current else metadata.get("transport_metadata", {})
+        if not isinstance(capture, dict):
+            raise ValueError("invalid transport capture")
+        request = capture.get("request_url", "")
+        url = urlsplit(request)
+        query = parse_qs(url.query, keep_blank_values=True)
         if actual:
             origin = "actual.pravo.gov.ru:8000"
             path = "/api/ebpi/redtext" if text else "/api/ebpi/getcontent/"
@@ -48,11 +62,27 @@ def validate_binding(root, bundle, assets):
             expected = {"bpa": [selector["database"]], "nd": [selector["document_id"]], "rdk": [str(selector["edition_id"])]}
         if url.scheme != "http" or url.netloc != origin or url.path != path or query != expected:
             raise ValueError("structure/text transport edition mismatch")
+        response_url = capture.get("response_url")
+        if current and response_url is None:
+            raise ValueError("per-capture response URL is missing")
+        if response_url is not None:
+            response = urlsplit(response_url)
+            if (response.scheme != "http" or response.netloc != origin or response.path != path
+                    or parse_qs(response.query, keep_blank_values=True) != expected):
+                raise ValueError("structure/text response edition mismatch")
+        if text and not actual:
+            _, payload = _asset(root, asset["sha256"])
+            body = json.loads(payload)
+            if (not isinstance(body, dict) or body.get("docid") != selector["document_id"] or body.get("baseid") != selector["database"]
+                    or body.get("rdk") != selector["edition_id"]):
+                raise ValueError("text body edition mismatch")
     digest = bundle["edition_evidence_sha256"]
     if digest not in item.get("asset_sha256s", []):
         raise ValueError("edition evidence does not belong to source item")
     _, raw = _asset(root, digest)
     evidence = json.loads(raw)
+    if not isinstance(evidence, dict):
+        raise ValueError("invalid edition evidence object")
     if actual:
         if (evidence.get("dochash") != bundle["document_hash"] or str(evidence.get("docid")) != selector["document_id"]
                 or selector["database"] != "ebpi"):

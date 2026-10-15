@@ -4,6 +4,10 @@
   permission scope, sidecar numbering/ranges, note scope and exactly-once media/
   text accounting. Negative bindings must write no derived files; the original
   v1 replay and frozen M0 gate remain required.
+- Official-structure completion controls include quoted whole articles, media
+  and inline-note ownership, mixed closing/opening boundaries, omitted top-level
+  markers, inline anchors, break-separated units, form sections/continuations,
+  numbered table-row cell ownership, malformed JSON and IPS body selectors.
 
 Scope: automated tests and checked fixtures.
 

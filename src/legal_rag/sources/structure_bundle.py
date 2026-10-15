@@ -4,14 +4,14 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 from .acquisition import acquire_actual, acquire_legislation, _write_json_once
 from .actual_pravo import ActualPravoConnector, ActualPravoFailure
 from .legislation_russia import LegislationRussiaConnector, LegislationRussiaFailure
 
 
-VERSION = "official-structure-bundle/1"
+VERSION = "official-structure-bundle/2"
 
 
 class StructureConnector:
@@ -51,6 +51,19 @@ class StructureConnector:
                 or not response["data"] or actual and response.get("complete") is not True):
             raise failure("invalid_structure", "incomplete or invalid official structure response",
                           retryable=False, source_url=url)
+        if actual:
+            text_url = self.base._api_base + "/redtext?" + urlencode({"bpa": "ebpi", "t": selector["edition_id"], "ttl": 0})
+        else:
+            text_url = self.base._api_base + "/documenttext?" + urlencode(
+                {"nd": selector["document_id"], "rdk": selector["edition_id"], "bpa": selector["database"]})
+        for metadata, expected in ((fetched["transport_metadata"], text_url), (transport, url)):
+            target = urlsplit(expected)
+            for field in ("request_url", "response_url"):
+                observed = urlsplit(metadata.get(field, ""))
+                if ((observed.scheme, observed.netloc, observed.path, parse_qs(observed.query, keep_blank_values=True))
+                        != (target.scheme, target.netloc, target.path, parse_qs(target.query, keep_blank_values=True))):
+                    raise failure("structure_edition_transport_mismatch", "source response changed the selected edition",
+                                  retryable=False, source_url=metadata.get(field, expected))
         fetched["supporting_assets"].append({"role": "official_structure", "raw_bytes": raw,
             "media_type": "application/json", "source_url": fetched["source_url"], "transport_metadata": transport})
         fetched["adapter_version"] = self.adapter_version
@@ -59,7 +72,8 @@ class StructureConnector:
             "source_url": fetched["source_url"], "selector": selector,
             "text_sha256": hashlib.sha256(fetched["raw_bytes"]).hexdigest(),
             "structure_sha256": hashlib.sha256(raw).hexdigest(),
-            "edition_evidence_sha256": hashlib.sha256(evidence).hexdigest()}
+            "edition_evidence_sha256": hashlib.sha256(evidence).hexdigest(),
+            "transport_evidence": {"text": fetched["transport_metadata"], "structure": transport}}
         return fetched
 
 
