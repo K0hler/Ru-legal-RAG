@@ -31,6 +31,7 @@
 
 ## Исследования и прежние планы
 
+- [Эксперимент с официальной структурной разметкой](M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md) — семь актов, 3 906 нормализованных узлов, полный технический учёт и подтверждённые пробелы цитат/форм; производственной интеграции нет.
 - [Parser options after Documind](M1_03A_PARSER_OPTIONS_2026-10-15.md) — seven verified official structure sidecars, exact retained-text checks, and an open-source shortlist with implementation limits; no production integration.
 - [Documind auto-schema experiment](M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md) — local full-document capacity checks and separate schema-generation controls; no production integration or legal admission.
 - [Анализ ARLC 2026](ARLC_2026_LEGAL_RAG_ANALYSIS.md)

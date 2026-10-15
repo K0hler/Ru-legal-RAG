@@ -2,6 +2,15 @@
 
 Scope: local corpora, raw downloads, fixtures, manifests, and generated databases.
 
+- `m1/experiments/official-structure-20261015-v1/` is the owner-authorized local
+  follow-up to the sidecar research. `preflight.json` fixes seven permitted inputs
+  and 147 protected hashes; retain attempts 01–05 and their adapter snapshots.
+  Final attempt 05 preserves all 3,906 source nodes, text/media and explicit
+  numbering, but exposes missing quote/form subtrees. Its `index-v2.html` is
+  an offline review aid, not human approval; raw HTML is sandboxed for display.
+  Never overwrite old attempts, turn heuristic candidate counts into verified
+  error counts, or treat the experimental source bundle as production admission.
+
 - `m1/research/parser-search-20261015-v2/` retains the broader parser search,
   pinned external code/frontend snapshots and official structure sidecars for
   seven existing diagnostic inputs. Keep `official-structure-anchor-checks.json`

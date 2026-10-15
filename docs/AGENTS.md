@@ -163,3 +163,12 @@ Scope: every file under `docs/`.
   equate it with approved text. Indigo has automatic hierarchy import upstream
   of Bluebell; PageIndex Flash can build an outline without an LLM. Neither fact
   establishes Russian legal-leaf coverage or supersedes preserved failures.
+- The owner-authorized sidecar experiment is documented in Russian in
+  `M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md`. Its separate scripts
+  under `docs/assets/` preserve 3,906 source nodes, pass all 3,894 explicit-number
+  checks and technical accounting on seven acts. Source JSON omits quoted-law
+  subtrees and some form lists; 261-FZ's quoted articles and No.47's a–d list
+  are confirmed examples. Three acts have no detected gaps in the bounded scans,
+  not full legal acceptance. Preserve 147 protected files and earlier attempts;
+  do not present the experimental format as a production contract or G13 result.
+  User-facing analytical overviews and experiment reports must be in Russian.
