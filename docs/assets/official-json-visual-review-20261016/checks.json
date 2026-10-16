@@ -1,0 +1,113 @@
+{
+  "schema_version": "official-json-visual-review/1",
+  "html_sha256": "74312c9ad05ee2dbb505c1e27425146517466d25a7f8f822cbba6d200fff5756",
+  "generator_sha256": "b30259ca60281e606089d73b8c845641c283c46009f9a6da5c2d5810a663e939",
+  "template_sha256": "038f534ef9834efda22be0a1bddb7ac30eba56779a3fe5e7395e35691754b078",
+  "documents": [
+    {
+      "key": "building-safety",
+      "audit": {
+        "nodes": 346,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "5eba3e9e6030c5521f58eda8d966aa8ab49c179ba6186218daaf81dcf91a76ff",
+      "structure_sha256": "f3e7d0d23c1fd136467fb27f9d0ae3f728da7314b9baa19f0d7169d1fb839982"
+    },
+    {
+      "key": "civil-procedure",
+      "audit": {
+        "nodes": 2612,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "dd67719d983ae9f69c73be93a9996303279966775c1dc07d3444520ca2e7d576",
+      "structure_sha256": "31c805a0e046ad9909b3aeb2760612b051122de1669e9a07cfe8ec5e1cd2c026"
+    },
+    {
+      "key": "budget",
+      "audit": {
+        "nodes": 2757,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "00036940c61bb728100bcaa472705032cc4fa7f8e75da0566abb2ff9cab5a173",
+      "structure_sha256": "bc8cf0acc8f9368f2f1ba241d08eb0bd6e28b1b2c8858732f43b4e69514f2db9"
+    },
+    {
+      "key": "disability",
+      "audit": {
+        "nodes": 400,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "a6231eb96c8dfe288e12d1b78b138301082c494392460507f51f4072d68beae1",
+      "structure_sha256": "cef44cf1c15d6ea42a23a4d9889456d0a4b89303ddc40271d06ebbfc5be90053"
+    },
+    {
+      "key": "resource-contracts",
+      "audit": {
+        "nodes": 128,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "0aed2c3e97ac135b30f7113ba680ec3f06cc91b455da37809187b31c9b7a2b3c",
+      "structure_sha256": "2425d0c702f4c163eba826513149eae8f1d173387027f9020bf34e8e3417e1e3"
+    },
+    {
+      "key": "heat-metering",
+      "audit": {
+        "nodes": 271,
+        "issues": [],
+        "checks": [
+          "Уникальные ID",
+          "Уровни и ID родителей",
+          "Существование np/npe",
+          "Конец после начала",
+          "Вложенность диапазонов",
+          "Отсутствие пересечений соседей"
+        ]
+      },
+      "source_sha256": "69b07569b2193d077c66d951f067d9fe8e58901900c8fc3b9d069638564e730b",
+      "structure_sha256": "b769cabbb0b44c4b331a3ace97034757780f97aabcfd98d24c00876f75de6d49"
+    }
+  ],
+  "protected_files_unchanged": 105,
+  "production_changed": false,
+  "frozen_decisions_changed": false
+}

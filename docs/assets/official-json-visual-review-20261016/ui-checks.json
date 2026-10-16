@@ -1,0 +1,16 @@
+{
+  "method": "Visible in-app-browser inspection through CUA",
+  "document_options_checked": 6,
+  "quote_modes_checked": [
+    "JSON only",
+    "adapter subtree"
+  ],
+  "raw_json_and_recorded_error_visible": true,
+  "preview_sha256": "b968a370fb0a8aa327e5d8559dad001977b8b99f7b7967b7dfd05349a43effd5",
+  "preview_size": [
+    65536,
+    4292542531
+  ],
+  "source_archive_files_unchanged": 105,
+  "production_and_frozen_results_unchanged": true
+}
