@@ -182,7 +182,8 @@ class OcrRuntimeTest(unittest.TestCase):
 
             with patch.object(runtime.subprocess, "run", side_effect=execute):
                 native = runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
-                                              "picture_ocr_max_tokens": 2048},
+                                              "picture_ocr_max_tokens": 2048,
+                                              "picture_ocr_failure_policy": "retain_unresolved"},
                                              b"%PDF-fixture", "a" * 64, receipt)
             self.assertEqual((lab / "input" / ("legal-rag-" + "a" * 64 + ".pdf")).read_bytes(), b"%PDF-fixture")
             self.assertEqual(native, lab / "results/legal-rag/run-unique")
@@ -191,6 +192,7 @@ class OcrRuntimeTest(unittest.TestCase):
             self.assertEqual(command[command.index("--output") + 1], "/data/results/legal-rag/run-unique")
             snapshot_config = next((lab / "results/legal-rag-runtime").glob("*/config/dotsmocr_picture_ocr.json"))
             self.assertEqual(json.loads(snapshot_config.read_bytes())["max_tokens"], 2048)
+            self.assertEqual(json.loads(snapshot_config.read_bytes())["failure_policy"], "retain_unresolved")
             self.assertEqual(json.loads((lab / "config/dotsmocr_picture_ocr.json").read_bytes())["max_tokens"], 512)
 
     def test_output_subdirectory_symlink_cannot_write_into_raw_archive(self):

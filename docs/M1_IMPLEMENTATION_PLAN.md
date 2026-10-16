@@ -2,7 +2,7 @@
 
 **Prepared:** 2 October 2026.
 **Revised:** 16 October 2026: the owner accepted official source granularity and requested disabling reconstruction and closing M1-03A. The plan retains 16 slices, 13 milestone gates and ten legal admissions; the official-JSON acceptance contract is explicitly revised below.
-**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04's dots.mocr adapter/CLI is being implemented and qualified; M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Current native-route decision/evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md).
+**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04's dots.mocr adapter/CLI is implemented; qualification remains open on fresh OCR drift, table-sign errors and incomplete Picture OCR. The owner confirmed one transcription page. M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md), [M1-04 qualification](M1_04_QUALIFICATION_2026-10-16.md).
 **Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
@@ -249,7 +249,7 @@ Verify: `test_official_import.py`, all corpus/source/handoff tests, `docs/assets
 
 ### M1-04: Qualify And Retain Shared PDF/OCR
 
-**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** engineering implementation in progress; qualification and human-reviewed sample not yet accepted.
+**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** engineering implemented; qualification blocked by fresh-output drift, critical table errors and unresolved Picture OCR. Page-1 transcription accepted by the owner; actual review time not recorded.
 
 Qualify the selected extraction baseline on representative real pages: a scan, an amendment target, a table with merged/multiline cells, and an annex boundary. Then extract every page of the retained 75-page SanPiN original and all required amendment PDFs. Keep the separate runtime image/dependency/model/configuration record; the host adapter needs no new production pip dependencies. Native PDF text-layer extraction is outside this owner-selected scanned-PDF route. Implementation contract: [shared PDF/OCR](M1_04_PDF_OCR.md).
 
@@ -262,6 +262,15 @@ Acceptance:
 - The retained `text-extraction/1` output feeds the M1-03A structure engine; extraction never embeds act-specific legal numbering or identity rules. PDF support is declared only for family/format combinations later validated through the same transfer protocol.
 
 Verify: extractor contract/error tests, an explicit offline-with-models runtime smoke, fresh-run comparison and full-document extraction report. Do not invent an OCR accuracy threshold before this baseline; no unresolved critical error may reach approval.
+
+Retained evidence, 16 October 2026: [qualification report](M1_04_QUALIFICATION_2026-10-16.md),
+`data/m1/pilot_runs/m1-04-20261016-v1/`. Both fresh runs cover all 10 PDFs / 103
+pages; source-region/text-span preservation and saved replay pass. Fresh outputs
+are not identical: text changes on 6 pages, categories on 3, geometry on 77.
+Page-75 conditional signs score 0/13 in both passes. The confirmed page-1 sample
+has CER 0.8436% / WER 0.6711% under the explicitly limited benchmark projection.
+358 tests and Ruff pass; all 19 v2 replays and four byte-identical v1 manifests
+pass; M0 remains 78/78. These results do not waive M1-04 acceptance or G04/G11.
 
 ### M1-05: Replace Discovery's Temporary OCR
 
@@ -443,7 +452,7 @@ python -m legal_rag.corpus compile --input data/m1/inputs/<manifest>.json --targ
 python -m legal_rag.corpus compile --input data/m1/inputs/<manifest>.json --target-date 2026-10-01 --output-dir data/m1
 
 # M1-04 onward: shared artifact producer, also usable before discovery replay.
-python -m legal_rag.corpus extract --input data/m1/inputs/<manifest>.json --output-dir data/m1
+python -m legal_rag.corpus extract --input data/m1/inputs/<manifest>.json --ocr-config data/m1/ocr.local.json --output-dir data/m1
 
 # M1-12 onward: consumes an explicit human decision, never creates it.
 python -m legal_rag.corpus approve --draft data/m1/drafts/<draft-id>/manifest.json --review data/m1/reviews/<decision>.json --output-dir data/m1
@@ -511,4 +520,4 @@ The 13 October revision adds real-document acquisition, structural controls and 
 
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**Next native-parser task:** address the independent official-JSON transfer failures with shared rules, preserve the failed cohort, then qualify the frozen new version on reserved acts. The four original native inputs and historical native matrix already have their recorded acceptance; the new route's 2/6 is not closure. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.
+**Current next step:** resolve M1-04's recorded OCR qualification blockers before treating its output as the qualified baseline for M1-05. Paired native trees use the owner-approved M1-03A import contract; older reconstruction failures remain historical evidence. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.

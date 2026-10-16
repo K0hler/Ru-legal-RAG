@@ -1,5 +1,18 @@
 # Local data instructions
 
+- `m1/pilot_runs/m1-04-20261016-v1/` retains preliminary failed pass-1 and two
+  final complete dots.mocr passes on all 10 permitted SanPiN PDFs / 103 pages.
+  Preserve native evidence, images, extraction indexes, runtime freeze, model
+  hashes and offline/memory observations. `qualification-final/report.json`
+  records open acceptance: output drift, 0/13 critical table signs and incomplete
+  Picture OCR. No source text was repaired and no legal edition was admitted.
+  `human-transcription-review/human-review.json` records the owner's actual
+  page-1 confirmation; the old reference remains human_review=false. No duration
+  was supplied. The report-only change after this answer is explicitly recorded
+  in `final-evidence-summary.json`; the original freeze/report remain immutable.
+  Both target-date diagnostic compilations, 19 retained v2 replays and four
+  byte-identical v1 manifests are separate from OCR accuracy qualification.
+
 - `m1/pilot_runs/official-source-import-20261016-v3/` is the source-preserving
   M1-03A closure replay on the three retained cohorts (not fresh heldout acts).
   Preserve attempts v1/v2, code/input freezes, both builds and repeat receipts.

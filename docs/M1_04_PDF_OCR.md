@@ -12,6 +12,14 @@ Copy `docs/assets/m1_04_ocr_config.example.json` to ignored
 `data/m1/ocr.local.json` and set `lab_root`. Start Docker and OCR-Lab's dotsmocr
 service explicitly. The adapter requires `running healthy`.
 
+The example selects `picture_ocr_failure_policy: retain_unresolved`. This needs
+the compatible OCR-Lab client change in [the retained patch](assets/ocr_lab_picture_policy.patch),
+already applied to the local lab used for qualification. On another checkout,
+check/apply it from the lab root with `git apply --ignore-space-change <patch>`.
+Use `strict` to retain the laboratory's original failure behavior. An incomplete
+Picture response is never accepted as text: the selected policy preserves its
+native response and an explicit unresolved-region finding.
+
 ```powershell
 $env:PYTHONPATH = "src"
 .\.venv\Scripts\python.exe -m legal_rag.corpus extract `
@@ -65,6 +73,11 @@ has no verified runtime fingerprint; importing it does not invent one.
 - `extractions/index-<id>.json`: exact input/permission binding and extraction
   references, revalidated before PDF compilation.
 
+The client, prompt and model/Picture configuration are snapshotted under the
+lab's `results/legal-rag-runtime/<profile-id>/` before execution. Overrides
+change that copy only. Compilation re-normalizes the native evidence and
+compares it with the declared extraction, in addition to checking file hashes.
+
 `document_tree` is a physical document -> pages -> regions -> cells hierarchy.
 The separate shared legal grammar can produce diagnostic nodes, but inferred
 PDF legal structure remains `pdf_structure_unqualified`; sanitary-rules profile
@@ -79,12 +92,33 @@ rowspan/colspan and blank cells; do not fabricate cell geometry or repair signs.
 The normalizer does not copy volatile API IDs, timestamps or local source paths
 into content identity. Real text, category or coordinate changes remain visible
 and change extraction IDs. A cache replay is not evidence of fresh OCR
-determinism. The existing OCR-Lab text reference is engineer-reviewed and says
-`human_review=false`; its metrics do not satisfy human transcription acceptance.
+determinism. The existing OCR-Lab text reference says `human_review=false`.
+The owner subsequently confirmed page 1 through a separate hash-bound record;
+that decision does not confirm the remaining reference pages.
 
 To replace dots.mocr, add a normalizer for the new engine and its execution
 adapter/configuration. Consumers continue to read `text-extraction/1` and the
 extraction index, without importing model-specific packages or JSON fields.
+
+## Retained qualification
+
+The [16 October report](M1_04_QUALIFICATION_2026-10-16.md) records two complete
+10-PDF / 103-page passes, the confirmed page-1 transcription, runtime/license
+metadata, offline execution and native-route regressions. Engineering is
+implemented; qualification remains open on fresh-output drift, critical table
+sign errors and incomplete Picture OCR. Legal admission remains unresolved.
+
+To reproduce the read-only comparison into a new report directory:
+
+```powershell
+.\.venv\Scripts\python.exe docs/assets/verify_m1_04.py `
+  --input data/m1/inputs/m1-04/sanpin-original-amendments.json `
+  --first data/m1/pilot_runs/m1-04-20261016-v1/pass-2 `
+  --second data/m1/pilot_runs/m1-04-20261016-v1/pass-3 `
+  --lab-root H:/AI_AGENT/OCR-Lab `
+  --transcription-review data/m1/pilot_runs/m1-04-20261016-v1/human-transcription-review/human-review.json `
+  --output-dir data/m1/pilot_runs/m1-04-report-replay
+```
 
 ## Checks
 

@@ -156,6 +156,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
             page["regions"].append(region)
             if category not in CATEGORIES:
                 uncertainties.add("unknown_category:" + category)
+            if source_region.get("ocr_issue"):
+                uncertainties.add("picture_ocr_incomplete_response")
             text = source_region.get("text", "")
             if not isinstance(text, str):
                 raise ValueError("OCR region text must be a string")

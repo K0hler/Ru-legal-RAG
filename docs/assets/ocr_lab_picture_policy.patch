@@ -1,0 +1,14 @@
+--- a/scripts/new_ocr_pdf.py
++++ b/scripts/new_ocr_pdf.py
+@@ -178,6 +178,11 @@
+             raise ValueError('Picture OCR does not match the primary layout')
+         choice = region['native']['choices'][0]
+         if choice['finish_reason'] != 'stop':
++            if native.get('picture_ocr_config', {}).get('failure_policy') == 'retain_unresolved':
++                cells[index] = {**cells[index], 'ocr_issue': {
++                    'stage': 'picture_ocr', 'reason': 'incomplete_response',
++                    'finish_reason': choice['finish_reason']}}
++                continue
+             raise ValueError('Incomplete Picture OCR; inspect the retained native response')
+         text = choice['message']['content'] or ''
+         if text.strip():

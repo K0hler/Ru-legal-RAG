@@ -4,5 +4,6 @@
   "engine": "dotsmocr",
   "lab_root": "H:/AI_AGENT/OCR-Lab",
   "workers": 16,
+  "picture_ocr_failure_policy": "retain_unresolved",
   "timeout_seconds": 3600
 }

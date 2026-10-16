@@ -4,7 +4,15 @@
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
   outputs and normalize through an engine adapter; physical document trees and
   inferred legal hierarchy have separate acceptance. The OCR-Lab transcription
-  reference has `human_review=false`, so do not claim human OCR qualification.
+  reference has `human_review=false`. A separate actual owner confirmation now
+  covers page 1 only; do not promote it to full-reference human qualification.
+- `M1_04_QUALIFICATION_2026-10-16.md` records implemented OCR integration with
+  open acceptance: both runs cover 10 PDFs / 103 pages, but fresh text/category/
+  geometry changes, 0/13 table signs and incomplete Picture responses remain.
+  Saved-result replay is deterministic, fresh inference is not qualified.
+  `assets/verify_m1_04.py` validates native normalization and explicit one-page
+  decisions; the actual duration of human review is unknown. Keep the original
+  runtime freeze/failed attempts and the explicit report-only freeze amendment.
 
 - The owner accepted source granularity and requested M1-03A closure on
   16 October 2026. `M1_03A_CLOSURE_2026-10-16.md` is the current decision and
@@ -98,8 +106,9 @@ Scope: every file under `docs/`.
   or additional acts cannot replace the mandatory original set. See
   `M1_03A_SHARED_STRUCTURE.md`; preserve the earlier premature-closure correction.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
-  `M1_01_FIXTURE_DRAFT.md`; later schemas/commands and Docling/RapidOCR remain
-  target decisions. Qualify the pinned runtime/models before PDF rollout;
+  `M1_01_FIXTURE_DRAFT.md`; PDF extract/compile is implemented in M1-04 while
+  its qualification is open. Docling/RapidOCR was an unimplemented target
+  replaced by the owner. Qualify the pinned runtime/models before PDF rollout;
   discovery consumes shared extraction artifacts without importing heavy OCR.
   Keep M1's ten legal checks and closed-gold isolation separate from engineering
   completion. Compatible frozen-source changes need a reviewed update and replay,

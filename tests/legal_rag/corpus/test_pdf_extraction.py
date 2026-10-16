@@ -141,6 +141,14 @@ class PdfExtractionTest(unittest.TestCase):
             self.assertEqual(node["kind"], "part")
             self.assertEqual(node["parent_address"], "act/article/1")
 
+    def test_failed_optional_picture_pass_remains_an_explicit_uncertainty(self):
+        document, run = saved_result()
+        document["pages"][1]["layout"][1]["ocr_issue"] = {
+            "stage": "picture_ocr", "reason": "incomplete_response", "finish_reason": "length"}
+        extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+        self.assertIn("picture_ocr_incomplete_response", extraction["uncertainties"])
+        self.assertNotIn("text", extraction["pages"][1]["regions"][1]["source_record"])
+
 
 if __name__ == "__main__":
     unittest.main()

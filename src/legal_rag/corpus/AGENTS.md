@@ -16,6 +16,15 @@
   fingerprints in immutable `ocr-evidence/`; `extraction-index/1` binds exact
   input/permission hashes. PDF `compile --extraction-index` verifies every
   extraction and native evidence hash, retaining all admission/OCR blockers.
+- Runtime execution uses immutable copied client/config/prompt files. Check the
+  executed snapshot after inference, not the mutable lab originals. Re-import
+  native evidence through the normalizer before accepting an extraction index;
+  matching hashes alone cannot justify foreign source content. Validate every
+  resolved output descendant to reject symlink escapes and protected-state writes.
+- Optional Picture `retain_unresolved` needs the compatible external client;
+  keep its incomplete native response and `picture_ocr_incomplete_response`, never
+  truncated text. Strict failure remains available. Table captions/outside-cell
+  text and nullable cell geometry are part of the preservation contract.
 
 - Owner-approved direction, 16 October 2026: `corpus-input/2` uses
   `official_import.py` (`official-json-import/1`), not `build_official_tree`.

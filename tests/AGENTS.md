@@ -8,6 +8,10 @@
   construction, permission-before-write, immutable replay, fresh-runtime
   provenance replay and index/extraction/native corruption. Keep external OCR
   calls mocked only at the process boundary; test normalization/compilation real.
+- `corpus/test_ocr_qualification.py` tests the report-only one-page human review
+  binding: source/image/reference hashes, decision, reviewer and timezone.
+  Use authored reference/image bytes; never turn synthetic decisions into actual
+  permission or admission. Unknown review duration stays null.
 
 - `corpus/test_official_import.py` covers the current v2 compiler route:
   verbatim/unknown source types and fields, no quote/number recovery, immutable

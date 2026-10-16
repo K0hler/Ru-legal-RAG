@@ -44,12 +44,20 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
              "config/new_ocr_models.json", "config/dotsmocr_prompt.txt", "config/dotsmocr_picture_ocr.json"]
     fingerprint = {name: _digest(lab / name) for name in paths}
     snapshot = {name: (lab / name).read_bytes() for name in paths if name.startswith(("scripts/", "config/"))}
+    picture_overrides = {}
     if "picture_ocr_max_tokens" in config:
         budget = config["picture_ocr_max_tokens"]
         if type(budget) is not int or not 1 <= budget <= 24000:
             raise ValueError("Picture OCR budget must be between 1 and 24000 tokens")
+        picture_overrides["max_tokens"] = budget
+    if "picture_ocr_failure_policy" in config:
+        policy = config["picture_ocr_failure_policy"]
+        if policy not in {"strict", "retain_unresolved"}:
+            raise ValueError("unknown Picture OCR failure policy")
+        picture_overrides["failure_policy"] = policy
+    if picture_overrides:
         picture = _read(lab / "config/dotsmocr_picture_ocr.json")
-        snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, "max_tokens": budget})
+        snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, **picture_overrides})
     profile_id = content_hash({name: hashlib.sha256(payload).hexdigest() for name, payload in snapshot.items()})
     snapshot_root = lab / "results" / "legal-rag-runtime" / profile_id
     _store({snapshot_root / name: payload for name, payload in snapshot.items()}, root=lab)
@@ -78,8 +86,8 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
         except (OSError, subprocess.SubprocessError) as error:
             raise RuntimeError(f"OCR command failed; see {receipt_dir / 'runtime.log'}") from error
     # Detect changed prompts/config/code across the run instead of attributing it to old hashes.
-    if any(_digest(lab / name) != fingerprint[name] for name in paths):
-        raise RuntimeError("OCR runtime configuration changed during extraction")
+    if any(_digest(snapshot_root / name) != hashlib.sha256(payload).hexdigest() for name, payload in snapshot.items()):
+        raise RuntimeError("OCR runtime snapshot changed during extraction")
     if completed.returncode:
         raise RuntimeError(f"OCR exited {completed.returncode}; native output retained at {native}")
     return native

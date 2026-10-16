@@ -70,6 +70,14 @@ without semantic reconstruction. Boundary defects stay visible and are never
 repaired automatically. The owner-approved contract, 19 retained-input replays
 and limits are in the [M1-03A closure](docs/M1_03A_CLOSURE_2026-10-16.md).
 
+Scanned PDF inputs can use the configurable local dots.mocr adapter:
+`python -m legal_rag.corpus extract --input <manifest> --ocr-config <local.json> --output-dir <dir>`.
+Native OCR evidence, page/region/cell trees and exact text locators feed
+`compile --extraction-index <index.json>`. See [setup and replay](docs/M1_04_PDF_OCR.md).
+The [two-pass qualification](docs/M1_04_QUALIFICATION_2026-10-16.md) covers all
+10 PDFs / 103 pages; fresh-output drift and critical OCR errors keep acceptance
+open. Inferred legal PDF hierarchy remains unqualified.
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1
