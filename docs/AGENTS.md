@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- `M1_04_REGION_PROBES_2026-10-16.md` is a bounded diagnostic comparison,
+  not a production change or gate waiver. Wide seal crops stop loops (3/3 each)
+  but still mistranscribe; retain the successful narrow date crop. Row bands
+  recover six ordinary minus cells (50/50 selected guard signs, 3/3 trials),
+  while conditional signs remain 0/13; x2 can introduce a tenth column.
+  The added 91-cell engineering control is a known-page development check,
+  not new heldout evidence or human legal qualification.
+
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
   outputs and normalize through an engine adapter; physical document trees and

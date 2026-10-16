@@ -1,5 +1,15 @@
 # Local data instructions
 
+- `m1/experiments/m1-04-region-probe-20261016-v1/` retains the owner-approved
+  30-request diagnostic on two seals, the original date and page-75 row bands.
+  Preserve the pre-inference plan/91-cell controls, post-screen amendments,
+  all baseline/analysis versions, outcome-final, scorer selfcheck and manifest.
+  `comparison.html` embeds eight inert image/response pairs. Native requests
+  are in OCR-Lab/results/legal-rag-region-probe/20261016-v1, with separate
+  prompt-stack probes. This changes no production model/config/extraction.
+  Loop termination is not correct seal transcription; all 13 conditional signs
+  still fail despite recovery of six ordinary minus cells. No gate waiver.
+
 - `m1/pilot_runs/m1-04-20261016-v1/` retains preliminary failed pass-1 and two
   final complete dots.mocr passes on all 10 permitted SanPiN PDFs / 103 pages.
   Preserve native evidence, images, extraction indexes, runtime freeze, model
