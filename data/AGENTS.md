@@ -1,5 +1,16 @@
 # Local data instructions
 
+- `m1/pilot_runs/official-json-qualification-20261016-v1/` is the distinct
+  pre-body selected `/5` cohort after commit `3b2c6c6`: all six acquired with
+  correctly attributed diagnostic-selected-cohort/2 wrappers and bundle/v2.
+  `official-json-qualification-20261016-validation-v1/parser-transfer-report.json`
+  records 2/6 full-control passes (3/6 technical builds), 14 caught mutations and
+  105 unchanged input files. Preserve paragraph-unit, titled-part and subsection
+  refusals plus the separate quoted-article control-reader failure. No parser or
+  verifier tuning/replacements occurred during qualification; this is not G13
+  completion or admission. Postrun diagnoses live under
+  `m1/reviews/official-json-qualification-20261016/`.
+
 - `m1/pilot_runs/official-normalization-20261016/` retains `/5` development
   probes and immutable full builds. `full-04/results.json` is the final six-act
   control revalidation (6/6, 43 caught mutations); `full-01` holds the two full

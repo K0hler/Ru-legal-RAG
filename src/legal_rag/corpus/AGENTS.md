@@ -16,6 +16,11 @@
   Table cells retain their physical table parent and `source_container_address`.
   Audit `/3` checks lexical ownership and recognizes body references separately
   from upper part headings. Raw source data and the v1 route stay unchanged.
+- The subsequent frozen `/5` qualification passes only 2/6 full controls (3/6
+  technical builds). Source `абзац`, titled word-number upper parts and
+  `подраздел` remain unsupported; the fourth failure belongs to the independent
+  quoted-article reader. Preserve this distinction and all failures. Development
+  6/6 and the two passing resolutions do not qualify arbitrary acts or close G13.
 
 - `official-structure/4` recovers only explicit superscript successors of an
   established point, with matching paragraph style, a known parent, no nested

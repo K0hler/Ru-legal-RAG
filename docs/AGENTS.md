@@ -5,6 +5,10 @@
   regressions and four identical v1 drafts. Retain `/4` failures as history.
   Separate HTML-only printed controls from independent replay of JSON scope
   claims; neither implies human legal admission or universal parser coverage.
+  A subsequent distinct frozen cohort passes only 2/6 full controls (3/6
+  technical). Separate unsupported source paragraphs/titled parts/subsections
+  from the quoted-article reader limitation. G13 remains failed for this route;
+  never replace failed documents or promote a posthoc correction to frozen proof.
 
 - `M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md` records the frozen
   official-structure/4 independent cohort: 2/6, G13 fail. Both laws pass full
