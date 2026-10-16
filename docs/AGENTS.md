@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md` records the frozen
+  official-structure/4 independent cohort: 2/6, G13 fail. Both laws pass full
+  replay and independent paragraph ownership; code part headings and an approved
+  list type are unsupported, while No.306 has conflicting source-sidecar ranges.
+  Keep failed readers separate from production failures. The preliminary verifier
+  lacked payload-owner coverage; the separate payload checker/reviewed report
+  closes that validation gap. Diagnostic acquisition attribution has a correction
+  receipt; frozen source metadata and production allowlists remain unchanged.
+
 - `M1_03A_STRUCTURE_AUDIT_2026-10-15.md` records the subsequent implementation
   of independent HTML reconciliation, bounded superscript sibling recovery and
   coarse form/amendment payloads. Preserve the earlier integration/triage as

@@ -2,6 +2,14 @@
 
 Scope: local corpora, raw downloads, fixtures, manifests, and generated databases.
 
+- `m1/pilot_runs/official-json-transfer-20261016-v1/` retains a pre-body selected
+  six-act cohort for official-structure/4: all acquired with bundle/v2, final G13
+  fail 2/6. Use `parser-transfer-report-reviewed.json` plus per-law payload checks;
+  preserve original controls/report, three control-reader failures, four parser
+  failures and identical repeats/diagnoses. `diagnostic-wrapper-receipt.json`
+  corrects adapter attribution without rewriting immutable metadata. Do not reuse
+  this failed cohort as new heldout evidence after tuning rules on its bodies.
+
 - `m1/pilot_runs/independent-structure-audit-20261015-v2/` is the final frozen-code
   seven-input replay for official-structure/4: 3906 source nodes plus two derived
   siblings, preserved raw pointers/text/media, ten witnesses and three injected

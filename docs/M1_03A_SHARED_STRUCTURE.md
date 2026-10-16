@@ -6,6 +6,13 @@ the native transfer matrix passes two non-pilot acts per family/format. These
 are distinct acceptance checks. No legal edition is admitted.
 The previous premature closure and corrected 2/4 failure remain in the history.
 
+**Official-JSON update, 16 October 2026:** the subsequent `official-structure/4`
+route passes **2/6** preselected independent acts; its G13 matrix remains failed.
+The two federal laws pass, code parts and another approved-text type are
+unsupported, and one official sidecar has a non-nested source range. This is a
+different route/version from the native acceptance above. See the
+[Russian transfer report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md).
+
 **Coverage update, 15 October 2026:** an owner-requested, preselected six-act
 expansion probe passes only **3/6** with the unchanged compiler. The historical
 4/4 original-input and six-act qualification results remain valid for their
