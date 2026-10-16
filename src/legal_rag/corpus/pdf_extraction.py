@@ -18,6 +18,8 @@ class _Table(HTMLParser):
         self.cell = None
         self.inside = False
         self.closed = False
+        self.events = []
+        self.outside = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "table":
@@ -43,12 +45,16 @@ class _Table(HTMLParser):
     def handle_data(self, data):
         if self.cell is not None:
             self.cell["parts"].append(data)
+        elif data.strip():
+            self.outside.append(data)
+            self.events.append(data)
 
     def handle_endtag(self, tag):
         if tag in {"td", "th"}:
             if self.cell is None:
                 raise ValueError("unbalanced OCR table cell")
             self.rows[-1].append(self.cell)
+            self.events.append("".join(self.cell["parts"]))
             self.cell = None
         elif tag == "table":
             if not self.inside or self.cell is not None:
@@ -79,7 +85,8 @@ class _Table(HTMLParser):
                 column += source["colspan"]
         columns = max((c for _, c in occupied), default=-1) + 1
         return {"rows": len(self.rows), "columns": columns, "cells": cells,
-                "rectangular": len(occupied) == len(self.rows) * columns}
+                "rectangular": len(occupied) == len(self.rows) * columns,
+                "outside_cell_text": self.outside, "text": "\n".join(self.events)}
 
 
 def _positive(value):
@@ -88,6 +95,8 @@ def _positive(value):
 
 def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
     """Keep native layout claims, exact OCR-string locators and all physical pages."""
+    if not isinstance(document, dict) or not isinstance(run, dict):
+        raise ValueError("OCR document and run must be objects")
     if (not re.fullmatch(r"[0-9a-f]{64}", source_sha256)
             or run.get("source_sha256") != source_sha256 or run.get("engine") != "dotsmocr"):
         raise ValueError("OCR source hash or engine mismatch")
@@ -100,11 +109,12 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
             or run.get("completed_pages") != requested):
         raise ValueError("invalid OCR physical-page coverage")
     model = run.get("model", {})
-    if (model.get("repo") != "dots-studio/dots.mocr" or not model.get("revision")
+    if (not isinstance(model, dict) or model.get("repo") != "dots-studio/dots.mocr" or not model.get("revision")
             or not model.get("weights_sha256")):
         raise ValueError("OCR model revision and weight hashes are required")
     source_pages = document.get("pages")
     if (not isinstance(source_pages, list)
+            or any(not isinstance(p, dict) for p in source_pages)
             or [p.get("page_number") for p in source_pages] != requested):
         raise ValueError("missing, duplicate or out-of-order OCR pages")
     pages, blocks, tokens, uncertainties = [], [], [], set()
@@ -114,9 +124,15 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
         if not isinstance(dimensions, list) or len(dimensions) != 2 or not all(map(_positive, dimensions)):
             raise ValueError("invalid OCR image dimensions")
         native = source_page.get("native", {})
+        if not isinstance(native, dict):
+            raise ValueError("native OCR response must be an object")
         choices = native.get("choices", [])
-        if (source_page.get("error") or not choices or choices[0].get("finish_reason") != "stop"
-                or not choices[0].get("message", {}).get("content")):
+        if (not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict)
+                or not isinstance(choices[0].get("message"), dict)):
+            raise ValueError("native OCR choice/message must be objects")
+        content = choices[0]["message"].get("content")
+        if (source_page.get("error") or choices[0].get("finish_reason") != "stop"
+                or not isinstance(content, str) or not content.strip()):
             raise ValueError("failed or truncated native OCR response")
         layout = source_page.get("layout")
         if not isinstance(layout, list) or not layout:
@@ -125,6 +141,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                 "image_size": dimensions, "coordinate_space": "rendered_image_pixels",
                 "regions": [], "blocks": []}
         for region_index, source_region in enumerate(layout):
+            if not isinstance(source_region, dict):
+                raise ValueError("OCR regions must be objects")
             bbox, category = source_region.get("bbox"), source_region.get("category")
             if (not isinstance(bbox, list) or len(bbox) != 4
                     or any(type(n) not in {int, float} or not math.isfinite(n) for n in bbox)
@@ -145,7 +163,9 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                 region["table"] = _Table().topology(text)
                 if not region["table"]["rectangular"]:
                     uncertainties.add("nonrectangular_table")
-                pieces = ["\n".join(c["text"] for c in region["table"]["cells"])]
+                pieces = [region["table"]["text"]]
+                if region["table"]["outside_cell_text"]:
+                    uncertainties.add("table_text_outside_cells")
                 uncertainties.add("table_content_unverified")
             else:
                 pieces = text.splitlines(keepends=True)
@@ -160,7 +180,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                         "ocr_char_end": local_offset + len(raw), "char_start": offset,
                         "char_end": offset + len(raw), "offset_unit": "unicode_codepoints_in_ocr_projection",
                         "locator": f"ocr:{pointer}/text:chars:{local_offset}:{local_offset + len(raw)}"}
-                block = {"block_id": content_hash({"region": region_id, "line": line_index}),
+                block = {"block_id": token_id,
+                         "source_block_id": content_hash({"region": region_id, "line": line_index}),
                          "source_region_id": region_id, "text": piece.strip(), "display_text": piece,
                          "original_text": raw, "original_html": text if category == "Table" else "",
                          "source_span": span, "text_node_ids": [token_id], "paragraph": token_id + 1,
@@ -180,7 +201,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
     identity = {key: model[key] for key in ("repo", "revision", "source_revision", "weights_sha256",
                                            "sha256", "license", "quantization") if key in model}
     extraction = {"schema_version": "text-extraction/1", "extractor_version": VERSION,
-                  "source_asset_sha256": source_sha256, "models": [identity], "config": run.get("config", {}),
+                  "source_asset_sha256": source_sha256, "models": [identity],
+                  "config": {**run.get("config", {}), "picture_ocr": run.get("picture_ocr_config")},
                   "runtime_fingerprint": run.get("runtime_fingerprint"), "pages": pages, "blocks": blocks,
                   "text_nodes": tokens, "unsupported_regions": [], "uncertainties": sorted(uncertainties),
                   "coverage": {"source_pages": total, "requested_pages": requested,

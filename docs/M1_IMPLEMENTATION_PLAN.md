@@ -2,7 +2,7 @@
 
 **Prepared:** 2 October 2026.
 **Revised:** 16 October 2026: the owner accepted official source granularity and requested disabling reconstruction and closing M1-03A. The plan retains 16 slices, 13 milestone gates and ten legal admissions; the official-JSON acceptance contract is explicitly revised below.
-**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04–M1-15 remain planned. No pilot edition is legally accepted by this document. Current decision/evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md).
+**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04's dots.mocr adapter/CLI is being implemented and qualified; M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Current native-route decision/evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md).
 **Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
@@ -249,9 +249,9 @@ Verify: `test_official_import.py`, all corpus/source/handoff tests, `docs/assets
 
 ### M1-04: Qualify And Retain Shared PDF/OCR
 
-**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** planned.
+**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** engineering implementation in progress; qualification and human-reviewed sample not yet accepted.
 
-Qualify the selected extraction baseline on representative real pages: a scan, native text, an amendment target, a table with merged/multiline cells, and an annex boundary. Then extract every page of the retained 75-page SanPiN original and all required amendment PDFs. Add only the dependency/configuration artifacts needed for this path, including a pinned `requirements-corpus.txt` once qualification succeeds.
+Qualify the selected extraction baseline on representative real pages: a scan, an amendment target, a table with merged/multiline cells, and an annex boundary. Then extract every page of the retained 75-page SanPiN original and all required amendment PDFs. Keep the separate runtime image/dependency/model/configuration record; the host adapter needs no new production pip dependencies. Native PDF text-layer extraction is outside this owner-selected scanned-PDF route. Implementation contract: [shared PDF/OCR](M1_04_PDF_OCR.md).
 
 Acceptance:
 - Record released package/transitive dependency versions, model/dictionary hashes, configuration, license checks, offline model reuse, actual runtime and memory. Installation and model download are separate from compilation.
@@ -433,7 +433,7 @@ Verify: offline gate positive/negative tests, regenerated M0 compatibility gate,
 
 ## 6. CLI And Verification Contract
 
-`compile` is implemented for the M1-01 UTF-8 diagnostic fixture and M1-03 saved `redtext` JSON/HTML profile. The separate Housing Code HTML CLI is diagnostic. Shared act-type dispatch belongs to M1-03A; `extract`, `approve` and `run-pilot` below remain planned. Implement commands only in the slice that owns their behavior. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
+`compile` supports retained native inputs and the owner-approved paired official JSON route. M1-04 adds explicit local `extract` and PDF `compile --extraction-index`; [provider settings and saved replay](M1_04_PDF_OCR.md) are required. `approve` and `run-pilot` remain planned. Use existing `sources` commands for acquisition; do not duplicate them in corpus.
 
 ```powershell
 $env:PYTHONPATH = "src"

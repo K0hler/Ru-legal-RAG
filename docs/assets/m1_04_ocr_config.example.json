@@ -1,0 +1,8 @@
+{
+  "schema_version": "ocr-provider/1",
+  "provider": "ocr-lab",
+  "engine": "dotsmocr",
+  "lab_root": "H:/AI_AGENT/OCR-Lab",
+  "workers": 16,
+  "timeout_seconds": 3600
+}

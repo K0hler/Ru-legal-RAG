@@ -4,6 +4,10 @@
   Docker or downloads. Check merged and empty cells, physical-page coverage,
   OCR-string spans, model/source binding, native truncation and one-time token
   accounting through the shared grammar. Unknown categories remain source data.
+- `corpus/test_ocr_runtime.py` checks CLI saved import, subprocess argument
+  construction, permission-before-write, immutable replay, fresh-runtime
+  provenance replay and index/extraction/native corruption. Keep external OCR
+  calls mocked only at the process boundary; test normalization/compilation real.
 
 - `corpus/test_official_import.py` covers the current v2 compiler route:
   verbatim/unknown source types and fields, no quote/number recovery, immutable

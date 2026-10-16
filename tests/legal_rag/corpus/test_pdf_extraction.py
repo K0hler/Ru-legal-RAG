@@ -18,7 +18,7 @@ def saved_result():
         {"category": "Text", "bbox": [2, 22, 95, 45], "text": "1. Первая строка\nПродолжение"},
     ], [
         {"category": "Table", "bbox": [1, 2, 95, 80], "text":
-         '<table><tr><th rowspan="2">Вид</th><th colspan="2">Условия</th></tr>'
+         '<table><caption>Допустимые значения</caption><tr><th rowspan="2">Вид</th><th colspan="2">Условия</th></tr>'
          '<tr><td>+</td><td></td></tr></table>'},
         {"category": "Picture", "bbox": [1, 81, 50, 99]},
     ]]
@@ -49,6 +49,7 @@ class PdfExtractionTest(unittest.TestCase):
                          [(0, 0, 2, 1, "Вид"), (0, 1, 1, 2, "Условия"),
                           (1, 1, 1, 1, "+"), (1, 2, 1, 1, "")])
         self.assertIsNone(table["table"]["cells"][0]["bbox"])
+        self.assertIn("Допустимые значения", extraction["blocks"][-1]["text"])
         block = extraction["blocks"][2]
         self.assertEqual(block["text"], "Продолжение")
         self.assertEqual(block["source_span"]["page"], 1)
@@ -77,7 +78,8 @@ class PdfExtractionTest(unittest.TestCase):
 
     def test_invalid_or_incomplete_native_results_are_rejected(self):
         for mutation in ("hash", "missing", "duplicate", "failed", "truncated", "bbox",
-                         "model", "requested", "empty", "table", "infinite"):
+                         "model", "requested", "empty", "table", "infinite", "region_type", "page_type",
+                         "native_type", "choice_type", "message_type"):
             with self.subTest(mutation=mutation):
                 document, run = saved_result()
                 if mutation == "hash":
@@ -100,8 +102,18 @@ class PdfExtractionTest(unittest.TestCase):
                     document["pages"][0]["layout"] = []
                 elif mutation == "table":
                     document["pages"][1]["layout"][0]["text"] = '<table><tr><td rowspan="0">x</td></tr></table>'
-                else:
+                elif mutation == "infinite":
                     document["pages"][0]["layout"][0]["bbox"][0] = float("nan")
+                elif mutation == "region_type":
+                    document["pages"][0]["layout"][0] = []
+                elif mutation == "page_type":
+                    document["pages"][0] = []
+                elif mutation == "native_type":
+                    document["pages"][0]["native"] = None
+                elif mutation == "choice_type":
+                    document["pages"][0]["native"]["choices"] = [None]
+                else:
+                    document["pages"][0]["native"]["choices"][0]["message"] = None
                 with self.assertRaises(ValueError):
                     pdf.normalize_dotsmocr(document, run, DIGEST)
 
@@ -113,6 +125,21 @@ class PdfExtractionTest(unittest.TestCase):
         extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
         self.assertFalse(extraction["coverage"]["all_source_pages"])
         self.assertIn("unknown_category:FutureCategory", extraction["uncertainties"])
+
+    def test_matched_law_uses_source_order_independently_of_source_hash(self):
+        for digest in ("e" * 64, "f" * 64):
+            document, run = saved_result()
+            document["pages"] = document["pages"][:1]
+            document["pages"][0]["layout"] = [{"category": "Text", "bbox": [1, 1, 99, 99],
+                "text": "ФЕДЕРАЛЬНЫЙ ЗАКОН\nО тесте\nСтатья 1. Содержание\n1. Правило.\n"
+                        "Президент Российской Федерации\n16 октября 2026 года\n№ 1-ФЗ"}]
+            run.update(source_pages=1, requested_pages=[1], completed_pages=[1], source_sha256=digest)
+            extraction = pdf.normalize_dotsmocr(document, run, digest)
+            tree = pdf.pdf_tree(extraction, 'Федеральный закон от 16.10.2026 № 1-ФЗ "О тесте"', "original")
+            self.assertNotEqual(tree["identity_decision"]["status"], "unresolved")
+            node = next(node for node in tree["nodes"] if node["text"] == "1. Правило.")
+            self.assertEqual(node["kind"], "part")
+            self.assertEqual(node["parent_address"], "act/article/1")
 
 
 if __name__ == "__main__":

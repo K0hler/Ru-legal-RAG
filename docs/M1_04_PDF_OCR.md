@@ -1,0 +1,99 @@
+# Shared PDF/OCR extraction
+
+M1-04 uses the owner-selected local dots.mocr pipeline already installed in
+OCR-Lab. The Legal RAG host adapter uses Python 3.13's standard library; it does
+not install inference packages, download weights, start containers or stop other
+engines. The external container owns rasterization and inference. Keep its
+image/model/configuration evidence with each run.
+
+## Run
+
+Copy `docs/assets/m1_04_ocr_config.example.json` to ignored
+`data/m1/ocr.local.json` and set `lab_root`. Start Docker and OCR-Lab's dotsmocr
+service explicitly. The adapter requires `running healthy`.
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m legal_rag.corpus extract `
+  --input data/m1/inputs/m1-04/sanpin-original-amendments.json `
+  --ocr-config data/m1/ocr.local.json `
+  --output-dir data/m1/ocr-run
+
+.\.venv\Scripts\python.exe -m legal_rag.corpus compile `
+  --input data/m1/inputs/m1-04/sanpin-original-amendments.json `
+  --target-date 2025-01-01 `
+  --extraction-index data/m1/ocr-run/extractions/index-<id>.json `
+  --output-dir data/m1/ocr-run
+```
+
+The input is an existing `corpus-input/1` with retained PDF asset references and
+exact diagnostic processing permission. `extract` is independent of a target
+edition date. `compile` still requires an explicitly declared date. Hash-named
+copies go into the configured lab's input directory; original archives and
+previous OCR results stay unchanged. Every fresh OCR invocation uses a new
+output directory. A missing runtime returns an actionable error and failed
+receipt; the adapter does not silently use cached results.
+
+## Replay without OCR
+
+Create an ignored results map with exact PDF hashes and paths to saved native
+result directories (relative to the map or absolute):
+
+```json
+{
+  "schema_version": "ocr-results/1",
+  "results": {"<source-sha256>": "../ocr-run/ocr-evidence/<evidence-id>"}
+}
+```
+
+Pass `--ocr-results <map.json>` instead of `--ocr-config`. The mapping must cover
+exactly the permitted PDF asset set, and each directory needs `document.json`
+and `run.json`. Fresh runtime fingerprints survive replay through the retained
+`provider-runtime.json`. An older standalone lab result without that sidecar
+has no verified runtime fingerprint; importing it does not invent one.
+
+## Outputs and boundaries
+
+- `extractions/<id>.json`: versioned `text-extraction/1` with all selected
+  physical pages, ordered source regions, text blocks, unknown source fields,
+  table topology and image/text uncertainties. Full input extraction requires
+  every source page.
+- `ocr-evidence/<id>/`: original JSON/Markdown/page images/native responses,
+  a file hash manifest and the provider fingerprint when available.
+- `ocr-runs/<uuid>/`: execution status, runtime fingerprint and command log.
+  Observational run receipts are separate from immutable content artifacts.
+- `extractions/index-<id>.json`: exact input/permission binding and extraction
+  references, revalidated before PDF compilation.
+
+`document_tree` is a physical document -> pages -> regions -> cells hierarchy.
+The separate shared legal grammar can produce diagnostic nodes, but inferred
+PDF legal structure remains `pdf_structure_unqualified`; sanitary-rules profile
+qualification belongs to M1-06. No tree output grants legal admission.
+
+Region boxes are pixels of the exact submitted image. A text span additionally
+locates a string in `document.json` by JSON pointer and local Unicode offsets;
+the grammar's global offsets are explicitly an OCR projection, never PDF bytes.
+Cell boxes are `null` when the model only supplies HTML cell structure. Preserve
+rowspan/colspan and blank cells; do not fabricate cell geometry or repair signs.
+
+The normalizer does not copy volatile API IDs, timestamps or local source paths
+into content identity. Real text, category or coordinate changes remain visible
+and change extraction IDs. A cache replay is not evidence of fresh OCR
+determinism. The existing OCR-Lab text reference is engineer-reviewed and says
+`human_review=false`; its metrics do not satisfy human transcription acceptance.
+
+To replace dots.mocr, add a normalizer for the new engine and its execution
+adapter/configuration. Consumers continue to read `text-extraction/1` and the
+extraction index, without importing model-specific packages or JSON fields.
+
+## Checks
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests/legal_rag/corpus -p test_pdf_extraction.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests/legal_rag/corpus -p test_ocr_runtime.py
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe docs/assets/generate_m0_gate.py
+```
+
+Default tests use authored saved results and a subprocess-boundary double; no
+live network, Docker, model or closed retrieval gold is required.

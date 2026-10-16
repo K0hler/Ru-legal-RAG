@@ -14,14 +14,27 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--input", type=Path, required=True)
         command.add_argument("--target-date", required=True)
         command.add_argument("--output-dir", type=Path, required=True)
+        if name == "compile":
+            command.add_argument("--extraction-index", type=Path)
+    extract = commands.add_parser("extract")
+    extract.add_argument("--input", type=Path, required=True)
+    extract.add_argument("--output-dir", type=Path, required=True)
+    provider = extract.add_mutually_exclusive_group(required=True)
+    provider.add_argument("--ocr-config", type=Path)
+    provider.add_argument("--ocr-results", type=Path)
     arguments = parser.parse_args(argv)
     try:
-        if arguments.command == "prepare-html":
+        if arguments.command == "extract":
+            from .ocr_runtime import extract_input
+
+            result = extract_input(arguments.input, arguments.output_dir, arguments.ocr_config, arguments.ocr_results)
+        elif arguments.command == "prepare-html":
             from .html_preparation import prepare_input
 
             result = prepare_input(arguments.input, arguments.target_date, arguments.output_dir)
         else:
-            result = compile_input(arguments.input, arguments.target_date, arguments.output_dir)
+            result = compile_input(arguments.input, arguments.target_date, arguments.output_dir,
+                                   extraction_index=arguments.extraction_index)
     except (ValueError, OSError, KeyError, TypeError) as error:
         print(json.dumps({"result": "failed", "error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2

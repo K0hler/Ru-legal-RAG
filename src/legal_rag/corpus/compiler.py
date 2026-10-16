@@ -328,13 +328,18 @@ def _validate_candidate(root: Path, candidate: dict, asset: dict, identity: str)
                 raise ValueError("candidate decision references unknown evidence")
 
 
-def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
+def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extraction_index: Path | None = None) -> dict:
     manifest, raw, archive = load_input(Path(input_path), target_date)
     output_dir = Path(output_dir).resolve()
     for protected in ("raw", "assets", "items", "relations", "candidates", "approved"):
         if output_dir.is_relative_to((archive / protected).resolve()):
             raise ValueError("output directory overlaps protected source/approved state")
     extractions, trees = [], []
+    pdf_extractions = {}
+    if extraction_index is not None:
+        from .ocr_runtime import load_extractions
+
+        pdf_extractions = load_extractions(extraction_index, manifest)
     blockers = {"legal_admission_not_requested", "temporal_coverage_unverified", *manifest["admission_blockers"]}
     if manifest["kind"] == "original_amendments":
         blockers.add("amendments_not_applied")
@@ -363,6 +368,16 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
                                                 binding["structure_sha256"], binding["source_system"]))
             else:
                 trees.append(native_tree(asset, extraction))
+            continue
+        if asset["metadata"]["media_type"] == "application/pdf":
+            from .pdf_extraction import pdf_tree
+
+            if asset["sha256"] not in pdf_extractions:
+                raise ValueError("PDF requires an extraction index; run corpus extract first")
+            extraction = pdf_extractions[asset["sha256"]]
+            extractions.append(extraction)
+            trees.append(pdf_tree(extraction, asset["declared_identity"], asset["role"]))
+            blockers.add("ocr_review_required")
             continue
         if asset["metadata"]["media_type"] != "text/plain; charset=utf-8":
             raise ValueError("unsupported extraction format; use UTF-8 fixture or native redtext JSON")

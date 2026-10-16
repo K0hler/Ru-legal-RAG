@@ -6,7 +6,16 @@
   tree describes pages/regions/cells; legal grammar output remains diagnostic
   and carries `pdf_structure_unqualified`. Block ownership uses
   `source_region_id`: `region_id` is reserved for region events by `structure.py`.
+  Grammar `block_id` is the source-order integer; retain the opaque hash as
+  `source_block_id`, because existing grammar ordering/slicing uses numeric IDs.
   OCR offsets never identify byte positions in the original PDF.
+- `ocr_runtime.py` validates the entire PDF permission/input before staging.
+  Configure the external lab path through `ocr-provider/1`; fresh execution
+  requires an already-healthy service and uses UUID-isolated outputs. Saved
+  `ocr-results/1` replay needs no Docker. Retain native files and provider
+  fingerprints in immutable `ocr-evidence/`; `extraction-index/1` binds exact
+  input/permission hashes. PDF `compile --extraction-index` verifies every
+  extraction and native evidence hash, retaining all admission/OCR blockers.
 
 - Owner-approved direction, 16 October 2026: `corpus-input/2` uses
   `official_import.py` (`official-json-import/1`), not `build_official_tree`.
