@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
+  baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
+  outputs and normalize through an engine adapter; physical document trees and
+  inferred legal hierarchy have separate acceptance. The OCR-Lab transcription
+  reference has `human_review=false`, so do not claim human OCR qualification.
+
 - The owner accepted source granularity and requested M1-03A closure on
   16 October 2026. `M1_03A_CLOSURE_2026-10-16.md` is the current decision and
   evidence; the v2 compiler imports the official tree without reconstruction.

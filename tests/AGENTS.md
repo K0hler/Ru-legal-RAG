@@ -1,5 +1,10 @@
 # Test instructions
 
+- `corpus/test_pdf_extraction.py` uses authored native OCR fixtures; no model,
+  Docker or downloads. Check merged and empty cells, physical-page coverage,
+  OCR-string spans, model/source binding, native truncation and one-time token
+  accounting through the shared grammar. Unknown categories remain source data.
+
 - `corpus/test_official_import.py` covers the current v2 compiler route:
   verbatim/unknown source types and fields, no quote/number recovery, immutable
   replay, source-ordered children, range warnings (including a broken intervening

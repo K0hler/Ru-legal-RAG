@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- M1-04's `pdf_extraction.py` normalizes retained dots.mocr `pages[].layout[]`
+  without loading a GPU library. Keep raw region records, physical-page/image
+  coordinates, OCR-string locators and table spans/empty cells. Its document
+  tree describes pages/regions/cells; legal grammar output remains diagnostic
+  and carries `pdf_structure_unqualified`. Block ownership uses
+  `source_region_id`: `region_id` is reserved for region events by `structure.py`.
+  OCR offsets never identify byte positions in the original PDF.
+
 - Owner-approved direction, 16 October 2026: `corpus-input/2` uses
   `official_import.py` (`official-json-import/1`), not `build_official_tree`.
   Preserve every raw source row, opaque ID, unit, caption and level; addresses
