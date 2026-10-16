@@ -1,5 +1,14 @@
 # Test instructions
 
+- `corpus/test_official_normalization.py` covers named/ordinal upper parts,
+  approval evidence, source ordinal parts, inline notes and proven/refused end
+  normalization, including nontext gaps. Recovery tests include full letter-list
+  continuation/media scopes. Audit tests distinguish numeric body references.
+- `corpus/test_official_dom_controls.py` injects downstream text, heading-number,
+  media, coordinate and outside-paragraph cell faults into the separate diagnostic
+  verifier. Independent source controls must validate actual normative text and
+  exact evidence, not only retained `original_text` and cached accounting/audit.
+
 - `corpus/test_structure_recovery.py` checks unseen superscript sibling numbers,
   full formula/table/note scope, original row pointers and declared ranges;
   reject ambiguous/style/nested/colliding markers, quotes and form contexts.

@@ -1,5 +1,22 @@
 # Corpus compilation module
 
+- `official-structure/5` handles named/word-number upper code parts without
+  invented numbers, approved attachment titles proven by a matching HTML title
+  and approval stamp, inline normative notes and lettered point captions.
+  Unprinted article parts retain contiguous source ordinals, explicitly marked
+  `number_origin=official_sidecar_ordinal` and `number_is_explicit=false`.
+- `official_normalization.py` may reconcile an overlong end at a confirmed
+  parent/next heading, or recover a missing end anchor at the first verified
+  peer/ancestor boundary. Preserve original ranges or unresolved anchor names
+  and evidence. Text AND nontext gaps must be empty; uncertain starts, parent
+  prefixes, leaf crossings and unconfirmed boundaries remain blockers.
+- Recovery also handles a contiguous explicit letter list after a colon inside
+  an established part/point. Its full continuation/media belongs to the item;
+  a printed comma/dash closes the list and restores the enclosing provision.
+  Table cells retain their physical table parent and `source_container_address`.
+  Audit `/3` checks lexical ownership and recognizes body references separately
+  from upper part headings. Raw source data and the v1 route stay unchanged.
+
 - `official-structure/4` recovers only explicit superscript successors of an
   established point, with matching paragraph style, a known parent, no nested
   crossing or address collision, and no protected quote/form payload. Derived

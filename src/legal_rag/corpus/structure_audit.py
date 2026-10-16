@@ -8,11 +8,12 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 
 
-VERSION = "html-structure-audit/2"
+VERSION = "html-structure-audit/3"
 NUMBER = r"[0-9]+(?:[.^-][0-9]+)*"
 ROMAN = r"[IVXLCDM]+(?:[.^-][0-9]+)*"
 SUPERSCRIPT = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
-HEADINGS = {"статья": "article", "глава": "chapter", "раздел": "section", "§": "subchapter", "приложение": "annex"}
+HEADINGS = {"статья": "article", "глава": "chapter", "раздел": "section", "часть": "part", "§": "subchapter", "приложение": "annex"}
+PART_WORDS = "ПЕРВАЯ ВТОРАЯ ТРЕТЬЯ ЧЕТВЕРТАЯ ПЯТАЯ ШЕСТАЯ СЕДЬМАЯ ВОСЬМАЯ ДЕВЯТАЯ ДЕСЯТАЯ".split()
 
 
 def scan_html(html):
@@ -35,14 +36,23 @@ def scan_html(html):
             text = " ".join(raw.split())
             quoted = text.startswith(('"', '«', '“'))
             prefix = text[1:] if quoted else text
-            heading = re.match(rf"^(Статья|Глава|Раздел|§)\s+({NUMBER}|{ROMAN})(?=[.\s]|$)", prefix, re.I)
+            heading = re.match(rf"^(Статья|Глава|Раздел|Часть|§)\s+({NUMBER}|{ROMAN})(?=[.\s]|$)", prefix, re.I)
+            part = re.fullmatch(r"(?:ЧАСТЬ ([А-Я]+)|(?:ОБЩАЯ|ОСОБЕННАЯ) ЧАСТЬ)", prefix.upper())
             annex = re.match(rf"^Приложение\s+(?:№\s*)?({NUMBER})(?=[.\s]|$)", prefix, re.I)
             numeric = re.match(rf"^({NUMBER})([.)])(?:\s|$)", prefix)
-            letter = re.match(r"^([а-яa-z])\)(?:\s|$)", prefix, re.I)
+            letter = re.match(r"^([а-яa-z](?:\^[0-9]+)?)\)(?:\s|$)", prefix, re.I)
+            if heading and heading[1].islower() and not prefix[heading.end():].startswith("."):
+                continue
+            if heading and heading[1].casefold() == "часть" and heading.end() != len(prefix):
+                continue
             if heading:
                 kind, number, delimiter = HEADINGS[heading[1].casefold()], heading[2], None
             elif annex:
                 kind, number, delimiter = "annex", annex[1], None
+            elif part:
+                kind = "part" if part[1] is None or part[1] in PART_WORDS else "unknown_heading"
+                number = str(PART_WORDS.index(part[1]) + 1) if part[1] in PART_WORDS else None
+                delimiter = None
             elif numeric:
                 kind, number, delimiter = "numbered", numeric[1], numeric[2]
             elif letter:
@@ -70,7 +80,7 @@ def audit_tree(candidates, nodes, unresolved, excluded):
             paragraphs[b.get("paragraph")].append(b)
     starts = defaultdict(list)
     for n in nodes:
-        if n.get("block_id") is None and (n.get("number_canonical") is not None or n["kind"] == "normative_note"):
+        if n.get("block_id") is None and (n.get("number_canonical") is not None or n["kind"] == "normative_note" or n.get("structural_role") == "upper_division"):
             starts[n["source_span"]["char_start"]].append(n)
     findings, statuses = [], Counter()
 
@@ -123,6 +133,9 @@ def audit_tree(candidates, nodes, unresolved, excluded):
             finding("unmatched_marker", "critical", candidate, block)
 
     for node in nodes:
+        if any(e["rule"] in {"confirmed-parent-boundary/1", "confirmed-next-boundary/1"}
+               for e in node.get("normalization_evidence", [])):
+            finding("source_range_reconciled", "info", node=node)
         if node.get("structure_origin") == "html_recovery":
             finding("explicit_sibling_recovered", "info", node=node)
         if node.get("content_context") == "amendment_payload" and node.get("block_id") is not None:
@@ -141,6 +154,29 @@ def audit_tree(candidates, nodes, unresolved, excluded):
                 break
             seen.add(ancestor["address"])
             ancestor = by_address.get(ancestor["parent_address"])
+    # Reconcile lexical ownership independently of the traversal's Owners index.
+    units = sorted([n for n in nodes if n.get("source_id") or n.get("structure_origin") == "html_recovery"],
+                   key=lambda n: (n["source_span"]["char_start"], -n["source_span"]["char_end"]))
+    active, index = [], 0
+    lexical = sorted([n for n in nodes if n.get("block_id") is not None and n["kind"] != "note"],
+                     key=lambda n: n["source_span"]["char_start"])
+    for block in lexical:
+        start, end = block["source_span"]["char_start"], block["source_span"]["char_end"]
+        while index < len(units) and units[index]["source_span"]["char_start"] <= start:
+            active.append(units[index])
+            index += 1
+        active = [n for n in active if n["source_span"]["char_end"] >= end]
+        expected = max(active, key=lambda n: n["address"].count("/"))["address"] if active else "act"
+        actual, seen = (block["source_container_address"] if block["kind"] == "table_cell"
+                        else block["parent_address"]), set()
+        while actual != "act" and actual not in seen:
+            seen.add(actual)
+            ancestor = by_address.get(actual)
+            if ancestor is None or ancestor.get("source_id") or ancestor.get("structure_origin") == "html_recovery":
+                break
+            actual = ancestor["parent_address"]
+        if actual != expected:
+            finding("lexical_owner_conflict", "critical", block=block)
     counts = Counter(f["severity"] for f in findings)
     return {"schema_version": "structure-audit/1", "scanner_version": VERSION,
             "candidates_checked": len(candidates), "candidates_sha256": content_hash(candidates),

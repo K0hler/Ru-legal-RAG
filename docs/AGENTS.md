@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- `M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md` records the `/5` development
+  replay: 6/6, full text/media/source bindings and 43 negative mutations, seven
+  regressions and four identical v1 drafts. Retain `/4` failures as history.
+  Separate HTML-only printed controls from independent replay of JSON scope
+  claims; neither implies human legal admission or universal parser coverage.
+
 - `M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md` records the frozen
   official-structure/4 independent cohort: 2/6, G13 fail. Both laws pass full
   replay and independent paragraph ownership; code part headings and an approved

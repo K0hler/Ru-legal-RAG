@@ -1,5 +1,14 @@
 # Local data instructions
 
+- `m1/pilot_runs/official-normalization-20261016/` retains `/5` development
+  probes and immutable full builds. `full-04/results.json` is the final six-act
+  control revalidation (6/6, 43 caught mutations); `full-01` holds the two full
+  builds/repeat. Preserve failed verifier attempts 02/03 and their explanations.
+  `regressions-02` passes seven retained inputs and four byte-identical v1 drafts.
+  HTML-only printed contexts and DOM replay of sidecar claims are distinct;
+  hidden source ordinals are not independently legally verified. This cohort
+  cannot be reused as fresh qualification after tuning.
+
 Scope: local corpora, raw downloads, fixtures, manifests, and generated databases.
 
 - `m1/pilot_runs/official-json-transfer-20261016-v1/` retains a pre-body selected

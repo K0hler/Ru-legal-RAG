@@ -1,3 +1,4 @@
+import copy
 import hashlib
 
 import pytest
@@ -6,6 +7,41 @@ from legal_rag.corpus.compiler import json_bytes
 from legal_rag.corpus.native_text import extract_native
 from legal_rag.corpus.official_structure import build_official_tree
 from test_official_structure import HTML, ROWS, tree
+
+
+@pytest.mark.parametrize("case", ["valid", "gap", "no_colon", "quoted"])
+def test_missing_letter_list_requires_a_contiguous_run_after_colon(case):
+    html = HTML.replace('<p id="end">Конец.</p>',
+        '<p id="intro">Условия:</p><p id="la">а) Первое;</p><p id="lb">б) Второе.</p><p id="end">Конец.</p>')
+    if case == "gap":
+        html = html.replace('б) Второе', 'в) Второе')
+    elif case == "no_colon":
+        html = html.replace('Условия:', 'Условия.')
+    elif case == "quoted":
+        html = html.replace('а) Первое', '"а) Первое')
+    rows = copy.deepcopy(ROWS)
+    rows[1]["npe"] = "end"
+    result = tree(html, rows=rows)
+    recovered = [n for n in result["nodes"] if n.get("recovery_evidence", {}).get("rule") == "explicit-letter-list/1"]
+    if case == "valid":
+        assert [n["number_canonical"] for n in recovered] == ["а", "б"]
+        assert len({n["parent_address"] for n in recovered}) == 1
+        assert not result["unresolved_blocks"] and not result["structural_issues"]
+    else:
+        assert not recovered and result["structure_audit"]["critical_count"] > 0
+
+
+def test_recovered_last_letter_owns_continuation_and_formula_until_parent_end():
+    rows = copy.deepcopy(ROWS)
+    rows[1]["npe"] = "end"
+    html = HTML.replace('<p id="end">Конец.</p>', '<p id="intro">Условия:</p><p id="la">а) Первое;</p>'
+        '<p id="lb">б) Платеж рассчитывается по формуле:</p><p id="formula"><img src="formula.png"></p>'
+        '<p id="end">Продолжение.</p>')
+    result = tree(html, rows=rows)
+    letter = next(n for n in result["nodes"] if n.get("recovery_evidence", {}).get("html_id") == "lb")
+    assert next(n for n in result["nodes"] if n["kind"] == "image" and 'formula.png' in n["original_html"])["parent_address"] == letter["address"]
+    assert next(n for n in result["nodes"] if n.get("html_id") == "end")["parent_address"] == letter["address"]
+    assert not result["structural_issues"] and not result["unresolved_blocks"]
 
 
 def resolution(base=17, exponent=2, parent="section", marker=None, extra=""):

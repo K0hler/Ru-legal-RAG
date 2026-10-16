@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from .compiler import content_hash
 from .structure import _identity, _note_fields
 
-VERSION = "official-structure/4"
+VERSION = "official-structure/5"
 VOID = set("area base br col embed hr img input link meta param source track wbr".split())
 KINDS = {"раздел": "section", "глава": "chapter", "статья": "article",
          "часть": "part", "пункт": "item", "подпункт": "subitem", "приложение": "annex"}
@@ -28,7 +28,7 @@ class Anchors(HTMLParser):
         super().__init__(convert_charrefs=False)
         self.html = html
         self.lines = [0, *(m.end() for m in re.finditer("\n", html))]
-        self.stack, self.ids = [], {}
+        self.stack, self.ids, self.elements = [], {}, []
         self.feed(html)
         self.close()
         if self.stack:
@@ -42,6 +42,7 @@ class Anchors(HTMLParser):
         attrs = dict(attrs)
         row = {"tag": tag, "start": self.scalar_offset(),
                "end": self.scalar_offset() + len(self.get_starttag_text())}
+        self.elements.append(row)
         if attrs.get("id"):
             if attrs["id"] in self.ids:
                 raise ValueError("duplicate HTML id")
@@ -78,7 +79,7 @@ def explicit_number(text, unit):
     patterns = {
         "статья": r"^Статья\s+(\d+(?:[.\-^]\d+)*)",
         "часть": r"^часть\s+(\d+(?:[.\-^]\d+)*)",
-        "пункт": r"^пункт\s+(\d+(?:[.\-^]\d+)*)",
+        "пункт": r'^пункт\s+["«]?([0-9]+(?:[.\-^]\d+)*|[а-яa-z](?:\^\d+)?)',
         "подпункт": r'^(?:подпункт\s+)["«]?([а-яa-z0-9]+(?:[.\-^]\d+)*)',
         "глава": r"^Глава\s+([0-9IVXLCDM]+(?:[.\-^]\d+)*)",
         "раздел": r"^(?:РАЗДЕЛ\s+)?([0-9IVXLCDM]+(?:[.\-^]\d+)*)(?=[.\s]|$)",
@@ -96,11 +97,13 @@ def source_marker_number(text, unit):
 
 
 def normalized_units(html, rows, family):
-    anchors = Anchors(html).ids
+    from .official_normalization import approval_evidence, reconcile_ranges, resolve_missing_ends, upper_part, verify_part_ordinals
+
+    parsed = Anchors(html)
+    anchors = parsed.ids
     soup = BeautifulSoup(html, "html.parser")
     dom = {p["id"]: p for p in soup.find_all(id=True)}
     nodes, stack, seen = [], [], set()
-    sibling_end = {}
     marker_checks = []
     for row_index, row in enumerate(rows):
         if (not isinstance(row, dict) or type(row.get("lvl")) is not int or row["lvl"] < 0
@@ -109,9 +112,9 @@ def normalized_units(html, rows, family):
         if row["id"] in seen:
             raise ValueError("duplicate sidecar id")
         seen.add(row["id"])
-        if row["np"] not in anchors or row["npe"] not in anchors:
+        if row["np"] not in anchors:
             raise ValueError("missing HTML anchor")
-        if any(anchors[key]["tag"] not in {"p", "table", "tr", "td", "th"} for key in (row["np"], row["npe"])):
+        if any(anchors[key]["tag"] not in {"p", "table", "tr", "td", "th"} for key in (row["np"], row["npe"]) if key in anchors):
             raise ValueError("unsupported inline structure anchor")
         while stack and stack[-1]["level"] >= row["lvl"]:
             stack.pop()
@@ -120,35 +123,56 @@ def normalized_units(html, rows, family):
             raise ValueError("sidecar level jump")
         if parent and not row["id"].startswith(parent["source_id"] + "_"):
             raise ValueError("sidecar parent prefix conflict")
-        start, end = anchors[row["np"]]["start"], anchors[row["npe"]]["end"]
-        if start >= end or parent and not parent["html_start"] <= start < end <= parent["html_end"]:
+        start = anchors[row["np"]]["start"]
+        end = anchors[row["npe"]]["end"] if row["npe"] in anchors else None
+        if end is not None and start >= end:
             raise ValueError("invalid or non-nested sidecar range")
         pid = parent["source_id"] if parent else None
-        if start < sibling_end.get(pid, -1):
-            raise ValueError("overlapping sibling ranges")
-        sibling_end[pid] = end
         caption = numbering_markup(row["caption"])
         source_text = numbering_markup(str(dom[row["np"]]))
         kind = KINDS.get(row["unit"], "unresolved_attachment")
+        evidence = []
         if row["unit"] == "вложение":
             if re.fullmatch(r"Примечания\s*[:.]?", caption, re.I):
                 kind = "notes_section"
-            elif re.fullmatch(r"примечание\s+\d+", caption, re.I):
+            elif re.fullmatch(r"примечание(?:\s+\d+)?\s*[:.]?", caption, re.I):
                 kind = "normative_note"
             elif row["lvl"] == 0 and re.match(r"^(ПРАВИЛА|ПОЛОЖЕНИЕ|ИЗМЕНЕНИЯ)\b", caption):
                 kind = "approved_text"
+            elif family == "government_resolution" and row["lvl"] == 0:
+                approval = approval_evidence(dom[row["np"]], caption, end if end is not None else start, anchors, numbering_markup)
+                if approval:
+                    kind = "approved_text"
+                    evidence.append(approval)
         if family == "government_resolution" and row["unit"] == "пункт":
-            kind = "item" if re.match(r"^\d+(?:[.\-^]\d+)*\)\s", source_text) else "point"
+            kind = "item" if re.match(r"^(?:\d+(?:[.\-^]\d+)*|[а-яa-z])\)\s", source_text, re.I) else "point"
         number = explicit_number(caption, row["unit"])
-        if row["unit"] not in {"вложение", "приложение"} and number is None:
+        division = (upper_part(caption) if row["unit"] == "часть" and family in {"code", "federal_law"}
+                    and not any(n["kind"] == "article" for n in stack) else None)
+        if row["unit"] not in {"вложение", "приложение"} and number is None and division is None:
             raise ValueError("numbered source unit has no explicit number")
         if number and number[0].isdigit() and any(int(n) == 0 for n in re.split(r"[.\-^]", number)):
             raise ValueError("zero provision number component")
         canonical = number.replace("^", ".") if number else None
         base, _, exponent = (number or "").partition("^")
         display = base + exponent.translate(SUPERSCRIPT) if number else None
-        source_number = source_marker_number(source_text, row["unit"])
+        marker_text = (re.sub(r"^Примечания?\s*[.:]\s*", "", source_text, flags=re.I)
+                       if parent and parent["kind"] in {"normative_note", "notes_section"} else source_text)
+        source_number = source_marker_number(marker_text, row["unit"])
         mismatch = number is not None and (source_number or "").replace("^", ".") != canonical
+        implicit = (mismatch and source_number is None and row["unit"] == "часть" and parent
+                    and parent["kind"] == "article" and re.fullmatch(r"[1-9][0-9]*", number or "")
+                    and not re.match(r"^(?:Статья|Глава|Раздел|ПРИЛОЖЕНИЕ)\s+(?:№\s*)?[0-9IVXLCDM]", source_text, re.I)
+                    and upper_part(source_text) is None)
+        if implicit:
+            mismatch = False
+            evidence.append({"rule": "source-ordinal-part/1", "source_number": canonical,
+                             "html_id": row["np"], "printed_number": False})
+        if division:
+            actual_division = upper_part(source_text)
+            canonical, display = division["number_canonical"], division["number_display"]
+            mismatch = actual_division is None or actual_division["number_canonical"] != canonical or (canonical is None and actual_division["label"] != division["label"])
+            source_number = actual_division["number_canonical"] if actual_division else None
         marker_checks.append({"source_id": row["id"], "html_id": row["np"],
                               "expected_number": canonical,
                               "dom_number": source_number.replace("^", ".") if source_number else None,
@@ -162,10 +186,20 @@ def normalized_units(html, rows, family):
              "source_unit": row["unit"], "np": row["np"], "npe": row["npe"],
              "html_start": start, "html_end": end, "provision_path": path,
              "own_block_ids": [], "region_ids": []}
+        if division:
+            n["structural_role"] = "upper_division"
+        if implicit:
+            n.update(number_origin="official_sidecar_ordinal", number_is_explicit=False)
+        if evidence:
+            n["normalization_evidence"] = evidence
+        n["heading_verified"] = not mismatch and not implicit and (canonical is not None or division is not None or bool(evidence))
         if mismatch or kind.startswith("unresolved"):
             raise ValueError("sidecar number or unit conflicts with source HTML")
         nodes.append(n)
         stack.append(n)
+    verify_part_ordinals(nodes)
+    resolve_missing_ends(nodes, parsed.elements, html)
+    reconcile_ranges(nodes, html)
     return nodes, marker_checks, soup
 
 
@@ -270,9 +304,12 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
                           "json_pointer": "/data/" + str(unit["source_row_index"])}})
         if "source_declared_range" in unit:
             fields["source_declared_span"] = span(*unit["source_declared_range"])
+        for key in ("structural_role", "normalization_evidence", "number_origin", "source_declared_anchors"):
+            if key in unit:
+                fields[key] = unit[key]
         add({"source_span": span(unit["html_start"], unit["html_end"])}, unit["kind"], unit["address"], parent_address,
             source_unit=unit["source_unit"], source_state=unit["source_state"], **fields,
-            number_canonical=number, number_display=unit["number_display"], number_is_explicit=number is not None,
+            number_canonical=number, number_display=unit["number_display"], number_is_explicit=unit.get("number_is_explicit", number is not None),
             caption=unit["caption"])
 
     completion, completed_owners, completion_issues, invalid_blocks, coarse_blocks = complete_units(blocks, owners)
@@ -357,6 +394,7 @@ def build_official_tree(asset, extraction, html, sidecar, structure_sha256, sour
         table = next((r for r in parsed_regions if r["tag"] == "table"
                       and r["source_span"]["char_start"] <= start < end <= r["source_span"]["char_end"]), None)
         if table:
+            block["source_container_address"] = parent
             parent = row_addresses.get((table["region_id"], block.get("table_cell", {}).get("row")),
                                        region_addresses[table["region_id"]])
         parent = completed_owners.get(block["block_id"], parent)

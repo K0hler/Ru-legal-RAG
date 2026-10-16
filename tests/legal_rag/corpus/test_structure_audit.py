@@ -7,6 +7,16 @@ from legal_rag.corpus.structure_audit import audit_tree, scan_html
 from test_official_structure import HTML, tree
 
 
+def test_table_cells_keep_independent_legal_owner_as_well_as_table_parent():
+    result = tree()
+    cells = [n for n in result["nodes"] if n["kind"] == "table_cell"]
+    assert cells and all(n.get("source_container_address") for n in cells)
+    nodes = copy.deepcopy(result["nodes"])
+    next(n for n in nodes if n["kind"] == "table_cell")["source_container_address"] = "act/article/1"
+    report = audit_tree(scan_html(HTML), nodes, [], result["excluded_blocks"])
+    assert any(f["code"] == "lexical_owner_conflict" for f in report["findings"])
+
+
 def test_scanner_reads_html_without_sidecar_or_parser_markers():
     html = '''<html><body><p id="s">РАЗДЕЛ XIV. Название</p>
     <p id="c">Глава 47<span class="WB">3</span>. Глава</p>
@@ -50,6 +60,17 @@ def test_scanner_ignores_editorial_control_text_and_body_references():
     <script>Статья 97. Script</script><p>Внутри обычной строки 3. Не заголовок.</p>
     </body></html>'''
     assert scan_html(html) == []
+
+
+def test_lowercase_reference_without_heading_separator_is_body_text():
+    html = '<p>раздел IV Указа от указанной даты;</p><p>раздел IV. Правила</p>'
+    markers = scan_html(html)
+    assert len(markers) == 1 and markers[0]["paragraph"] == 2
+
+
+def test_sentence_initial_reference_to_part_is_not_an_upper_division():
+    markers = scan_html('<p>Часть 1 настоящей статьи применяется с учетом условий.</p><p>ЧАСТЬ 1</p>')
+    assert len(markers) == 1 and markers[0]["paragraph"] == 2
 
 
 @pytest.mark.parametrize("marker", ["17<sup>3</sup>. Новый пункт", "47.3. Новый пункт",
@@ -123,3 +144,18 @@ def test_missing_html_heading_blocks_full_compiler_readiness(tmp_path, monkeypat
     assert "unresolved_structure" in result["blockers"]
     assert draft["content"]["trees"][0]["structure_audit"]["critical_count"] > 0
     assert "unmatched_marker" in Path(result["report"]).read_text(encoding="utf-8")
+
+
+def test_independent_inventory_sees_named_parts_and_letter_indices():
+    candidates = scan_html('<p>ОБЩАЯ ЧАСТЬ</p><p>ЧАСТЬ СЕДЬМАЯ</p><p>з<sup>1</sup>) Условие</p>')
+    assert [(c["kind_hint"], c["number_canonical"]) for c in candidates] == [("part", None), ("part", "7"), ("letter", "з.1")]
+
+
+def test_audit_detects_lexical_payload_moved_to_an_ancestor():
+    result = tree()
+    nodes = copy.deepcopy(result["nodes"])
+    block = next(n for n in nodes if n.get("html_id") == "p1" and n.get("block_id") is not None)
+    part = next(n for n in nodes if n.get("source_id") == "a1_p2")
+    block["parent_address"] = part["parent_address"]
+    audit = audit_tree(scan_html(HTML), nodes, result["unresolved_blocks"], result["excluded_blocks"])
+    assert any(f["code"] == "lexical_owner_conflict" and f["block_id"] == block["block_id"] for f in audit["findings"])
