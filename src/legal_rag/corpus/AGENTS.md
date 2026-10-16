@@ -25,6 +25,11 @@
   keep its incomplete native response and `picture_ocr_incomplete_response`, never
   truncated text. Strict failure remains available. Table captions/outside-cell
   text and nullable cell geometry are part of the preservation contract.
+- `retain_unresolved` now sets `recover_repetitions=true` only in the copied
+  Picture profile. The external client streams/cancels repeated tails, preserves
+  each response before retry, and tries at most one wider 128-pixel crop.
+  Successful narrow crops and primary OCR stay unchanged; all failed native
+  attempts remain evidence. The normalizer has no source/page-specific waiver.
 
 - Owner-approved direction, 16 October 2026: `corpus-input/2` uses
   `official_import.py` (`official-json-import/1`), not `build_official_tree`.

@@ -55,6 +55,8 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
         if policy not in {"strict", "retain_unresolved"}:
             raise ValueError("unknown Picture OCR failure policy")
         picture_overrides["failure_policy"] = policy
+        if policy == "retain_unresolved":
+            picture_overrides["recover_repetitions"] = True
     if picture_overrides:
         picture = _read(lab / "config/dotsmocr_picture_ocr.json")
         snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, **picture_overrides})

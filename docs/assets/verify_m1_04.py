@@ -115,7 +115,45 @@ def reviewed_sample(path, reference, evidence_dirs, metrics):
             "metrics": [next(p for p in m["pages"] if p["page"] == page["page_number"]) for m in metrics]}
 
 
-def verify(input_path, first_dir, second_dir, lab, output, transcription_review=None):
+def qualification_blockers(documents, has_sample, scope=None, comparison_kind="fresh"):
+    excluded, versioned = set(), False
+    if scope is not None:
+        if (scope.get("schema_version") != "ocr-quality-scope/1" or scope.get("decision") != "accepted"
+                or scope.get("reviewer") != "product-owner"
+                or datetime.fromisoformat(scope["recorded_at"]).utcoffset() is None):
+            raise ValueError("invalid owner OCR quality scope")
+        pages = {d["source_sha256"]: d["accounting"][0]["pages"] for d in documents}
+        for item in scope.get("excluded_table_pages", []):
+            digest, page = item["source_asset_sha256"], item["physical_page"]
+            if digest not in pages or type(page) is not int or not 1 <= page <= pages[digest]:
+                raise ValueError("OCR quality exclusion is outside the retained source")
+            excluded.add((digest, page))
+        policy = scope.get("fresh_inference_policy", "identical")
+        if policy not in {"identical", "versioned"}:
+            raise ValueError("unknown fresh inference policy")
+        versioned = policy == "versioned"
+    blockers = []
+    if not has_sample:
+        blockers.append("human_reviewed_transcription_missing")
+    if any(not d["runtime_verified"] for d in documents):
+        blockers.append("runtime_provenance_missing")
+    if any(not d["same_runtime"] or not d["same_settings"] for d in documents):
+        blockers.append("runtime_or_model_configuration_changed")
+    if any(c["matches"] != c["total"] and (d["source_sha256"], 75) not in excluded
+           for d in documents for c in d.get("conditional_signs_page_75", [])):
+        blockers.append("critical_ocr_errors_require_review")
+    if any("picture_ocr_incomplete_response" in u for d in documents for u in d["uncertainties"]):
+        blockers.append("unresolved_picture_ocr")
+    if any(not d["identical"] for d in documents):
+        if comparison_kind == "saved_replay":
+            blockers.append("saved_extraction_replay_drift")
+        elif not versioned:
+            blockers.append("fresh_ocr_output_drift")
+    return blockers
+
+
+def verify(input_path, first_dir, second_dir, lab, output, transcription_review=None,
+           acceptance_scope=None, comparison_kind="fresh"):
     declared = read(input_path)
     manifest, _, _ = load_input(input_path, declared["target_dates"][0])
     indexes = [next(directory.glob("extractions/index-*.json")) for directory in (first_dir, second_dir)]
@@ -134,6 +172,8 @@ def verify(input_path, first_dir, second_dir, lab, output, transcription_review=
         changes = page_changes(a["pages"], b["pages"])
         entry = {"source_sha256": digest, "first_id": a["extraction_id"], "second_id": b["extraction_id"],
                  "identical": a == b, "same_runtime": a["runtime_fingerprint"] == b["runtime_fingerprint"],
+                 "runtime_verified": bool(a["runtime_fingerprint"] and b["runtime_fingerprint"]),
+                 "same_settings": all(a[key] == b[key] for key in ("extractor_version", "models", "config")),
                  "accounting": audits, "changed_pages": changes,
                  "uncertainties": [a["uncertainties"], b["uncertainties"]]}
         if digest == reference["source"]["sha256"]:
@@ -145,21 +185,19 @@ def verify(input_path, first_dir, second_dir, lab, output, transcription_review=
         documents.append(entry)
         for aggregate, audit in zip(aggregates, audits):
             aggregate.update({key: value for key, value in audit.items() if key != "all_regions_and_text_spans"})
-    blockers = []
-    if sample is None:
-        blockers.append("human_reviewed_transcription_missing")
-    if any(c["matches"] != c["total"] for d in documents for c in d.get("conditional_signs_page_75", [])):
-        blockers.append("critical_ocr_errors_require_review")
-    if any("picture_ocr_incomplete_response" in u for d in documents for u in d["uncertainties"]):
-        blockers.append("unresolved_picture_ocr")
-    if any(not d["identical"] for d in documents):
-        blockers.append("fresh_ocr_output_drift")
+    scope = read(acceptance_scope) if acceptance_scope is not None else None
+    blockers = qualification_blockers(documents, sample is not None, scope, comparison_kind)
     result = {"schema_version": "pdf-ocr-qualification/1", "status": "engineering_evidence_with_open_acceptance",
               "input_hash": manifest["manifest_hash"], "documents": documents,
               "totals_by_pass": [dict(a) for a in aggregates], "blockers": blockers,
               "all_regions_and_text_spans": all(a["all_regions_and_text_spans"] for d in documents for a in d["accounting"]),
               "human_reviewed_sample": sample,
               "legal_admission": "not_requested"}
+    if scope is not None:
+        result.update(owner_scope=scope, owner_scope_sha256=sha256(acceptance_scope.read_bytes()).hexdigest(),
+                      comparison_kind=comparison_kind)
+        if not blockers:
+            result["status"] = "pass_with_owner_exceptions"
     result["report_id"] = content_hash(result)
     output.mkdir(parents=True, exist_ok=False)
     (output / "report.json").write_bytes(json_bytes(result))
@@ -175,5 +213,8 @@ if __name__ == "__main__":
     parser.add_argument("--lab-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--transcription-review", type=Path)
+    parser.add_argument("--acceptance-scope", type=Path)
+    parser.add_argument("--comparison-kind", choices=("fresh", "saved_replay"), default="fresh")
     args = parser.parse_args()
-    verify(args.input, args.first, args.second, args.lab_root, args.output_dir, args.transcription_review)
+    verify(args.input, args.first, args.second, args.lab_root, args.output_dir, args.transcription_review,
+           args.acceptance_scope, args.comparison_kind)

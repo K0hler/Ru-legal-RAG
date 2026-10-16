@@ -2,7 +2,7 @@
 
 **Prepared:** 2 October 2026.
 **Revised:** 16 October 2026: the owner accepted official source granularity and requested disabling reconstruction and closing M1-03A. The plan retains 16 slices, 13 milestone gates and ten legal admissions; the official-JSON acceptance contract is explicitly revised below.
-**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04's dots.mocr adapter/CLI is implemented; qualification remains open on fresh OCR drift, table-sign errors and incomplete Picture OCR. The owner confirmed one transcription page. M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md), [M1-04 qualification](M1_04_QUALIFICATION_2026-10-16.md).
+**Status:** M1-01 through M1-04 are complete within their diagnostic engineering scope. M1-03A imports the paired official tree verbatim. M1-04 has bounded Picture recovery and owner-accepted exclusions for round-seal text accuracy and the source-bound page-75 table; fresh LLM OCR is versioned, saved replay deterministic. M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md), [M1-04 acceptance](M1_04_ACCEPTANCE_2026-10-16.md).
 **Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
@@ -82,6 +82,16 @@ M1-04 must retain the container image identity, dependencies, model revision/wei
 
 If table recovery, provenance or repeatability fails, retain the qualification report and keep affected acceptance checks blocked. A small deterministic human transcription/correction record may resolve a specific reviewed region; it never changes the immutable source or hides the extractor error. OCR-Lab's existing reference explicitly has `human_review=false`; engineer visual checks and CER/WER against it cannot substitute for the required human-reviewed sample.
 
+**Subsequent owner scope decision, 16 October 2026:** round-seal transcription
+accuracy is noncritical; bounded processing is required. Exclude the original
+SanPiN's physical-page-75 table from OCR quality acceptance, bound to source SHA
+`66210869f6617b4eb5b38b27fe76fceab46f845fd14c6ecfebe9ae67c8f01a12`.
+Keep its page, raw output and failed controls. This is not a waiver for other
+tables or critical dates/requisites. Fresh LLM inference is versioned and its
+differences retained; deterministic normalization/compilation applies to the
+same saved extraction. Verified runtime/model/configuration bindings remain
+mandatory, and saved-replay drift still blocks acceptance.
+
 The shared result is our own versioned artifact, not a Docling object in the legal domain. `sources` consumes this artifact through a small reader; it does not import the heavy compiler/OCR runtime. Integration is an explicit staged CLI workflow: acquire PDF, extract it, then replay bounded discovery against the matching extraction. A missing extraction produces an actionable exception, not an inferred amendment target.
 
 ### Shared Legal Structure And Transfer Checks
@@ -155,7 +165,7 @@ AFK means engineering can implement and verify the slice independently; it never
 
 Start M1-02 as soon as M1-01 finishes; missing inputs for one act do not prevent independent diagnostic engineering for another permitted input. A dependency on that inventory requires the verified route/permission for the act being processed, not resolution of unrelated rows. Record unresolved matrix rows instead of pretending every input route is complete. Implement and commit one engineering slice before starting the next; the table is not authorization to spawn agents or parallel development threads.
 
-M1-03A is closed with the owner-approved official-tree import contract. The next slice is M1-04, physical PDF/OCR extraction qualification. Later slices reuse paired official trees where available; formats requiring inferred structure extend qualified profiles and keep their transfer checks.
+M1-03A is closed with the owner-approved official-tree import contract. M1-04 is closed in the owner-approved diagnostic OCR scope; M1-05 is next. Later slices reuse paired official trees where available; formats requiring inferred structure extend qualified profiles and keep their transfer checks.
 
 For each completed slice: update its actual status here with the check and retained artifact path, update the nearest applicable `AGENTS.md`, run focused acceptance/regression checks, and make a focused commit on `main`. Never mark legal acceptance from an engineering test. Keep the plan rolling; change a later slice only when observed evidence warrants it.
 
@@ -249,7 +259,7 @@ Verify: `test_official_import.py`, all corpus/source/handoff tests, `docs/assets
 
 ### M1-04: Qualify And Retain Shared PDF/OCR
 
-**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** engineering implemented; qualification blocked by fresh-output drift, critical table errors and unresolved Picture OCR. Page-1 transcription accepted by the owner; actual review time not recorded.
+**Type:** AFK with human-reviewed transcription. **Dependencies:** M1-01 and permitted PDFs. **Status:** complete in the owner-accepted diagnostic scope; round seals use bounded recovery, page-75 table quality is excluded, fresh inference is versioned. The page-1 transcription is human-confirmed; actual review time remains unknown for the milestone cost ledger. See [acceptance](M1_04_ACCEPTANCE_2026-10-16.md).
 
 Qualify the selected extraction baseline on representative real pages: a scan, an amendment target, a table with merged/multiline cells, and an annex boundary. Then extract every page of the retained 75-page SanPiN original and all required amendment PDFs. Keep the separate runtime image/dependency/model/configuration record; the host adapter needs no new production pip dependencies. Native PDF text-layer extraction is outside this owner-selected scanned-PDF route. Implementation contract: [shared PDF/OCR](M1_04_PDF_OCR.md).
 
@@ -257,7 +267,8 @@ Acceptance:
 - Record released package/transitive dependency versions, model/dictionary hashes, configuration, license checks, offline model reuse, actual runtime and memory. Installation and model download are separate from compilation.
 - Produce `text-extraction/1` with page/region coverage, text, table cell topology, coordinates and uncertainties. Blank/image-only/failed pages cannot disappear from accounting. Human corrections stay separate and replayable.
 - A reviewed page sample yields measured character/word error rates and a categorized list of critical numeral, negation and table errors. Confidence is diagnostic, never legal approval.
-- Two fresh extractions with the pinned configuration are compared after defined canonicalization. A cache hit alone does not prove engine determinism. Unexplained output drift blocks qualification.
+- Compare and retain fresh LLM output differences under pinned runtime/model/configuration. A fresh result is a separate version; identical output is not promised. Replay of the same retained extraction must preserve exact content IDs, hashes and source bindings. Runtime/model/configuration drift is a separate blocker.
+- Round seals must finish bounded processing, with at most one wider Picture retry and raw attempts retained. Their text accuracy is noncritical by owner decision. The source-bound page-75 table is excluded from quality grading; all physical pages and its failed historical controls remain accounted for.
 - Failed, corrupted or unsupported PDFs give structured exceptions and preserve prior artifacts. Focused default tests consume saved/synthetic extraction fixtures without downloading weights or requiring the OCR runtime.
 - The retained `text-extraction/1` output feeds the M1-03A structure engine; extraction never embeds act-specific legal numbering or identity rules. PDF support is declared only for family/format combinations later validated through the same transfer protocol.
 
@@ -271,6 +282,12 @@ Page-75 conditional signs score 0/13 in both passes. The confirmed page-1 sample
 has CER 0.8436% / WER 0.6711% under the explicitly limited benchmark projection.
 358 tests and Ruff pass; all 19 v2 replays and four byte-identical v1 manifests
 pass; M0 remains 78/78. These results do not waive M1-04 acceptance or G04/G11.
+
+Subsequent explicit owner decision and implementation: [M1-04 acceptance](M1_04_ACCEPTANCE_2026-10-16.md)
+records bounded Picture recovery, the specific page-75 quality exclusion and
+versioned fresh inference. A new 10-PDF/103-page run and identical saved replay
+pass the revised diagnostic scope. Prior failed runs/measurements remain history;
+unknown human-review time remains a milestone G11 measurement limit.
 
 ### M1-05: Replace Discovery's Temporary OCR
 
@@ -495,7 +512,7 @@ These thirteen criteria operationalize PRD section 10. G13 records the 13 Octobe
 | G01 | All five full acts at both dates have positive legal admission with explicit applicability | M1-02, M1-09 through M1-14; ten-check matrix and review hashes |
 | G02 | SanPiN is reconstructed and legally approved for both dates | M1-06 through M1-08, M1-13; bundle, ledger, full drafts and decisions |
 | G03 | 100% source/extracted-text accounting for every input, including tables/annexes and removed/replaced text | M1-03, M1-04, M1-06, M1-09 through M1-13; accounting and journals |
-| G04 | Identical inputs/versions produce identical content IDs/hashes and no duplicate content | M1-01, M1-04, M1-08, M1-14; fresh extraction and repeated builds |
+| G04 | The same retained inputs/extraction and versions produce identical normalized/compiled IDs/hashes without duplicate content. Fresh LLM OCR attempts are separately versioned, with recorded differences and verified runtime/model/configuration | M1-01, M1-04, M1-08, M1-14; saved-extraction replay and repeated builds |
 | G05 | Structure, order, numbering, tables and annex boundaries are reviewable and checked | Profile golden trees, full-coverage reconciliation and structural review |
 | G06 | Every resulting span has original/operation provenance down to official source coordinates | Extraction/cleanup mappings, source hashes, lineage and report |
 | G07 | Amendment completeness, target dates and conditions are confirmed; critical unresolved issues cannot enter admitted scope | Input inventory, reviewed ledger, dated decisions and exception dispositions |
@@ -520,4 +537,4 @@ The 13 October revision adds real-document acquisition, structural controls and 
 
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**Current next step:** resolve M1-04's recorded OCR qualification blockers before treating its output as the qualified baseline for M1-05. Paired native trees use the owner-approved M1-03A import contract; older reconstruction failures remain historical evidence. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.
+**Current next step:** M1-05 consumes the shared extraction under M1-04's recorded owner scope and preserves the M0-10A discovery contract. Paired native trees use the owner-approved M1-03A import contract; older reconstruction failures remain historical evidence. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.

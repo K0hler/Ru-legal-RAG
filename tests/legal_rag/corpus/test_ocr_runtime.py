@@ -187,6 +187,8 @@ class OcrRuntimeTest(unittest.TestCase):
                                              b"%PDF-fixture", "a" * 64, receipt)
             self.assertEqual((lab / "input" / ("legal-rag-" + "a" * 64 + ".pdf")).read_bytes(), b"%PDF-fixture")
             self.assertEqual(native, lab / "results/legal-rag/run-unique")
+            settings = next((lab / "results/legal-rag-runtime").glob("*/config/dotsmocr_picture_ocr.json"))
+            self.assertTrue(json.loads(settings.read_bytes())["recover_repetitions"])
             command = commands[-1]
             self.assertEqual(command[command.index("--project-directory") + 1], str(lab))
             self.assertEqual(command[command.index("--output") + 1], "/data/results/legal-rag/run-unique")

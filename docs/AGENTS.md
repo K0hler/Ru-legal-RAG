@@ -1,5 +1,15 @@
 # Documentation instructions
 
+- `M1_04_ACCEPTANCE_2026-10-16.md` supersedes the initial open OCR assessment
+  under an explicit owner scope: round-seal text accuracy is noncritical, and
+  only the original SanPiN PDF's physical-page-75 table is excluded from quality
+  grading. Keep raw data/failed controls and all page accounting. New inference
+  is versioned; exact saved replay and pinned verified runtime/model/configuration
+  remain mandatory. Other tables, dates/requisites and legal admission are not
+  waived. Bounded Picture recovery completes the diagnostic M1-04 slice; M1-05
+  is next. Distinguish the 103-page live snapshot from the subsequent metadata
+  retention fix, validated with authored retry faults and three real seals/date.
+
 - `M1_04_REGION_PROBES_2026-10-16.md` is a bounded diagnostic comparison,
   not a production change or gate waiver. Wide seal crops stop loops (3/3 each)
   but still mistranscribe; retain the successful narrow date crop. Row bands
@@ -114,8 +124,8 @@ Scope: every file under `docs/`.
   or additional acts cannot replace the mandatory original set. See
   `M1_03A_SHARED_STRUCTURE.md`; preserve the earlier premature-closure correction.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
-  `M1_01_FIXTURE_DRAFT.md`; PDF extract/compile is implemented in M1-04 while
-  its qualification is open. Docling/RapidOCR was an unimplemented target
+  `M1_01_FIXTURE_DRAFT.md`; PDF extract/compile is qualified in M1-04 under
+  the recorded owner scope above. Docling/RapidOCR was an unimplemented target
   replaced by the owner. Qualify the pinned runtime/models before PDF rollout;
   discovery consumes shared extraction artifacts without importing heavy OCR.
   Keep M1's ten legal checks and closed-gold isolation separate from engineering

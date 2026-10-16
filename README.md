@@ -74,9 +74,11 @@ Scanned PDF inputs can use the configurable local dots.mocr adapter:
 `python -m legal_rag.corpus extract --input <manifest> --ocr-config <local.json> --output-dir <dir>`.
 Native OCR evidence, page/region/cell trees and exact text locators feed
 `compile --extraction-index <index.json>`. See [setup and replay](docs/M1_04_PDF_OCR.md).
-The [two-pass qualification](docs/M1_04_QUALIFICATION_2026-10-16.md) covers all
-10 PDFs / 103 pages; fresh-output drift and critical OCR errors keep acceptance
-open. Inferred legal PDF hierarchy remains unqualified.
+The [owner-scoped acceptance](docs/M1_04_ACCEPTANCE_2026-10-16.md) covers all
+10 PDFs / 103 pages with bounded Picture recovery. Round-seal text accuracy and
+the source-bound page-75 table are excluded from OCR quality grading; fresh
+inference is versioned and saved replay is deterministic. Inferred legal PDF
+hierarchy remains unqualified.
 
 ```powershell
 $env:PYTHONPATH = "src"

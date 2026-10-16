@@ -1,5 +1,16 @@
 # Local data instructions
 
+- `m1/pilot_runs/m1-04-seal-recovery-20261016-v1/` retains the actual owner
+  scope record and source-bound quality policy, the new 10-PDF/103-page run,
+  deterministic saved replay, both target-date compile repeats and passing scoped
+  qualification. Keep before/before-review client versions. The full run used
+  the pre-review immutable streaming/retry snapshot; a later persistence-only
+  fix was verified on authored retry errors and final real three-seal/date
+  checks in OCR-Lab/results/legal-rag-seal-recovery-final/20261016-v1.
+  Owner scope accepts inaccurate round-seal text and excludes only the original
+  page-75 table's quality. All pages, errors, attempts and historical failures
+  remain stored. This is diagnostic M1-04 acceptance, not legal admission.
+
 - `m1/experiments/m1-04-region-probe-20261016-v1/` retains the owner-approved
   30-request diagnostic on two seals, the original date and page-75 row bands.
   Preserve the pre-inference plan/91-cell controls, post-screen amendments,

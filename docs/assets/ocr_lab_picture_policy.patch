@@ -1,14 +1,82 @@
 --- a/scripts/new_ocr_pdf.py
 +++ b/scripts/new_ocr_pdf.py
-@@ -178,6 +178,11 @@
-             raise ValueError('Picture OCR does not match the primary layout')
-         choice = region['native']['choices'][0]
-         if choice['finish_reason'] != 'stop':
+@@ -59 +59,28 @@
+-def request_image(engine, image, max_tokens, prompt=None, temperature=None):
++def read_picture_stream(response):
++    chunks, parts = [], []
++    finish, local_stop, usage = None, None, None
++    for line in response:
++        if not line.startswith(b'data: '):
++            continue
++        if line.strip() == b'data: [DONE]':
++            break
++        chunk = json.loads(line[6:])
++        chunks.append(chunk)
++        if chunk.get('error'):
++            raise ValueError(f'Picture OCR stream error: {chunk["error"]}')
++        usage = chunk.get('usage') or usage
++        for choice in chunk.get('choices', []):
++            parts.append(choice['delta'].get('content') or '')
++            finish = choice.get('finish_reason') or finish
++        text = ''.join(parts)
++        if len(text) >= 128 and any(text[-size:].strip() and text.endswith(text[-size:] * 8)
++                                    for size in range(1, min(64, len(text) // 8) + 1)):
++            local_stop = 'tail_repetition'
++            break
++    return {'id': chunks[0].get('id') if chunks else None, 'model': 'dotsmocr',
++            'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': ''.join(parts)},
++                         'finish_reason': finish}], 'usage': usage,
++            'local_stop_reason': local_stop, 'stream_chunks': chunks}
++
++
++def request_image(engine, image, max_tokens, prompt=None, temperature=None, picture_ocr=False):
+@@ -74,0 +102,2 @@
++    if picture_ocr:
++        payload.update(stream=True, stream_options={'include_usage': True})
+@@ -77,0 +107,2 @@
++        if picture_ocr:
++            return read_picture_stream(response)
+@@ -143,0 +175 @@
++    recovery = settings.get('recover_repetitions', False)
+@@ -146,12 +178,21 @@
+-        box = [max(0, int(left) - padding), max(0, int(top) - padding),
+-               min(width, int(right) + padding), min(height, int(bottom) + padding)]
+-        if box[0] >= box[2] or box[1] >= box[3]:
+-            raise ValueError(f'Invalid Picture region: {cell["bbox"]}')
+-        crop = image.crop(box)
+-        started = time.perf_counter()
+-        response = request_image('dotsmocr', crop, settings['max_tokens'],
+-                                 prompt=settings['prompt'], temperature=settings['temperature'])
+-        native['picture_ocr'].append({'layout_index': index, 'bbox': cell['bbox'],
+-                                     'crop_bbox': box, 'image_size': list(crop.size),
+-                                     'elapsed_seconds': round(time.perf_counter() - started, 6),
+-                                     'native': response})
++        attempts = []
++        record = {'layout_index': index, 'bbox': cell['bbox']}
++        for margin in ([padding, 128] if recovery and padding < 128 else [padding]):
++            box = [max(0, int(left) - margin), max(0, int(top) - margin),
++                   min(width, int(right) + margin), min(height, int(bottom) + margin)]
++            if box[0] >= box[2] or box[1] >= box[3]:
++                raise ValueError(f'Invalid Picture region: {cell["bbox"]}')
++            crop = image.crop(box)
++            started = time.perf_counter()
++            response = request_image('dotsmocr', crop, settings['max_tokens'],
++                                     prompt=settings['prompt'], temperature=settings['temperature'],
++                                     picture_ocr=recovery)
++            attempts.append({'crop_bbox': box, 'image_size': list(crop.size),
++                             'elapsed_seconds': round(time.perf_counter() - started, 6), 'native': response})
++            record.update(attempts[-1])
++            if recovery:
++                record['attempts'] = attempts
++            if len(attempts) == 1:
++                native['picture_ocr'].append(record)
++            if response['choices'][0]['finish_reason'] == 'stop' and not response.get('local_stop_reason'):
++                break
+@@ -180 +221,6 @@
+-        if choice['finish_reason'] != 'stop':
++        if choice['finish_reason'] != 'stop' or region['native'].get('local_stop_reason'):
 +            if native.get('picture_ocr_config', {}).get('failure_policy') == 'retain_unresolved':
 +                cells[index] = {**cells[index], 'ocr_issue': {
 +                    'stage': 'picture_ocr', 'reason': 'incomplete_response',
 +                    'finish_reason': choice['finish_reason']}}
 +                continue
-             raise ValueError('Incomplete Picture OCR; inspect the retained native response')
-         text = choice['message']['content'] or ''
-         if text.strip():

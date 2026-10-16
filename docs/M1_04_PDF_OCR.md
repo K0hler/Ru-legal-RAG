@@ -15,10 +15,20 @@ service explicitly. The adapter requires `running healthy`.
 The example selects `picture_ocr_failure_policy: retain_unresolved`. This needs
 the compatible OCR-Lab client change in [the retained patch](assets/ocr_lab_picture_policy.patch),
 already applied to the local lab used for qualification. On another checkout,
-check/apply it from the lab root with `git apply --ignore-space-change <patch>`.
+check/apply it from the lab root with
+`git apply --unidiff-zero --ignore-space-change <patch>`.
 Use `strict` to retain the laboratory's original failure behavior. An incomplete
 Picture response is never accepted as text: the selected policy preserves its
 native response and an explicit unresolved-region finding.
+
+In the current client, `retain_unresolved` also enables bounded Picture recovery
+in the copied configuration: cancel a repeated stream after at least 128
+characters with eight repeated tail units, then make at most one retry with
+128-pixel padding. The original 28-pixel crop stays first, so successful date
+OCR is unchanged. Keep every completed attempt before requesting another one.
+If neither attempt completes, preserve the raw responses and unresolved region
+and continue the document. Primary page OCR and the lab's strict default retain
+their existing behavior. The retained patch includes this client support.
 
 ```powershell
 $env:PYTHONPATH = "src"
@@ -102,21 +112,39 @@ extraction index, without importing model-specific packages or JSON fields.
 
 ## Retained qualification
 
-The [16 October report](M1_04_QUALIFICATION_2026-10-16.md) records two complete
+The [initial 16 October report](M1_04_QUALIFICATION_2026-10-16.md) records two complete
 10-PDF / 103-page passes, the confirmed page-1 transcription, runtime/license
-metadata, offline execution and native-route regressions. Engineering is
-implemented; qualification remains open on fresh-output drift, critical table
-sign errors and incomplete Picture OCR. Legal admission remains unresolved.
+metadata, offline execution and native-route regressions. Its original scope
+left fresh-output drift, table-sign errors and incomplete Picture OCR open.
+The [subsequent owner-scoped acceptance](M1_04_ACCEPTANCE_2026-10-16.md) records
+the implemented recovery and passing revised diagnostic scope. Legal admission
+remains unresolved.
+
+That report records the original acceptance scope. The owner subsequently
+accepted round-seal text as noncritical and excluded the source-bound page-75
+table from OCR quality grading. Fresh OCR is versioned; saved replay stays
+deterministic. Supply `--acceptance-scope <quality-scope.json>` to the comparison
+tool to apply that explicit owner record while preserving failed measurements.
+Use `--comparison-kind saved_replay` for a saved-result replay; changed runtime,
+models/configuration, missing provenance or changed replay content still block.
+
+Explicit external-client checks (authored streams/images; no inference):
+
+```powershell
+.\.venv\Scripts\python.exe docs/assets/check_ocr_lab_recovery.py H:/AI_AGENT/OCR-Lab
+```
 
 To reproduce the read-only comparison into a new report directory:
 
 ```powershell
 .\.venv\Scripts\python.exe docs/assets/verify_m1_04.py `
   --input data/m1/inputs/m1-04/sanpin-original-amendments.json `
-  --first data/m1/pilot_runs/m1-04-20261016-v1/pass-2 `
-  --second data/m1/pilot_runs/m1-04-20261016-v1/pass-3 `
+  --first data/m1/pilot_runs/m1-04-seal-recovery-20261016-v1/fresh `
+  --second data/m1/pilot_runs/m1-04-seal-recovery-20261016-v1/replay `
   --lab-root H:/AI_AGENT/OCR-Lab `
   --transcription-review data/m1/pilot_runs/m1-04-20261016-v1/human-transcription-review/human-review.json `
+  --acceptance-scope data/m1/pilot_runs/m1-04-seal-recovery-20261016-v1/quality-scope.json `
+  --comparison-kind saved_replay `
   --output-dir data/m1/pilot_runs/m1-04-report-replay
 ```
 

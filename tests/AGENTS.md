@@ -12,6 +12,13 @@
   binding: source/image/reference hashes, decision, reviewer and timezone.
   Use authored reference/image bytes; never turn synthetic decisions into actual
   permission or admission. Unknown review duration stays null.
+- Owner quality-scope tests bind exclusions to an exact PDF hash/page and retain
+  missing-review, runtime/model/configuration and saved-replay blockers. Fresh
+  stochastic text may vary only under verified pinned settings.
+- `docs/assets/check_ocr_lab_recovery.py <lab-root>` is an explicit external
+  client check using authored images/streams, not a default CI dependency.
+  Check early cancellation/connection close, at most one retry and preservation
+  of a received attempt when the next request raises. No GPU is needed.
 
 - `corpus/test_official_import.py` covers the current v2 compiler route:
   verbatim/unknown source types and fields, no quote/number recovery, immutable
