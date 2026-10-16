@@ -53,12 +53,12 @@ def verify_hashes(root: Path, files: dict[str, str], *, normalize_lf: bool = Fal
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--report", type=Path, default=ROOT / "docs/M0_GATE_REPORT.md")
+    parser.add_argument("--report", type=Path, default=ROOT / "docs/milestones/m0/M0_GATE_REPORT.md")
     parser.add_argument("--summary", type=Path, default=ROOT / "data/m0-12-gate/gate.json")
     args = parser.parse_args(argv)
-    assessment = json.loads((ROOT / "docs/M0_GATE_ASSESSMENT.json").read_text("utf-8"))
-    freeze = json.loads((ROOT / "docs/M0_CONTRACT_FREEZE.json").read_text("utf-8"))
-    plan = acceptance_criteria((ROOT / "docs/M0_IMPLEMENTATION_PLAN.md").read_text("utf-8"))
+    assessment = json.loads((ROOT / "docs/milestones/m0/M0_GATE_ASSESSMENT.json").read_text("utf-8"))
+    freeze = json.loads((ROOT / "docs/milestones/m0/M0_CONTRACT_FREEZE.json").read_text("utf-8"))
+    plan = acceptance_criteria((ROOT / "docs/milestones/m0/M0_IMPLEMENTATION_PLAN.md").read_text("utf-8"))
     criteria = {
         f"{slice_id}.{index}": text
         for slice_id, entries in plan.items()

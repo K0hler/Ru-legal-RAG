@@ -103,7 +103,7 @@ Scope: official-source connectors, acquisition runs, immutable raw assets, and s
   role, reviewer, time, rationale, candidate scope, and known asset/relation evidence.
 - Verify source terms and rate limits before enabling bulk acquisition.
 - M0 acquisition and `edition-candidate/1` are frozen in
-  `docs/M0_CONTRACTS.md` and `docs/M0_CONTRACT_FREEZE.json`. Preserve the
+  `docs/milestones/m0/M0_CONTRACTS.md` and `docs/milestones/m0/M0_CONTRACT_FREEZE.json`. Preserve the
   byte-for-byte synthetic handoff fixture; version incompatible changes instead
   of silently refreshing its expected output or frozen hashes.
 

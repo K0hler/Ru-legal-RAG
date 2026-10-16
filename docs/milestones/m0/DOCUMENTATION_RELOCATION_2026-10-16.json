@@ -1,0 +1,72 @@
+{
+  "recorded_on": "2026-10-16",
+  "base_revision": "4dcf9be75c7144bb47a77a7669f8ee6af7460ea8",
+  "scope": "Documentation locations, relative links and document paths in reporting scripts only; production code, legal sources, fixtures, local evidence and acceptance decisions are unchanged.",
+  "hash_normalization": "CRLF-to-LF",
+  "m0_acceptance_criteria_unchanged": true,
+  "relocated_frozen_references": [
+    {
+      "manifest": "docs/milestones/m0/M0_CONTRACT_FREEZE.json",
+      "old_path": "docs/M0_CONTRACTS.md",
+      "new_path": "docs/milestones/m0/M0_CONTRACTS.md",
+      "old_sha256_lf": "7fc9bc6f557f19f5c47b5f27bfb248bc7fbe9a70a8b4f8e0cfc41f6f626f40ed",
+      "new_sha256_lf": "616f835322f8360c95b8ab558a3b19ec3a8cafa35e051fd32ae52d388becc6f3"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_CONTRACT_FREEZE.json",
+      "old_path": "docs/assets/generate_m0_gate.py",
+      "new_path": "docs/assets/generate_m0_gate.py",
+      "old_sha256_lf": "079548e78ef253ff828179f74b8faa0d07a79ea0692dcc4cbf0ef764b897f377",
+      "new_sha256_lf": "71298347f525bad590aa0458be17dc5ad4dccd1a2cba75c777f0d7bff9e5496b"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_07_PILOT_AND_REVIEW_POLICY.md",
+      "new_path": "docs/milestones/m0/M0_07_PILOT_AND_REVIEW_POLICY.md",
+      "old_sha256_lf": "9949c57c750f6e4b5e0f4971fcef825bbfbed69757ff2fa6ba8f4f543786b77b",
+      "new_sha256_lf": "957c12d51c8bb9502ba6e6d952fac9738fb32d4649f899fb58a8c5115742fa5e"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_10_LEGAL_REVIEW.md",
+      "new_path": "docs/milestones/m0/M0_10_LEGAL_REVIEW.md",
+      "old_sha256_lf": "d096253ec61ac5872f0c86557676f9d025611a82530a14c7152d5d2647c07495",
+      "new_sha256_lf": "d096253ec61ac5872f0c86557676f9d025611a82530a14c7152d5d2647c07495"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_11_GOLD_SET.md",
+      "new_path": "docs/milestones/m0/M0_11_GOLD_SET.md",
+      "old_sha256_lf": "185be58a34af169c3294f5a95dac137098543186bfdfa50905a594d94a73a65e",
+      "new_sha256_lf": "185be58a34af169c3294f5a95dac137098543186bfdfa50905a594d94a73a65e"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_11_GOLD_SPLIT.json",
+      "new_path": "docs/milestones/m0/M0_11_GOLD_SPLIT.json",
+      "old_sha256_lf": "ac6ccdbc164428fb122e8f496d63114c1aa67f56af9565d26d31f367f8d06369",
+      "new_sha256_lf": "ac6ccdbc164428fb122e8f496d63114c1aa67f56af9565d26d31f367f8d06369"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_CONTRACTS.md",
+      "new_path": "docs/milestones/m0/M0_CONTRACTS.md",
+      "old_sha256_lf": "7fc9bc6f557f19f5c47b5f27bfb248bc7fbe9a70a8b4f8e0cfc41f6f626f40ed",
+      "new_sha256_lf": "616f835322f8360c95b8ab558a3b19ec3a8cafa35e051fd32ae52d388becc6f3"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/M0_CONTRACT_FREEZE.json",
+      "new_path": "docs/milestones/m0/M0_CONTRACT_FREEZE.json",
+      "old_sha256_lf": "1a9adcbbd51f4d0e73da07d0ead00c871405ec8ae055217ff59602f29c5f6126",
+      "new_sha256_lf": "bbe2720b6b562dcc8ba1caa11f2d9b7f10701bdb20ae5b09c93d3de29cd86128"
+    },
+    {
+      "manifest": "docs/milestones/m0/M0_GATE_ASSESSMENT.json",
+      "old_path": "docs/assets/generate_m0_gate.py",
+      "new_path": "docs/assets/generate_m0_gate.py",
+      "old_sha256_lf": "079548e78ef253ff828179f74b8faa0d07a79ea0692dcc4cbf0ef764b897f377",
+      "new_sha256_lf": "71298347f525bad590aa0458be17dc5ad4dccd1a2cba75c777f0d7bff9e5496b"
+    }
+  ]
+}

@@ -13,7 +13,7 @@
 3. Add negative tests for identity conflict, duplicate addresses/anchors, unknown headings and numbering, unsupported tables/lists and multi-marker paragraphs. Observe failures before the corresponding guards. Verify unsupported content cannot leak invented addresses.
 4. Add CLI/replay tests. Implement `python -m legal_rag.corpus.housing_html --input ... --output-dir ...` writing deterministic extraction/AST/validation JSON and inert offline HTML into a new or hash-identical output. Refuse conflicting existing outputs and input/output overlap. Keep this CLI separate from permission-gated admitted compilation.
 5. Run the complete supplied HTML to a fresh local ignored diagnostic directory; verify against independent DOM heading/annotation controls, original hash, all token locators and independent repeat. Do not read closed gold. Inspect anomalies and fix with synthetic failing regression tests.
-6. Run all corpus/source tests, Ruff, typing on the new module, bytecode compilation and M0 gate. Document actual measured results/limitations in `docs/HOUSING_HTML_PARSER.md`, link it from `docs/README.md`, update nearest AGENTS module knowledge and commit only authored code/tests/docs.
+6. Run all corpus/source tests, Ruff, typing on the new module, bytecode compilation and M0 gate. Document actual measured results/limitations in `docs/guides/HOUSING_HTML_PARSER.md`, link it from `docs/README.md`, update nearest AGENTS module knowledge and commit only authored code/tests/docs.
 
 ## Verification commands
 

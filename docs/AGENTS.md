@@ -1,6 +1,19 @@
 # Documentation instructions
 
-- `M1_04_ACCEPTANCE_2026-10-16.md` supersedes the initial open OCR assessment
+- Keep only this instruction file and `README.md` at the documentation root.
+  Use `overview/` for product/architecture/roadmap, `policies/` for admission
+  rules, `milestones/m0/` and `milestones/m1/` for stage records, `guides/` for
+  tool usage, `research/` for research/historical context, and `plans/` for
+  individual plans. M1-03A and M1-04 records live in M1's `03a/` and `04/`.
+  Keep existing scripts and rendered/source assets together under `assets/`.
+- The 16 October 2026 documentation relocation changes paths and links only.
+  Its M0 receipt records old/new pinned hashes against the preceding Git
+  revision; acceptance criteria, human decisions, production code, fixtures and
+  local evidence are unchanged. Gate generation still uses
+  `python docs/assets/generate_m0_gate.py`; its records now live under
+  `milestones/m0/`. Do not refresh unrelated frozen hashes during maintenance.
+
+- `milestones/m1/04/M1_04_ACCEPTANCE_2026-10-16.md` supersedes the initial open OCR assessment
   under an explicit owner scope: round-seal text accuracy is noncritical, and
   only the original SanPiN PDF's physical-page-75 table is excluded from quality
   grading. Keep raw data/failed controls and all page accounting. New inference
@@ -10,7 +23,7 @@
   is next. Distinguish the 103-page live snapshot from the subsequent metadata
   retention fix, validated with authored retry faults and three real seals/date.
 
-- `M1_04_REGION_PROBES_2026-10-16.md` is a bounded diagnostic comparison,
+- `milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md` is a bounded diagnostic comparison,
   not a production change or gate waiver. Wide seal crops stop loops (3/3 each)
   but still mistranscribe; retain the successful narrow date crop. Row bands
   recover six ordinary minus cells (50/50 selected guard signs, 3/3 trials),
@@ -24,7 +37,7 @@
   inferred legal hierarchy have separate acceptance. The OCR-Lab transcription
   reference has `human_review=false`. A separate actual owner confirmation now
   covers page 1 only; do not promote it to full-reference human qualification.
-- `M1_04_QUALIFICATION_2026-10-16.md` records implemented OCR integration with
+- `milestones/m1/04/M1_04_QUALIFICATION_2026-10-16.md` records implemented OCR integration with
   open acceptance: both runs cover 10 PDFs / 103 pages, but fresh text/category/
   geometry changes, 0/13 table signs and incomplete Picture responses remain.
   Saved-result replay is deterministic, fresh inference is not qualified.
@@ -33,7 +46,7 @@
   runtime freeze/failed attempts and the explicit report-only freeze amendment.
 
 - The owner accepted source granularity and requested M1-03A closure on
-  16 October 2026. `M1_03A_CLOSURE_2026-10-16.md` is the current decision and
+  16 October 2026. `milestones/m1/03a/M1_03A_CLOSURE_2026-10-16.md` is the current decision and
   evidence; the v2 compiler imports the official tree without reconstruction.
   Older 2/6 and 3/6 reports remain historical failures of their own versions.
   Do not rename retained regression acts as fresh G13 qualification. Distinguish
@@ -50,7 +63,7 @@
   pinned validation Python; checks.json pins the HTML, generator, template and
   original sources. Source HTML is displayed through inert formatting only.
 
-- `M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md` records the `/5` development
+- `milestones/m1/03a/M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md` records the `/5` development
   replay: 6/6, full text/media/source bindings and 43 negative mutations, seven
   regressions and four identical v1 drafts. Retain `/4` failures as history.
   Separate HTML-only printed controls from independent replay of JSON scope
@@ -60,7 +73,7 @@
   from the quoted-article reader limitation. G13 remains failed for this route;
   never replace failed documents or promote a posthoc correction to frozen proof.
 
-- `M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md` records the frozen
+- `milestones/m1/03a/M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md` records the frozen
   official-structure/4 independent cohort: 2/6, G13 fail. Both laws pass full
   replay and independent paragraph ownership; code part headings and an approved
   list type are unsupported, while No.306 has conflicting source-sidecar ranges.
@@ -69,21 +82,21 @@
   closes that validation gap. Diagnostic acquisition attribution has a correction
   receipt; frozen source metadata and production allowlists remain unchanged.
 
-- `M1_03A_STRUCTURE_AUDIT_2026-10-15.md` records the subsequent implementation
+- `milestones/m1/03a/M1_03A_STRUCTURE_AUDIT_2026-10-15.md` records the subsequent implementation
   of independent HTML reconciliation, bounded superscript sibling recovery and
   coarse form/amendment payloads. Preserve the earlier integration/triage as
   historical evidence. Distinguish normalized and source-declared ranges, critical
   missing provisions and optional segmentation. Seven development inputs and
   injected faults do not establish new G13 coverage or universal error detection.
 
-- `M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md` is an analysis/proposal, not a
+- `milestones/m1/03a/M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md` is an analysis/proposal, not a
   deployed gate change. Two No.354 6² provisions need distinct addresses and full
   payload scopes; No.47's inline form list and seven amendment-quote cases may
   use coarser verbatim paragraphs under the correct provision. Two No.410 cases
   are false quote boundaries around defined terms. Do not equate optional inline
   segmentation with missing own provisions or silently remove real parent errors.
 
-- `M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md` documents the implemented
+- `milestones/m1/03a/M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md` documents the implemented
   opt-in M0 bundle/v2-input route and seven full compiler replays. Keep technical
   preservation separate from unresolved No.354 siblings and mixed quote bounds
   in three acts. V2 bindings preserve per-acquisition transport when bytes are
@@ -98,7 +111,7 @@ Scope: every file under `docs/`.
 - Update `docs/README.md` when adding, renaming, or moving a document.
 - Keep deterministic diagram sources beside rendered assets when both exist.
 - Do not present a planned component as deployed without current code or runtime evidence.
-- `HTML_PREPARATION.md` documents the implemented parser-independent preparation
+- `guides/HTML_PREPARATION.md` documents the implemented parser-independent preparation
   slice. Keep its four-input preservation evidence separate from M1-03A legal
   hierarchy and G13 qualification. Opening-tag maps are not full token/provision
   locators; common CSS hints are not computed rendering or arbitrary-CSS support.
@@ -115,16 +128,16 @@ Scope: every file under `docs/`.
   after the historical target, including ones published earlier. A later
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
-- Follow `M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
+- Follow `milestones/m1/M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
   (M1-01–M1-15 plus M1-03A) and 13 milestone gates. The owner approved the
   parser-transfer requirement on 13.10.2026. M1-03A native engineering now
   passes all four original HTML inputs (59-FZ, Housing Code, No. 354, No. 491)
   and two non-pilot acts per declared family/format. Keep `original-four-v8`
   acceptance separate from `resolution-transfer-v5` qualification; preparation
   or additional acts cannot replace the mandatory original set. See
-  `M1_03A_SHARED_STRUCTURE.md`; preserve the earlier premature-closure correction.
+  `milestones/m1/03a/M1_03A_SHARED_STRUCTURE.md`; preserve the earlier premature-closure correction.
   M1-01's fixture-only contracts/compile CLI are implemented and documented in
-  `M1_01_FIXTURE_DRAFT.md`; PDF extract/compile is qualified in M1-04 under
+  `milestones/m1/M1_01_FIXTURE_DRAFT.md`; PDF extract/compile is qualified in M1-04 under
   the recorded owner scope above. Docling/RapidOCR was an unimplemented target
   replaced by the owner. Qualify the pinned runtime/models before PDF rollout;
   discovery consumes shared extraction artifacts without importing heavy OCR.
@@ -210,7 +223,7 @@ Scope: every file under `docs/`.
   and does not rewrite historical source/candidate blockers.
 - M1-02 closes the input-route inventory with declared admission blockers, not
   M1's full-text or ten-edition legal-review work. The 12 October result is in
-  `M1_02_CLOSURE.md` and `data/m1/inputs/m1-02-completion/closure.json`;
+  `milestones/m1/M1_02_CLOSURE.md` and `data/m1/inputs/m1-02-completion/closure.json`;
   validate it read-only with `assets/validate_m1_02_closure.py`. It retains 27 new
   official publications, a fresh two-pass pilot and independent historical
   candidates. The new bank now includes No. 1242 in No. 491; preserve the old
@@ -219,7 +232,7 @@ Scope: every file under `docs/`.
   reference in the other sanitary rules. Bounded feed inspection preserves three
   strict validation failures and never proves all historical amendments absent.
 - M1-03's implemented profile and full native 59-FZ replay are documented in
-  `M1_03_NATIVE_TEXT.md`. Report engineering accounting and determinism separately
+  `milestones/m1/M1_03_NATIVE_TEXT.md`. Report engineering accounting and determinism separately
   from legal admission. Keep JSON-scalar character locations distinct from raw
   bytes/PDF pages. Preserve earlier manifests and their historical questions;
   expose the original excerpt for every provision in the offline report.
@@ -239,15 +252,15 @@ Scope: every file under `docs/`.
   No.261-FZ, No.410 and No.47 retain structural failures. Historical 4/4 and
   transfer results do not establish arbitrary-act coverage. The owner's pause
   and self-contained Russian continuation context are recorded in
-  `M1_03A_PARSER_HANDOFF_2026-10-15.md`; the proposed LLM hybrid and new experiment
+  `milestones/m1/03a/M1_03A_PARSER_HANDOFF_2026-10-15.md`; the proposed LLM hybrid and new experiment
   are unapproved, unimplemented options.
 - The separately owner-authorized local Documind schema-layer probe is documented
-  in `M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md`. Full Housing Code stock requests
+  in `milestones/m1/03a/M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md`. Full Housing Code stock requests
   exceed both tested models' declared contexts; four complete 59-FZ schema controls
   (Gemma/Qwen, stock/guided) fail the legal-schema gate. No downstream extraction
   or production integration was performed. This bounds the tested configuration,
   not every possible model/provider, and does not close M1-03A or qualify PDF/OCR.
-- The broader 15 October parser research is in `M1_03A_PARSER_OPTIONS_2026-10-15.md`.
+- The broader 15 October parser research is in `milestones/m1/03a/M1_03A_PARSER_OPTIONS_2026-10-15.md`.
   Both official banks expose separate typed structure sidecars. Seven retained
   inputs / 3,906 nodes pass anchor/parent checks and fresh text responses match
   the original assets byte for byte. This is source research, not a production
@@ -256,7 +269,7 @@ Scope: every file under `docs/`.
   of Bluebell; PageIndex Flash can build an outline without an LLM. Neither fact
   establishes Russian legal-leaf coverage or supersedes preserved failures.
 - The owner-authorized sidecar experiment is documented in Russian in
-  `M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md`. Its separate scripts
+  `milestones/m1/03a/M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md`. Its separate scripts
   under `docs/assets/` preserve 3,906 source nodes, pass all 3,894 explicit-number
   checks and technical accounting on seven acts. Source JSON omits quoted-law
   subtrees and some form lists; 261-FZ's quoted articles and No.47's a–d list

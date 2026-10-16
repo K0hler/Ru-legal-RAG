@@ -45,7 +45,7 @@
   `legal-ast/2` source units carry `source_record` and nullable `source_span`;
   `kind=source_unit` and null canonical numbers are deliberate source granularity.
   Same-edition binding, identity, permission and hashes remain mandatory.
-  Closure evidence/limits are in `docs/M1_03A_CLOSURE_2026-10-16.md`.
+  Closure evidence/limits are in `docs/milestones/m1/03a/M1_03A_CLOSURE_2026-10-16.md`.
 
 - `official-structure/5` handles named/word-number upper code parts without
   invented numbers, approved attachment titles proven by a matching HTML title
@@ -122,7 +122,7 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   UTF-8 fixture profile only. `corpus-input/1` and a hash-bound
   `processing-permission/1` are validated before derived writes. Read source
   records directly without importing acquisition/OCR or changing frozen source
-  code; the exact contracts and replay are in `docs/M1_01_FIXTURE_DRAFT.md`.
+  code; the exact contracts and replay are in `docs/milestones/m1/M1_01_FIXTURE_DRAFT.md`.
 - Keep `original_amendments` separate from the optional frozen consolidated
   candidate wrapper. Stale candidates cannot be wrapped; permitted diagnostic
   assets retain source status and admission blockers. No M1-01 draft is admitted
@@ -145,7 +145,7 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   by a break in one paragraph), duplicate addresses and unsupported lists/tables
   stop targeting and remain unresolved. Keep original source/admission blockers.
   Eight synthetic native tests and the full two-build replay are documented in
-  `docs/M1_03_NATIVE_TEXT.md`; the earlier fixture artifacts stay byte-identical.
+  `docs/milestones/m1/M1_03_NATIVE_TEXT.md`; the earlier fixture artifacts stay byte-identical.
 
 - `html_preparation.py` implements the parser-independent preparatory part of
   M1-03A, not its legal structure engine or transfer gate. `prepare-html` reuses
@@ -158,7 +158,7 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   Preserve unknown content, note markers,
   tables, image resources and reference attributes. The sidecar maps opening-tag
   anchors, not complete text/provision spans; downstream adapters must still
-  retain exact text provenance. See `docs/HTML_PREPARATION.md` and its four-input
+  retain exact text provenance. See `docs/guides/HTML_PREPARATION.md` and its four-input
   preservation replay; passing these development controls does not satisfy G13.
 
 
@@ -176,7 +176,7 @@ Scope: extraction, cleanup, legal structure, canonical entities, review gates, a
   add `unresolved_structure` and appear in the report. Preserve previous
   outputs. Final native transfer evidence uses four fresh non-pilot acts,
   after frozen versions; earlier failed acts remain development controls.
-  See `docs/M1_03A_SHARED_STRUCTURE.md`; standalone editorial note scope, dated
+  See `docs/milestones/m1/03a/M1_03A_SHARED_STRUCTURE.md`; standalone editorial note scope, dated
   editions, PDF/OCR and other act families are not qualified by this evidence.
 
 - Closure correction, 14 October 2026: the earlier 2/4 failure remains retained;

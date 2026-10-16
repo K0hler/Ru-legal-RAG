@@ -1,65 +1,104 @@
-# Документация Legal RAG
+# Legal RAG documentation
 
-- [Shared PDF/OCR extraction](M1_04_PDF_OCR.md) — M1-04: настройка локального dots.mocr, сохранение и повторный импорт OCR, диагностическая компиляция PDF.
-- [М1-04: принятый объём и защита от повторов](M1_04_ACCEPTANCE_2026-10-16.md) — завершена инженерная задача: ограниченный retry печатей, согласованное исключение таблицы страницы 75, полный новый прогон 10 PDF / 103 страниц и неизменный saved replay. Юридический допуск не предоставлен.
-- [М1-04: первоначальные результаты проверки](M1_04_QUALIFICATION_2026-10-16.md) — два прогона 10 PDF / 103 страниц и исторические отказы до согласованных владельцем исключений. Страница 1 эталона подтверждена владельцем; тогда прошли 358 тестов.
-- [М1-04: точечные OCR-пробы](M1_04_REGION_PROBES_2026-10-16.md) — 30 запросов: широкие вырезы убрали повторы печатей, дата сохранена; полосы таблицы исправили шесть обычных минусов, но 13 составных знаков остались ошибочными. Рабочий пайплайн не менялся.
+Start with the [product requirements](overview/PRODUCT_REQUIREMENTS.md),
+[master plan](overview/LEGAL_RAG_MASTER_PLAN_2026.md) and current
+[M1 implementation plan](milestones/m1/M1_IMPLEMENTATION_PLAN.md).
+Completed engineering slices do not imply legal admission of editions.
+Experiment reports retain the results and limitations of their own dated runs.
 
-## Основные документы
+| Folder | Contents |
+|---|---|
+| [overview/](overview/) | Product scope, architecture, roadmap and terminology |
+| [policies/](policies/) | Source-admission policy |
+| [milestones/m0/](milestones/m0/) | Acquisition plan, reviews, gold metadata and frozen gate records |
+| [milestones/m1/](milestones/m1/) | Corpus plan and implementation records; parser history in `03a/`, OCR in `04/` |
+| [guides/](guides/) | Setup and usage of implemented diagnostic tools |
+| [research/](research/) | Literature, source research and earlier architecture proposals |
+| [plans/](plans/) | Individual implementation and experiment plans |
+| [assets/](assets/) | Diagrams, generators, validators, examples and offline viewers |
 
-- [М1-03А закрыта: официальный JSON без реконструкции](M1_03A_CLOSURE_2026-10-16.md) — принятое владельцем изменение PRD/G13, прямой перенос дерева и полного текста, 19/19 повторных переносов, исходные дефекты границ без исправлений, 341 тест и сохранённая совместимость v1. Следующий этап — M1-04.
+## Overview
 
-- [Наглядный разбор отказов официального JSON](assets/official-json-visual-review-20261016/index.html) — исходный текст, готовое дерево и точная причина отказа для шести последних документов; пример №384-ФЗ сравнивает цельную цитату и доразбор. Формальные проверки всех 6 514 узлов не обнаружили конфликтов ссылок/диапазонов; это не новая квалификация.
+- [Product requirements](overview/PRODUCT_REQUIREMENTS.md)
+- [Master plan and target architecture](overview/LEGAL_RAG_MASTER_PLAN_2026.md)
+- [Project atlas](overview/PROJECT_ATLAS.md) — dated project snapshot.
+- [Target pipeline](overview/PIPELINE.md)
+- [Glossary](overview/GLOSSARY.md)
 
-- [Нормализация официального JSON: прежние 6/6, новый набор 2/6](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) — исторический результат отключённого адаптера `/5`; новые результаты переноса исходного дерева описаны в закрытии М1-03А.
+## Policies
 
-- [Независимый перенос официального JSON: 2/6](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md) — шесть новых актов через М0, полные прогоны `official-structure/4`, точные причины четырёх отказов и открытый G13.
-- [PRD v0.2](PRODUCT_REQUIREMENTS.md) — итоги M0, границы обработки и допуска, проверяемые редакции пяти актов на 01.10.2026 и 01.01.2025 в M1 и критерии первого инкремента M0-M2.
-- [M0 implementation plan](M0_IMPLEMENTATION_PLAN.md) — tracer-bullet задачи, зависимости и gate первого этапа.
-- [M1 implementation plan](M1_IMPLEMENTATION_PLAN.md) — 16 шагов и 13 gate-критериев; M1-01–M1-04 закрыты в согласованных инженерных границах, следующий этап М1-05. Юридический пилот: пять актов на две даты.
-- [M1-01 fixture draft](M1_01_FIXTURE_DRAFT.md) — реализованные входные контракты, правила хеширования, текстовые координаты, HTML-отчёт и сохранённый повтор CLI.
-- [M1-02 input routes](M1_02_INPUT_ROUTES.md) — матрица десяти проверок, автономный пакет v2 и полученное 12.10.2026 подтверждение квалификации КС №19-П после 80-ФЗ; полнота источников и применимость остаются работой инженера, допуск редакций ещё не выдан.
-- [M1-02 closure](M1_02_CLOSURE.md) — закрытый этап подготовки входных маршрутов: десять строк, 27 новых официальных публикаций, обновлённый текст №491 и проверка 463 файлов; блокеры допуска редакций переданы следующим шагам M1.
-- [M1-03 native text](M1_03_NATIVE_TEXT.md) — полный диагностический AST 59-ФЗ: 18 статей, координаты JSON/HTML, учёт примечаний и повторяемость; юридический допуск остаётся отдельным.
-- [M1-03A — общий разбор структуры](M1_03A_SHARED_STRUCTURE.md) — четыре исходных HTML-документа и прежняя матрица переноса проходят; новая проверка 15.10.2026 на неизменённом компиляторе даёт 3/6. Поддержка произвольных документов не подтверждена.
-- [Интеграция официальной структуры М0 → М1](M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md) — сохранение HTML/JSON одной редакции, версионный вход М1, доразбор цитат и форм; семь полных технических прогонов и оставшиеся структурные блокеры.
-- [Независимый аудит структуры](M1_03A_STRUCTURE_AUDIT_2026-10-15.md) — реализованная сверка HTML и дерева, восстановление пропущенных надстрочных пунктов и сохранение цельных абзацев форм/поправок.
-- [Повторный анализ оставшихся фрагментов](M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md) — исходное предложение о двух обязательных пунктах 6² и допустимой гранулярности форм/цитат; последующая реализация описана отдельно.
-- [Резюме проблемы парсинга для следующего чата](M1_03A_PARSER_HANDOFF_2026-10-15.md) — исторический срез до выбора официальной разметки; последующая реализация описана в отчёте об интеграции.
-- [M0-07 pilot and review policy](M0_07_PILOT_AND_REVIEW_POLICY.md) — утверждённый пятый акт, ограничения источников и полномочия юридической проверки.
-- [M0-10 legal review](M0_10_LEGAL_REVIEW.md) — решения по пяти пилотным кандидатам, затраты времени и оставшиеся блокеры допуска.
-- [M0-11 gold set](M0_11_GOLD_SET.md) — 30 проверенных Legal Reviewer вопросов v2, фиксированный split 15/15 и одобренное локальное хранение.
-- [M0 gate report](M0_GATE_REPORT.md) — 70 критериев пунктов и 8 условий milestone; итог `pass`, М1 разрешён, плейсхолдеры времени М0-10 приняты владельцем проекта.
-- [Frozen M0 contracts](M0_CONTRACTS.md) — версии acquisition/handoff, воспроизведение и [хеши кода и fixtures](M0_CONTRACT_FREEZE.json).
-- [Анализ покрытия СанПиН 2.1.3684-21](SANPIN_2_1_3684_21_SOURCE_COVERAGE.md) — различия старого и нового банков, роль CNTD и цепочка официальных поправок.
-- [Сводный план и архитектура](LEGAL_RAG_MASTER_PLAN_2026.md) — главный проектный документ и этапы M0-M7.
-- [Политика официальных источников](LEGAL_SOURCES_POLICY.md) — правила допуска материалов в продуктовый корпус.
-- [Целевой пайплайн](PIPELINE.md) — краткая схема движения данных и границ доверия.
-- [Словарь](GLOSSARY.md) — термины канонической модели, поиска и проверки ответа.
-- [Атлас проекта](PROJECT_ATLAS.md) — текущая граница, статус компонентов и маршрут M0-M2.
+- [Official-source admission policy](policies/LEGAL_SOURCES_POLICY.md)
+- The M0 pilot-specific review policy is retained with the [M0 records](milestones/m0/M0_07_PILOT_AND_REVIEW_POLICY.md).
 
-## Диагностические инструменты
+## M0: acquisition and frozen contracts
 
-- [План независимого контроля структуры](plans/2026-10-15-independent-structure-audit.md) — сверка исходного HTML с деревом, критичность расхождений и ограниченное восстановление пропущенных пунктов.
-- [План проверки переноса с официальным JSON](plans/2026-10-16-official-json-transfer.md) — заранее выбранная шестёрка, неизменный парсер, независимые controls и сохранённый отрицательный результат G13.
+- [Implementation plan](milestones/m0/M0_IMPLEMENTATION_PLAN.md)
+- [Pilot and review policy](milestones/m0/M0_07_PILOT_AND_REVIEW_POLICY.md)
+- [Legal review decisions](milestones/m0/M0_10_LEGAL_REVIEW.md)
+- [Gold-set review](milestones/m0/M0_11_GOLD_SET.md) and [tracked split metadata](milestones/m0/M0_11_GOLD_SPLIT.json)
+- [Gate report](milestones/m0/M0_GATE_REPORT.md) and [assessment](milestones/m0/M0_GATE_ASSESSMENT.json)
+- [Frozen contracts](milestones/m0/M0_CONTRACTS.md) and [hash manifest](milestones/m0/M0_CONTRACT_FREEZE.json)
+- [Documentation relocation receipt](milestones/m0/DOCUMENTATION_RELOCATION_2026-10-16.json) — old/new paths and hashes; acceptance criteria and decisions are unchanged.
 
-- [План интеграции официальной структуры](plans/2026-10-15-official-structure-integration.md) — подтверждённый маршрут М0 → М1, совместимость и приёмочные проверки.
+The gate command remains `python docs/assets/generate_m0_gate.py`.
 
-- [Подготовка HTML](HTML_PREPARATION.md) — минимальный этап перед Docling/Dedoc: сохранение текста, индексов, примечаний, таблиц и изображений; карта исходной разметки и проверка четырёх документов. Юридическую вложенность строит общий модуль M1-03A.
-- [Парсер HTML ЖК РФ](HOUSING_HTML_PARSER.md) — реализованный source-aware профиль: дерево, исходные координаты, примечания, автономный отчёт и неизменяемые результаты; без юридического допуска.
-- [План парсера HTML](plans/2026-10-13-housing-html-parser.md) — границы реализации и проверяемые tracer bullets.
+## M1: corpus compilation
 
-## Исследования и прежние планы
+- [Implementation plan and milestone gates](milestones/m1/M1_IMPLEMENTATION_PLAN.md)
+- [M1-01: fixture draft and contracts](milestones/m1/M1_01_FIXTURE_DRAFT.md)
+- [M1-02: input routes](milestones/m1/M1_02_INPUT_ROUTES.md)
+- [M1-02: closure](milestones/m1/M1_02_CLOSURE.md)
+- [M1-03: native-text extraction](milestones/m1/M1_03_NATIVE_TEXT.md)
 
-- [Эксперимент с официальной структурной разметкой](M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md) — семь актов, 3 906 нормализованных узлов, полный технический учёт и подтверждённые пробелы цитат/форм; производственной интеграции нет.
-- [Parser options after Documind](M1_03A_PARSER_OPTIONS_2026-10-15.md) — seven verified official structure sidecars, exact retained-text checks, and an open-source shortlist with implementation limits; no production integration.
-- [Documind auto-schema experiment](M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md) — local full-document capacity checks and separate schema-generation controls; no production integration or legal admission.
-- [Анализ ARLC 2026](ARLC_2026_LEGAL_RAG_ANALYSIS.md)
-- [Обзор литературы Legal RAG 2026](legal_rag_2026_literature_review_ru.md)
-- [Исследовательские выводы](RESEARCH.md)
-- [Реестр источников](SOURCES.md)
-- [Разбор Index-RAG](review-index-rag.md)
-- [Предыдущий архитектурный план](LEGAL_AGENT_ARCHITECTURE_AND_PLAN.md)
+### M1-03A: legal structure and official JSON
 
-Диаграммы, их генераторы и промпты находятся в [`assets/`](assets/).
+Read the [accepted closure](milestones/m1/03a/M1_03A_CLOSURE_2026-10-16.md)
+for the current official-JSON contract. The earlier reports below preserve
+development failures, experiments and superseded approaches.
 
+- [Shared native structure engine](milestones/m1/03a/M1_03A_SHARED_STRUCTURE.md)
+- [Official structure integration](milestones/m1/03a/M1_03A_OFFICIAL_STRUCTURE_INTEGRATION_2026-10-15.md)
+- [Independent structure audit](milestones/m1/03a/M1_03A_STRUCTURE_AUDIT_2026-10-15.md)
+- [Structure-gap analysis](milestones/m1/03a/M1_03A_STRUCTURE_GAP_TRIAGE_2026-10-15.md)
+- [Parser handoff snapshot](milestones/m1/03a/M1_03A_PARSER_HANDOFF_2026-10-15.md)
+- [Parser options research](milestones/m1/03a/M1_03A_PARSER_OPTIONS_2026-10-15.md)
+- [Documind experiment](milestones/m1/03a/M1_03A_DOCUMIND_EXPERIMENT_2026-10-15.md)
+- [Official structure experiment](milestones/m1/03a/M1_03A_OFFICIAL_STRUCTURE_EXPERIMENT_2026-10-15.md)
+- [Official JSON transfer qualification](milestones/m1/03a/M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md)
+- [Official JSON normalization](milestones/m1/03a/M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md)
+- [Offline source/JSON/failure viewer](assets/official-json-visual-review-20261016/index.html)
+
+### M1-04: local PDF/OCR
+
+- [Setup and saved-result replay](milestones/m1/04/M1_04_PDF_OCR.md)
+- [Accepted engineering scope and recovery](milestones/m1/04/M1_04_ACCEPTANCE_2026-10-16.md) — current acceptance with explicit owner exceptions.
+- [Initial qualification](milestones/m1/04/M1_04_QUALIFICATION_2026-10-16.md) — historical failures before the agreed exceptions.
+- [Region probes](milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md) — bounded diagnostic experiments.
+
+## Tool guides
+
+- [Parser-independent HTML preparation](guides/HTML_PREPARATION.md)
+- [Housing Code HTML diagnostic parser](guides/HOUSING_HTML_PARSER.md)
+
+## Research and historical context
+
+- [Research map](research/RESEARCH.md)
+- [Legal RAG literature review, 2026](research/legal_rag_2026_literature_review_ru.md)
+- [ARLC 2026 analysis](research/ARLC_2026_LEGAL_RAG_ANALYSIS.md)
+- [Index-RAG review](research/review-index-rag.md)
+- [SanPiN 2.1.3684-21 source coverage](research/SANPIN_2_1_3684_21_SOURCE_COVERAGE.md)
+- [Historical source and chat register](research/SOURCES.md)
+- [Earlier architecture proposal](research/LEGAL_AGENT_ARCHITECTURE_AND_PLAN.md) — historical context, not the current implementation plan.
+
+## Individual plans
+
+- [Housing Code HTML parser](plans/2026-10-13-housing-html-parser.md)
+- [Independent structure audit](plans/2026-10-15-independent-structure-audit.md)
+- [Official structure integration](plans/2026-10-15-official-structure-integration.md)
+- [Official JSON transfer](plans/2026-10-16-official-json-transfer.md)
+- [Official JSON normalization](plans/2026-10-16-official-normalization.md)
+- [Local dots.mocr integration](plans/2026-10-16-m1-04-dotsmocr.md)
+
+Diagram sources and rendered assets remain together in [assets/](assets/);
+their [prompt record](assets/PROMPTS.md) is retained there too.
+Read [AGENTS.md](AGENTS.md) before changing this documentation tree.

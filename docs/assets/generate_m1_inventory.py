@@ -127,7 +127,7 @@ def build_inventory(archive: Path, search: dict) -> dict:
                 "processing_permission": {"path": "permissions/" + act_id + ".json", "status": "pending"},
                 "legal_admission": "unresolved", "legal_reviewer": REVIEWER,
                 "m0_decision": {"status": FINDINGS[act_id][0], "rationale": FINDINGS[act_id][1],
-                                "record": "docs/M0_10_LEGAL_REVIEW.md"},
+                                "record": "docs/milestones/m0/M0_10_LEGAL_REVIEW.md"},
                 "required_legal_evidence": QUESTIONS[act_id], "blockers": blockers,
                 "historical_rule": "Later snapshots are diagnostic leads only; never reverse them by guessed wording. Publication dates alone do not justify operation inclusion/exclusion.",
             })
