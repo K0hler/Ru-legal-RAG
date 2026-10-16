@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_official_import.py` covers the current v2 compiler route:
+  verbatim/unknown source types and fields, no quote/number recovery, immutable
+  replay, source-ordered children, range warnings (including a broken intervening
+  sibling), and the independent replay verifier's text-owner mutation. Older
+  normalization/completion/audit unit tests retain historical module behavior;
+  their reconstruction is no longer used by the v2 compiler. Missing sidecar
+  subdivisions stay source text under the owner's accepted granularity.
+
 - `corpus/test_official_normalization.py` covers named/ordinal upper parts,
   approval evidence, source ordinal parts, inline notes and proven/refused end
   normalization, including nontext gaps. Recovery tests include full letter-list

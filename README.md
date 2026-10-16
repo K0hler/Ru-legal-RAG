@@ -64,6 +64,12 @@ topology and image formulas retain their own source-bound structure. Native
 transfer qualification and unsupported shapes are recorded separately; these
 diagnostics do not admit dated legal editions.
 
+For paired official JSON-tree/HTML inputs, M1-03A now uses
+`official-json-import/1`: source rows, types, captions and hierarchy are retained
+without semantic reconstruction. Boundary defects stay visible and are never
+repaired automatically. The owner-approved contract, 19 retained-input replays
+and limits are in the [M1-03A closure](docs/M1_03A_CLOSURE_2026-10-16.md).
+
 ```powershell
 $env:PYTHONPATH = "src"
 python -m legal_rag.corpus compile --input data/m1/inputs/fixture.json --target-date 2025-01-01 --output-dir data/m1

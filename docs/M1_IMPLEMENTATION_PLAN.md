@@ -1,9 +1,9 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Revised:** 16 October 2026: recorded the failed independent transfer check for the subsequent official-JSON route. Historical native acceptance and the owner's 13 October parser-reuse correction remain separate; the plan retains 16 slices and 13 milestone gate criteria.
-**Status:** M1-01 through M1-03 remain implemented. **M1-03A is implemented and verified for the declared native grammar:** all four original HTML inputs pass the common compiler, and the native transfer matrix passes two non-pilot acts per family/format. The original-four acceptance remains mandatory and separate from transfer or preparation checks. Earlier failures and unsupported shapes remain explicit in the [evidence and limits](M1_03A_SHARED_STRUCTURE.md). M1-04–M1-15 remain planned; no pilot edition is legally accepted by this document.
-**Subsequent official-JSON route:** the historical `official-structure/4` cohort passed **2/6**. Version `/5` now passes all six as development regressions, but a different preselected frozen cohort passes only **2/6** full controls (**3/6** technical builds). Source paragraph units, titled word-number parts and subsections are unsupported; a quoted-article case exposes a separate control-reader limitation. G13 remains failed for this route. See the [current Russian report](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and the [retained `/4` report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). Historical native acceptance does not qualify this new version.
+**Revised:** 16 October 2026: the owner accepted official source granularity and requested disabling reconstruction and closing M1-03A. The plan retains 16 slices, 13 milestone gates and ten legal admissions; the official-JSON acceptance contract is explicitly revised below.
+**Status:** M1-01 through M1-03A are complete within their diagnostic engineering scope. M1-03A's current paired-JSON route imports the source tree verbatim; historical native grammar evidence remains separate. M1-04–M1-15 remain planned. No pilot edition is legally accepted by this document. Current decision/evidence: [M1-03A closure](M1_03A_CLOSURE_2026-10-16.md).
+**Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](PRODUCT_REQUIREMENTS.md), [source policy](LEGAL_SOURCES_POLICY.md), [master plan](LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
@@ -86,6 +86,8 @@ The shared result is our own versioned artifact, not a Docling object in the leg
 
 ### Shared Legal Structure And Transfer Checks
 
+**Owner-approved exception, 16 October 2026:** paired official JSON-tree + same-edition HTML uses `official-json-import/1`. Copy source rows/types/captions/levels/ranges, preserve all text/media and bind opaque source addresses. Do not infer canonical legal numbers, rebuild quoted articles/forms, recover omitted nodes or apply the reconstruction audit. Unknown source types are supported as source data. Missing/reversed/crossing ranges stay unchanged with visible integrity findings and review blockers; uncertain branches do not provide precise text ownership. The owner accepts source granularity. Repeated retained-input preservation controls establish this contract; they are not fresh heldout qualification. The reconstruction/heldout protocol below applies to formats that require inferred structure, including future PDF/OCR work. See the [PRD amendment](PRODUCT_REQUIREMENTS.md) and [closure](M1_03A_CLOSURE_2026-10-16.md).
+
 Source-format adapters produce `text-extraction/1`; the shared structure engine consumes that artifact and an explicit act-type profile. Keep JSON/HTML decoding and PDF/OCR outside legal numbering and parent selection. Reuse ordered traversal, addresses, source mappings, accounting, exceptions and deterministic serialization across profiles. Profile rules describe a document family, never a particular act number, date, title, filename or source hash.
 
 Extract identity fields from the document and compare them with the evidence-bound input claim before assigning addresses. The expected identity is input data, not a production-code constant. A new act within a supported family/format must use the same versioned engine and profile without code changes, act-specific configuration or per-document correction rules. Source-format differences require an explicit adapter, not another legal parser for each act. Unsupported or ambiguous content remains visible and prevents a claim of supported coverage.
@@ -153,7 +155,7 @@ AFK means engineering can implement and verify the slice independently; it never
 
 Start M1-02 as soon as M1-01 finishes; missing inputs for one act do not prevent independent diagnostic engineering for another permitted input. A dependency on that inventory requires the verified route/permission for the act being processed, not resolution of unrelated rows. Record unresolved matrix rows instead of pretending every input route is complete. Implement and commit one engineering slice before starting the next; the table is not authorization to spawn agents or parallel development threads.
 
-After the completed M1-03, implement M1-03A before extending legal structure to another pilot act. M1-04 is physical extraction qualification and can proceed independently of this parser dependency; its output must meet the shared extraction contract. Later acts extend reusable profiles only for new structural classes, with transfer checks in the owning slice.
+M1-03A is closed with the owner-approved official-tree import contract. The next slice is M1-04, physical PDF/OCR extraction qualification. Later slices reuse paired official trees where available; formats requiring inferred structure extend qualified profiles and keep their transfer checks.
 
 For each completed slice: update its actual status here with the check and retained artifact path, update the nearest applicable `AGENTS.md`, run focused acceptance/regression checks, and make a focused commit on `main`. Never mark legal acceptance from an engineering test. Keep the plan rolling; change a later slice only when observed evidence warrants it.
 
@@ -215,13 +217,20 @@ Two independent full builds are byte-identical; a same-directory repeat is
 retained text. The source archive, input permission, original blockers and
 frozen fixture/handoff remain unchanged.
 
-### M1-03A: Shared Legal Parser And Native Transfer Checks
+### M1-03A: Official Tree Import And Native Structure
 
-**Type:** AFK plus structural review. **Dependencies:** M1-03, existing Housing Code HTML implementation and permitted native validation inputs. **Status:** implemented and verified on 14 October 2026 for the declared native grammar. All four original HTML inputs pass full compiler acceptance; the final matrix passes two independent non-pilot acts per family/format. The earlier premature subset closure and failed transfer shapes remain retained. Evidence and explicit limitations: [shared structure report](M1_03A_SHARED_STRUCTURE.md).
+**Type:** AFK plus structural review. **Dependencies:** M1-03, existing Housing Code HTML implementation and permitted native validation inputs. **Status:** closed on 16 October 2026 under the owner-approved source-preserving contract. Evidence: [closure](M1_03A_CLOSURE_2026-10-16.md). The 14 October native grammar acceptance and all later failed cohorts remain historical evidence in the [shared structure report](M1_03A_SHARED_STRUCTURE.md) and subsequent reports.
 
-Replace the act-bound structure paths with one engine and reusable native act-family profiles. The mandatory initial acceptance set is all four retained HTML inputs: 59-FZ, Housing Code, Government Resolution No. 354 and Government Resolution No. 491. Keep source-specific extraction and existing diagnostic commands as adapters. Read number/date/title from source evidence and the input claim; retain identity-conflict guards without restricting production code to 59-FZ or 188-FZ. Preserve earlier immutable artifacts; changed parser versions create new drafts rather than rewriting old results.
+Current paired-source path: acquire and bind official HTML + structure JSON from the same edition, then import source nodes without semantic reconstruction. Source `unit`, `caption`, `lvl`, IDs and all additional fields remain unchanged. The initial four inputs (59-FZ, Housing Code, No.354 and No.491) remain mandatory regression inputs. Identity is evidence-bound input data, never an act-specific production selector. The previous native-only route stays compatible, and earlier drafts remain immutable.
 
-Implementation sequence:
+Final implementation:
+- [x] Disable the semantic adapter in the v2 compiler; import the official tree with `official-json-import/1`.
+- [x] Preserve raw source rows, text/media, locators, parent/order relationships, identity, same-edition binding and processing permission. Accept unrecognized types and source granularity.
+- [x] Record source-boundary defects without repairing them or assigning precise ownership to affected branches.
+- [x] Replay the retained official cohorts twice, verify source/text/media independently and preserve all old outputs; confirm four v1 manifests remain byte-identical.
+- [x] Run the complete test suite, M0 gate and review; record the explicit PRD/G13 contract change and closure evidence.
+
+Historical native-engine implementation sequence (retained):
 - [x] Add focused regressions in `tests/legal_rag/corpus/test_structure.py`: two different consistent act identities use the same profile; a conflicting identity stays unresolved; section/chapter/article/part/item numbering and superscripts preserve parents and source spans. Demonstrate the current act-bound failure before replacing it.
 - [x] Introduce the common traversal/profile entry point in `src/legal_rag/corpus/structure.py`; adapt `native_text.py`, `housing_html.py` and `compiler.py` only where necessary to delegate structure. Keep profile rules together until a real separation is needed; no plugin framework, per-act modules or new runtime dependency.
 - [x] Re-run retained 59-FZ and Housing Code inputs with the new version. Check semantic structure/locator equivalence, every source token/region, notes, unsupported content and immutable-output behavior; old IDs/hashes need not match a new parser version, but each version must repeat deterministically.
@@ -230,13 +239,13 @@ Implementation sequence:
 - [x] Run corpus regressions, frozen source/handoff checks and the M0 gate; update actual scope/status and nearest `AGENTS.md`, then commit the completed slice on `main`. Final evidence: 189 tests, Ruff, M0 78/78; `m1-03a-resolution-transfer-v5` passes the six-act native matrix.
 
 Acceptance:
-- **All four original retained HTML documents pass full parsing through the common compiler.** A missing/unsupported input, wrong parent/address, lost content or unresolved critical structure keeps M1-03A incomplete, regardless of unit-test or additional-transfer results.
-- One engine handles the three declared native families across the two saved HTML fields; no act number/date/title/hash in production code selects or permits a particular document. Identity and source-format validation still reject conflicts and unsupported inputs.
-- Existing full native inputs retain reviewed structural behavior, original evidence and all admission blockers. Diagnostic Housing Code parsing does not become a dated or legally admitted edition.
-- All declared native family/format combinations pass the independent two-act transfer protocol without code changes, document-specific rules or unresolved critical structure. Synthetic fixtures supplement, never replace, the real-document runs.
-- New parser/profile versions are explicit; repeated runs match; original archives, previous drafts and frozen M0 evidence remain intact.
+- Paired official JSON/HTML imports preserve every source row/type/caption/level, parent/order relationship, all text/media and evidence coordinates; the original four documents are included in the full retained regression set.
+- No semantic reconstruction, type whitelist, inferred numbering, quote/form subdivision, automatic boundary correction or per-act production rules run on this route. Coarser source granularity is accepted by the owner.
+- Actual source-integrity defects remain visible with unchanged source records and review blockers. A flagged branch is not a verified precise citation target. Unknown source types alone do not create defects.
+- Binding, identity, permissions, determinism, immutable archives/old outputs and v1 compatibility pass. Diagnostic success never grants dated legal admission.
+- Earlier parser/reader failures stay failed historical results. New-contract retained controls do not claim fresh heldout transfer; future inferred-structure formats retain their own G13 protocol.
 
-Verify: focused shared-profile tests, existing native/Housing Code corpus tests, retained full-input replays, source/handoff regressions, `python docs/assets/generate_m0_gate.py` and the hash-bound transfer report. PDF/OCR and additional structure families remain the responsibility of M1-04/M1-06/M1-09.
+Verify: `test_official_import.py`, all corpus/source/handoff tests, `docs/assets/validate_official_import.py <new-output-directory>`, four v1 manifest comparisons, Ruff and `python docs/assets/generate_m0_gate.py`. PDF/OCR and additional inferred-structure families remain the responsibility of M1-04/M1-06/M1-09.
 
 ### M1-04: Qualify And Retain Shared PDF/OCR
 
@@ -316,7 +325,7 @@ Verify: reconstruction/temporal negative tests, two independent rebuilds per tar
 
 **Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03A, M1-04, M1-08. **Status:** planned.
 
-Reuse the native government-resolution profile and `doctext` JSON/HTML adapter required for M1-03A acceptance; extend them for any additional source formats required here. Reuse common extraction/operation behavior and compile a suitable official snapshot or reviewed reconstruction for each date; No. 354 is an input identity, not a parser rule.
+Prefer the accepted same-edition official JSON-tree/HTML import where available. Use the retained native government-resolution profile only for inputs requiring inferred structure and qualify any new formats in this slice. Reuse common extraction/operation behavior and compile a suitable official snapshot or reviewed reconstruction for each date; No.354 is an input identity, not a parser rule.
 
 Acceptance:
 - Separate approving act, Rules and annex namespaces; preserve the complete text, tables, notes and ordering. Add focused golden-tree cases for newly observed structure only.
@@ -348,7 +357,7 @@ verified; keep the original 01.09.2025 candidate rejected/stale. See
 
 **Type:** AFK plus HITL. **Dependencies:** M1-02, M1-03A, M1-08. **Status:** planned.
 
-Complete the remaining four act/date checks using the shared code and federal-law profiles accepted in M1-03A. Reuse their section/chapter/article/part behavior without Housing Code/59-FZ identity constants. Prefer proved official historical snapshots; use the reviewed operation path only where needed. The existing standalone Housing Code diagnostic parser is prior engineering evidence, not completion of these dated-edition checks.
+Complete the remaining four act/date checks using the accepted official JSON-tree/HTML route where available, or qualified native profiles for inputs requiring inferred structure. No Housing Code/59-FZ identity constants select production behavior. Prefer proved official historical snapshots; use the reviewed operation path only where needed. Diagnostic structure is prior engineering evidence, not completion of these dated-edition checks.
 
 Acceptance:
 - Complete texts, numbering (including inserted article numbers), nested provisions, notes and references preserve identity and source locators. New parser rules have small tests and retained full-text validation.
@@ -415,7 +424,7 @@ Implement `docs/assets/generate_m1_gate.py`, tracked criterion/contract records 
 
 Acceptance:
 - Every criterion below is rendered with `pass`, `fail` or `unresolved`, evidence references/hashes and a rationale. Missing/corrupt evidence, a missing act/date, scope mismatch or legal blocker prevents `pass`; exit `2` blocks M2.
-- Checks bind the report to input/schema/extractor/parser/model versions, exact approved build and review hashes. Negative tests demonstrate that deleting a mandatory review or altering an asset invalidates acceptance; missing/failed transfer evidence, pilot/development acts reused as validation and parser/profile-version drift also reject G13.
+- Checks bind the report to input/schema/extractor/parser/model versions, exact approved build and review hashes. Negative tests demonstrate that deleting a mandatory review or altering an asset invalidates acceptance. G13 validates the current route-specific contract: missing preservation evidence rejects official-tree import; missing/failed heldout evidence, development acts relabelled as heldout, or parser/profile drift rejects inferred-structure qualification.
 - Closed gold content is not deserialized; if continuity requires its hash, read bytes only. M1 does not run a closed retrieval evaluation without a retrieval system.
 - M2 receives only `corpus-build/1` approved entities/provisions, evidence locators, supported date/scope and review references. No database or retrieval implementation is added to prove this handoff.
 - Update actual component status and plan completion after evidence passes. Owner records milestone acceptance; a request to reduce scope requires an explicit earlier PRD/criterion change, not a post-hoc waiver.
@@ -470,7 +479,7 @@ Text accounting has two layers: every source page/region/text node is located or
 
 ## 7. M1 Gate Criteria
 
-These thirteen criteria operationalize PRD section 10 without lowering its scope. G13 records the owner-approved 13 October parser-transfer requirement; it does not enlarge the ten legal admission checks. M1-15 expands the criteria into evidence checks, not new discretionary quality thresholds.
+These thirteen criteria operationalize PRD section 10. G13 records the 13 October parser-transfer requirement and the explicit owner-approved 16 October official-tree contract amendment; the ten legal admission checks are unchanged. M1-15 expands the current criteria into evidence checks, not new discretionary quality thresholds.
 
 | ID | Criterion | Principal evidence/slices |
 |---|---|---|
@@ -486,7 +495,7 @@ These thirteen criteria operationalize PRD section 10 without lowering its scope
 | G10 | Self-contained review report supports independent text/operation/date/evidence inspection | Offline report checks, reviewer record and escaping tests |
 | G11 | Actual compilation/OCR, review and exception costs are measured, with run context and limitations | M1-04, M1-13, M1-14 measurement records |
 | G12 | Bundle input is versioned/replayable; shared extraction replaces temporary OCR and preserves M0-10A behavior | Contract fixtures, discovery replay, reviewed freeze change and M0 reassessment |
-| G13 | One shared parser with reusable federal-law, code, government-resolution and sanitary-rules profiles passes two distinct non-pilot acts per declared family/format without code changes, act-specific rules or unresolved critical structure | M1-03A, M1-06, M1-09, M1-11, M1-14; final-version `parser-transfer-report/1`, independent structural controls and repeated full-document runs |
+| G13 | Paired official JSON/HTML preserves the source tree/text/media with bound locators, visible integrity defects and repeatable builds under the owner-approved 16 October contract. Formats requiring inferred structure pass two distinct non-pilot acts per declared family/format without code changes, act-specific rules or unresolved critical structure | M1-03A closure and `official-import-replay/1`; M1-06, M1-09, M1-11, M1-14 retain final-version transfer reports for inferred structure. The milestone-wide gate remains open until those slices and final pilot checks finish |
 
 A missing required source, unresolved rights, unknown legal date/condition, unsupported critical structure/edit, disputed legal decision or absent reviewer evidence blocks the relevant check and therefore M1 acceptance. Engineering tasks can progress independently, but no partial success is called a complete five-act pilot.
 

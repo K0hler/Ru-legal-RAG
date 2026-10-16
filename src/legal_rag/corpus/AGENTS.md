@@ -1,5 +1,21 @@
 # Corpus compilation module
 
+- Owner-approved direction, 16 October 2026: `corpus-input/2` uses
+  `official_import.py` (`official-json-import/1`), not `build_official_tree`.
+  Preserve every raw source row, opaque ID, unit, caption and level; addresses
+  identify source nodes, not inferred legal citation numbers. No semantic type
+  whitelist, number reconciliation, quote completion, sibling recovery or HTML
+  marker audit runs on this route. The reconstruction modules below are retained
+  historical tools, not compiler entry points. V1 native parsing is unchanged.
+- Import source boundaries verbatim. Missing/reversed/crossing ranges produce
+  `source_integrity` findings and a review blocker, never automatic repairs;
+  affected branches cannot supply precise text ownership. Keep complete text
+  and media plus source order, including when a source range is unresolved.
+  `legal-ast/2` source units carry `source_record` and nullable `source_span`;
+  `kind=source_unit` and null canonical numbers are deliberate source granularity.
+  Same-edition binding, identity, permission and hashes remain mandatory.
+  Closure evidence/limits are in `docs/M1_03A_CLOSURE_2026-10-16.md`.
+
 - `official-structure/5` handles named/word-number upper code parts without
   invented numbers, approved attachment titles proven by a matching HTML title
   and approval stamp, inline normative notes and lettered point captions.

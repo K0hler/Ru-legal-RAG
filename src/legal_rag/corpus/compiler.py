@@ -354,12 +354,12 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path) -> dict:
             extraction = extract_native(asset, raw[asset["sha256"]])
             extractions.append(extraction)
             if "structure_bundle" in manifest:
-                from .official_structure import build_official_tree
+                from .official_import import import_official_tree
 
                 binding = manifest["structure_bundle"]
                 field = asset["evidence"]["locator"].removeprefix("$.").removeprefix("/")
                 html = json.loads(raw[asset["sha256"]])[field]
-                trees.append(build_official_tree(asset, extraction, html, raw[binding["structure_sha256"]],
+                trees.append(import_official_tree(asset, extraction, html, raw[binding["structure_sha256"]],
                                                 binding["structure_sha256"], binding["source_system"]))
             else:
                 trees.append(native_tree(asset, extraction))
@@ -457,12 +457,14 @@ def _report(manifest: dict, draft: dict) -> str:
     for tree in draft["content"]["trees"]:
         asset = next(asset for asset in manifest["assets"] if asset["sha256"] == tree["source_asset_sha256"])
         blocks = sorted([*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]],
-                        key=lambda block: block["source_span"]["char_start"])
+                        key=lambda block: (block.get("source_span") or {}).get("char_start", -1))
         document_rows, excluded_rows = [], []
         excluded_ids = {block["block_id"] for block in tree["excluded_blocks"] if "block_id" in block}
         for block in blocks:
-            row = ("<tr><td>" + escape(block.get("address", block.get("reason", ""))) + "</td><td>"
-                   + escape(block["source_span"]["locator"]) + "</td><td><pre>" + escape(block["text"])
+            label = block.get("caption", "")
+            row = ("<tr><td>" + escape(block.get("address", block.get("reason", "")))
+                   + ("<pre>" + escape(label) + "</pre>" if label else "") + "</td><td>"
+                   + escape((block.get("source_span") or {}).get("locator", "Границы источника не разрешены")) + "</td><td><pre>" + escape(block["text"])
                    + "</pre>" + ("<details><summary>Original source text and HTML</summary><pre>"
                      + escape(block["original_text"]) + "</pre><pre>" + escape(block["original_html"])
                      + "</pre></details>" if "original_html" in block else "") + "</td></tr>")
@@ -475,6 +477,10 @@ def _report(manifest: dict, draft: dict) -> str:
             + escape(region["original_html"]) + "</pre></details>"
             for region in tree.get("unresolved_regions", []))
         audit_html = ""
+        if integrity := tree.get("source_integrity"):
+            audit_html = ("<h3>Целостность официального дерева</h3><p>Структура перенесена из источника; "
+                "смысловая реконструкция отключена. Замечания к границам не исправляются автоматически.</p><pre>"
+                + escape(json.dumps(integrity, ensure_ascii=False, indent=2)) + "</pre>")
         if audit := tree.get("structure_audit"):
             findings = "".join("<tr>" + "".join("<td>" + escape(str(value)) + "</td>" for value in (
                 f["severity"], f["code"], f.get("html_id", f.get("address", "")), f.get("excerpt", ""),

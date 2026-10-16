@@ -1,5 +1,10 @@
 # M1-03A: shared native legal structure
 
+**Superseded for paired official JSON/HTML on 16 October 2026:** the owner accepted
+source granularity and disabled reconstruction. See the current
+[M1-03A closure and revised acceptance](M1_03A_CLOSURE_2026-10-16.md).
+The native-only evidence and failed expansions below remain historical results.
+
 **Status: implemented and verified for the declared native grammar, 14 October 2026.**
 All four original retained HTML documents pass the complete compiler path, and
 the native transfer matrix passes two non-pilot acts per family/format. These

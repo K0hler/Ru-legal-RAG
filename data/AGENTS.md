@@ -1,5 +1,12 @@
 # Local data instructions
 
+- `m1/pilot_runs/official-source-import-20261016-v3/` is the source-preserving
+  M1-03A closure replay on the three retained cohorts (not fresh heldout acts).
+  Preserve attempts v1/v2, code/input freezes, both builds and repeat receipts.
+  Raw rows/ranges stay unchanged, including source defects in the older cohort.
+  Owner acceptance changes the official-JSON contract; it does not turn earlier
+  semantic-parser failures into passing qualification or admit legal editions.
+
 - `m1/pilot_runs/official-json-qualification-20261016-v1/` is the distinct
   pre-body selected `/5` cohort after commit `3b2c6c6`: all six acquired with
   correctly attributed diagnostic-selected-cohort/2 wrappers and bundle/v2.

@@ -121,16 +121,18 @@ def test_report_is_deterministic_and_hashes_the_independent_candidates():
     assert len(first["structure_audit"]["candidates_sha256"]) == 64
 
 
-def test_compiler_report_shows_audit_findings(tmp_path):
+def test_compiler_report_shows_source_integrity_instead_of_semantic_audit(tmp_path):
     from legal_rag.corpus.compiler import compile_input
     from test_official_structure import prepare
 
     path, _ = prepare(tmp_path / "archive")
     result = compile_input(path, "2026-10-15", tmp_path / "derived")
-    assert "Независимая проверка структуры" in Path(result["report"]).read_text(encoding="utf-8")
+    report = Path(result["report"]).read_text(encoding="utf-8")
+    assert "Целостность официального дерева" in report
+    assert "Независимая проверка структуры" not in report
 
 
-def test_missing_html_heading_blocks_full_compiler_readiness(tmp_path, monkeypatch):
+def test_heading_omitted_from_sidecar_stays_verbatim_without_reconstruction(tmp_path, monkeypatch):
     import json
 
     from legal_rag.corpus.compiler import compile_input
@@ -141,9 +143,11 @@ def test_missing_html_heading_blocks_full_compiler_readiness(tmp_path, monkeypat
     path, _ = fixtures.prepare(tmp_path / "archive")
     result = compile_input(path, "2026-10-15", tmp_path / "derived")
     draft = json.loads(Path(result["draft"]).read_bytes())
-    assert "unresolved_structure" in result["blockers"]
-    assert draft["content"]["trees"][0]["structure_audit"]["critical_count"] > 0
-    assert "unmatched_marker" in Path(result["report"]).read_text(encoding="utf-8")
+    tree = draft["content"]["trees"][0]
+    assert "unresolved_structure" not in result["blockers"]
+    assert not tree["source_integrity"]["findings"]
+    assert "Глава XIV. Пропущена источником" in " ".join(n["text"] for n in tree["nodes"])
+    assert not any(n["kind"] == "chapter" for n in tree["nodes"])
 
 
 def test_independent_inventory_sees_named_parts_and_letter_indices():
