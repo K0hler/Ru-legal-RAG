@@ -79,6 +79,8 @@ The [owner-scoped acceptance](docs/milestones/m1/04/M1_04_ACCEPTANCE_2026-10-16.
 the source-bound page-75 table are excluded from OCR quality grading; fresh
 inference is versioned and saved replay is deterministic. Inferred legal PDF
 hierarchy remains unqualified.
+The planned [M1-04A OCR structure parser](docs/plans/2026-10-17-m1-04a-ocr-structure.md)
+adds legal hierarchy reconstruction and independent experiments on additional official acts.
 
 ```powershell
 $env:PYTHONPATH = "src"

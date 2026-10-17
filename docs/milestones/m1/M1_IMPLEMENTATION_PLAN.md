@@ -1,11 +1,12 @@
 # M1 Implementation Plan: reviewable, dated legal editions
 
 **Prepared:** 2 October 2026.
-**Revised:** 16 October 2026: the owner accepted official source granularity and requested disabling reconstruction and closing M1-03A. The plan retains 16 slices, 13 milestone gates and ten legal admissions; the official-JSON acceptance contract is explicitly revised below.
-**Status:** M1-01 through M1-04 are complete within their diagnostic engineering scope. M1-03A imports the paired official tree verbatim. M1-04 has bounded Picture recovery and owner-accepted exclusions for round-seal text accuracy and the source-bound page-75 table; fresh LLM OCR is versioned, saved replay deterministic. M1-05–M1-15 remain planned. No pilot edition is legally accepted by this document. Evidence: [M1-03A closure](03a/M1_03A_CLOSURE_2026-10-16.md), [M1-04 acceptance](04/M1_04_ACCEPTANCE_2026-10-16.md).
+**Revised:** 17 October 2026: the owner requested M1-04A, a universal OCR structure parser with existing-file analysis and additional official experiment inputs. The plan has 17 slices, 13 milestone gates and ten legal admissions. The 16 October owner-approved official-JSON import contract remains unchanged.
+**Status:** M1-01 through M1-04 are complete within their diagnostic engineering scope. M1-03A imports the paired official tree verbatim. M1-04 has bounded Picture recovery and owner-accepted exclusions for round-seal text accuracy and the source-bound page-75 table; fresh LLM OCR is versioned, saved replay deterministic. M1-04A and M1-05–M1-15 remain planned; M1-04A is next. No pilot edition is legally accepted by this document. Evidence: [M1-03A closure](03a/M1_03A_CLOSURE_2026-10-16.md), [M1-04 acceptance](04/M1_04_ACCEPTANCE_2026-10-16.md).
 **Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](03a/M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](03a/M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](../../overview/PRODUCT_REQUIREMENTS.md), [source policy](../../policies/LEGAL_SOURCES_POLICY.md), [master plan](../../overview/LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](../m0/M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
+On 17 October the owner-requested [M1-04A](https://trello.com/c/fX6dQ9HM) was added with eight acceptance items; M1-06's dependency/scope and G03/G05/G13 evidence ownership were synchronized. This is the seventeenth slice card, still planned.
 **Entry check:** the M0 gate was regenerated while preparing this plan: `pass`, 78/78 criteria, no evidence problems. Its recorded acceptance date remains 1 October 2026.
 
 ## 1. Outcome And Scope
@@ -106,7 +107,7 @@ For every declared family/source-format combination, retain full diagnostic runs
 
 Validate full text/region accounting, extracted identity, numbering, sibling order, parent relationships, tables/annexes where supported, unresolved content and source locators against independently prepared structural controls. An output with all text unresolved, a false address/parent or an unresolved critical structure cannot pass. Run each full input twice with identical versions and compare content IDs/hashes. If a failure requires a rule change, retain the failed run, add a regression and use two other reserved acts to validate the new version; do not relabel development examples as transfer evidence.
 
-Record the matrix of supported families/formats and validation assets in `parser-transfer-report/1`, with version/hash bindings, structural-control results, exceptions, repeat comparisons and explicit limitations. M1-03A owns the native profiles needed for all four original HTML inputs, including government resolutions. M1-06 and M1-09 extend qualification for the additional source formats and dated compilation in their scope. M1-14 reruns the complete matrix, and M1-15 rejects missing or failed mandatory evidence under G13. Engineering transfer success never grants legal admission.
+Record the matrix of supported families/formats and validation assets in `parser-transfer-report/1`, with version/hash bindings, structural-control results, exceptions, repeat comparisons and explicit limitations. M1-03A owns the accepted native official-tree import route. M1-04A owns reusable OCR hierarchy reconstruction and its initial independent transfer checks. M1-06 consumes it for full SanPiN coverage; M1-09/M1-11 extend family/format qualification where needed. M1-14 reruns the complete matrix, and M1-15 rejects missing or failed mandatory evidence under G13. Engineering transfer success never grants legal admission.
 
 ### Minimal Persistent Contracts
 
@@ -151,8 +152,9 @@ AFK means engineering can implement and verify the slice independently; it never
 | M1-03 | AFK | M1-01; permitted text input from M1-02 | Full 59-FZ diagnostic AST with native locators |
 | M1-03A | AFK + structural review | M1-03; permitted native validation inputs | Shared structure engine, all four original native HTML inputs and native profile transfer evidence |
 | M1-04 | AFK + reviewed transcription | M1-01; permitted PDF inputs from M1-02 | Qualified shared PDF/OCR extraction and runtime record |
+| M1-04A | AFK + corpus experiments + structural review | M1-03A, M1-04; permitted diagnostic inputs | Reusable OCR legal hierarchy, additional official corpus and independent transfer matrix |
 | M1-05 | AFK + contract review | M1-04 | Discovery migration, M0 compatibility replay |
-| M1-06 | AFK + structural review | M1-03A, M1-04; permitted SanPiN/validation inputs | Sanitary-rules profile, full trees and transfer evidence |
+| M1-06 | AFK + structural review | M1-03A, M1-04A; permitted SanPiN inputs | Full SanPiN/patch trees using the qualified OCR parser and reviewed coverage |
 | M1-07 | HITL | M1-02, M1-06 | Reviewed SanPiN operations and date evidence |
 | M1-08 | AFK | M1-07 | SanPiN reconstruction for both target dates |
 | M1-09 | AFK + HITL | M1-02, M1-03A, M1-04, M1-08 | Government profile/transfer evidence, No. 354 dated drafts |
@@ -165,7 +167,7 @@ AFK means engineering can implement and verify the slice independently; it never
 
 Start M1-02 as soon as M1-01 finishes; missing inputs for one act do not prevent independent diagnostic engineering for another permitted input. A dependency on that inventory requires the verified route/permission for the act being processed, not resolution of unrelated rows. Record unresolved matrix rows instead of pretending every input route is complete. Implement and commit one engineering slice before starting the next; the table is not authorization to spawn agents or parallel development threads.
 
-M1-03A is closed with the owner-approved official-tree import contract. M1-04 is closed in the owner-approved diagnostic OCR scope; M1-05 is next. Later slices reuse paired official trees where available; formats requiring inferred structure extend qualified profiles and keep their transfer checks.
+M1-03A is closed with the owner-approved official-tree import contract. M1-04 is closed in the owner-approved diagnostic OCR scope; the owner requested M1-04A next. M1-05 remains independently eligible from M1-04; its extraction-only workflow does not need a legal hierarchy. Later slices reuse paired official trees where available and consume/extend M1-04A for inferred OCR structure.
 
 For each completed slice: update its actual status here with the check and retained artifact path, update the nearest applicable `../../AGENTS.md`, run focused acceptance/regression checks, and make a focused commit on `main`. Never mark legal acceptance from an engineering test. Keep the plan rolling; change a later slice only when observed evidence warrants it.
 
@@ -289,6 +291,22 @@ versioned fresh inference. A new 10-PDF/103-page run and identical saved replay
 pass the revised diagnostic scope. Prior failed runs/measurements remain history;
 unknown human-review time remains a milestone G11 measurement limit.
 
+### M1-04A: Universal OCR Structure Parser
+
+**Type:** AFK plus corpus experiments and structural review. **Dependencies:** M1-03A, M1-04 and permitted diagnostic inputs. **Status:** planned at the owner's request on 17 October 2026; next slice, not implemented.
+
+Build reusable legal hierarchy reconstruction over `text-extraction/1`: approving act, approved text, section/chapter/article/point/subpoint, annex, table and footnote ownership where supported. Inspect all retained M1-04 files and current diagnostic parser failures before extending the shared engine. Keep physical structure, exact text/source spans and unresolved findings; OCR field names and individual act identities must not drive legal rules. Detailed task and execution checks: [M1-04A plan](../../plans/2026-10-17-m1-04a-ocr-structure.md).
+
+Acceptance:
+- Inventory and parse all ten retained PDFs / 103 pages through saved extraction. Existing files are development/regression data, never newly held-out evidence.
+- Acquire an initial six additional distinct official non-pilot acts through `sources`: two development acts and four reserved acts, two per initial family (sanitary rules with an approving act and government resolutions with approved texts). Bind origin, hashes, processing permission and split; extend the pool for further families or rule changes.
+- Deliver a shared parser/profile route into `legal-ast/2` with correct numbers, parents/order, cross-page continuation and annex/table/footnote ownership. Retain physical `document_tree`, exactly-once accounting and source locators. Unsupported/ambiguous structures remain visible and cannot pass as supported hierarchy.
+- Preserve the M1-04 exclusions for round-seal text accuracy and the source-bound page-75 table quality. Keep all content/topology and source links; those exceptions do not excuse incorrect hierarchy or missing text.
+- Freeze parser/profile/extraction/control versions and pass two independent full non-pilot acts per declared family/OCR-format combination against independent structural controls. Record `parser-transfer-report/1`, genuine failures and actual structural review; tuning on reserved acts requires new reserved evidence.
+- Repeat full compilation of the same saved inputs with identical IDs/hashes and unchanged replay; keep fresh OCR versions separate. Verify model-neutral normalized-input behavior and unchanged official-JSON/v1 regressions. Completion requires evidence-bound qualification, not merely removing `pdf_structure_unqualified`.
+
+Verify: authored OCR-structure/negative tests, complete retained baseline and additional-corpus compiler runs, independent parent/number/source controls, reviewed structure examples, full default tests, Ruff and passing M0 gate. No downloads or parser implementation occurred while adding this task.
+
 ### M1-05: Replace Discovery's Temporary OCR
 
 **Type:** AFK plus reviewed contract change. **Dependencies:** M1-04. **Status:** planned.
@@ -306,16 +324,16 @@ Verify: source tests, both discovery stages on retained official PDFs, frozen ca
 
 ### M1-06: Full SanPiN Base And Amendment Structure
 
-**Type:** AFK plus structural review. **Dependencies:** M1-03A, M1-04 and permitted pilot/validation inputs. **Status:** planned.
+**Type:** AFK plus structural review. **Dependencies:** M1-03A, M1-04A and permitted pilot inputs. **Status:** planned.
 
-Compile the original and amendment texts with the shared engine and a reusable sanitary-rules profile. Distinguish the approving resolution, the sanitary rules and their nine retained original annexes; verify actual document boundaries rather than assuming every annex is present. SanPiN 2.1.3684-21 is a pilot instance, not a hard-coded profile identity.
+Compile the complete original and amendment texts with the OCR structure engine/profile qualified in M1-04A. This slice owns full SanPiN bundle coverage and readiness for operation targeting; generic OCR-parser development and its initial transfer cohort belong to M1-04A. Distinguish the approving resolution, the sanitary rules and their nine retained original annexes; verify actual document boundaries rather than assuming every annex is present. SanPiN 2.1.3684-21 is a pilot instance, not a hard-coded profile identity.
 
 Acceptance:
 - Full page/text accounting, legal numbering and order, table row/column/cell spans, units, footnotes and annex boundaries are visible. Repeated page headers are only excluded with an explicit service-text reason.
 - Duplicate addresses in different approved texts do not collide. Identity/structure uncertainty blocks operation targeting while remaining visible in the draft.
 - Reviewer-checked tree/table examples cover each observed structure class; all full documents, not only sample pages, undergo coverage reconciliation and exception review.
 - A correction references exact source/extraction spans and records before/after values; no "cleanup" silently repairs a legal number or wording.
-- Validate the sanitary-rules family on two distinct non-pilot acts for each declared input format, including supported annex/table structure, and extend `parser-transfer-report/1`. Reuse the shared engine rather than implementing a SanPiN-specific traversal.
+- Reuse the evidence-bound sanitary-rule transfer checks from M1-04A for unchanged versions. Extend `parser-transfer-report/1` with fresh independent checks if new rules, versions or formats are needed; do not count known development documents as new transfer evidence.
 
 Verify: SanPiN AST/table/accounting tests, complete retained compilation twice, and a structural review record. Structural review is necessary but not sufficient for dated legal admission.
 
@@ -511,9 +529,9 @@ These thirteen criteria operationalize PRD section 10. G13 records the 13 Octobe
 |---|---|---|
 | G01 | All five full acts at both dates have positive legal admission with explicit applicability | M1-02, M1-09 through M1-14; ten-check matrix and review hashes |
 | G02 | SanPiN is reconstructed and legally approved for both dates | M1-06 through M1-08, M1-13; bundle, ledger, full drafts and decisions |
-| G03 | 100% source/extracted-text accounting for every input, including tables/annexes and removed/replaced text | M1-03, M1-04, M1-06, M1-09 through M1-13; accounting and journals |
+| G03 | 100% source/extracted-text accounting for every input, including tables/annexes and removed/replaced text | M1-03, M1-04, M1-04A, M1-06, M1-09 through M1-13; accounting and journals |
 | G04 | The same retained inputs/extraction and versions produce identical normalized/compiled IDs/hashes without duplicate content. Fresh LLM OCR attempts are separately versioned, with recorded differences and verified runtime/model/configuration | M1-01, M1-04, M1-08, M1-14; saved-extraction replay and repeated builds |
-| G05 | Structure, order, numbering, tables and annex boundaries are reviewable and checked | Profile golden trees, full-coverage reconciliation and structural review |
+| G05 | Structure, order, numbering, tables and annex boundaries are reviewable and checked | M1-04A OCR hierarchy/controls; profile golden trees, full-coverage reconciliation and structural review |
 | G06 | Every resulting span has original/operation provenance down to official source coordinates | Extraction/cleanup mappings, source hashes, lineage and report |
 | G07 | Amendment completeness, target dates and conditions are confirmed; critical unresolved issues cannot enter admitted scope | Input inventory, reviewed ledger, dated decisions and exception dispositions |
 | G08 | Historical output excludes all future-effective change types and explains its diff with the control output | Temporal tests, both full editions, per-date amendment dispositions and review |
@@ -521,7 +539,7 @@ These thirteen criteria operationalize PRD section 10. G13 records the 13 Octobe
 | G10 | Self-contained review report supports independent text/operation/date/evidence inspection | Offline report checks, reviewer record and escaping tests |
 | G11 | Actual compilation/OCR, review and exception costs are measured, with run context and limitations | M1-04, M1-13, M1-14 measurement records |
 | G12 | Bundle input is versioned/replayable; shared extraction replaces temporary OCR and preserves M0-10A behavior | Contract fixtures, discovery replay, reviewed freeze change and M0 reassessment |
-| G13 | Paired official JSON/HTML preserves the source tree/text/media with bound locators, visible integrity defects and repeatable builds under the owner-approved 16 October contract. Formats requiring inferred structure pass two distinct non-pilot acts per declared family/format without code changes, act-specific rules or unresolved critical structure | M1-03A closure and `official-import-replay/1`; M1-06, M1-09, M1-11, M1-14 retain final-version transfer reports for inferred structure. The milestone-wide gate remains open until those slices and final pilot checks finish |
+| G13 | Paired official JSON/HTML preserves the source tree/text/media with bound locators, visible integrity defects and repeatable builds under the owner-approved 16 October contract. Formats requiring inferred structure pass two distinct non-pilot acts per declared family/format without code changes, act-specific rules or unresolved critical structure | M1-03A closure and `official-import-replay/1`; M1-04A owns initial OCR transfer evidence, extended/replayed by M1-06, M1-09, M1-11, M1-14. The milestone-wide gate remains open until those slices and final pilot checks finish |
 
 A missing required source, unresolved rights, unknown legal date/condition, unsupported critical structure/edit, disputed legal decision or absent reviewer evidence blocks the relevant check and therefore M1 acceptance. Engineering tasks can progress independently, but no partial success is called a complete five-act pilot.
 
@@ -537,4 +555,4 @@ The 13 October revision adds real-document acquisition, structural controls and 
 
 If the shared OCR baseline is unsuitable, stop its integration and record the replacement decision. If a historical basis cannot be obtained, keep that act/date unresolved. If the known case-law-sensitive issue cannot be resolved within the approved boundary, take the specific evidence and scope decision to the human reviewer/owner; do not invent approval. If the full five-act gate becomes infeasible, only an explicit new owner decision can change the PRD before acceptance assessment.
 
-**Current next step:** M1-05 consumes the shared extraction under M1-04's recorded owner scope and preserves the M0-10A discovery contract. Paired native trees use the owner-approved M1-03A import contract; older reconstruction failures remain historical evidence. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.
+**Current next step:** M1-04A inventories existing OCR inputs, acquires additional official experimental/validation documents and develops a reusable source-bound structure parser. M1-05 still consumes extraction independently; M1-06 consumes the qualified OCR hierarchy for the complete SanPiN bundle. Paired native trees keep the owner-approved M1-03A import contract. M1-02's unresolved legal evidence remains blocked for final acceptance. This document grants no legal approval or M2 transition.

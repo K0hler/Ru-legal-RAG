@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- On 17 October 2026 the owner added M1-04A as the next planned slice:
+  `plans/2026-10-17-m1-04a-ocr-structure.md`. It owns reusable OCR hierarchy
+  reconstruction, existing-file analysis and additional official corpus/heldout
+  experiments. M1-06 consumes its engine for full SanPiN coverage; M1-05 still
+  needs only M1-04 extraction. Preserve the accepted native official-tree route
+  and M1-04's bounded seal/page-75 quality scope. Adding the task is not its
+  implementation or acquisition. Keep the 17-slice plan and G13 synchronized.
+
 - Keep only this instruction file and `README.md` at the documentation root.
   Use `overview/` for product/architecture/roadmap, `policies/` for admission
   rules, `milestones/m0/` and `milestones/m1/` for stage records, `guides/` for
@@ -19,7 +27,7 @@
   grading. Keep raw data/failed controls and all page accounting. New inference
   is versioned; exact saved replay and pinned verified runtime/model/configuration
   remain mandatory. Other tables, dates/requisites and legal admission are not
-  waived. Bounded Picture recovery completes the diagnostic M1-04 slice; M1-05
+  waived. Bounded Picture recovery completes the diagnostic M1-04 slice; M1-04A
   is next. Distinguish the 103-page live snapshot from the subsequent metadata
   retention fix, validated with authored retry faults and three real seals/date.
 
@@ -128,8 +136,8 @@ Scope: every file under `docs/`.
   after the historical target, including ones published earlier. A later
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
-- Follow `milestones/m1/M1_IMPLEMENTATION_PLAN.md` for the current 16-slice decomposition
-  (M1-01–M1-15 plus M1-03A) and 13 milestone gates. The owner approved the
+- Follow `milestones/m1/M1_IMPLEMENTATION_PLAN.md` for the current 17-slice decomposition
+  (M1-01–M1-15 plus M1-03A/M1-04A) and 13 milestone gates. The owner approved the
   parser-transfer requirement on 13.10.2026. M1-03A native engineering now
   passes all four original HTML inputs (59-FZ, Housing Code, No. 354, No. 491)
   and two non-pilot acts per declared family/format. Keep `original-four-v8`
@@ -154,7 +162,8 @@ Scope: every file under `docs/`.
   repeated full-document runs, and retain failures before changing rules.
   These permitted diagnostic documents do not enlarge the ten edition admissions
   or authorize reading closed retrieval gold. Missing/failed transfer evidence
-  blocks M1/M2; M1-03A, M1-06 and M1-09 own the profile checks.
+  blocks M1/M2; M1-04A owns initial inferred OCR checks, with M1-06/M1-09
+  consuming/extending them. M1-03A's paired official import keeps its own contract.
 - Distinguish the legacy and new test versions of the integrated bank; do not
   infer shared document coverage. Treat commercial consolidated texts as
   discovery evidence unless the source-admission policy explicitly grants a

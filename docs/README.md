@@ -75,6 +75,10 @@ development failures, experiments and superseded approaches.
 - [Initial qualification](milestones/m1/04/M1_04_QUALIFICATION_2026-10-16.md) — historical failures before the agreed exceptions.
 - [Region probes](milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md) — bounded diagnostic experiments.
 
+### M1-04A: universal OCR structure parser
+
+- [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — planned: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
+
 ## Tool guides
 
 - [Parser-independent HTML preparation](guides/HTML_PREPARATION.md)
@@ -98,6 +102,7 @@ development failures, experiments and superseded approaches.
 - [Official JSON transfer](plans/2026-10-16-official-json-transfer.md)
 - [Official JSON normalization](plans/2026-10-16-official-normalization.md)
 - [Local dots.mocr integration](plans/2026-10-16-m1-04-dotsmocr.md)
+- [Universal OCR structure parser, M1-04A](plans/2026-10-17-m1-04a-ocr-structure.md)
 
 Diagram sources and rendered assets remain together in [assets/](assets/);
 their [prompt record](assets/PROMPTS.md) is retained there too.
