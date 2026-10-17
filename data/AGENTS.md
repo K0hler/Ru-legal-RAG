@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-scope-v1/` retains the complete 12-document
+  development scope inventory before reusable boundary changes. Keep reason
+  counts distinct from reviewed severity, cascaded blocks from root causes and
+  physical-heading candidates from confirmed semantic boundaries. Native inputs,
+  prior failures, reserved bodies and closed gold remain unchanged.
+
 - `m1/experiments/m1-04a-20261017-footnotes-v1/` retains the initial footnote
   heuristic; `footnotes-v2/` retains the reviewed, narrower Text rule and actual
   Dedoc replay. Keep the joined logical sidecars, source hashes, raw native

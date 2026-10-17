@@ -25,6 +25,14 @@
 
 ## Review focus
 
+Owner refinement, 17 October 2026: prioritize recurring error causes by their
+effect on content, legal scope and verifiable citations. Harmless presentation
+differences may remain documented; unknown impact is not an automatic waiver.
+The current class inventory and bounded follow-up are in
+[the failure-class report](../milestones/m1/04a/M1_04A_FAILURE_CLASSES_2026-10-17.md).
+Work by reusable causes, with variant/negative tests; known-document fixes alone
+cannot establish transfer. Preserve existing critical gates and source evidence.
+
 - A provision split over pages and intervening page headers must keep its owner and source spans.
 - Approving acts, approved texts, annexes and quoted amendment payloads need separate numbering scopes.
 - Numbering-like seal junk, page numbers and headers must not create legal provisions.

@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- M1-04A's owner refinement prioritizes error classes by semantic/citation
+  impact; see `milestones/m1/04a/M1_04A_FAILURE_CLASSES_2026-10-17.md`.
+  Unresolved counts, aesthetic tree depth and known-document successes are not
+  severity or transfer evidence. Document harmless deviations with retained
+  context; unknown impact remains unknown, and critical gates stay unchanged.
+
 - `assets/stitch_ocr_footnotes.py` writes a separate logical continuation view
   with exact physical fragment pointers/pages/bboxes and combined-text offsets.
   Unnumbered Footnotes before a new numbered note join the last note on the
