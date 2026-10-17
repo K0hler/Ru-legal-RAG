@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- M1-04A direct JSON follow-up is `milestones/m1/04a/M1_04A_DIRECT_JSON_2026-10-17.md`.
+  Native JSON maps directly to Dedoc/Docling API objects, without HTML or new
+  OCR. Distinguish exact schema transfer, actual inference and source sidecars;
+  retained geometry/tables do not qualify legal parents. Preserve raw/prefix
+  variants, synthetic UUID variability and Picture-text/table-anchor losses.
+
 - M1-04A execution began on 17 October 2026. Its retained baseline is
   `milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md`: 10 PDFs/103 pages,
   1,139 regions/1,296 blocks, 0 legacy legal nodes and 1,284 unresolved blocks.

@@ -80,6 +80,7 @@ development failures, experiments and superseded approaches.
 - [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — in progress: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
 - [Initial baseline and Dedoc trials](milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) — 103 retained pages, frozen six-act corpus and explicit hierarchy limitations.
 - [First shared OCR implementation](milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md) — 205 full development pages, deterministic compilation and remaining blockers; M1-04A/G13 remain open.
+- [Direct dots.mocr JSON trials](milestones/m1/04a/M1_04A_DIRECT_JSON_2026-10-17.md) — full 205-page Dedoc/Docling API runs with geometry, source mappings, actual stage outputs and explicit preservation/hierarchy failures.
 
 ## Tool guides
 

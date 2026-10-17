@@ -1,5 +1,10 @@
 # Test instructions
 
+- `corpus/test_dedoc_json_probe.py` and `test_docling_json_probe.py` verify
+  authored direct-JSON mapping, table topology, unknown/empty regions, explicit
+  prefix ledgers and immutable attempts without importing the heavy libraries.
+  Actual library stages run only in the explicit external experiment runtimes.
+
 - `corpus/test_ocr_structure.py` uses authored normalized input for both OCR
   resolution families. Check exact raw tokens/spans, split approvals/titles,
   cross-page context, decimal/Roman prefixes, quoted scopes, table/footnote

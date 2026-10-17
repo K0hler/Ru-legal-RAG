@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-json-v1/` freezes the unchanged native JSON
+  and source-bound table topology for all 12 development PDFs/205 pages.
+  Keep Dedoc/Docling raw and prefix-only attempts, code/runtime freezes and
+  source/output maps. Sidecar retention is distinct from engine output fidelity;
+  no production parser or legal/G13 acceptance is changed by these diagnostics.
+
 - M1-04A `development-ocr/` retains new complete SP3678 (79-page) and
   Resolution1156 (23-page) dots.mocr evidence. `shared-verified-v5/` binds the
   actual `ocr-layout-structure/5` code and three full compiler cohorts: baseline
