@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_TWO_PDF_2026-10-17.md` records the frozen-code
+  26-page SP3597/Resolution416 PDF experiment, not G13 qualification. Distinguish
+  preservation/repeats from selected-image semantic controls (26/26 and 21/24).
+  An ordinary continued reference falsely opens approval scope in No.416;
+  Dedoc foiv handles the selected controls, while Docling remains flat. No.416
+  was already known on the native route; it is not a fresh independent act.
+
 - M1-04A's owner refinement prioritizes error classes by semantic/citation
   impact; see `milestones/m1/04a/M1_04A_FAILURE_CLASSES_2026-10-17.md`.
   Unresolved counts, aesthetic tree depth and known-document successes are not

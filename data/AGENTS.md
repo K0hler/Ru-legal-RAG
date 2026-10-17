@@ -1,5 +1,14 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-two-pdf-v1/` retains two additional official
+  PDFs, permissions, metadata and new/unchanged acquisition on frozen f98b637.
+  All 26 pages have fresh dots.mocr, exact saved replay and two identical actual
+  compiler builds. Keep the pre-output selected image controls and No.416's
+  false approval/cascaded unresolved tail; no document-specific fixes were made.
+  Separate 782 preservation checks from 47/50 selected semantic checks and
+  direct Dedoc/Docling API probes. No.416 was previously known on the native
+  route; original four reserved bodies and legal admission remain separate.
+
 - `m1/experiments/m1-04a-20261017-scope-v1/` retains the complete 12-document
   development scope inventory before reusable boundary changes. Keep reason
   counts distinct from reviewed severity, cascaded blocks from root causes and

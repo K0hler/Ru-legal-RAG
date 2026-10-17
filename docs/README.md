@@ -82,6 +82,7 @@ development failures, experiments and superseded approaches.
 - [First shared OCR implementation](milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md) — 205 full development pages, deterministic compilation and remaining blockers; M1-04A/G13 remain open.
 - [Direct dots.mocr JSON trials](milestones/m1/04a/M1_04A_DIRECT_JSON_2026-10-17.md) — full 205-page Dedoc/Docling API runs with geometry, source mappings, actual stage outputs and explicit preservation/hierarchy failures.
 - [Failure classes and document scopes](milestones/m1/04a/M1_04A_FAILURE_CLASSES_2026-10-17.md) — impact-based priorities, complete development inventory and the reusable scope-boundary follow-up.
+- [Two additional PDF runs](milestones/m1/04a/M1_04A_TWO_PDF_2026-10-17.md) — 26 fresh OCR pages through compilation/replay, selected image controls and direct Dedoc/Docling JSON comparisons; ordinary-reference false approval remains unresolved.
 
 ## Tool guides
 
