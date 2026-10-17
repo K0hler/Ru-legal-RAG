@@ -1,5 +1,12 @@
 # Test instructions
 
+- `corpus/test_ocr_footnote_stitch.py` checks authored cross-page continuation
+  joins, actual source fragments, three-page anchors, skipped pages, new markers
+  and ordinary lower body paragraphs. Untagged Text needs positive parenthetical
+  citation evidence as well as geometry; adjacency alone caused a reproduced
+  false join. Check immutable CLI output and Dedoc logical order without changing
+  source page/bbox/text. No private corpus or heavy library enters these tests.
+
 - `corpus/test_dedoc_json_probe.py` and `test_docling_json_probe.py` verify
   authored direct-JSON mapping, table topology, unknown/empty regions, explicit
   prefix ledgers and immutable attempts without importing the heavy libraries.

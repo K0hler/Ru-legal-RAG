@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-footnotes-v1/` retains the initial footnote
+  heuristic; `footnotes-v2/` retains the reviewed, narrower Text rule and actual
+  Dedoc replay. Keep the joined logical sidecars, source hashes, raw native
+  files, code snapshots and before/after owner checks. A corrected continuation
+  owner is a bounded development fix, not general footnote/annex qualification.
+
 - `m1/experiments/m1-04a-20261017-json-v1/` freezes the unchanged native JSON
   and source-bound table topology for all 12 development PDFs/205 pages.
   Keep Dedoc/Docling raw and prefix-only attempts, code/runtime freezes and

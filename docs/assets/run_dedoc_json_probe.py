@@ -29,7 +29,7 @@ def write(path, value):
         stream.write(encoded(value))
 
 
-def project(native, extraction, strip_section_header_prefix=False):
+def project(native, extraction, strip_section_header_prefix=False, footnote_view=None):
     """Map literal native scalars, without assigning any semantic heading level."""
     if len(native["pages"]) != len(extraction["pages"]):
         raise ValueError("native page mismatch")
@@ -70,8 +70,17 @@ def project(native, extraction, strip_section_header_prefix=False):
                               "char_start": offset + len(removed), "char_end": offset + len(native_text),
                               "table_uid": uid if region["category"] == "Table" else None})
                 offset += len(native_text)
+    if footnote_view is not None:
+        order = footnote_view["region_order"]
+        if len(order) != len(regions) or set(order) != {r["json_pointer"] for r in regions}:
+            raise ValueError("footnote region order does not match native regions")
+        ranks = {pointer: index for index, pointer in enumerate(order)}
+        lines.sort(key=lambda line: ranks[line["json_pointer"]])
+        for index, line in enumerate(lines):
+            line["line_id"] = index
     return {"lines": lines, "regions": regions, "tables": tables,
-            "source_asset_sha256": extraction["source_asset_sha256"], "projection_ledger": ledger}
+            "source_asset_sha256": extraction["source_asset_sha256"], "projection_ledger": ledger,
+            **({"footnote_view": footnote_view} if footnote_view is not None else {})}
 
 
 def table_grid(topology):
@@ -194,13 +203,19 @@ def outcome_exit_code(rows):
         "raw_repeat_identical", "content_repeat_identical", "checks_repeat_identical")) for row in rows) else 2
 
 
-def run(index_path, output, image_id, strip_section_header_prefix=False):
+def run(index_path, output, image_id, strip_section_header_prefix=False, stitch_footnotes=False):
     import resource
 
     output.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
     runner_bytes = Path(__file__).read_bytes()
     (output / "runner.py").write_bytes(runner_bytes)
+    stitcher_sha256 = None
+    if stitch_footnotes:
+        from stitch_ocr_footnotes import stitch
+        helper = Path(__file__).with_name("stitch_ocr_footnotes.py").read_bytes()
+        (output / "stitch_ocr_footnotes.py").write_bytes(helper)
+        stitcher_sha256 = digest(helper)
     index_bytes = index_path.read_bytes()
     index = json.loads(index_bytes)
     protected = {str(index_path): digest(index_bytes)}
@@ -214,6 +229,7 @@ def run(index_path, output, image_id, strip_section_header_prefix=False):
                                   "image_id": image_id, "protected_before": protected,
                                   "input_route": "native JSON -> UnstructuredDocument -> extractor -> TreeConstructor",
                                   "strip_section_header_prefix": strip_section_header_prefix,
+                                  "stitch_footnotes": stitch_footnotes, "stitcher_sha256": stitcher_sha256,
                                   "network": "none", "legal_admission": False})
     from dedoc.structure_extractors.concrete_structure_extractors.law_structure_excractor import LawStructureExtractor
     from dedoc.structure_extractors.concrete_structure_extractors.foiv_law_structure_extractor import FoivLawStructureExtractor
@@ -232,7 +248,8 @@ def run(index_path, output, image_id, strip_section_header_prefix=False):
                 source = index_path.parent / entry["key"]
                 native_bytes = (source / "native.json").read_bytes()
                 native, extraction = json.loads(native_bytes), json.loads((source / "extraction.json").read_bytes())
-                projection = project(native, extraction, strip_section_header_prefix=strip_section_header_prefix)
+                projection = project(native, extraction, strip_section_header_prefix=strip_section_header_prefix,
+                                     footnote_view=stitch(native) if stitch_footnotes else None)
                 dest.mkdir(parents=True, exist_ok=False)
                 (dest / "native.json").write_bytes(native_bytes)
                 write(dest / "projection-map.json", projection)
@@ -267,6 +284,7 @@ def run(index_path, output, image_id, strip_section_header_prefix=False):
     write(output / "summary.json", {"schema_version": "dedoc-json-probe/1", "dedoc_version": dedoc.__version__,
                                    "image_id": image_id, "runner_sha256": digest(runner_bytes), "documents": rows,
                                    "strip_section_header_prefix": strip_section_header_prefix,
+                                   "stitch_footnotes": stitch_footnotes, "stitcher_sha256": stitcher_sha256,
                                    "protected_after": after, "protected_unchanged": after == protected,
                                    "seconds": time.perf_counter() - started,
                                    "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
@@ -292,6 +310,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--image-id", required=True)
     parser.add_argument("--strip-section-header-prefix", action="store_true")
+    parser.add_argument("--stitch-footnotes", action="store_true")
     args = parser.parse_args()
     raise SystemExit(run(args.index, args.output_dir, args.image_id,
-                         strip_section_header_prefix=args.strip_section_header_prefix))
+                         strip_section_header_prefix=args.strip_section_header_prefix,
+                         stitch_footnotes=args.stitch_footnotes))

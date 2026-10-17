@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `assets/stitch_ocr_footnotes.py` writes a separate logical continuation view
+  with exact physical fragment pointers/pages/bboxes and combined-text offsets.
+  Unnumbered Footnotes before a new numbered note join the last note on the
+  immediately preceding physical page. Mislabelled Text recovery is deliberately
+  narrower: one adjacent bottom-band parenthetical block after an unfinished
+  citation number. The Dedoc JSON probe consumes its region order only with
+  `--stitch-footnotes`; retain native JSON and earlier failures unchanged.
+  This heuristic and its development replay do not qualify OCR hierarchy/G13.
+
 - M1-04A direct JSON follow-up is `milestones/m1/04a/M1_04A_DIRECT_JSON_2026-10-17.md`.
   Native JSON maps directly to Dedoc/Docling API objects, without HTML or new
   OCR. Distinguish exact schema transfer, actual inference and source sidecars;
