@@ -1,5 +1,13 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-v1/` retains the 103-page legacy baseline,
+  isolated Dedoc trials and six additional official acquisitions (222 pages by
+  source metadata). Split hash `272ad4033e1b3d8178c3ddc43a62fc380da63b13e3160f6a6df25ab2cb6fda46`
+  predates PDF bodies: SP3678/Resolution1156 are development; SanPiN3590,
+  SP3648 and Resolutions2314/564 are reserved. Keep the recorded development
+  search exposure, original metadata/receipts, exact permission hashes and
+  `new`/`unchanged` evidence. Acquisition is not OCR/structure qualification.
+
 - `m1/pilot_runs/m1-04-seal-recovery-20261016-v1/` retains the actual owner
   scope record and source-bound quality policy, the new 10-PDF/103-page run,
   deterministic saved replay, both target-date compile repeats and passing scoped

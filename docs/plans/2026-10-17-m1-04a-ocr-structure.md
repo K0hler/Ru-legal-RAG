@@ -2,7 +2,7 @@
 
 > **For agentic workers:** Use superpowers:executing-plans when the owner starts this slice. Work on `main`, one verified item and commit at a time. This document records the task; implementation and acquisition have not started.
 
-**Status:** planned, added at the owner's request on 17 October 2026.
+**Status:** in progress from 17 October 2026. Retained baseline/acquisition evidence is in [the initial report](../milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md); hierarchy qualification remains open.
 
 **Task board:** [M1-04A: Универсальный структурный парсер OCR](https://trello.com/c/fX6dQ9HM), ready for work with eight incomplete acceptance items.
 
@@ -58,11 +58,11 @@ These are extension points, not instructions to rewrite every listed module. Add
 **Consumes:** existing M1-04 evidence/index, permitted source assets and source acquisition CLI.
 **Produces:** hash-bound corpus inventory, development/reserved split and a Russian baseline report.
 
-- [ ] Verify current M0 gate and the ten saved PDF/extraction bindings before using them.
-- [ ] Run the current diagnostic `pdf_tree` on every existing saved extraction. Record nodes, unresolved blocks, wrong parents/numbers, annex/table ownership and cross-page failures; unchanged replay must produce identical IDs/hashes.
-- [ ] Download the six additional acts through `sources`, preserve source metadata and permission, and record the split described above. Inspect/decode only development bodies while designing rules.
-- [ ] Group observed failures by reusable structure class. Record the minimal proposed extension and why existing engine behavior is insufficient before changing production code. Do not label OCR text/sign errors as parser fixes.
-- [ ] Retain the baseline report, update applicable instructions and commit the completed inventory/probe tooling.
+- [x] Verify current M0 gate and the ten saved PDF/extraction bindings before using them.
+- [x] Run the current diagnostic `pdf_tree` on every existing saved extraction. Record nodes, unresolved blocks, wrong parents/numbers, annex/table ownership and cross-page failures; unchanged replay must produce identical IDs/hashes.
+- [x] Download the six additional acts through `sources`, preserve source metadata and permission, and record the split described above. Inspect/decode only development bodies while designing rules.
+- [x] Group observed failures by reusable structure class. Record the minimal proposed extension and why existing engine behavior is insufficient before changing production code. Do not label OCR text/sign errors as parser fixes.
+- [x] Retain the baseline report, update applicable instructions and commit the completed inventory/probe tooling.
 
 ## Task 2: Implement reusable OCR hierarchy reconstruction
 

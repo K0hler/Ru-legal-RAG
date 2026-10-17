@@ -293,7 +293,7 @@ unknown human-review time remains a milestone G11 measurement limit.
 
 ### M1-04A: Universal OCR Structure Parser
 
-**Type:** AFK plus corpus experiments and structural review. **Dependencies:** M1-03A, M1-04 and permitted diagnostic inputs. **Status:** planned at the owner's request on 17 October 2026; next slice, not implemented.
+**Type:** AFK plus corpus experiments and structural review. **Dependencies:** M1-03A, M1-04 and permitted diagnostic inputs. **Status:** in progress from 17 October 2026: the 103-page baseline, Dedoc-first probes and six additional official acquisitions are retained in [the initial report](04a/M1_04A_BASELINE_2026-10-17.md). Reusable hierarchy and independent qualification remain open.
 
 Build reusable legal hierarchy reconstruction over `text-extraction/1`: approving act, approved text, section/chapter/article/point/subpoint, annex, table and footnote ownership where supported. Inspect all retained M1-04 files and current diagnostic parser failures before extending the shared engine. Keep physical structure, exact text/source spans and unresolved findings; OCR field names and individual act identities must not drive legal rules. Detailed task and execution checks: [M1-04A plan](../../plans/2026-10-17-m1-04a-ocr-structure.md).
 
@@ -305,7 +305,7 @@ Acceptance:
 - Freeze parser/profile/extraction/control versions and pass two independent full non-pilot acts per declared family/OCR-format combination against independent structural controls. Record `parser-transfer-report/1`, genuine failures and actual structural review; tuning on reserved acts requires new reserved evidence.
 - Repeat full compilation of the same saved inputs with identical IDs/hashes and unchanged replay; keep fresh OCR versions separate. Verify model-neutral normalized-input behavior and unchanged official-JSON/v1 regressions. Completion requires evidence-bound qualification, not merely removing `pdf_structure_unqualified`.
 
-Verify: authored OCR-structure/negative tests, complete retained baseline and additional-corpus compiler runs, independent parent/number/source controls, reviewed structure examples, full default tests, Ruff and passing M0 gate. No downloads or parser implementation occurred while adding this task.
+Verify: authored OCR-structure/negative tests, complete retained baseline and additional-corpus compiler runs, independent parent/number/source controls, reviewed structure examples, full default tests, Ruff and passing M0 gate. Adding the plan preceded all implementation/acquisition; execution evidence is recorded separately.
 
 ### M1-05: Replace Discovery's Temporary OCR
 

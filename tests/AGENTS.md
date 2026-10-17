@@ -1,5 +1,9 @@
 # Test instructions
 
+- `corpus/test_ocr_structure_probe.py` checks the explicit experiment projection
+  with authored text/table inputs and refusal to overwrite retained failures.
+  These tests do not run Dedoc/Docling, download documents or qualify hierarchy.
+
 - `corpus/test_pdf_extraction.py` uses authored native OCR fixtures; no model,
   Docker or downloads. Check merged and empty cells, physical-page coverage,
   OCR-string spans, model/source binding, native truncation and one-time token

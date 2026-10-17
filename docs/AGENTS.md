@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- M1-04A execution began on 17 October 2026. Its retained baseline is
+  `milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md`: 10 PDFs/103 pages,
+  1,139 regions/1,296 blocks, 0 legacy legal nodes and 1,284 unresolved blocks.
+  Dedoc TXT and prepared-HTML trials are diagnostic, not qualification. Six
+  additional official PDFs have a frozen development/reserved split and exact
+  permissions under `data/m1/inputs/m1-04a/`; reserved bodies must stay separate
+  from rule design. Keep the slice/G13 open until independent full checks pass.
+
 - On 17 October 2026 the owner added M1-04A as the next planned slice:
   `plans/2026-10-17-m1-04a-ocr-structure.md`. It owns reusable OCR hierarchy
   reconstruction, existing-file analysis and additional official corpus/heldout

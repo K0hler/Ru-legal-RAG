@@ -77,7 +77,8 @@ development failures, experiments and superseded approaches.
 
 ### M1-04A: universal OCR structure parser
 
-- [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — planned: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
+- [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — in progress: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
+- [Initial baseline and Dedoc trials](milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) — 103 retained pages, frozen six-act corpus and explicit hierarchy limitations.
 
 ## Tool guides
 
