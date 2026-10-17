@@ -8,7 +8,7 @@ import re
 from .compiler import content_hash
 from .structure import MONTHS, build_structure
 
-VERSION = "ocr-layout-structure/5"
+VERSION = "ocr-layout-structure/6"
 ISSUERS = {"government_resolution": "Правительства Российской Федерации",
            "sanitary_rules": "Главного государственного санитарного врача Российской Федерации"}
 HEADERS = {"government_resolution": "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ",

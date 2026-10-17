@@ -1,6 +1,6 @@
 # Corpus compilation module
 
-- M1-04A adds diagnostic `ocr_structure.py` (`ocr-layout-structure/5`) before
+- M1-04A adds diagnostic `ocr_structure.py` (`ocr-layout-structure/6`) before
   the shared grammar for government/sanitary resolutions. Group only physical
   OCR paragraphs, retaining source block IDs, every token/span and region binding;
   normalized whitespace/Markdown views never replace source text. OCR issuer,
@@ -11,6 +11,10 @@
   not alias the saved extraction. Keep `pdf_structure_unqualified` on every
   PDF route: current full development runs still have critical unresolved
   structures. Task 3 independent transfer qualification has not passed.
+- Physical images/headers/footers/footnotes must not open, close or rebalance
+  amendment quotations. Multiple exact footnote references retain candidate
+  owners as unresolved; never silently pick the last one. Only a confirmed
+  independent approval/annex or explicit section resets an unknown-section scope.
 
 - M1-04's `pdf_extraction.py` normalizes retained dots.mocr `pages[].layout[]`
   without loading a GPU library. Keep raw region records, physical-page/image

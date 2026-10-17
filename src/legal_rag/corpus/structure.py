@@ -371,7 +371,7 @@ def build_structure(
         close_quote = False
         amending = resolution and (identity_decision is not None and role == "amendment" or any(container and container.startswith(a)
                                       and title.casefold().startswith("изменения") for a, title in approved_titles.items()))
-        if amending and not _is_note(block):
+        if amending and block.get("layout_kind") in {None, "text"} and not _is_note(block):
             if numbering.startswith(('"', '«', '“')) and quote is None and (part or item or subitem):
                 parent = subitem or item or part
                 quote_context = (container, section, part, item, subitem, list_order)
@@ -437,11 +437,16 @@ def build_structure(
                 reference = re.compile(r"(?<![⁰¹²³⁴⁵⁶⁷⁸⁹])" + marker + r"(?![⁰¹²³⁴⁵⁶⁷⁸⁹])")
                 owners = [n for n in nodes if n["kind"] in {"point", "part", "item", "subitem", "paragraph"}
                           and reference.search(n["text"])]
-                parent = owners[-1]["address"] if owners else namespace
-                kind, address = "footnote", f"{parent}/footnote/{number}"
-                fields = {**_number_fields(number), "scope_status": "explicit_marker" if owners else "unresolved"}
-                if not owners:
-                    structural_issues.append("footnote_scope_unresolved")
+                if len(owners) > 1:
+                    reason = "footnote_scope_ambiguous"
+                    entry["candidate_parent_addresses"] = [n["address"] for n in owners]
+                    structural_issues.append(reason)
+                else:
+                    parent = owners[0]["address"] if owners else namespace
+                    kind, address = "footnote", f"{parent}/footnote/{number}"
+                    fields = {**_number_fields(number), "scope_status": "explicit_marker" if owners else "unresolved"}
+                    if not owners:
+                        structural_issues.append("footnote_scope_unresolved")
             else:
                 reason = "unsupported_footnote_marker"
         elif resolution and container and re.fullmatch(r"Примечани[ея]:?", text, re.I):
@@ -509,6 +514,7 @@ def build_structure(
                     approval_metadata.update({b["block_id"]: address for b in approval_blocks[1:]})
                 approved_titles[address] = title
                 container = address
+                unresolved_section = False
             else:
                 reason, container = "approval_identity_or_title_unresolved", None
             section = chapter = subchapter = article = part = item = subitem = None
@@ -546,6 +552,7 @@ def build_structure(
                 address = (numbered(parent, "unnumbered_annex") if own_act and not match[1]
                            else f"{parent}/annex/{fields['number_canonical']}")
                 container = address
+                unresolved_section = False
             else:
                 reason, container = "annex_target_unresolved", None
             section = chapter = subchapter = article = part = item = subitem = None
@@ -732,6 +739,8 @@ def build_structure(
                 paragraph_parents[block["paragraph"]] = address
         else:
             unresolved.append({**entry, "kind": "unresolved_block", "reason": reason})
+            if block.get("layout_kind") in {"image", "page_header", "page_footer", "footnote"}:
+                continue
             # Rejected boundaries still invalidate old parents, regardless of
             # which earlier guard rejected them; never establish a new parent.
             boundary_text = paragraph_text.get(block["paragraph"], text)

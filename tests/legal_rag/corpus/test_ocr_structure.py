@@ -32,7 +32,7 @@ def extraction(body=None, reference="¹", government=False):
         ("Text", "ПРИЛОЖЕНИЕ № 1\nк СП 9.9.9999-20"), ("Title", "Показатели"),
         ("Text", "1. Правило приложения."), ("Picture", "1. ПУНКТ НА ПЕЧАТИ")]]
     if body is not None:
-        layouts = [layouts[0][:4] + [("Text", text) for text in body]]
+        layouts = [layouts[0][:4] + [text if isinstance(text, tuple) else ("Text", text) for text in body]]
     pages = []
     for index, layout in enumerate(layouts):
         pages.append({"page_number": index + 1, "image_size": [1000, 2000],
@@ -106,6 +106,42 @@ def test_quoted_foreign_numbering_keeps_its_own_scope():
     nodes = {node["address"]: node for node in tree["nodes"]}
     assert nodes[prefix + "/point/1/quote/1/point/7/subitem/а"]["parent_address"] == prefix + "/point/1/quote/1/point/7"
     assert nodes[prefix + "/point/2"]["parent_address"] == prefix
+
+
+@pytest.mark.parametrize("category", ["Picture", "Page-header", "Page-footer", "Footnote"])
+def test_physical_metadata_cannot_open_or_close_an_amendment_quote(category):
+    source = extraction(["1. Изменить правило.", (category, "«7. ПЕЧАТЬ"),
+                         "2. Пункт изложить в следующей редакции:", "«7. Чужой пункт.",
+                         (category, "ПЕЧАТЬ»"), "Продолжение чужого пункта.»;", "3. Собственный пункт."])
+    tree = pdf_tree(source, CLAIM, "amendment")
+    prefix = "amendment/" + "a" * 64
+    nodes = {node["address"]: node for node in tree["nodes"]}
+    assert nodes[prefix + "/point/2"]["parent_address"] == prefix
+    assert nodes[prefix + "/point/3"]["parent_address"] == prefix
+    continuation = next(n for n in tree["nodes"] if n["text"] == "Продолжение чужого пункта.»;")
+    assert continuation["parent_address"] == prefix + "/point/2/quote/1/point/7"
+    assert "unclosed_amendment_quote" not in tree["structural_issues"]
+
+
+def test_multiple_exact_footnote_references_keep_ownership_unresolved():
+    source = extraction(["1. Первое правило¹.", "2. Второе правило¹.", ("Footnote", "¹ Примечание.")])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert "footnote_scope_ambiguous" in tree["structural_issues"]
+    note = next(b for b in tree["unresolved_blocks"] if b["text"] == "¹ Примечание.")
+    assert note["reason"] == "footnote_scope_ambiguous"
+    assert note["candidate_parent_addresses"] == ["act/point/1", "act/point/2"]
+
+
+def test_confirmed_independent_scope_recovers_from_unknown_section():
+    source = extraction(["1. Начало.", "Х. Неизвестный раздел",
+                         f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812",
+                         "Санитарные правила СП 9.9.9999-20", "1. Новое правило.",
+                         "Х. Ещё неизвестный раздел", "ПРИЛОЖЕНИЕ № 1 к СП 9.9.9999-20",
+                         ("Title", "Форма"), "1. Правило приложения."])
+    tree = pdf_tree(source, CLAIM, "original")
+    nodes = {node["address"]: node for node in tree["nodes"]}
+    assert nodes["act/approved/1/point/1"]["parent_address"] == "act/approved/1"
+    assert nodes["act/approved/1/annex/1/point/1"]["parent_address"] == "act/approved/1/annex/1"
 
 
 @pytest.mark.parametrize("body,reason", [

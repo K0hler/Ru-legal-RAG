@@ -6,6 +6,8 @@
   owners, provider-neutral category variation and preserved ambiguity. Mutation
   controls include valid-but-wrong sibling ownership and normative text, beyond
   missing parents/cached accounting. No inference or corpus files enter CI.
+  Include physical-category quote delimiters, multiple exact note references
+  and recovery at a verified new approval/annex after an unknown section.
 
 - `corpus/test_ocr_structure_probe.py` checks the explicit experiment projection
   with authored text/table inputs and refusal to overwrite retained failures.
