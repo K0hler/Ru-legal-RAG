@@ -223,10 +223,15 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
 
 
 def pdf_tree(extraction: dict, declared_identity: str, role: str) -> dict:
+    from copy import deepcopy
+
+    from .ocr_structure import build_ocr_structure
     from .structure import build_structure
 
-    tree = build_structure(extraction, declared_identity, role)
+    tree = build_ocr_structure(extraction, declared_identity, role)
+    if tree is None:
+        tree = build_structure(extraction, declared_identity, role)
     tree["structural_issues"] = sorted(set(tree["structural_issues"] + ["pdf_structure_unqualified"]))
-    tree["document_tree"] = extraction["document_tree"]
-    tree["ocr_uncertainties"] = extraction["uncertainties"]
+    tree["document_tree"] = deepcopy(extraction["document_tree"])
+    tree["ocr_uncertainties"] = list(extraction["uncertainties"])
     return tree

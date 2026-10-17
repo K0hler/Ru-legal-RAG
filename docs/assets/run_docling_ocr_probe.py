@@ -12,7 +12,8 @@ import time
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 from docling.datamodel.base_models import InputFormat  # noqa: E402
-from docling.document_converter import DocumentConverter  # noqa: E402
+from docling.datamodel.backend_options import HTMLBackendOptions  # noqa: E402
+from docling.document_converter import DocumentConverter, HTMLFormatOption  # noqa: E402
 
 
 def write(path, value):
@@ -27,8 +28,9 @@ def main():
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-    converter = DocumentConverter(allowed_formats=[InputFormat.HTML])
-    options = converter.format_to_options[InputFormat.HTML].backend_options
+    options = HTMLBackendOptions()
+    converter = DocumentConverter(allowed_formats=[InputFormat.HTML],
+                                  format_options={InputFormat.HTML: HTMLFormatOption(backend_options=options)})
     assert not any((options.render_page, options.fetch_images, options.enable_remote_fetch, options.enable_local_fetch))
     rows = []
     for path in sorted(args.input_dir.glob("*/prepared.html")):

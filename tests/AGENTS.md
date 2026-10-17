@@ -1,5 +1,12 @@
 # Test instructions
 
+- `corpus/test_ocr_structure.py` uses authored normalized input for both OCR
+  resolution families. Check exact raw tokens/spans, split approvals/titles,
+  cross-page context, decimal/Roman prefixes, quoted scopes, table/footnote
+  owners, provider-neutral category variation and preserved ambiguity. Mutation
+  controls include valid-but-wrong sibling ownership and normative text, beyond
+  missing parents/cached accounting. No inference or corpus files enter CI.
+
 - `corpus/test_ocr_structure_probe.py` checks the explicit experiment projection
   with authored text/table inputs and refusal to overwrite retained failures.
   These tests do not run Dedoc/Docling, download documents or qualify hierarchy.

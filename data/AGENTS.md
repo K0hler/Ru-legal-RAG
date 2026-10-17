@@ -1,5 +1,13 @@
 # Local data instructions
 
+- M1-04A `development-ocr/` retains new complete SP3678 (79-page) and
+  Resolution1156 (23-page) dots.mocr evidence. `shared-verified-v5/` binds the
+  actual `ocr-layout-structure/5` code and three full compiler cohorts: baseline
+  103 pages plus these 102 pages, two identical outputs and unchanged replay.
+  Preserve earlier shared-v1/v2/v3/v4/v5 attempts separately. Both new acts and
+  the baseline still have unresolved structure; four reserved acts are not
+  qualified or consumed for rule design. None of these artifacts admits an edition.
+
 - `m1/experiments/m1-04a-20261017-v1/` retains the 103-page legacy baseline,
   isolated Dedoc trials and six additional official acquisitions (222 pages by
   source metadata). Split hash `272ad4033e1b3d8178c3ddc43a62fc380da63b13e3160f6a6df25ab2cb6fda46`

@@ -8,11 +8,19 @@ from .compiler import content_hash
 
 PARSER_VERSION = "legal-structure/7"
 PROFILE_VERSIONS = {"federal_law": "federal-law/5", "code": "code/5",
-                    "government_resolution": "government-resolution/3"}
+                    "government_resolution": "government-resolution/3", "sanitary_rules": "sanitary-rules/1"}
 NUMBER = r"[1-9][0-9]*(?:[.^-][1-9][0-9]*)*"
 ROMAN = r"[IVXLCDM]+(?:[.^-][1-9][0-9]*)*"
 SUP_DIGITS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 MONTHS = "января февраля марта апреля мая июня июля августа сентября октября ноября декабря".split()
+
+
+def _roman_decimal(number):
+    if not number or not re.fullmatch(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})", number):
+        return None
+    values = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+    return sum(-values[c] if i + 1 < len(number) and values[c] < values[number[i + 1]] else values[c]
+               for i, c in enumerate(number))
 
 
 def _identity(blocks: list[dict], declared_identity: str | None) -> dict:
@@ -187,21 +195,21 @@ def _note_fields(block: dict) -> dict:
 
 
 def build_structure(
-    extraction: dict, declared_identity: str | None = None, role: str = "consolidated"
+    extraction: dict, declared_identity: str | None = None, role: str = "consolidated", *, identity_decision: dict | None = None
 ) -> dict:
     """Build source-bound diagnostic addresses; never infer an effective edition."""
     source_blocks = extraction.get(
         "blocks", extraction.get("pages", [{}])[0].get("blocks", [])
     )
     blocks = [{"classes": [], "display_text": b["text"], **b} for b in source_blocks]
-    identity = _identity(blocks, declared_identity)
+    identity = identity_decision if identity_decision is not None else _identity(blocks, declared_identity)
     namespace = (
         "act"
         if role != "amendment"
         else "amendment/" + extraction["source_asset_sha256"]
     )
     profile = PROFILE_VERSIONS.get(identity["family"], "unsupported")
-    resolution = identity["family"] == "government_resolution"
+    resolution = identity["family"] in {"government_resolution", "sanitary_rules"}
     nodes: list[dict] = []
     unresolved: list[dict] = []
     excluded: list[dict] = []
@@ -246,6 +254,7 @@ def build_structure(
     quote_parity = 0
     quote_delimiters = None
     structural_issues = []
+    unresolved_section = False
     last = last_paragraph = None
     regions = extraction.get("unsupported_regions", [])
     unresolved_regions: list[dict] = []
@@ -253,6 +262,8 @@ def build_structure(
     image_events = []
     paragraph_parents = {}
     table_addresses = {}
+    following_title_ids = {}
+    approval_metadata = {}
     region_paragraphs = {r["paragraph"] for r in regions if r["paragraph"] is not None
                          and not (resolution and r["tag"] == "img")}
     signing_ids = set(identity["signature_block_ids"])
@@ -287,13 +298,18 @@ def build_structure(
                 "html_id": region.get("attributes", {}).get("id"), "text_node_ids": []}
 
     def following_title(block):
+        titles = []
         for candidate in blocks[block["block_id"] + 1:]:
             if candidate["text"] and not _is_note(candidate) and not candidate["exclusion_reason"]:
-                if "T" in candidate["classes"]:
-                    return candidate["text"]
+                if "T" in candidate["classes"] and not (identity_decision is not None and re.match(rf"{ROMAN}\.\s", candidate["numbering_text"], re.I)):
+                    titles.append(candidate)
+                    if identity_decision is None:
+                        break
+                    continue
                 if candidate["text"] != "(форма)":
                     break
-        return None
+        following_title_ids[block["block_id"]] = [b["block_id"] for b in titles]
+        return " ".join(b["text"] for b in titles) or None
 
     events = sorted([*blocks, *regions], key=lambda e: e["source_span"]["char_start"])
     for block in events:
@@ -337,6 +353,8 @@ def build_structure(
             )
         }
         entry["table_cell"] = block.get("table_cell")
+        if block.get("layout_kind"):
+            entry.update({k: block[k] for k in ("source_spans", "source_block_ids", "source_region_id", "layout_kind")})
         if block["exclusion_reason"] or not block["text"]:
             excluded.append(
                 {**entry, "reason": block["exclusion_reason"] or "whitespace"}
@@ -351,8 +369,8 @@ def build_structure(
         if supported_cell:
             entry["table_address"] = table_addresses[table["region_id"]]
         close_quote = False
-        amending = resolution and any(container and container.startswith(a)
-                                      and title.casefold().startswith("изменения") for a, title in approved_titles.items())
+        amending = resolution and (identity_decision is not None and role == "amendment" or any(container and container.startswith(a)
+                                      and title.casefold().startswith("изменения") for a, title in approved_titles.items()))
         if amending and not _is_note(block):
             if numbering.startswith(('"', '«', '“')) and quote is None and (part or item or subitem):
                 parent = subitem or item or part
@@ -398,6 +416,34 @@ def build_structure(
             reason = "unaddressed_document_text"
         elif block["paragraph"] in ambiguous_paragraphs:
             reason = "multiple_provision_markers"
+        elif block["block_id"] in approval_metadata:
+            kind, parent = "metadata", approval_metadata[block["block_id"]]
+            address = numbered(parent, kind)
+        elif unresolved_section and not re.match(rf"^(?:{ROMAN}\.\s|ПРИЛОЖЕНИЕ\b|УТВЕРЖДЕН)", numbering, re.I):
+            reason = "document_scope_unresolved"
+        elif block.get("layout_kind") == "table":
+            kind, parent = "table", subitem or item or part or section or container or namespace
+            address = numbered(parent, kind)
+            fields = {"table_cells": block["table_cells"], "table_topology": block["table_topology"]}
+        elif block.get("layout_kind") in {"image", "page_header", "page_footer"}:
+            kind, parent = "image" if block["layout_kind"] == "image" else "metadata", namespace
+            address = numbered(parent, kind)
+            fields = {"transcription_status": "unverified", "scope_status": "physical_metadata"}
+        elif block.get("layout_kind") == "footnote":
+            match = re.match(r"^([⁰¹²³⁴⁵⁶⁷⁸⁹]+|[1-9][0-9]*)[.)]?\s+", text)
+            if match:
+                number = match[1].translate(str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789"))
+                marker = number.translate(SUP_DIGITS)
+                reference = re.compile(r"(?<![⁰¹²³⁴⁵⁶⁷⁸⁹])" + marker + r"(?![⁰¹²³⁴⁵⁶⁷⁸⁹])")
+                owners = [n for n in nodes if n["kind"] in {"point", "part", "item", "subitem", "paragraph"}
+                          and reference.search(n["text"])]
+                parent = owners[-1]["address"] if owners else namespace
+                kind, address = "footnote", f"{parent}/footnote/{number}"
+                fields = {**_number_fields(number), "scope_status": "explicit_marker" if owners else "unresolved"}
+                if not owners:
+                    structural_issues.append("footnote_scope_unresolved")
+            else:
+                reason = "unsupported_footnote_marker"
         elif resolution and container and re.fullmatch(r"Примечани[ея]:?", text, re.I):
             kind, parent = "notes_section", container
             address = numbered(parent, "notes")
@@ -421,18 +467,46 @@ def build_structure(
             excluded.append({**entry, "reason": "typographic_separator"})
             continue
         elif resolution and re.match(r"УТВЕРЖДЕН", text, re.I):
-            title = following_title(block)
-            match = re.fullmatch(r"УТВЕРЖДЕН[АЫО]? постановлением Правительства Российской Федерации от (\d+) ([а-я]+) (\d{4}) г\. № ([1-9][0-9]*)", text, re.I)
+            approval_anchor, approval_text, approval_blocks = block, text, [block]
+            if identity_decision is not None and re.fullmatch(r"УТВЕРЖДЕН[АЫО]?", text, re.I):
+                for candidate in blocks[block["block_id"] + 1:]:
+                    if candidate["exclusion_reason"] or not candidate["text"]:
+                        continue
+                    if len(approval_blocks) == 1 and not candidate["text"].casefold().startswith("постановлением "):
+                        break
+                    approval_blocks.append(candidate)
+                    approval_text += " " + candidate["text"]
+                    approval_anchor = candidate
+                    if re.search(r"№\s*[1-9][0-9]*$", candidate["text"]) or len(approval_blocks) == 5:
+                        break
+            title = following_title(approval_anchor)
+            issuer = identity.get("issuer") or "Правительства Российской Федерации"
+            match = re.fullmatch(r"УТВЕРЖДЕН[АЫО]? постановлением " + re.escape(issuer) + r" от (\d+) ([а-я]+) (\d{4}) г\. № ([1-9][0-9]*)", approval_text, re.I)
             approved_date = None
+            approved_number = None
             if match:
+                approved_number = match[4]
                 try:
                     approved_date = date(int(match[3]), MONTHS.index(match[2]) + 1, int(match[1])).isoformat()
                 except ValueError:
                     pass
-            if title and match and match[4] == identity["number"] and approved_date == identity["signing_date"]:
+            elif identity_decision is not None:
+                numeric = re.fullmatch(r"УТВЕРЖДЕН[АЫО]? постановлением " + re.escape(issuer)
+                                      + r" от (\d{2}\.\d{2}\.\d{4}) г\. № ([1-9][0-9]*)", approval_text, re.I)
+                if numeric:
+                    try:
+                        approved_date = datetime.strptime(numeric[1], "%d.%m.%Y").date().isoformat()
+                        approved_number = numeric[2]
+                    except ValueError:
+                        pass
+            if title and approved_number == identity["number"] and approved_date == identity["signing_date"]:
                 kind, parent = "approved_text", namespace
                 address = numbered(parent, "approved")
                 fields = {"title": title}
+                if identity_decision is not None:
+                    fields["title_block_ids"] = following_title_ids[approval_anchor["block_id"]]
+                    fields["approval_evidence_block_ids"] = [b["block_id"] for b in approval_blocks]
+                    approval_metadata.update({b["block_id"]: address for b in approval_blocks[1:]})
                 approved_titles[address] = title
                 container = address
             else:
@@ -440,16 +514,37 @@ def build_structure(
             section = chapter = subchapter = article = part = item = subitem = None
             list_order = None
         elif resolution and re.match(r"ПРИЛОЖЕНИЕ(?:\s|$)", text, re.I):
-            match = re.fullmatch(rf"ПРИЛОЖЕНИЕ(?: № ({NUMBER}))? к (.+)", numbering, re.I)
+            marker = rf"(?: (?:№ )?({NUMBER}))?" if identity_decision is not None else rf"(?: № ({NUMBER}))?"
+            match = re.fullmatch(rf"ПРИЛОЖЕНИЕ{marker} к (.+)", numbering, re.I)
             targets = []
             if match:
                 target = re.sub(r"^Правилам\b", "Правила", match[2], flags=re.I)
                 targets = [a for a, title in approved_titles.items() if title.casefold() == target.casefold()]
+                if identity_decision is not None and not targets:
+                    designation = re.search(r"\b(?:СП|СанПиН)\s+(\d+(?:[./]\d+)+(?:-\d+)?)", target, re.I)
+                    if designation:
+                        targets = [a for a, title in approved_titles.items() if designation[1] in title]
+            own_act = False
+            if identity_decision is not None and match and not targets:
+                reference = re.fullmatch(r"постановлению " + re.escape(identity["issuer"])
+                    + r" от (\d+) ([а-я]+) (\d{4}) г\. № ([1-9][0-9]*)", match[2], re.I)
+                if reference:
+                    try:
+                        own_act = (reference[4] == identity["number"] and
+                                   date(int(reference[3]), MONTHS.index(reference[2].casefold()) + 1,
+                                        int(reference[1])).isoformat() == identity["signing_date"])
+                    except ValueError:
+                        pass
+                if own_act:
+                    targets = [namespace]
             if len(targets) == 1 and following_title(block):
                 kind, parent = "annex", targets[0]
-                fields = {**_number_fields(match[1] or "1"), "title": following_title(block),
+                fields = {**(_number_fields(match[1] or "1") if not own_act or match[1] else {"number_canonical": None}), "title": following_title(block),
                           "number_is_explicit": match[1] is not None}
-                address = f"{parent}/annex/{fields['number_canonical']}"
+                if identity_decision is not None:
+                    fields["title_block_ids"] = following_title_ids[block["block_id"]]
+                address = (numbered(parent, "unnumbered_annex") if own_act and not match[1]
+                           else f"{parent}/annex/{fields['number_canonical']}")
                 container = address
             else:
                 reason, container = "annex_target_unresolved", None
@@ -457,9 +552,8 @@ def build_structure(
             list_order = None
         elif resolution and not container:
             reason = "document_scope_unresolved"
-        elif resolution and "T" in classes and container != namespace and text == next(
-            (n.get("title") for n in reversed(nodes) if n["address"] == container), None
-        ):
+        elif resolution and "T" in classes and container != namespace and any(
+            n["address"] == container and (text == n.get("title") or block["block_id"] in n.get("title_block_ids", [])) for n in nodes):
             kind, parent = "heading", container
             address = numbered(parent, kind)
         elif resolution and "N" in classes and (match := re.match(r"^\^([1-9][0-9]*)\s", numbering)):
@@ -477,13 +571,26 @@ def build_structure(
             address = f"{parent}/section/{fields['number_canonical']}"
             section, part, item, subitem = address, None, None, None
             list_order = None
+            unresolved_section = False
         elif resolution and supported_cell and block["table_cell"]["column"] > 0:
             kind, parent = "table_cell", part or entry["table_address"]
             address = numbered(parent, kind)
-        elif resolution and (match := re.match(rf"^({NUMBER})\.(?:\s|$)", numbering)):
+        elif resolution and (match := re.match(rf"^({NUMBER})\.(?:\s|$)", numbering)
+                             or (identity_decision is not None and re.match(r"^([1-9][0-9]*(?:\.[1-9][0-9]*)+)\s+(?=[А-ЯA-Z])", numbering))):
             kind, parent = "point", section or container
             fields = _number_fields(match[1])
             address = f"{container}/point/{fields['number_canonical']}"
+            if identity_decision is not None and "." in match[1]:
+                prefix = match[1].rsplit(".", 1)[0]
+                parents = [n for n in nodes if n["kind"] in {"point", "subitem"}
+                           and n.get("number_canonical") == prefix and n["address"].startswith(container + "/")]
+                if parents:
+                    kind, parent = "subitem", parents[-1]["address"]
+                    address = f"{parent}/subitem/{fields['number_canonical']}"
+                else:
+                    section_number = next((n.get("number_canonical") for n in nodes if n["address"] == section), None)
+                    if str(_roman_decimal(section_number)) != prefix:
+                        kind, reason = None, "decimal_parent_unresolved"
             part, item, subitem = address, None, None
             list_order = None
         elif resolution and (part or quote) and (match := re.match(rf"^({NUMBER})\)(?:\s|$)", numbering)):
@@ -560,7 +667,10 @@ def build_structure(
         ):
             reason = "unknown_heading"
             if resolution:
-                container = None
+                if identity_decision is not None and container and re.match(r"^[IVXLCDMХ]+\.\s", numbering, re.I):
+                    unresolved_section = True
+                else:
+                    container = None
             if "T" in classes or text.casefold().startswith("раздел"):
                 section = chapter = subchapter = None
             elif text.casefold().startswith("глава"):

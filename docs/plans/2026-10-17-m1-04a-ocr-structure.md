@@ -1,8 +1,8 @@
 # M1-04A: Universal OCR Structure Parser Implementation Plan
 
-> **For agentic workers:** Use superpowers:executing-plans when the owner starts this slice. Work on `main`, one verified item and commit at a time. This document records the task; implementation and acquisition have not started.
+> **For agentic workers:** Use superpowers:executing-plans. Work on `main`, one verified item and commit at a time. Execution started on 17 October 2026; retain the ledger and actual unresolved results when continuing.
 
-**Status:** in progress from 17 October 2026. Retained baseline/acquisition evidence is in [the initial report](../milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md); hierarchy qualification remains open.
+**Status:** in progress from 17 October 2026. Tasks 1–2 have diagnostic implementation/evidence in [the initial report](../milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) and [the shared OCR report](../milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md). Critical development structure remains unresolved; Task 3 qualification is pending, not passed.
 
 **Task board:** [M1-04A: Универсальный структурный парсер OCR](https://trello.com/c/fX6dQ9HM), ready for work with eight incomplete acceptance items.
 
@@ -69,12 +69,18 @@ These are extension points, not instructions to rewrite every listed module. Add
 **Consumes:** normalized extractions, the development corpus and failure classes from Task 1.
 **Produces:** source-bound `legal-ast/2` through the existing `pdf_tree` interface, with explicit supported/unsupported structures.
 
-- [ ] Add failing authored tests in `test_ocr_structure.py` for cross-page provision continuation; approving/approved/annex scopes; quoted foreign numbering; table/footnote ownership; and seal/header/page-number noise. Assert literal expected parent addresses and order, exact source substrings and exactly-once text accounting.
-- [ ] Add tests for OCR category/spacing variation and negative tests for ambiguous numbering, missing scope, duplicate addresses, swapped parents and dropped text/regions. Ambiguity must remain unresolved; corrupted ownership must fail validation.
-- [ ] Run the focused tests and record the expected failures before implementing the smallest shared engine/profile extensions.
-- [ ] Add engine-neutral input controls: identical normalized content with different provider metadata and no native OCR fields must yield the same hierarchy/address relationships. This does not claim a second real OCR engine is qualified.
-- [ ] Preserve raw text while using mapped whitespace/layout cues for structure. Record any normalization mapping; no silent number/date/sign repair or per-document patches.
-- [ ] Run focused tests and existing native/official-import/PDF regressions. Verify the final engine consumes every selected full development document, not sample pages only; update instructions and commit.
+- [x] Add failing authored tests in `test_ocr_structure.py` for cross-page provision continuation; approving/approved/annex scopes; quoted foreign numbering; table/footnote ownership; and seal/header/page-number noise. Assert literal expected parent addresses and order, exact source substrings and exactly-once text accounting.
+- [x] Add tests for OCR category/spacing variation and negative tests for ambiguous numbering, missing scope, duplicate addresses, swapped parents and dropped text/regions. Ambiguity must remain unresolved; corrupted ownership must fail validation.
+- [x] Run the focused tests and record the expected failures before implementing the smallest shared engine/profile extensions.
+- [x] Add engine-neutral input controls: identical normalized content with different provider metadata and no native OCR fields must yield the same hierarchy/address relationships. This does not claim a second real OCR engine is qualified.
+- [x] Preserve raw text while using mapped whitespace/layout cues for structure. Record any normalization mapping; no silent number/date/sign repair or per-document patches.
+- [x] Run focused tests and existing native/official-import/PDF regressions. Verify the final engine consumes every selected full development document, not sample pages only; update instructions and commit.
+
+Task 2 engineering consumption is not complete structural acceptance: all 12 full
+development inputs compile/replay with preservation, but unresolved hierarchy
+remains in the mandatory baseline and both new acts. Do not spend reserved bodies
+on a candidate already known to fail development; complete the common rules and
+review before Task 3. The required independent two-act-per-family gate is unchanged.
 
 ## Task 3: Qualify the frozen parser on independent documents
 
