@@ -20,6 +20,11 @@
   missing parents/cached accounting. No inference or corpus files enter CI.
   Include physical-category quote delimiters, multiple exact note references
   and recovery at a verified new approval/annex after an unknown section.
+  Scope controls vary physical caption categories, reference fragmentation and
+  date notation across both families. Include exact typed identifiers, prefix
+  collisions, multiple owners, repeated approval/annex headers and quoted captions.
+  Reject unknown-owner tables falling back to root and wrong scope/title evidence
+  even when graph pointers and cached preservation counters remain consistent.
 
 - `corpus/test_ocr_structure_probe.py` checks the explicit experiment projection
   with authored text/table inputs and refusal to overwrite retained failures.

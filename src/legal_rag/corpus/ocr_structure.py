@@ -6,9 +6,9 @@ from datetime import datetime, date
 import re
 
 from .compiler import content_hash
-from .structure import MONTHS, build_structure
+from .structure import MONTHS, NUMBER, _attachment_targets, _number_fields, _resolution_reference, build_structure
 
-VERSION = "ocr-layout-structure/6"
+VERSION = "ocr-layout-structure/7"
 ISSUERS = {"government_resolution": "Правительства Российской Федерации",
            "sanitary_rules": "Главного государственного санитарного врача Российской Федерации"}
 HEADERS = {"government_resolution": "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ",
@@ -171,6 +171,38 @@ def validate_ocr_tree(extraction, tree):
             span["locator"] = f"ocr:{span['json_pointer']}:chars:{span['ocr_char_start']}:{span['ocr_char_end']}"
             if entry["source_span"] != span:
                 raise ValueError("changed OCR aggregate locator")
+    by_block = {entry["block_id"]: entry for entry in entries if entry["block_id"] is not None}
+    titles = {}
+    for node in nodes:
+        if node["kind"] not in {"approved_text", "annex"}:
+            continue
+        evidence = node.get("approval_evidence_block_ids" if node["kind"] == "approved_text" else "attachment_evidence_block_ids", [])
+        if (not evidence or evidence[0] != node["block_id"] or evidence != sorted(set(evidence))
+                or any(i not in by_block for i in evidence)):
+            raise ValueError("invalid OCR scope evidence blocks")
+        if any(by_block[i].get("parent_address") != node["address"] for i in evidence[1:]):
+            raise ValueError("invalid OCR scope evidence ownership")
+        caption = " ".join(by_block[i]["text"] for i in evidence)
+        title_ids = node.get("title_block_ids", [])
+        if (any(i not in by_block for i in title_ids)
+                or title_ids != sorted(set(title_ids))
+                or any(by_block[i].get("parent_address") != node["address"] or i <= evidence[-1] for i in title_ids)
+                or (" ".join(by_block[i]["text"] for i in title_ids) or None) != node.get("title")):
+            raise ValueError("invalid OCR scope evidence title")
+        identity = tree["identity_decision"]
+        if node["kind"] == "approved_text":
+            reference = re.sub(r"^УТВЕРЖДЕН[АЫО]?\s+", "", caption, flags=re.I)
+            if (node["parent_address"] != tree["namespace"] or
+                    _resolution_reference(reference, identity["issuer"]) != (identity["signing_date"], identity["number"])):
+                raise ValueError("invalid OCR approval scope evidence")
+            titles[node["address"]] = node["title"]
+        else:
+            match = re.fullmatch(rf"ПРИЛОЖЕНИЕ(?: (?:№ )?({NUMBER}))? к (.+)", caption, re.I)
+            if not match or _attachment_targets(match[2], titles, identity, tree["namespace"]) != [node["parent_address"]]:
+                raise ValueError("invalid OCR attachment scope evidence")
+            if (node.get("number_canonical") != (_number_fields(match[1])["number_canonical"] if match[1] else None)
+                    or node.get("number_is_explicit") != (match[1] is not None)):
+                raise ValueError("invalid OCR attachment scope evidence number")
     expected_regions = [r["region_id"] for p in extraction["pages"] for r in p["regions"]]
     if Counter(b["region_id"] for b in tree["region_bindings"]) != Counter(expected_regions):
         raise ValueError("dropped or duplicated physical OCR region")
@@ -179,8 +211,8 @@ def validate_ocr_tree(extraction, tree):
         if binding["address"] != region_entries.get(binding["region_id"], {}).get("address"):
             raise ValueError("wrong physical OCR region owner")
     regions = {r["region_id"]: r for p in extraction["pages"] for r in p["regions"]}
-    for node in nodes:
-        if node["kind"] == "table" and (node["table_topology"] != regions[node["source_region_id"]]["table"]
+    for node in entries:
+        if node.get("layout_kind") == "table" and (node["table_topology"] != regions[node["source_region_id"]]["table"]
                 or node["table_cells"] != regions[node["source_region_id"]]["table"]["cells"]):
             raise ValueError("changed OCR table cells or topology")
     if tree.get("document_tree", extraction["document_tree"]) != extraction["document_tree"]:

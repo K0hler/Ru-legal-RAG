@@ -300,3 +300,202 @@ def test_table_cannot_be_reassigned_to_an_earlier_sibling_point():
     table["parent_address"] = new["address"]
     with pytest.raises(ValueError):
         ocr_structure.validate_ocr_tree(source, tree)
+
+
+@pytest.mark.parametrize("government", [False, True])
+@pytest.mark.parametrize("category", ["Text", "Page-header", "Page-footer"])
+@pytest.mark.parametrize("split", [False, True])
+def test_explicit_attachment_scope_is_independent_of_ocr_tag_and_fragmentation(government, category, split):
+    issuer = "Правительства Российской Федерации" if government else ISSUER
+    body = ["1. Утвердить правила.",
+            f"УТВЕРЖДЕНЫ постановлением {issuer} от 9 июня 2020 г. № 812",
+            ("Title", "Санитарные правила СП 9.9.9999-20"), "1. Правило утверждённого текста."]
+    body += ([(category, "ПРИЛОЖЕНИЕ № 7"), (category, "к СП 9.9.9999-20")] if split else
+             [(category, "ПРИЛОЖЕНИЕ № 7 к СП 9.9.9999-20")])
+    body += [("Title", "Условия учёта"), "1. Правило приложения.",
+             ("Table", "<table><tr><td>Допуск</td><td>не более 5</td></tr></table>")]
+    source = extraction(body, government=government)
+    saved = copy.deepcopy(source)
+    tree = pdf_tree(source, CLAIM.replace(ISSUER, issuer), "original")
+    nodes = {n["address"]: n for n in tree["nodes"]}
+    annex = nodes["act/approved/1/annex/7"]
+    assert annex["parent_address"] == "act/approved/1"
+    assert len(annex["attachment_evidence_block_ids"]) == (2 if split else 1)
+    assert nodes["act/approved/1/annex/7/point/1"]["parent_address"] == annex["address"]
+    assert next(n for n in tree["nodes"] if n["kind"] == "table")["parent_address"] == "act/approved/1/annex/7/point/1"
+    assert not tree["unresolved_blocks"]
+    assert tree["accounting"]["exactly_once"]
+    assert source == saved
+
+
+@pytest.mark.parametrize("government", [False, True])
+@pytest.mark.parametrize("date_text", ["9 июня 2020 г.", "09.06.2020", "09.06.2020 г."])
+def test_own_act_reference_formats_and_unnumbered_annex_do_not_fabricate_a_number(government, date_text):
+    issuer = "Правительства Российской Федерации" if government else ISSUER
+    source = extraction(["1. Изменить правила.",
+                         f"Приложение к постановлению {issuer} от {date_text} № 812",
+                         ("Title", "Изменения"), "1. Новое условие."], government=government)
+    tree = pdf_tree(source, CLAIM.replace(ISSUER, issuer), "amendment")
+    annex, = [n for n in tree["nodes"] if n["kind"] == "annex"]
+    assert annex["parent_address"] == tree["namespace"]
+    assert annex["number_canonical"] is None
+    assert not annex["number_is_explicit"]
+    assert not tree["unresolved_blocks"]
+
+
+@pytest.mark.parametrize("date_text", ["09.06.2020", "9 июня 2020"])
+def test_split_approval_metadata_and_date_notation_resolve_one_identity(date_text):
+    source = extraction(["1. Утвердить правила.", ("Page-header", "УТВЕРЖДЕНЫ"),
+                         ("Page-header", f"постановлением {ISSUER}"),
+                         ("Page-header", f"от {date_text} № 812"),
+                         ("Title", "ПРАВИЛА учёта"), "1. Обязанность."])
+    tree = pdf_tree(source, CLAIM, "original")
+    approved, = [n for n in tree["nodes"] if n["kind"] == "approved_text"]
+    assert len(approved["approval_evidence_block_ids"]) == 3
+    assert next(n for n in tree["nodes"] if n["text"] == "1. Обязанность.")["parent_address"] == approved["address"]
+    assert not tree["unresolved_blocks"]
+
+
+@pytest.mark.parametrize("target", ["СП 9.9.9999-2", "неизвестным правилам"])
+def test_unresolved_semantic_header_cannot_keep_the_previous_owner(target):
+    source = extraction(["1. Утвердить правила.",
+                         f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812",
+                         ("Title", "Санитарные правила СП 9.9.9999-20"), "1. Старое правило.",
+                         ("Page-header", f"Приложение № 7 к {target}"),
+                         ("Title", "Другие условия"), "2. Неизвестная принадлежность."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert "annex_target_unresolved" in {b["reason"] for b in tree["unresolved_blocks"]}
+    assert not any(n["text"] == "2. Неизвестная принадлежность." for n in tree["nodes"])
+
+
+def test_attachment_uses_explicit_reference_among_multiple_approved_texts():
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить два документа.", stamp, ("Title", "Правила учёта"), "1. Учёт.",
+                         stamp, ("Title", "Правила осмотра"), "1. Осмотр.",
+                         "Приложение № 3", "к Правилам учёта", ("Title", "Форма"), "1. Поле."])
+    tree = pdf_tree(source, CLAIM, "original")
+    annex, = [n for n in tree["nodes"] if n["kind"] == "annex"]
+    assert annex["parent_address"] == "act/approved/1"
+    assert not tree["unresolved_blocks"]
+
+
+def test_ambiguous_attachment_reference_does_not_choose_latest_approved_text():
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить документы.", stamp, ("Title", "Правила учёта"), "1. Один.",
+                         stamp, ("Title", "Правила учёта"), "1. Другой.",
+                         "Приложение № 3 к Правилам учёта", ("Title", "Форма"), "2. Неизвестный владелец."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert not any(n["kind"] == "annex" for n in tree["nodes"])
+    assert "annex_target_unresolved" in {b["reason"] for b in tree["unresolved_blocks"]}
+
+
+def test_repeated_attachment_running_header_does_not_reopen_or_reset_scope():
+    source = extraction(["1. Утвердить правила.",
+                         f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812",
+                         ("Title", "Санитарные правила СП 9.9.9999-20"),
+                         "Приложение № 3 к СП 9.9.9999-20", ("Title", "Форма"), "1. Условие.",
+                         ("Page-header", "Приложение № 3 к СП 9.9.9999-20"), "Продолжение условия."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert len([n for n in tree["nodes"] if n["kind"] == "annex"]) == 1
+    assert next(n for n in tree["nodes"] if n["text"] == "Продолжение условия.")["parent_address"] == "act/approved/1/annex/3/point/1"
+    assert not tree["unresolved_blocks"]
+
+
+@pytest.mark.parametrize("category", ["Text", "Page-header"])
+def test_caption_inside_amendment_quote_cannot_open_an_own_document(category):
+    source = extraction(["1. Изложить документ в следующей редакции:", "«1. Чужое правило.",
+                         (category, f"Приложение к постановлению {ISSUER} от 09.06.2020 № 812"),
+                         ("Title", "Форма"), "2. Чужое условие.»;", "2. Собственное правило."])
+    tree = pdf_tree(source, CLAIM, "amendment")
+    assert not any(n["kind"] == "annex" for n in tree["nodes"])
+    assert next(n for n in tree["nodes"] if n["text"] == "2. Собственное правило.")["parent_address"] == tree["namespace"]
+
+
+def test_unknown_scope_cannot_be_mistaken_for_a_repeated_header():
+    source = extraction(["1. Начало.", ("Page-header", "Приложение № 1 к неизвестным правилам"),
+                         ("Title", "Неизвестная область"), "2. Неизвестное правило.",
+                         ("Page-header", f"Приложение № 2 к постановлению {ISSUER} от 09.06.2020 № 812"),
+                         ("Title", "Новая область"), "1. Проверенное правило."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert next(n for n in tree["nodes"] if n["text"] == "1. Проверенное правило.")["parent_address"] == "act/annex/2"
+    assert not any(n["parent_address"] is None for n in tree["nodes"])
+
+
+def test_attachment_with_multiple_designations_cannot_choose_the_first_one():
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить документы.", stamp, ("Title", "Правила СП 9.9.9999-20"), "1. Первый.",
+                         stamp, ("Title", "Правила СП 8.8.8888-21"), "1. Второй.",
+                         "Приложение № 3 к СП 9.9.9999-20 и СП 8.8.8888-21", ("Title", "Форма"), "2. Неизвестное правило."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert not any(n["kind"] == "annex" for n in tree["nodes"])
+    assert "annex_target_unresolved" in {b["reason"] for b in tree["unresolved_blocks"]}
+
+
+def test_unknown_attachment_owner_cannot_fall_back_to_act_root_for_a_table():
+    source = extraction(["1. Старое правило.", "Приложение № 2 к неизвестным правилам",
+                         ("Table", "<table><tr><td>не менее 7</td></tr></table>")])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert not any(n["kind"] == "table" for n in tree["nodes"])
+    table, = [b for b in tree["unresolved_blocks"] if b["layout_kind"] == "table"]
+    assert table["reason"] == "document_scope_unresolved"
+    assert table["table_topology"] == source["pages"][0]["regions"][-1]["table"]
+
+
+@pytest.mark.parametrize("fault", ["parent", "evidence", "title", "number"])
+def test_attachment_validation_rejects_a_valid_graph_with_wrong_source_scope(fault):
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить документы.", stamp, ("Title", "Правила учёта"), "1. Один.",
+                         stamp, ("Title", "Правила осмотра"), "1. Другой.",
+                         "Приложение № 3 к Правилам учёта", ("Title", "Форма"), "1. Поле."])
+    tree = pdf_tree(source, CLAIM, "original")
+    annex = next(n for n in tree["nodes"] if n["kind"] == "annex")
+    if fault == "parent":
+        nodes = {n["address"]: n for n in tree["nodes"]}
+        nodes[annex["parent_address"]]["children"].remove(annex["address"])
+        annex["parent_address"] = "act/approved/2"
+        nodes[annex["parent_address"]]["children"].append(annex["address"])
+    elif fault == "evidence":
+        annex["attachment_evidence_block_ids"] = []
+    elif fault == "title":
+        next(n for n in tree["nodes"] if n["address"] == "act/approved/1")["title"] = "Вымышленный заголовок"
+    else:
+        annex["number_canonical"] = None
+    with pytest.raises(ValueError, match="scope evidence"):
+        ocr_structure.validate_ocr_tree(source, tree)
+
+
+@pytest.mark.parametrize("target", ["СанПиН 9.9.9999-20", "СП 9.9.9999-20.1", "СП 9.9.9999-20а"])
+def test_attachment_designation_needs_the_type_and_entire_identifier(target):
+    source = extraction(["1. Утвердить правила.",
+                         f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812",
+                         ("Title", "Правила СП 9.9.9999-20"), "1. Старое правило.",
+                         f"Приложение № 3 к {target}", ("Title", "Форма"), "1. Неизвестное правило."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert not any(n["kind"] == "annex" for n in tree["nodes"])
+    assert "annex_target_unresolved" in {b["reason"] for b in tree["unresolved_blocks"]}
+
+
+def test_repeated_approval_and_title_cannot_create_a_second_document():
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить правила.", stamp, ("Title", "Правила учёта"), "1. Условие.",
+                         ("Page-header", stamp), ("Title", "Правила учёта"), "Продолжение условия."])
+    tree = pdf_tree(source, CLAIM, "original")
+    assert len([n for n in tree["nodes"] if n["kind"] == "approved_text"]) == 1
+    assert next(n for n in tree["nodes"] if n["text"] == "Продолжение условия.")["parent_address"] == "act/approved/1/point/1"
+
+
+def test_swapped_title_evidence_cannot_reassign_an_attachment():
+    stamp = f"УТВЕРЖДЕНЫ постановлением {ISSUER} от 9 июня 2020 г. № 812"
+    source = extraction(["1. Утвердить документы.", stamp, ("Title", "Правила учёта"), "1. Один.",
+                         stamp, ("Title", "Правила осмотра"), "1. Другой.",
+                         "Приложение № 3 к Правилам учёта", ("Title", "Форма"), "1. Поле."])
+    tree = pdf_tree(source, CLAIM, "original")
+    first, second = [n for n in tree["nodes"] if n["kind"] == "approved_text"]
+    for key in ("title", "title_block_ids"):
+        first[key], second[key] = second[key], first[key]
+    annex = next(n for n in tree["nodes"] if n["kind"] == "annex")
+    first["children"].remove(annex["address"])
+    second["children"].append(annex["address"])
+    annex["parent_address"] = second["address"]
+    with pytest.raises(ValueError, match="scope evidence"):
+        ocr_structure.validate_ocr_tree(source, tree)

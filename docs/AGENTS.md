@@ -5,6 +5,11 @@
   Unresolved counts, aesthetic tree depth and known-document successes are not
   severity or transfer evidence. Document harmless deviations with retained
   context; unknown impact remains unknown, and critical gates stay unchanged.
+  The first implementation is OCR-only explicit reference/scope resolution (/7),
+  connected through the existing compiler. Distinguish supported caption variants
+  from missing/conflicting owner evidence. Increased unresolved counts can expose
+  formerly false metadata/root assignments; they do not establish worse OCR or
+  qualify the new structure. Retain native and official-import route boundaries.
 
 - `assets/stitch_ocr_footnotes.py` writes a separate logical continuation view
   with exact physical fragment pointers/pages/bboxes and combined-text offsets.

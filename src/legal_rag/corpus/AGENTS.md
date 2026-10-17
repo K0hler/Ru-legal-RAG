@@ -1,11 +1,20 @@
 # Corpus compilation module
 
-- M1-04A adds diagnostic `ocr_structure.py` (`ocr-layout-structure/6`) before
+- M1-04A adds diagnostic `ocr_structure.py` (`ocr-layout-structure/7`) before
   the shared grammar for government/sanitary resolutions. Group only physical
   OCR paragraphs, retaining source block IDs, every token/span and region binding;
   normalized whitespace/Markdown views never replace source text. OCR issuer,
   date/number/title are compared with the evidence-bound claim. Exact split
   approval/title and decimal-prefix rules are shared, not act-specific.
+- Explicit OCR approval/attachment captions use source reference evidence,
+  independently of Text/Page-header/Page-footer labels. Caption fragments retain
+  individual tokens/spans; repeated physical captions preserve the active owner.
+  Require a unique full typed designation/title or matching current-act identity;
+  never merge SP/SanPiN types or identifier prefixes. Missing/ambiguous references
+  keep scope unresolved, including tables, whose cells/topology remain present.
+  Canonical numbers are null on unnumbered annexes. Validate caption/title evidence
+  order/ownership against actual source blocks, not only a self-consistent graph.
+  The shared native grammar version is unchanged: these additions are OCR-only.
 - `validate_ocr_tree` checks actual text/spans, table cells, graph order/children,
   region coverage/ownership and intervening sibling scopes; returned data must
   not alias the saved extraction. Keep `pdf_structure_unqualified` on every

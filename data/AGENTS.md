@@ -5,6 +5,11 @@
   counts distinct from reviewed severity, cascaded blocks from root causes and
   physical-heading candidates from confirmed semantic boundaries. Native inputs,
   prior failures, reserved bodies and closed gold remain unchanged.
+  `reviewed/` and `compiler-reviewed/` are the final version-7 direct/permission-
+  checked replays. Keep `after-*`, the first compiler harness date failure and
+  interrupted pre-review official replay as superseded attempts. Typed-reference
+  conflicts exposed by the final rule must remain visible, not treated as repaired
+  by their previous numeric-only match or a smaller unresolved counter.
 
 - `m1/experiments/m1-04a-20261017-footnotes-v1/` retains the initial footnote
   heuristic; `footnotes-v2/` retains the reviewed, narrower Text rule and actual
