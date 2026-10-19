@@ -32,4 +32,10 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
   before starting the next one.
 - Keep project-wide workflow in this file and module-specific facts in the deeper
   `AGENTS.md` files linked above.
+- BB tooling lives in `.bb/`: saved workflows in `.bb/workflows/` and project
+  skills (slash commands such as `/peer-analysis` and `/run-workflow`) in
+  `.bb/skills/`. Workflow workers share the user's checkout. Analysis
+  workflows must not write repository files. Writing workflows such as
+  `implement-review-fix` leave their edits unstaged, skip files that have
+  unstaged changes or are untracked, and leave commits to the user.
 
