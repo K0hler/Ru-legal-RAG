@@ -73,6 +73,62 @@ class OcrRuntimeTest(unittest.TestCase):
             self.assertIn("ocr_review_required", result["blockers"])
             self.assertEqual(draft["legal_admission"], "not_requested")
 
+    @staticmethod
+    def sidecar_export(native):
+        """Rewrite a saved inline-native result as OCR-Lab's layout-only export."""
+        document = json.loads((native / "document.json").read_bytes())
+        run = json.loads((native / "run.json").read_bytes())
+        (native / "native").mkdir()
+        for page in document["pages"]:
+            sidecar = {"page_number": page["page_number"], "image_size": page["image_size"],
+                       "native": page.pop("native")}
+            (native / "native" / f"page_{page['page_number']:04d}.json").write_bytes(json_bytes(sidecar))
+        run["export"] = {"format": "dotsmocr-layout/2", "native": "native/page_NNNN.json",
+                         "markdown": "document.md"}
+        (native / "document.json").write_bytes(json_bytes(document))
+        (native / "run.json").write_bytes(json_bytes(run))
+
+    def test_layout_only_export_reads_native_sidecars_and_replays_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path, mapping, output, digest = self.prepare(temporary)
+            inline = runtime.extract_input(path, Path(temporary) / "inline-output", results_path=mapping)
+            self.sidecar_export(Path(temporary) / "native")
+            result = runtime.extract_input(path, output, results_path=mapping)
+            self.assertEqual(result["extractions"][digest]["extraction_id"],
+                             inline["extractions"][digest]["extraction_id"])
+            evidence = Path(result["native_evidence"][digest])
+            self.assertTrue((evidence / "native/page_0002.json").is_file())
+            compiled = compile_input(path, "2025-01-01", output, extraction_index=Path(result["index"]))
+            tree = json.loads(Path(compiled["draft"]).read_bytes())["content"]["trees"][0]
+            self.assertTrue(tree["accounting"]["exactly_once"])
+            (evidence / "native/page_0002.json").write_bytes(b"{}")
+            with self.assertRaises(ValueError):
+                compile_input(path, "2025-01-01", output / "draft-output", extraction_index=Path(result["index"]))
+            self.assertFalse((output / "draft-output").exists())
+
+    def test_layout_only_export_rejects_missing_mismatched_or_embedded_native(self):
+        for case in ("missing", "mismatch", "embedded", "format"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
+                path, mapping, output, _ = self.prepare(temporary)
+                native = Path(temporary) / "native"
+                self.sidecar_export(native)
+                sidecar = native / "native/page_0002.json"
+                if case == "missing":
+                    sidecar.unlink()
+                elif case == "mismatch":
+                    sidecar.write_bytes(json_bytes({**json.loads(sidecar.read_bytes()), "page_number": 1}))
+                elif case == "embedded":
+                    document = json.loads((native / "document.json").read_bytes())
+                    document["pages"][1]["native"] = json.loads(sidecar.read_bytes())["native"]
+                    (native / "document.json").write_bytes(json_bytes(document))
+                else:
+                    run = json.loads((native / "run.json").read_bytes())
+                    run["export"]["format"] = "dotsmocr-layout/3"
+                    (native / "run.json").write_bytes(json_bytes(run))
+                with self.assertRaises(ValueError):
+                    runtime.extract_input(path, output, results_path=mapping)
+                self.assertFalse(output.exists())
+
     def test_permission_and_wrong_source_refusal_write_no_output(self):
         for case in ("permission", "wrong_source", "partial", "unsafe_output"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
