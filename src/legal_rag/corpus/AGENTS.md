@@ -41,6 +41,13 @@
   fingerprints in immutable `ocr-evidence/`; `extraction-index/1` binds exact
   input/permission hashes. PDF `compile --extraction-index` verifies every
   extraction and native evidence hash, retaining all admission/OCR blockers.
+- OCR-Lab's `dotsmocr-layout/2` export (named by `run.json` `export.format`)
+  keeps only `layout` in `document.json`; each raw response lives in
+  `native/page_NNNN.json` with its `page_number`/`image_size`. `_read_ocr_output`
+  attaches sidecars in memory for fresh import and evidence replay alike, so
+  the normalized extraction equals the inline-native one. Legacy inline results
+  are read unchanged; unknown formats, missing/mismatched sidecars and embedded
+  native in this format fail before writes.
 - Runtime execution uses immutable copied client/config/prompt files. Check the
   executed snapshot after inference, not the mutable lab originals. Re-import
   native evidence through the normalizer before accepting an extraction index;

@@ -8,6 +8,31 @@ import uuid
 from .compiler import _hash, _inside, _read, _write_once, content_hash, json_bytes, load_input
 from .pdf_extraction import normalize_dotsmocr
 
+NATIVE_SIDECAR_EXPORT = "dotsmocr-layout/2"
+
+
+def _read_ocr_output(root: Path) -> tuple[dict, dict]:
+    """Read an OCR-Lab result; a layout-only export gets each page's native sidecar attached in memory."""
+    document, run = _read(root / "document.json"), _read(root / "run.json")
+    export = run.get("export")
+    if export is None:
+        return document, run
+    if not isinstance(export, dict) or export.get("format") != NATIVE_SIDECAR_EXPORT:
+        raise ValueError("unsupported OCR export format")
+    pages = document.get("pages")
+    if not isinstance(pages, list):
+        raise ValueError("missing, duplicate or out-of-order OCR pages")
+    attached = []
+    for page in pages:
+        if not isinstance(page, dict) or type(page.get("page_number")) is not int or "native" in page:
+            raise ValueError("layout-only OCR pages need a page number and no embedded native response")
+        sidecar = _read(_inside(root, f"native/page_{page['page_number']:04d}.json"))
+        if (sidecar.get("page_number") != page["page_number"]
+                or sidecar.get("image_size") != page.get("image_size")):
+            raise ValueError("OCR native sidecar does not match its page")
+        attached.append({**page, "native": sidecar.get("native")})
+    return {**document, "pages": attached}, run
+
 
 def _digest(path):
     with path.open("rb") as stream:
@@ -137,7 +162,7 @@ def extract_input(input_path: Path, output_dir: Path, config_path: Path | None =
                 native = run_ocr_lab(config, raw[digest], digest, receipt_dir)
             else:
                 native = mapping[digest]
-            document, run = _read(native / "document.json"), _read(native / "run.json")
+            document, run = _read_ocr_output(native)
             runtime_record = None
             if receipt_dir is not None:
                 runtime_record = _read(receipt_dir / "runtime.json")
@@ -211,10 +236,10 @@ def load_extractions(index_path: Path, manifest: dict) -> dict:
         fingerprint = extraction.get("runtime_fingerprint")
         if fingerprint is not None and fingerprint != content_hash(_read(evidence_dir / "provider-runtime.json")):
             raise ValueError("OCR runtime fingerprint does not match retained evidence")
-        run = _read(evidence_dir / "run.json")
+        document, run = _read_ocr_output(evidence_dir)
         if fingerprint is not None:
             run = {**run, "runtime_fingerprint": fingerprint}
-        if normalize_dotsmocr(_read(evidence_dir / "document.json"), run, digest) != extraction:
+        if normalize_dotsmocr(document, run, digest) != extraction:
             raise ValueError("PDF extraction does not match its retained native evidence")
         result[digest] = extraction
     return result
