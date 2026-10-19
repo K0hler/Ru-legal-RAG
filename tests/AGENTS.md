@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
+  experiment with authored extractions: lowercase continuations never open
+  approval scope, terminated list abzacy stay separate, decimal/global point
+  sequences, dates are not points, second approval caption opens `S2`, annexes
+  to the act stay in the act, footnote owners need the marker, and token
+  accounting. Load docs/assets scripts with `sys.modules` registration
+  (dataclasses need it). No corpus files or OCR engines.
+
 - `corpus/test_ocr_footnote_stitch.py` checks authored cross-page continuation
   joins, actual source fragments, three-page anchors, skipped pages, new markers
   and ordinary lower body paragraphs. Untagged Text needs positive parenthetical

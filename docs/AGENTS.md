@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
+  logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),
+  not G13 qualification. Keep development, holdout-1 (failed before two generic
+  fixes, then promoted to development) and frozen-code holdout-2 results apart.
+  Owner-path gold is single-annotator text-based; it does not check table cells,
+  quote scopes or legal-ast/2 contracts. The SP/СанПиН annex reference policy
+  differs from `/7` and awaits an owner decision.
+
 - `milestones/m1/04a/M1_04A_TWO_PDF_2026-10-17.md` records the frozen-code
   26-page SP3597/Resolution416 PDF experiment, not G13 qualification. Distinguish
   preservation/repeats from selected-image semantic controls (26/26 and 21/24).

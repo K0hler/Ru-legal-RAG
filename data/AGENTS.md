@@ -1,5 +1,12 @@
 # Local data instructions
 
+- `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
+  experiment: copied extractions, hand-made owner gold with freeze hashes written
+  before each evaluated run, all code snapshots, attempt/holdout/final runs and
+  current/Dedoc owner exports. `comparisons-04` keeps the adapter namespace bug;
+  `eval-05/summary.json` is the corrected result. Empty `runs/attempt-01/02`
+  are crash leftovers (deletion is not permitted), not results.
+
 - `m1/experiments/m1-04a-20261017-two-pdf-v1/` retains two additional official
   PDFs, permissions, metadata and new/unchanged acquisition on frozen f98b637.
   All 26 pages have fresh dots.mocr, exact saved replay and two identical actual
