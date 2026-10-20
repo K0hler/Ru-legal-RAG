@@ -26,6 +26,15 @@
   formerly false metadata/root assignments; they do not establish worse OCR or
   qualify the new structure. Retain native and official-import route boundaries.
 
+- `milestones/m1/04a/M1_04A_EVALUATION_PROTOCOL_2026-10-20.md` defines how
+  M1-04A stage-3 progress is measured. Progress is the first-pass result on
+  frozen code for documents not seen before, recorded in its ledger before the
+  document joins development; development scores are not progress. The rolling
+  check pool is separate from the four Task 3 reserved acts, which it must not
+  consume. Gold and its annotation convention are frozen before runs; a
+  convention change re-annotates all gold and keeps old numbers. Its stop
+  thresholds and the annex `owner` convention are proposals awaiting the owner.
+
 - `assets/stitch_ocr_footnotes.py` writes a separate logical continuation view
   with exact physical fragment pointers/pages/bboxes and combined-text offsets.
   Unnumbered Footnotes before a new numbered note join the last note on the
