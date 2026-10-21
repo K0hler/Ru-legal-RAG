@@ -80,6 +80,7 @@ development failures, experiments and superseded approaches.
 - [Plain-language problem brief](milestones/m1/04a/M1_04A_PROBLEM_BRIEF_2026-10-19.md) — standalone Russian explanation for readers outside the project: purpose, failure causes, tool results and remaining work.
 - [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — in progress: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
 - Data layout: new M1-04A originals, OCR, gold and experiments live under local `data/m1/m1-04a/` (see `data/AGENTS.md`); `assets/build_m1_04a_catalog.py` rebuilds the hash-verified document copies.
+- [Pool batch 1 plan](plans/2026-10-21-m1-04a-pool-batch-1.md) — metadata-only random selection of 8 diverse unamended acts, OCR by the executor, automatic gold from official pravo.gov.ru trees validated against hand gold, frozen first-pass run.
 - [Logical-text layer plan](plans/2026-10-20-m1-04a-logical-text.md) — stage 2 in production: `logical-text/1` over `text-extraction/1`, prototype parity with declared deviations D1/D2 and stage-2 metrics; not yet connected to stage 3.
 - [Initial baseline and Dedoc trials](milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) — 103 retained pages, frozen six-act corpus and explicit hierarchy limitations.
 - [First shared OCR implementation](milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md) — 205 full development pages, deterministic compilation and remaining blockers; M1-04A/G13 remain open.
