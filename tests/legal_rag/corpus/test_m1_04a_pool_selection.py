@@ -390,3 +390,114 @@ def test_min_days_only_checkpoints(monkeypatch):
         with pytest.raises(SystemExit):
             P.main(base + ["--min-days", value])
     assert seen == [0, 60, 120]
+
+
+def test_authority_short_rule():
+    f = A.authority_short
+    assert f("Министерство труда и социальной защиты Российской Федерации") == "mintruda"
+    assert f("Министерство Российской Федерации по делам гражданской обороны") == "minpo"
+    assert f("Федеральная служба по надзору в сфере здравоохранения") == "fsnsz"
+    assert f("Федеральная Российской Федерации налоговая служба") == "fns"
+    assert f("Министерство здравоохранения") == "minzdravookhraneniya"
+    with pytest.raises(ValueError):
+        f("Российской Федерации")
+
+
+def make_fetched(act, pdf=b"%PDF-body", length=None, **declared_over):
+    import json
+
+    declared = {"electronic_publication_number": act["eo_number"], "document_number": act["number"],
+                "document_date": act["date"] + "T00:00:00", "pages_count": act["pages"]}
+    declared.update(declared_over)
+    card = {"pdfFileLength": len(pdf) if length is None else length}
+    return {"declared_publication": declared, "raw_bytes": pdf,
+            "publication_card_bytes": json.dumps(card).encode()}
+
+
+def test_check_publication_refuses_card_or_length_mismatch():
+    act = POOL_ACT
+    A.check_publication(make_fetched(act), act)
+    for bad in (make_fetched(act, pages_count=act["pages"] + 1), make_fetched(act, document_number="8"),
+                make_fetched(act, document_date="2020-01-02T00:00:00"),
+                make_fetched(act, electronic_publication_number="0001202001010002"),
+                make_fetched(act, length=3)):
+        with pytest.raises(A.PublicationMismatch):
+            A.check_publication(bad, act)
+
+
+def test_pool_publication_refuses_before_any_write(tmp_path, monkeypatch):
+    fetched = make_fetched(POOL_ACT, length=3)
+    monkeypatch.setattr(A.PublicationPravoConnector, "fetch", lambda self, eo: fetched)
+    connector = A.PoolPublication(timeout=1, request_interval=0)
+    with pytest.raises(A.PublicationMismatch):
+        A.acquire_pdf(POOL_ACT, connector, tmp_path)
+    assert [p for p in tmp_path.rglob("*") if p.is_file()] == []
+
+
+def test_write_once_conflict(tmp_path):
+    path = tmp_path / "sub" / "x.json"
+    assert A.write(path, {"a": 1}) == "new"
+    assert A.write(path, {"a": 1}) == "unchanged"
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="immutable output conflict"):
+        A.write(path, {"a": 2})
+    assert path.read_bytes() == before
+
+
+def test_run_catches_only_edition_mismatch(tmp_path, monkeypatch):
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    selection = {"selected": [dict(POOL_ACT)], "quotas_filled": True}
+    monkeypatch.setattr(A, "frozen_selection", lambda b, w=False: (selection, "s"))
+    monkeypatch.setattr(A, "acquire_pdf", lambda act, c, b: {
+        "status": "ok", "runs": [], "item": {}, "sha256": "d", "asset": {"archive_key": "k", "byte_length": 1},
+        "authority": "X", "card_sha256": "c", "pdf_file_length": 1})
+    monkeypatch.setattr(A, "write_pdf_input", lambda *a: (batch / "i.json", batch / "p.json"))
+    monkeypatch.setattr(A, "sha", lambda p: "0")
+    monkeypatch.setattr(A, "rel", lambda p: str(p))
+
+    def mismatch(*args):
+        raise A.EditionMismatch("edition count")
+
+    monkeypatch.setattr(A, "acquire_official", mismatch)
+    monkeypatch.setattr(A, "retryable", lambda failure: False)
+    assert A.run(batch, tmp_path, with_official=True) == 0
+    assert list((batch / "failures").glob("*official*.json"))
+    receipt = A.read(batch / "receipts" / (POOL_ACT["eo_number"] + ".json"))
+    assert receipt["official"]["stage"] == "official_validation"
+
+    def broken(*args):
+        raise ValueError("unrelated defect")
+
+    (batch / "receipts" / (POOL_ACT["eo_number"] + ".json")).unlink()
+    monkeypatch.setattr(A, "acquire_official", broken)
+    with pytest.raises(ValueError, match="unrelated defect"):
+        A.run(batch, tmp_path, with_official=True)
+
+
+def test_run_without_official_never_touches_ips(tmp_path, monkeypatch):
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    monkeypatch.setattr(A, "frozen_selection", lambda b, w=False: ({"selected": [dict(POOL_ACT)], "quotas_filled": True}, "s"))
+    monkeypatch.setattr(A, "acquire_pdf", lambda act, c, b: {
+        "status": "ok", "runs": [], "item": {}, "sha256": "d", "asset": {"archive_key": "k", "byte_length": 1},
+        "authority": "X", "card_sha256": "c", "pdf_file_length": 1})
+    monkeypatch.setattr(A, "write_pdf_input", lambda *a: (batch / "i.json", batch / "p.json"))
+    monkeypatch.setattr(A, "sha", lambda p: "0")
+    monkeypatch.setattr(A, "rel", lambda p: str(p))
+    monkeypatch.setattr(A, "acquire_official", lambda *a: pytest.fail("official must not run"))
+    assert A.run(batch, tmp_path) == 0
+    receipt = A.read(batch / "receipts" / (POOL_ACT["eo_number"] + ".json"))
+    assert receipt["official"] == {"status": "not_requested", "runs": [], "run_ids": []}
+
+
+def test_frozen_selection_official_only_with_flag(tmp_path):
+    import json
+
+    selection = {"quotas_filled": True, "selected": [{"eo_number": "1"}]}
+    raw = json.dumps(selection).encode()
+    (tmp_path / "selection.json").write_bytes(raw)
+    (tmp_path / "selection.sha256").write_text(A.hashlib.sha256(raw).hexdigest() + "  selection.json")
+    assert A.frozen_selection(tmp_path)[0] == selection
+    with pytest.raises(ValueError):
+        A.frozen_selection(tmp_path, with_official=True)

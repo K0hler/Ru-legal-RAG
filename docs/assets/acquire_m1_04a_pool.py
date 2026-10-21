@@ -1,4 +1,7 @@
-"""M1-04A pool batch 1: acquire original PDFs and official IPS trees for the frozen selection.
+"""M1-04A check pool: acquire original PDFs (and optionally official IPS trees) for a frozen batch.
+
+`--batch batch-01|batch-02` (a name under `documents/pool/` or a path); official trees only with
+`--with-official` (batch 1 was acquired with them, batch 2 without). Examples below say batch-01.
 
 Reads only `selection.json` (verified against `selection.sha256`). For every selected act:
 
@@ -8,11 +11,12 @@ Reads only `selection.json` (verified against `selection.sha256`). For every sel
    `pdfFileLength` before anything is persisted. Two runs: `new`, then `unchanged`.
 2. `documents/pool/batch-01/<slug>/input.json` (`corpus-input/1`, role `original`) with a
    diagnostic processing permission scoped to the exact PDF SHA-256.
-3. Official text + structure through `StructureConnector` + `acquire_bundle` (IPS) into
+3. (`--with-official`) Official text + structure through `StructureConnector` + `acquire_bundle` (IPS) into
    `gold/<slug>/official/archive/`. Before any request for text the card must carry the
    selected `official_hash`, the act number/date and exactly the one complete edition the
    selection counted (`edition_count`): current, labelled original (`исходная`), dated not
-   before the act date. Otherwise `ValueError` is raised before any file is written.
+   before the act date. Otherwise `EditionMismatch` is raised before any file is written and
+   only that error is recorded as an official-validation failure; any other error propagates.
 4. `gold/<slug>/official/input.json` (`corpus-input/2`) with its own diagnostic permission
    (text + structure hashes) and `official-tree.json` from `import_official_tree`
    (`legal-ast/2`). An import refusal is recorded in the receipt, never patched.
@@ -20,7 +24,8 @@ Reads only `selection.json` (verified against `selection.sha256`). For every sel
 Slug: `<kind>-<number digits>-<year>`, kind `fz|ukaz|pp|rp|prikaz`. Orders add the main
 signatory authority from the publication card: "Министерство X ..." -> `min` + X; any
 other authority -> initials of its significant words (without "Российской Федерации" and
-short prepositions/conjunctions). Lowercase ASCII transliteration: see `TRANSLIT`.
+short prepositions/conjunctions). "Российской Федерации" is removed wherever it stands;
+"Министерство" must be the first remaining word. Lowercase ASCII transliteration: see `TRANSLIT`.
 
 Receipts `documents/pool/batch-01/receipts/<eo>.json` are written once; a repeated run
 verifies every recorded file hash without network access and reports `unchanged`.
@@ -45,7 +50,8 @@ from legal_rag.sources.publication_pravo import PublicationPravoConnector  # noq
 from legal_rag.sources.structure_bundle import StructureConnector, acquire_bundle  # noqa: E402
 
 M1_04A = PROJECT / "data/m1/m1-04a"
-BATCH = M1_04A / "documents/pool/batch-01"
+POOL = M1_04A / "documents/pool"
+BATCH = POOL / "batch-01"
 GOLD = M1_04A / "gold"
 TARGET_DATE = "2026-10-21"
 AUTHORIZATION = (
@@ -66,6 +72,15 @@ TRANSLIT = dict(zip(
 # publication/entry date rather than the signing date (seen for ПП № 884: 29.06 vs 05.07.2024).
 ORIGINAL_MARK = "исходная"
 STOPWORDS = {"и", "по", "в", "во", "на", "о", "об", "для", "за", "при", "с", "со", "к"}
+COUNTRY = ("российской", "федерации")
+
+
+class EditionMismatch(ValueError):
+    """The IPS card does not expose exactly the selected single, current, original edition."""
+
+
+class PublicationMismatch(ValueError):
+    """The publication card or PDF differs from the selected act (raised before persistence)."""
 
 
 # ------------------------------------------------------------------ pure rules
@@ -80,8 +95,14 @@ def translit(text):
 
 def authority_short(name):
     words = re.findall(r"[А-Яа-яЁё]+", name)
-    if words[-2:] == ["Российской", "Федерации"]:
-        words = words[:-2]
+    kept, index = [], 0
+    while index < len(words):
+        if tuple(w.lower() for w in words[index:index + 2]) == COUNTRY:
+            index += 2
+        else:
+            kept.append(words[index])
+            index += 1
+    words = kept
     if not words:
         raise ValueError(f"empty signatory authority: {name!r}")
     if words[0] == "Министерство" and len(words) > 1:
@@ -113,37 +134,37 @@ def check_publication(fetched, act):
             or declared["document_number"].strip().upper() != act["number"].upper()
             or declared["document_date"][:10] != act["date"]
             or declared["pages_count"] != act["pages"]):
-        raise ValueError(f"publication card does not match selection: {act['eo_number']}")
+        raise PublicationMismatch(f"publication card does not match selection: {act['eo_number']}")
     if type(card.get("pdfFileLength")) is int and card["pdfFileLength"] != len(fetched["raw_bytes"]):
-        raise ValueError(f"PDF length differs from card pdfFileLength: {act['eo_number']}")
+        raise PublicationMismatch(f"PDF length differs from card pdfFileLength: {act['eo_number']}")
 
 
 def check_edition(card, act):
     """The IPS card must expose exactly the selected single, current, original edition."""
     if card.get("hash") != act["official_hash"]:
-        raise ValueError("official card hash differs from selection")
+        raise EditionMismatch("official card hash differs from selection")
     adoption = " ".join(str(card.get("adoption", "")).split())
     if f"от {dmy(act['date'])} " not in adoption or not adoption.upper().endswith("№ " + act["number"].upper()):
-        raise ValueError("official card adoption differs from selection")
+        raise EditionMismatch("official card adoption differs from selection")
     if not isinstance(card.get("nd"), str) or not card["nd"].isdigit() or not isinstance(card.get("baseid"), str):
-        raise ValueError("official card identity fields are invalid")
+        raise EditionMismatch("official card identity fields are invalid")
     redactions = card.get("redactions")
     completed = [e for e in redactions if isinstance(e, dict) and e.get("completed") is True] \
         if isinstance(redactions, list) else []
     if len(completed) != act["edition_count"] or act["edition_count"] != 1:
-        raise ValueError(f"edition count {len(completed)} differs from selection {act['edition_count']}")
+        raise EditionMismatch(f"edition count {len(completed)} differs from selection {act['edition_count']}")
     edition = completed[0]
     if (type(card.get("actualrdk")) is not int or card["actualrdk"] != edition.get("id")
             or edition.get("actual") is not True or edition.get("status") != "актуальная"):
-        raise ValueError("selected edition is not the single current edition")
+        raise EditionMismatch("selected edition is not the single current edition")
     if not isinstance(edition.get("redname"), str) or ORIGINAL_MARK not in edition["redname"].split(", "):
-        raise ValueError(f"single edition is not labelled as the original: {edition.get('redname')!r}")
+        raise EditionMismatch(f"single edition is not labelled as the original: {edition.get('redname')!r}")
     try:
         edition_day = datetime.strptime(edition["date"], "%d.%m.%Y").date().isoformat()
     except (KeyError, TypeError, ValueError):
-        raise ValueError("edition date is invalid") from None
+        raise EditionMismatch("edition date is invalid") from None
     if edition_day < act["date"]:
-        raise ValueError(f"edition date {edition['date']} precedes act date {dmy(act['date'])}")
+        raise EditionMismatch(f"edition date {edition['date']} precedes act date {dmy(act['date'])}")
     return edition
 
 
@@ -166,7 +187,7 @@ class PoolIPS(LegislationRussiaConnector):
     def fetch(self, document_hash):
         self._meter.reset()
         if document_hash != self.act["official_hash"]:
-            raise ValueError("requested hash is not the selected official hash")
+            raise EditionMismatch("requested hash is not the selected official hash")
         card_url = self._api_base + "/document_card.json?" + urlencode({"hash": document_hash})
         card_bytes, card_transport = self._get(card_url)
         card = self._parse_json(card_bytes, "invalid_card", card_url)
@@ -367,14 +388,16 @@ def build_tree(official):
 
 # ------------------------------------------------------------------ driver
 
-def frozen_selection(batch):
+def frozen_selection(batch, with_official=False):
     path = batch / "selection.json"
     recorded = (batch / "selection.sha256").read_text(encoding="utf-8").split()[0]
     if sha(path) != recorded:
         raise ValueError("selection.json differs from selection.sha256")
     selection = read(path)
-    if not selection["quotas_filled"] or any(a["official_source"] != "ips" for a in selection["selected"]):
-        raise ValueError("selection is incomplete or outside the IPS official tree")
+    if not selection["quotas_filled"]:
+        raise ValueError("selection is incomplete")
+    if with_official and any(a.get("official_source") != "ips" for a in selection["selected"]):
+        raise ValueError("selection is outside the IPS official tree")
     return selection, recorded
 
 
@@ -396,8 +419,8 @@ def retryable(failure):
     return any(error.get("retryable") for error in report.get("errors", []))
 
 
-def run(batch, gold):
-    selection, selection_sha = frozen_selection(batch)
+def run(batch, gold, with_official=False):
+    selection, selection_sha = frozen_selection(batch, with_official)
     publication = PoolPublication(timeout=60, request_interval=1)
     ips = PoolIPS(timeout=40, request_interval=1)
     failed = 0
@@ -408,7 +431,11 @@ def run(batch, gold):
             verify_receipt(receipt)
             status = "unchanged"
         else:
-            pdf = acquire_pdf(act, publication, batch)
+            try:
+                pdf = acquire_pdf(act, publication, batch)
+            except PublicationMismatch as error:
+                pdf = {"status": "failed", "stage": "publication_check", "reason": str(error),
+                       "runs": [{"run_id": "none"}]}
             if pdf["status"] != "ok":
                 failed += 1
                 write(batch / "failures" / f"{act['eo_number']}-{pdf['runs'][-1]['run_id']}.json", pdf)
@@ -416,11 +443,14 @@ def run(batch, gold):
                 continue
             key = slug(act, pdf["authority"] if act["act_type"] == "ministry_order" else None)
             input_path, pdf_permission = write_pdf_input(act, key, pdf, batch)
-            try:
-                official = acquire_official(act, key, ips, gold)
-            except ValueError as error:
-                official = {"status": "failed", "stage": "official_validation", "reason": str(error)}
-            if official["status"] != "ok":
+            if not with_official:
+                official = {"status": "not_requested"}
+            else:
+                try:
+                    official = acquire_official(act, key, ips, gold)
+                except EditionMismatch as error:
+                    official = {"status": "failed", "stage": "official_validation", "reason": str(error)}
+            if with_official and official["status"] != "ok":
                 stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
                 write(batch / "failures" / f"{act['eo_number']}-official-{stamp}.json", official)
                 if retryable(official):
@@ -449,7 +479,9 @@ def run(batch, gold):
             status = "new"
         line = {"eo": act["eo_number"], "slug": receipt["slug"], "result": status,
                 "pdf": receipt["pdf"]["sha256"], "official": receipt["official"]["status"]}
-        if receipt["official"]["status"] == "ok":
+        if receipt["official"]["status"] == "not_requested":
+            pass
+        elif receipt["official"]["status"] == "ok":
             tree = build_tree(PROJECT / Path(receipt["official"]["input"]).parent)
             line["tree"] = {k: tree[k] for k in ("status", "result", "source_units", "reason") if k in tree}
         else:
@@ -460,10 +492,14 @@ def run(batch, gold):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--batch", type=Path, default=BATCH)
+    parser.add_argument("--batch", type=Path, default=BATCH,
+                        help="batch name under documents/pool (e.g. batch-02) or a path")
     parser.add_argument("--gold", type=Path, default=GOLD)
+    parser.add_argument("--with-official", action="store_true",
+                        help="also acquire the IPS official text/structure and build the tree")
     args = parser.parse_args(argv)
-    return run(args.batch.resolve(), args.gold.resolve())
+    batch = POOL / args.batch if len(args.batch.parts) == 1 else args.batch
+    return run(batch.resolve(), args.gold.resolve(), args.with_official)
 
 
 if __name__ == "__main__":
