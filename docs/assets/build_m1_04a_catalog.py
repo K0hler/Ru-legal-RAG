@@ -30,6 +30,9 @@ SINGLE = [
     ("reserved", M1_04A / "resolution-564" / "input.json", "resolution-564"),
 ]
 SANPIN = M1 / "inputs" / "m1-04" / "sanpin-original-amendments.json"
+# Check-pool batches: `<batch>/<slug>/input.json` written by acquire_m1_04a_pool.py. Their
+# rows go to the batch's own index so the frozen `documents/index.json` stays unchanged.
+POOL_BATCHES = ("batch-01",)
 # SanPiN 2.1.3684-21 bundle: original resolution No. 3 plus nine amending resolutions.
 SANPIN_SLUGS = {
     "66210869f6617b4eb5b38b27fe76fceab46f845fd14c6ecfebe9ae67c8f01a12": "sanpin-2.1.3684-21",
@@ -169,6 +172,14 @@ def main(argv=None) -> int:
     manifest = json.loads(SANPIN.read_text(encoding="utf-8"))
     for asset in manifest["assets"]:
         rows.append(place(out, "development", SANPIN_SLUGS[asset["sha256"]], SANPIN, manifest, asset))
+    pool_rows = {}
+    for batch in POOL_BATCHES:
+        group = f"pool/{batch}"
+        for manifest_path in sorted((out / "documents" / group).glob("*/input.json")):
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            (asset,) = [a for a in manifest["assets"] if a["role"] == "original"]
+            row = place(out, group, manifest_path.parent.name, manifest_path, manifest, asset)
+            pool_rows.setdefault(group, []).append(row)
     for name in ("experiments", "gold", "ocr", "documents/pool"):
         (out / name).mkdir(parents=True, exist_ok=True)
     index = {"schema_version": "m1-04a-document-index/1",
@@ -176,6 +187,13 @@ def main(argv=None) -> int:
                                  key=lambda r: (r["group"], r["slug"]))}
     write_once(out / "documents" / "index.json",
                (json.dumps(index, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+    for group, group_rows in pool_rows.items():
+        pool_index = {"schema_version": "m1-04a-document-index/1", "group": group,
+                      "documents": sorted(({k: r[k] for k in r if k != "copy"} for r in group_rows),
+                                          key=lambda r: r["slug"])}
+        write_once(out / "documents" / group / "index.json",
+                   (json.dumps(pool_index, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+        rows += group_rows
     for name, text in (("README.md", README), ("LEGACY.md", LEGACY)):
         write_once(out / name, text.encode("utf-8"))
     summary = {}

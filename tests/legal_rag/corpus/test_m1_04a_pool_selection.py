@@ -2,6 +2,8 @@ import importlib.util
 from pathlib import Path
 import sys
 
+import pytest
+
 MODULE = "select_m1_04a_pool"
 
 
@@ -121,3 +123,71 @@ def test_amending_title_is_detected_through_leading_quotes():
     for title in ('"О внесении изменения в статью 3"', "«О внесении изменений в закон»", "  О внесении изменений"):
         result = P.select_pool([card(1, title=title)], {"federal_law": 1}, 1)
         assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "amending_act"}], title
+
+
+A = load_script("acquire_m1_04a_pool")
+
+POOL_ACT = {
+    "eo_number": "0001202001010001", "act_type": "government_resolution", "date": "2020-01-01",
+    "number": "7", "title": "Об утверждении правил", "pages": 3, "edition_count": 1,
+    "official_source": "ips", "official_hash": "a" * 64,
+}
+
+
+def ips_card(**over):
+    edition = {"id": 0, "date": "01.01.2020", "actual": True, "completed": True,
+               "status": "актуальная", "redname": "на 01.01.2020, исходная, актуальная"}
+    value = {"hash": "a" * 64, "type": "Постановление", "nd": "1", "baseid": "c000000000", "actualrdk": 0,
+             "adoption": "Постановление Правительства Российской Федерации от 01.01.2020 № 7",
+             "name": "Об утверждении правил", "redactions": [edition]}
+    value.update(over)
+    return value
+
+
+class FakeIPS(A.PoolIPS):
+    def __init__(self, card):
+        super().__init__(timeout=1, request_interval=0)
+        self.card = card
+        self.requests = []
+
+    def _get(self, url):
+        import json
+
+        self.requests.append(url)
+        if "document_card" not in url:
+            raise AssertionError("text must not be requested for a mismatched edition")
+        return json.dumps(self.card, ensure_ascii=False).encode(), {"request_url": url, "response_url": url}
+
+
+def test_acquire_refuses_edition_mismatch(tmp_path):
+    later = {"id": 1, "date": "05.05.2021", "actual": True, "completed": True,
+             "status": "актуальная", "redname": "на 05.05.2021, актуальная"}
+    first = dict(ips_card()["redactions"][0], actual=False, status="недействующая")
+    mismatches = [
+        ips_card(actualrdk=1, redactions=[first, later]),          # second edition appeared
+        ips_card(redactions=[dict(later, id=0)]),                  # single edition is not the original
+        ips_card(redactions=[dict(first, date="31.12.2019", actual=True, status="актуальная")]),  # before act
+        ips_card(hash="b" * 64),                                   # other official identity
+    ]
+    for card in mismatches:
+        base = FakeIPS(card)
+        with pytest.raises(ValueError):
+            A.acquire_official(POOL_ACT, "pp-7-2020", base, tmp_path)
+        assert [p for p in tmp_path.rglob("*") if p.is_file()] == []
+        assert len(base.requests) == 1
+    assert A.check_edition(ips_card(), POOL_ACT)["id"] == 0
+    published_later = dict(ips_card()["redactions"][0], date="05.01.2020", redname="на 05.01.2020, исходная, актуальная")
+    assert A.check_edition(ips_card(redactions=[published_later]), POOL_ACT)["date"] == "05.01.2020"
+
+
+def test_pool_slug_rule():
+    act = dict(POOL_ACT)
+    assert A.slug(dict(act, act_type="federal_law", number="23-ФЗ", date="2018-02-19")) == "fz-23-2018"
+    assert A.slug(dict(act, act_type="government_order", number="1378-р", date="2018-07-06")) == "rp-1378-2018"
+    assert A.slug(dict(act, act_type="presidential_decree", number="204", date="2016-04-30")) == "ukaz-204-2016"
+    assert A.slug(dict(act, act_type="government_resolution", number="884", date="2024-06-29")) == "pp-884-2024"
+    order = dict(act, act_type="ministry_order", number="173", date="2021-03-25")
+    assert A.slug(order, "Министерство просвещения Российской Федерации") == "prikaz-minprosveshcheniya-173-2021"
+    assert A.slug(order, "Федеральная налоговая служба") == "prikaz-fns-173-2021"
+    with pytest.raises(ValueError):
+        A.slug(order)
