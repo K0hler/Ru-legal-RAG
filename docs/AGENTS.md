@@ -35,6 +35,13 @@
   convention change re-annotates all gold and keeps old numbers. Its stop
   thresholds and the annex `owner` convention are proposals awaiting the owner.
 
+- `milestones/m1/04a/M1_04A_LOGICAL_TEXT_2026-10-20.md` records the stage-2
+  `logical-text/1` implementation and `assets/evaluate_logical_text.py`:
+  full prototype parity on the 8 saved documents (0 D1/D2/unexpected),
+  continuation 29/0/2 and no false/missed header exclusions. These are
+  development documents, not progress, G13 or Task 3 qualification; stage 3
+  is not connected yet.
+
 - `assets/stitch_ocr_footnotes.py` writes a separate logical continuation view
   with exact physical fragment pointers/pages/bboxes and combined-text offsets.
   Unnumbered Footnotes before a new numbered note join the last note on the

@@ -87,6 +87,7 @@ development failures, experiments and superseded approaches.
 - [Two additional PDF runs](milestones/m1/04a/M1_04A_TWO_PDF_2026-10-17.md) — 26 fresh OCR pages through compilation/replay, selected image controls and direct Dedoc/Docling JSON comparisons; ordinary-reference false approval remains unresolved.
 - [Logical paragraphs and marker-sequence depth](milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md) — experiment outside the compiler: hand-made owner gold for 8 documents/849 regions, two frozen-code holdouts; 100% vs 88.0% current `/7` and 80.4% Dedoc foiv on owner paths. Not qualification.
 - [Evaluation protocol](milestones/m1/04a/M1_04A_EVALUATION_PROTOCOL_2026-10-20.md) — how stage-3 progress is measured: development/regression/check-pool/qualification-reserve split, gold before runs, first-pass ledger, per-stage metrics, error classes; stop thresholds await the owner.
+- [Logical-text layer, stage 2](milestones/m1/04a/M1_04A_LOGICAL_TEXT_2026-10-20.md) — `logical-text/1` in `src/`: prototype parity on 8 saved documents (no D1/D2/unexpected differences), continuation 29/0/2, 0 false/missed header exclusions; stage 3 not connected, not qualification.
 
 ## Tool guides
 

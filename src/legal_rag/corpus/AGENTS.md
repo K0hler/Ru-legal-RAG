@@ -25,6 +25,17 @@
   owners as unresolved; never silently pick the last one. Only a confirmed
   independent approval/annex or explicit section resets an unknown-section scope.
 
+- M1-04A stage 2 is `logical_text.py` (`logical-text/1`): region roles
+  (content/noise/picture/table with a reason) and logical body/footnote
+  paragraphs whose fragments keep region, page, bbox, text nodes, offsets and
+  join type. Every text node is in exactly one paragraph or noise region; the
+  input is never mutated and `match_text` is a matching view only. Declared
+  prototype deviations: D1 joins continuations only from the immediately
+  preceding physical page; D2 makes an empty-text content region its own
+  `kind=empty` paragraph that is never open or joined to. The `logical-text`
+  CLI verifies schema/identity/extraction hash before writing one immutable
+  record. Stage 3 and `compile` do not consume it yet.
+
 - M1-04's `pdf_extraction.py` normalizes retained dots.mocr `pages[].layout[]`
   without loading a GPU library. Keep raw region records, physical-page/image
   coordinates, OCR-string locators and table spans/empty cells. Its document

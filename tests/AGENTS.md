@@ -8,6 +8,13 @@
   accounting. Load docs/assets scripts with `sys.modules` registration
   (dataclasses need it). No corpus files or OCR engines.
 
+- `corpus/test_logical_text.py` checks stage-2 `logical-text/1` with authored
+  extractions: running-noise reasons (incl. digit-normalized repeats), captions
+  kept as content, cross-page body/footnote joins and their D1/D2 refusals,
+  exact fragment offsets, token accounting, no input mutation and verified
+  immutable CLI writes. It also runs `docs/assets/evaluate_logical_text.py`
+  parity labels and metrics on authored inputs. No corpus files.
+
 - `corpus/test_ocr_footnote_stitch.py` checks authored cross-page continuation
   joins, actual source fragments, three-page anchors, skipped pages, new markers
   and ordinary lower body paragraphs. Untagged Text needs positive parenthetical
