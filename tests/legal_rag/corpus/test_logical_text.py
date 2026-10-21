@@ -264,7 +264,8 @@ def test_cli_rejects_other_schema(tmp_path, capsys):
     data["schema_version"] = "text-extraction/0"
     path = _write_extraction(tmp_path, data)
     assert _run_cli(path, tmp_path / "out") == 2
-    assert "failed" in capsys.readouterr().err
+    assert "unsupported extraction schema_version" in capsys.readouterr().err
+    assert not (tmp_path / "out" / "logical-text").exists()
 
 
 @pytest.mark.parametrize("missing", ["extraction_id", "source_asset_sha256"])
@@ -283,3 +284,74 @@ def test_write_refuses_to_overwrite_different_bytes(tmp_path):
     with pytest.raises(ValueError):
         L.write_logical_text(path, tmp_path / "out")
     assert Path(result["path"]).read_bytes() == b"{}"
+
+
+def test_digit_normalized_running_text_is_repeated_noise():
+    data = extraction([[("Text", "Тело."), ("Page-footer", f"Страница {n}")] for n in (2, 3, 4)])
+    got = roles(data)
+    assert {got[f"r{p}-1"] for p in (1, 2, 3)} == {("noise", "repeated_running_text")}
+
+
+def test_annex_caption_in_three_page_running_region_stays_content():
+    data = extraction([[("Page-header", "Приложение № 1"), ("Text", "Тело.")] for _ in range(3)])
+    got = roles(data)
+    assert {got[f"r{p}-0"] for p in (1, 2, 3)} == {("content", None)}
+
+
+def test_unnumbered_footnote_not_joined_across_missing_page():
+    data = extraction([[("Footnote", "¹ Сноска без точки")], [("Footnote", "продолжение сноски.")]])
+    data["pages"][1]["page"] = 3
+    result = L.build_logical_text(data)
+    assert [len(p["fragments"]) for p in result["paragraphs"]] == [1, 1]
+    adjacent = build([[("Footnote", "¹ Сноска без точки")], [("Footnote", "продолжение сноски.")]])
+    assert [f["join"] for f in adjacent["paragraphs"][0]["fragments"]] == [None, L.JOIN_NOTE_UNNUMBERED]
+
+
+# --- evaluator: prototype parity and stage-2 metrics ---
+
+def _load_script(name):
+    import importlib.util
+    import sys
+    path = Path(__file__).resolve().parents[3] / f"docs/assets/{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module  # dataclasses resolve their module during class creation
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_evaluator_parity_labels_and_metrics(tmp_path):
+    evaluator = _load_script("evaluate_logical_text")
+    data = extraction([
+        [("Section-header", "I. Общие положения"), ("Text", "Абзац без точки")],
+        [("Text", "продолжение абзаца.")],
+        [("Text", "Ещё абзац без точки")],
+        [("Text", "строчное продолжение.")],
+    ])
+    data["pages"][3]["page"] = 5  # physical page 4 is missing: the prototype joins, we do not (D1)
+    inputs, gold = tmp_path / "inputs", tmp_path / "gold"
+    inputs.mkdir()
+    gold.mkdir()
+    (inputs / "doc.extraction.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    (gold / "doc.gold.txt").write_text("1.1 A\n2.0 A +\n", encoding="utf-8")
+    out = tmp_path / "out"
+    assert evaluator.main(["--inputs", str(inputs), "--gold", str(gold), "--output", str(out)]) == 0
+    summary = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert summary["continuation"] == {"tp": 1, "fp": 0, "fn": 0}
+    assert summary["false_exclusion"] == 0 and summary["missed_exclusion"] == 0
+    assert summary["parity"] == {"D1": 1, "D2": 0, "unexpected": 0}
+    diff = summary["documents"][0]["diffs"][0]
+    assert diff["label"] == "D1" and diff["prototype"] == [["r3-0", "r4-0"]]
+    with pytest.raises(SystemExit):
+        evaluator.main(["--inputs", str(inputs), "--gold", str(gold), "--output", str(out)])
+
+
+def test_evaluator_labels_empty_region_d2_and_same_page_split_unexpected():
+    evaluator = _load_script("evaluate_logical_text")
+    pages = {"a": 1, "e": 1, "b": 2, "c": 3, "d": 3}
+    d2 = evaluator.label_component([("e", "b")], [("e",), ("b",)], {"e"}, pages)
+    assert d2 == "D2"
+    unexpected = evaluator.label_component([("c", "d")], [("c",), ("d",)], set(), pages)
+    assert unexpected == "unexpected"
+    d1 = evaluator.label_component([("a", "c")], [("a",), ("c",)], set(), pages)
+    assert d1 == "D1"
