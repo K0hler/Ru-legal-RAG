@@ -398,6 +398,17 @@ def frozen_selection(batch, with_official=False):
         raise ValueError("selection is incomplete")
     if with_official and any(a.get("official_source") != "ips" for a in selection["selected"]):
         raise ValueError("selection is outside the IPS official tree")
+    # Failed acquisitions are refilled by write-once `selection-refill-NN.json` (see
+    # select_m1_04a_pool.py refill): replacements join the act list, replaced acts leave it.
+    replaced = set()
+    for refill in sorted(batch.glob("selection-refill-??.json")):
+        digest = (refill.with_suffix(".sha256")).read_text(encoding="utf-8").split()[0]
+        if sha(refill) != digest:
+            raise ValueError(f"{refill.name} differs from its sha256")
+        record = read(refill)
+        replaced.update(item["failed_eo_number"] for item in record["replaced"])
+        selection["selected"] = selection["selected"] + record["selected"]
+    selection["selected"] = [a for a in selection["selected"] if a["eo_number"] not in replaced]
     return selection, recorded
 
 

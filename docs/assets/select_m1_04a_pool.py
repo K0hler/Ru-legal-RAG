@@ -526,7 +526,159 @@ def run(args):
     return 0
 
 
+# ---------------------------------------------------------------- refill of failed acquisitions
+
+REFILL_SCHEMA = "m1-04a-pool-refill/1"
+MAX_REFILL_ATTEMPTS = 3
+REFILL_PROCEDURE = (
+    "Each failed slot is replaced by the first candidate of the same category in the original seeded "
+    "order (sha256(seed:eo_number)), after the same exclusions (already_used, amending acts, page range) "
+    "and excluding every act selected or failed so far; the long-document share is kept at long_min "
+    "(a long candidate is required only when the share is below it). Feed cache and seed are those of "
+    "the frozen selection; nothing is looked up."
+)
+
+
+def pool_from_cache(cache, days):
+    """Unique feed cards of the sampled days; days that failed in the cache are skipped as in the run."""
+    pool = {}
+    for day in days:
+        cards = cache.get(day)
+        if isinstance(cards, list):
+            for row in cards:
+                pool.setdefault(row["eo_number"], row)
+    return pool
+
+
+def refill(selection, pool, failures, *, taken=(), attempts=None):
+    """Replace failed slots deterministically (pure, no I/O).
+
+    `selection` carries seed, page range, long share, `already_used` and `selected` = the acts that
+    currently fill slots (failed ones included). `failures` maps failed eo -> reason, `taken` are
+    all acts selected so far (earlier refills too), `attempts` maps an act to its refill attempt
+    number (original acts: 0)."""
+    attempts = attempts or {}
+    used = set(selection.get("already_used", ())) | set(taken) | set(failures)
+    pages_range, seed = tuple(selection["pages_range"]), selection["seed"]
+    long_min, long_pages = selection["long_min"], selection["long_pages"]
+    by_eo = {row["eo_number"]: row for row in selection["selected"]}
+    kept = [row for row in selection["selected"] if row["eo_number"] not in failures]
+    replaced, chosen = [], []
+    for eo in sorted(failures, key=lambda e: order_key(seed, e)):
+        failed = by_eo[eo]
+        attempt = attempts.get(eo, 0) + 1
+        if attempt > MAX_REFILL_ATTEMPTS:
+            raise ValueError(f"slot of {eo} exhausted {MAX_REFILL_ATTEMPTS} refill attempts")
+        need_long = sum(r["pages"] >= long_pages for r in kept + chosen) < long_min
+        for row in ordered(pool.values(), seed):
+            if row["act_type"] != failed["act_type"] or row["eo_number"] in used:
+                continue
+            if cheap_reason(row, frozenset(), pages_range) is not None:
+                continue
+            if need_long and row["pages"] < long_pages:
+                continue
+            break
+        else:
+            raise ValueError(f"no candidate left for the slot of {eo}")
+        used.add(row["eo_number"])
+        new = {key: row[key] for key in METADATA_FIELDS if key in row}
+        chosen.append(new)
+        replaced.append({"failed_eo_number": eo, "failed_reason": failures[eo], "act_type": failed["act_type"],
+                         "attempt": attempt, "replacement": new})
+    return {"schema_version": REFILL_SCHEMA, "seed": seed, "pages_range": list(pages_range),
+            "long_min": long_min, "long_pages": long_pages, "procedure": REFILL_PROCEDURE,
+            "replaced": replaced, "selected": chosen,
+            "long_selected_after": sum(r["pages"] >= long_pages for r in kept + chosen)}
+
+
+def refill_files(batch_dir):
+    """Existing refill records of a batch in round order, each verified against its `.sha256`."""
+    out = []
+    for path in sorted(Path(batch_dir).glob("selection-refill-??.json")):
+        recorded = path.with_suffix(".sha256").read_text(encoding="utf-8").split()[0]
+        if hashlib.sha256(path.read_bytes()).hexdigest() != recorded:
+            raise ValueError(f"{path.name} differs from its sha256")
+        out.append(json.loads(path.read_text(encoding="utf-8")))
+    return out
+
+
+def failure_reasons(failures_dir):
+    """eo -> reason from the failure files `<eo>-<run>.json` (run report errors or recorded reason)."""
+    reasons = {}
+    for path in sorted(Path(failures_dir).glob("*.json")):
+        eo = path.name[:16]
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if "reason" in record and isinstance(record["reason"], str):
+            reasons.setdefault(eo, record["reason"])
+            continue
+        try:
+            errors = json.loads(Path(record["runs"][-1]["report"]).read_text(encoding="utf-8"))["errors"]
+            reasons.setdefault(eo, "; ".join(f"{e['reason']}: {e['message']}" for e in errors))
+        except (KeyError, OSError, IndexError):
+            reasons.setdefault(eo, f"failed at {record.get('stage')}")
+    return reasons
+
+
+def refill_round(batch_dir, feed_cache, expected_sha=None):
+    """Next refill record: acts with a failure file and no receipt that were not replaced yet."""
+    batch_dir = Path(batch_dir)
+    sel_path = batch_dir / "selection.json"
+    digest = hashlib.sha256(sel_path.read_bytes()).hexdigest()
+    recorded = (batch_dir / "selection.sha256").read_text(encoding="utf-8").split()[0]
+    if digest != recorded or (expected_sha and not digest.startswith(expected_sha)):
+        raise ValueError("selection.json differs from its recorded sha256")
+    selection = json.loads(sel_path.read_text(encoding="utf-8"))
+    prior = refill_files(batch_dir)
+    pool = pool_from_cache(json.loads(Path(feed_cache).read_text(encoding="utf-8")), selection["days_sampled"])
+    attempts = {r["eo_number"]: 0 for r in selection["selected"]}
+    acts = list(selection["selected"])
+    for record in prior:
+        acts += record["selected"]
+        attempts.update({i["replacement"]["eo_number"]: i["attempt"] for i in record["replaced"]})
+    replaced = {i["failed_eo_number"] for r in prior for i in r["replaced"]}
+    reasons = failure_reasons(batch_dir / "failures")
+    failed = {a["eo_number"]: reasons[a["eo_number"]] for a in acts
+              if a["eo_number"] in reasons and a["eo_number"] not in replaced
+              and not (batch_dir / "receipts" / f"{a['eo_number']}.json").exists()}
+    if not failed:
+        raise ValueError("no failed slot to refill")
+    view = dict(selection, selected=[a for a in acts if a["eo_number"] not in replaced])
+    result = refill(view, pool, failed, taken={a["eo_number"] for a in acts}, attempts=attempts)
+    result.update({"round": len(prior) + 1, "base_selection_sha256": digest,
+                   "feed_cache_sha256": hashlib.sha256(Path(feed_cache).read_bytes()).hexdigest()})
+    return result
+
+
+def write_refill(batch_dir, result):
+    """Write-once `selection-refill-NN.json` + `.sha256`."""
+    path = Path(batch_dir) / f"selection-refill-{result['round']:02d}.json"
+    sha_path = path.with_suffix(".sha256")
+    if path.exists() or sha_path.exists():
+        raise FileExistsError(f"{path.name} already exists")
+    payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    with path.open("xb") as stream:
+        stream.write(payload)
+    with sha_path.open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(f"{hashlib.sha256(payload).hexdigest()}  {path.name}\n")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def refill_main(argv):
+    parser = argparse.ArgumentParser(prog="select_m1_04a_pool.py refill")
+    parser.add_argument("--batch-dir", required=True, type=Path)
+    parser.add_argument("--feed-cache", required=True, type=Path)
+    parser.add_argument("--selection-sha", help="expected sha256 prefix of the frozen selection.json")
+    args = parser.parse_args(argv)
+    result = refill_round(args.batch_dir, args.feed_cache, args.selection_sha)
+    print("selection-refill", result["round"], write_refill(args.batch_dir, result), flush=True)
+    return 0
+
+
 def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv[:1] == ["refill"]:
+        return refill_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--from", dest="date_from", required=True)
     parser.add_argument("--to", dest="date_to", required=True)

@@ -501,3 +501,85 @@ def test_frozen_selection_official_only_with_flag(tmp_path):
     assert A.frozen_selection(tmp_path)[0] == selection
     with pytest.raises(ValueError):
         A.frozen_selection(tmp_path, with_official=True)
+
+
+def refill_fixture(tmp_path):
+    import json
+
+    rows = [card(n, ["federal_law", "ministry_order"][n % 2], pages=5 if n % 4 else 30) for n in range(1, 41)]
+    cache = {"2020-01-01": rows[:20], "2020-01-02": rows[20:], "2020-01-03": {"error": "bad"}}
+    base = P.select_pool(rows, {"federal_law": 2, "ministry_order": 2}, 9, long_min=1, pages_range=(3, 200))
+    base.update({"days_sampled": list(cache), "already_used": [], "quotas_filled": True})
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    raw = (json.dumps(base, ensure_ascii=False, sort_keys=True) + chr(10)).encode()
+    (batch / "selection.json").write_bytes(raw)
+    (batch / "selection.sha256").write_text(P.hashlib.sha256(raw).hexdigest() + "  selection.json" + chr(10))
+    (tmp_path / "feed.json").write_text(json.dumps(cache), encoding="utf-8")
+    return batch, base, rows
+
+
+def test_refill_replaces_failed_slot_with_next_same_category_candidate(tmp_path):
+    batch, base, rows = refill_fixture(tmp_path)
+    failed = base["selected"][1]
+    failures = {failed["eo_number"]: "invalid_asset: not a PDF"}
+    result = P.refill(base, {r["eo_number"]: r for r in rows}, failures,
+                      taken={r["eo_number"] for r in base["selected"]})
+    (item,) = result["replaced"]
+    new = item["replacement"]
+    assert item["failed_reason"] == "invalid_asset: not a PDF" and item["attempt"] == 1
+    assert new["act_type"] == failed["act_type"] and new["eo_number"] != failed["eo_number"]
+    # first eligible of the category in the seeded order, nothing selected or failed before it
+    skipped = {r["eo_number"] for r in base["selected"]}
+    expected = [r for r in P.ordered(rows, 9) if r["act_type"] == failed["act_type"] and r["eo_number"] not in skipped][0]
+    assert new["eo_number"] == expected["eo_number"]
+    assert result["long_selected_after"] >= base["long_min"]
+    again = P.refill(base, {r["eo_number"]: r for r in reversed(rows)}, failures,
+                     taken={r["eo_number"] for r in base["selected"]})
+    assert again == result
+    with pytest.raises(ValueError, match="exhausted"):
+        P.refill(base, {r["eo_number"]: r for r in rows}, failures, attempts={failed["eo_number"]: 3})
+
+
+def test_refill_keeps_long_share(tmp_path):
+    batch, base, rows = refill_fixture(tmp_path)
+    long_rows = [r for r in base["selected"] if r["pages"] >= 20]
+    assert long_rows
+    base = dict(base, long_min=len(long_rows))
+    failed = long_rows[0]
+    result = P.refill(base, {r["eo_number"]: r for r in rows}, {failed["eo_number"]: "x"},
+                      taken={r["eo_number"] for r in base["selected"]})
+    assert result["selected"][0]["pages"] >= 20
+
+
+def test_refill_round_write_once_and_chain(tmp_path):
+    import json
+
+    batch, base, rows = refill_fixture(tmp_path)
+    failed = base["selected"][0]["eo_number"]
+    (batch / "failures").mkdir()
+    (batch / "failures" / f"{failed}-run1.json").write_text(
+        json.dumps({"stage": "pdf_acquisition", "reason": "invalid_card: empty name", "runs": []}), encoding="utf-8")
+    first = P.refill_round(batch, tmp_path / "feed.json")
+    assert first["round"] == 1 and first["replaced"][0]["failed_reason"] == "invalid_card: empty name"
+    P.write_refill(batch, first)
+    with pytest.raises(FileExistsError):
+        P.write_refill(batch, first)
+    with pytest.raises(ValueError, match="no failed slot"):
+        P.refill_round(batch, tmp_path / "feed.json")
+    # the refill act fails too: second round takes the next candidate, attempt 2
+    second_failed = first["selected"][0]["eo_number"]
+    (batch / "failures" / f"{second_failed}-run1.json").write_text(
+        json.dumps({"stage": "pdf_acquisition", "reason": "invalid_asset", "runs": []}), encoding="utf-8")
+    second = P.refill_round(batch, tmp_path / "feed.json")
+    assert second["round"] == 2 and second["replaced"][0]["attempt"] == 2
+    assert second["selected"][0]["eo_number"] not in {second_failed, failed, *(r["eo_number"] for r in base["selected"])}
+    # the acquisition script merges refills and drops replaced acts
+    P.write_refill(batch, second)
+    selection, _ = A.frozen_selection(batch)
+    eos = [a["eo_number"] for a in selection["selected"]]
+    assert failed not in eos and second_failed not in eos and second["selected"][0]["eo_number"] in eos
+    assert len(eos) == len(base["selected"])
+    (batch / "selection-refill-02.json").write_text("{}")
+    with pytest.raises(ValueError, match="differs from its sha256"):
+        A.frozen_selection(batch)
