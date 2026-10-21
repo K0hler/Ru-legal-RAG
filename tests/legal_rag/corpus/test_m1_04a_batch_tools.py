@@ -95,3 +95,49 @@ def test_gold_freeze_hashes_annotation_input_and_is_write_once(tmp_path):
     (gold / "agent-act.gold.txt").write_text("1.1 S\n", encoding="utf-8")
     with pytest.raises(SystemExit):
         F.freeze(tmp_path / "freeze-2", ["act"], inp, "changed gold", root=tmp_path)
+
+
+D = load_script("run_m1_04a_dev_regression")
+
+FAKE_PROTOTYPE = """
+VERSION = "fake/1"
+
+
+def build(extraction):
+    owners = {"1.1": "S", "1.2": "S/1", "2.1": "S/2"}
+    return {"parser_version": VERSION, "regions": [
+        {"page": p["page"], "index": i, "owner": owners.get(f'{p["page"]}.{i}'), "continuation": False}
+        for p in extraction["pages"] for i, _ in enumerate(p["regions"])]}
+"""
+
+
+def authored_documents(tmp_path):
+    docs = []
+    for name, gold in (("one", "1.0 A\n1.1 S\n1.2 S/1\n2.1 S/2\n2.2 A\n"),
+                       ("two", "1.1 S\n1.2 S/2\n2.1 S/2\n")):
+        ext = tmp_path / f"{name}.extraction.json"
+        ext.write_text(json.dumps(extraction()), encoding="utf-8")
+        g = tmp_path / f"{name}.gold.txt"
+        g.write_text(gold, encoding="utf-8")
+        docs.append({"name": name, "group": "authored", "extraction": ext, "gold": g})
+    return docs
+
+
+def test_dev_regression_on_authored_pair(tmp_path):
+    proto = tmp_path / "fake_prototype.py"
+    proto.write_text(FAKE_PROTOTYPE, encoding="utf-8")
+    out = tmp_path / "run"
+    summary = D.run_dev_regression(proto, out, documents=authored_documents(tmp_path))
+    rows = {r["name"]: r for r in summary["rows"]}
+    # v1 drops Picture 1.0 / 2.2 from "one"; the fake prototype is right on all three kept regions.
+    assert rows["one"]["regions"] == 3 and rows["one"]["not_scored"] == ["1.0", "2.2"]
+    assert (rows["one"]["strict"], rows["one"]["no_section"], rows["one"]["numbers"]) == (3, 3, 3)
+    assert rows["two"]["regions"] == 3 and rows["two"]["strict"] == 2
+    assert summary["total"] == {"regions": 6, "strict": 5, "no_section": 5, "numbers": 5}
+    assert summary["parser_version"] == "fake/1"
+    errors = json.loads((out / "errors.json").read_text(encoding="utf-8"))
+    assert errors["two"] == [{"region": "1.2", "gold": "S/2", "predicted": "S/1", "category": "Text"}]
+    assert errors["one"] == []
+    assert json.loads((out / "summary.json").read_text(encoding="utf-8")) == summary
+    with pytest.raises(FileExistsError):
+        D.run_dev_regression(proto, out, documents=authored_documents(tmp_path))
