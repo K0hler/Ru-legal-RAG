@@ -1,5 +1,13 @@
 # Local data instructions
 
+- Since 21.10.2026 all new M1-04A work lives under `m1/m1-04a/`:
+  `documents/{development,reserved,pool/<batch>}/<slug>/` hold hash-verified
+  copies of originals (`document.pdf` + `source.json`) built by
+  `docs/assets/build_m1_04a_catalog.py`; `ocr/<slug>/<run>/`, `gold/<slug>/` and
+  `experiments/<YYYYMMDD>-<name>/` hold derived outputs, one new folder per run.
+  Never open `reserved/` bodies before Task 3. Earlier M1-04A material was not
+  moved (pinned paths); `m1/m1-04a/LEGACY.md` maps it.
+
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written
   before each evaluated run, all code snapshots, attempt/holdout/final runs and
