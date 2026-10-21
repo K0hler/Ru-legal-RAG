@@ -24,6 +24,8 @@
   indexes stay write-once. IPS gives its single edition `rdk = 0`, so
   `official_binding` refuses those bundles; only pp-884 would import a tree.
 
+- Check-pool batch 2: `m1/m1-04a/documents/pool/batch-02/selection.json` (frozen, quotas code 1→0 / federal_law 3→4 recorded as `quota_change`); its `--min-days 120`, exact command, feed-cache hash and the meaning of `attempt-01-partial-unfilled.json` are in the write-once sidecar `selection-provenance.json`.
+
 - Prototype regressions: `m1/m1-04a/experiments/20261021-dev-regression-<tag>/`
   (baseline, a2, a3 to a3-r4, a4, a4-r2, v1; `summary.json` + `errors.json`, one
   new folder per run; failed attempts a3 and a3-r3 are kept). The `-v1` run is the

@@ -125,7 +125,6 @@ def test_amending_title_is_detected_through_leading_quotes():
         assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "amending_act"}], title
 
 
-
 def test_amending_variants_rejected():
     titles = (
         "О внесении изменений в статью 1", "О внесении изменения в пункт 2",
@@ -378,3 +377,16 @@ def test_quota_override_and_zero_quota():
     result = P.select_pool([card(1, "code"), card(2)], {"code": 0, "federal_law": 1}, 1)
     assert ids(result) == [f"{2:016d}"] and P.quotas_full(result)
     assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "quota_full"}]
+
+
+def test_min_days_only_checkpoints(monkeypatch):
+    seen = []
+    monkeypatch.setattr(P, "run", lambda args: seen.append(args.min_days) or 0)
+    base = ["--from", "2011-01-01", "--to", "2025-12-31", "--seed", "1", "--output", "x/selection.json"]
+    for value in ("0", "60", "120"):
+        assert P.main(base + ["--min-days", value]) == 0
+    assert seen == [0, 60, 120]
+    for value in ("30", "121", "-1"):
+        with pytest.raises(SystemExit):
+            P.main(base + ["--min-days", value])
+    assert seen == [0, 60, 120]

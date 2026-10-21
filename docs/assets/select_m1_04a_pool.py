@@ -162,7 +162,7 @@ def official_reason(row):
     return None
 
 
-class Counter:
+class QuotaCounter:
     """Incremental quota/long-share counters shared by select_pool and enrich."""
 
     def __init__(self, quotas, long_min, long_pages):
@@ -200,7 +200,7 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
         if reason is None and require_single_edition:
             reason = official_reason(row)
         reasons[row["eo_number"]] = reason
-    counter, taken, selected = Counter(quotas, long_min, long_pages), set(), []
+    counter, taken, selected = QuotaCounter(quotas, long_min, long_pages), set(), []
     for long_phase in counter.phases():
         for row in rows:
             eo = row["eo_number"]
@@ -381,7 +381,7 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
     """Single-edition profile: look up candidates in selection order until the quotas are
     filled. Counters are incremental (one pass per phase), mirroring select_pool."""
     rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
-    counter, taken = Counter(quotas, long_min, long_pages), set()
+    counter, taken = QuotaCounter(quotas, long_min, long_pages), set()
     for long_phase in counter.phases():
         for row in rows:
             if counter.full():
@@ -403,6 +403,7 @@ PROFILES = {
     "batch-02": {"quotas": BATCH2_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True},
 }
+MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")
 USED_SELECTIONS = (DOCUMENTS / "pool/batch-01/selection.json",)
@@ -496,6 +497,7 @@ def run(args):
         result["quota_change"] = json.loads(Path(args.quota_change).read_text(encoding="utf-8"))
     result.update({
         "profile": args.profile,
+        "min_days": args.min_days,
         "date_range": [args.date_from, args.date_to],
         "days_sampled": [d.isoformat() for d in all_days[:sampled]],
         "days_failed": failed_days,
@@ -535,8 +537,8 @@ def main(argv=None):
     parser.add_argument("--partial-output", help="where to write an unfilled result (not frozen)")
     parser.add_argument("--quota", action="append", default=[], metavar="KIND=N",
                         help="override one profile quota (recorded decision only)")
-    parser.add_argument("--min-days", type=int, default=0,
-                        help="sample at least this many days (60 or 120) even if quotas fill earlier")
+    parser.add_argument("--min-days", type=int, default=0, choices=MIN_DAYS_CHOICES,
+                        help="sample at least this many days even if quotas fill earlier")
     parser.add_argument("--quota-change", help="JSON file whose object is recorded as `quota_change`")
     return run(parser.parse_args(argv))
 
