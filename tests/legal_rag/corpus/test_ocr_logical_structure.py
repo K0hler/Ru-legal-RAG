@@ -234,3 +234,91 @@ def test_equivalence_applies_in_all_variants():
     gold["1.2"] = {"owners": ["A/AN2/1"], "continuation": False}
     result = EVAL.evaluate(gold, {"1.1": "A/AN1/4", "1.2": "A/AN2/1"})
     assert result["no_section"]["correct"] == 1 and result["numbers"]["correct"] == 1
+
+
+LAW = [
+    [("Title", "РОССИЙСКАЯ ФЕДЕРАЦИЯ\nФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Text", "Об упразднении некоторых судов"),
+     ("Text", "Принят Государственной Думой"),
+     ("Section-header", "Статья 1"),
+     ("Text", "В соответствии со статьей 17 Федерального конституционного закона:"),
+     ("Text", "1) упразднить:"),
+     ("Text", "Первый районный суд, передав относящиеся к его ведению вопросы;"),
+     ("Text", "2) установить, что юрисдикция суда распространяется на район;")],
+    [("Page-header", "2"), ("Section-header", "## Статья 2"),
+     ("Text", "1. Часть первая вступает в силу со дня опубликования."),
+     ("Text", "2. Пункты 1 - 3 статьи 1 вступают в силу через три месяца.")],
+]
+
+
+def test_article_headings_and_parts():
+    got = owners(S.build(extraction(LAW)))
+    assert got["1.0"] == "A" and got["1.2"] == "A"
+    assert got["1.3"] == "A/ст1"
+    assert got["1.4"] == "A/ст1"          # unmarked text after the heading belongs to the article
+    assert got["1.5"] == "A/ст1/1" and got["1.6"] == "A/ст1/1"
+    assert got["1.7"] == "A/ст1/2"
+    assert got["2.1"] == "A/ст2"          # a new article closes the previous one and its points
+    assert got["2.2"] == "A/ст2/ч1" and got["2.3"] == "A/ст2/ч2"
+
+
+def test_chapter_contains_articles():
+    pages = [[("Section-header", "Глава 1. Общие положения"),
+              ("Section-header", "Статья 1. Предмет регулирования"),
+              ("Text", "Настоящий Федеральный закон регулирует отношения."),
+              ("Section-header", "Статья 2. Основные понятия"),
+              ("Text", "1. Для целей настоящего закона используются понятия:"),
+              ("Text", "1) первое понятие;"),
+              ("Text", "а) его вид;"),
+              ("Section-header", "Глава 2. Порядок"),
+              ("Section-header", "Статья 3. Порядок действий"),
+              ("Text", "Порядок устанавливается Правительством."),
+              ("Section-header", "§ 1. Особенности"),
+              ("Section-header", "Статья 4"),
+              ("Text", "Текст статьи четыре.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.0"] == "A/гл1"
+    assert got["1.1"] == "A/гл1/ст1" and got["1.2"] == "A/гл1/ст1"
+    assert got["1.3"] == "A/гл1/ст2"
+    assert got["1.4"] == "A/гл1/ст2/ч1"
+    assert got["1.5"] == "A/гл1/ст2/ч1/1" and got["1.6"] == "A/гл1/ст2/ч1/1/а"
+    assert got["1.7"] == "A/гл2"          # chapter 2 closes chapter 1 and its articles
+    assert got["1.8"] == "A/гл2/ст3" and got["1.9"] == "A/гл2/ст3"   # article numbers run through chapters
+    assert got["1.10"] == "A/гл2/§1" and got["1.11"] == "A/гл2/§1/ст4"
+
+
+def test_sections_contain_chapters():
+    pages = [[("Section-header", "Раздел I. Общая часть"), ("Section-header", "Глава 1"),
+              ("Section-header", "Статья 1"), ("Text", "Текст."),
+              ("Section-header", "Раздел 2. Особенная часть"), ("Section-header", "Глава 2"),
+              ("Section-header", "Статья 2"), ("Text", "Текст.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.0"] == "A/I" and got["1.1"] == "A/I/гл1" and got["1.3"] == "A/I/гл1/ст1"
+    assert got["1.4"] == "A/разд2" and got["1.5"] == "A/разд2/гл2" and got["1.7"] == "A/разд2/гл2/ст2"
+
+
+def test_inline_article_reference_is_not_a_heading():
+    pages = [[("Section-header", "Статья 1"),
+              ("Text", "1. Порядок определяется в соответствии со статьей 17 настоящего закона."),
+              ("Text", "Статья 17 Федерального закона от 1 мая 2010 года № 5-ФЗ применяется в части, не урегулированной."),
+              ("Text", "Глава 3 Кодекса применяется к отношениям по договору."),
+              ("Text", "2. Вторая часть статьи.")]]
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["1.1"] == "A/ст1/ч1"
+    assert got["1.2"] == "A/ст1/ч1" and got["1.3"] == "A/ст1/ч1"   # sentences, not headings
+    assert got["1.4"] == "A/ст1/ч2"
+    assert S.parse_marker("в соответствии со статьей 17", "Text").kind == "none"
+
+
+def test_superscript_and_decimal_article_numbers():
+    assert S.parse_marker("Статья 5¹", "Section-header").label == "ст5¹"
+    assert S.parse_marker("Статья 12.1. Особенности", "Section-header").label == "ст12.1"
+    assert S.parse_marker("Статья 7.", "Section-header").label == "ст7"
+    pages = [[("Section-header", "Статья 5"), ("Text", "Текст пятой."),
+              ("Section-header", "Статья 5¹"), ("Text", "1. Часть первая."),
+              ("Section-header", "Статья 12.1. Особенности"), ("Text", "Текст."),
+              ("Section-header", "Статья 13"), ("Text", "Текст тринадцатой.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/ст5¹" and got["1.3"] == "A/ст5¹/ч1"
+    assert got["1.4"] == "A/ст12.1" and got["1.5"] == "A/ст12.1"
+    assert got["1.6"] == "A/ст13" and got["1.7"] == "A/ст13"

@@ -11,7 +11,8 @@ Prototype only (not a compiler entry point). Three passes:
 
 Output paths use a neutral syntax shared with the hand-made gold:
 ``A`` approving act, ``S`` approved text, ``S/AN4`` annex 4,
-``S/II/4/в`` subpoint в) of point 4 in section II.
+``S/II/4/в`` subpoint в) of point 4 in section II; named law units use typed
+segments: ``A/гл2/ст5/ч1/3`` point 3) of part 1. of article 5 in chapter 2.
 """
 
 from __future__ import annotations
@@ -123,12 +124,51 @@ def is_caption(text: str) -> bool:
 
 @dataclass
 class Marker:
-    kind: str = "none"  # roman | decimal | int | paren | letter | dash | none
+    # roman | decimal | int | paren | letter | dash | none, and named law units:
+    # section_named | chapter | paragraph_sign | article
+    kind: str = "none"
     value: object = None
     label: str = ""
 
 
+# Named law units, recognised only at the start of a paragraph. Hierarchy:
+# section (named or Roman) > chapter > paragraph § > article.
+ARTICLE = re.compile(r"^Статья\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
+CHAPTER = re.compile(r"^Глава\s+(\d+|[IVXLC]+)\.?(?=\s|$)")
+SECTION_NAMED = re.compile(r"^Раздел\s+(\d+|[IVXLC]+)\.?(?=\s|$)")
+PARAGRAPH_SIGN = re.compile(r"^§\s*(\d+)\.?(?=\s|$)")
+UNIT_RANK = {"roman": 0, "section_named": 0, "chapter": 1, "paragraph_sign": 2, "article": 3}
+
+
+def named_unit(text: str, category: str) -> Marker | None:
+    """A heading of a named law unit: «Статья 5¹», «Статья 12.1. Название», «Глава 2»,
+    «Раздел II», «§ 3». A sentence that starts with such words («Статья 17 закона
+    применяется ...») is not a heading: after the number comes nothing, a dot and a
+    title, or the paragraph must look like a heading."""
+    for kind, pattern in (("article", ARTICLE), ("chapter", CHAPTER),
+                          ("section_named", SECTION_NAMED), ("paragraph_sign", PARAGRAPH_SIGN)):
+        m = pattern.match(text)
+        if not m:
+            continue
+        rest = text[m.end():].strip()
+        if rest and not m.group(0).endswith(".") and not heading_like(text, category):
+            return None
+        number = m.group(1).rstrip(".")
+        if kind == "article":
+            return Marker(kind, number, f"ст{number}")
+        if kind == "paragraph_sign":
+            return Marker(kind, int(number), f"§{number}")
+        value = int(number) if number.isdigit() else roman_value(number)
+        if kind == "chapter":
+            return Marker(kind, value, f"гл{value}")
+        return Marker(kind, value, f"разд{value}" if number.isdigit() else to_roman(value))
+    return None
+
+
 def parse_marker(text: str, category: str) -> Marker:
+    named = named_unit(text, category)
+    if named is not None:
+        return named
     m = re.match(rf"^([{ROMAN_CHARS}]+)\.\s+\S", text)
     if m and roman_value(m.group(1)) and heading_like(text, category):
         v = roman_value(m.group(1))
@@ -259,13 +299,29 @@ def next_letter_ok(prev: int, new: int) -> bool:
     return new == prev + 1
 
 
+def label_under(marker: Marker, parent: tuple | None) -> str:
+    """An ``int`` marker «1.» directly inside an article is a part ``ч<n>``."""
+    if marker.kind == "int" and parent is not None and parent[0] == "article":
+        return f"ч{marker.label}"
+    return marker.label
+
+
 def transitions(stack: tuple, marker: Marker, last_int: int | None):
     """Yield (new_stack, cost) for one marker. Stack items: (kind, value, label)."""
-    item = (marker.kind, marker.value, marker.label)
     depth = len(stack)
+    if marker.kind in UNIT_RANK and marker.kind != "roman":
+        # A named unit heading is explicit: it closes every open unit of the same
+        # or lower rank (and all points) and nests under the nearest higher unit.
+        rank = UNIT_RANK[marker.kind]
+        keep = depth
+        while keep and not (stack[keep - 1][0] in UNIT_RANK and UNIT_RANK[stack[keep - 1][0]] < rank):
+            keep -= 1
+        yield stack[:keep] + ((marker.kind, marker.value, marker.label),), 0.0
+        return
     for keep in range(depth, -1, -1):  # keep = number of stack entries retained below the new one
         parent = stack[keep - 1] if keep else None
         sibling = stack[keep] if keep < depth else None
+        item = (marker.kind, marker.value, label_under(marker, parent))
         if sibling is not None:
             # continue the sequence at this level
             if sibling[0] == marker.kind:
@@ -293,7 +349,9 @@ def transitions(stack: tuple, marker: Marker, last_int: int | None):
             if marker.value == 1:
                 yield stack[:keep] + (item,), 0.5 if parent is None or parent[0] == "roman" else 0.0
         elif marker.kind == "int":
-            if parent is None or parent[0] == "roman":
+            if parent is not None and parent[0] == "article":
+                yield stack[:keep] + (item,), 0.0 if marker.value == 1 else 3.0
+            elif parent is None or parent[0] == "roman":
                 if marker.value == 1 or (last_int is not None and marker.value == last_int + 1):
                     yield stack[:keep] + (item,), 0.0
                 elif last_int is None:
@@ -400,7 +458,7 @@ def build(extraction: dict) -> dict:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
-            if p.marker.kind == "roman":
+            if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
         stacks = solve_depths([p.marker for p in body])
         for p, stack in zip(body, stacks):
