@@ -1,8 +1,12 @@
-"""M1-04A pool batch 1: random selection by metadata only (no act bodies are read).
+"""M1-04A check-pool selection: random selection by metadata only (no act bodies are read).
 
-Cards come from the documented publication.pravo.gov.ru day feed. Each candidate is
+Cards come from the documented publication.pravo.gov.ru day feed. Candidates are
 looked up in the official tree (actual.pravo attrsearch, then IPS search.json, as in
-acquire_official_json_transfer.py::discover) and only its list of editions is read.
+acquire_official_json_transfer.py::discover) and only their list of editions is read.
+
+Profiles: `batch-01` (frozen; single-edition filter) and `batch-02` (official lookup is
+metadata only, codes, pages 3..200, a long-document share filled first, documents
+already used in development/reserved/batch 1 excluded).
 """
 
 import argparse
@@ -20,7 +24,8 @@ from urllib.request import Request
 PROJECT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT / "src"))
 
-SCHEMA = "m1-04a-pool-selection/1"
+SCHEMA = "m1-04a-pool-selection/2"
+# Batch-1 quotas (frozen selection, kept for reference) and batch-2 quotas.
 DEFAULT_QUOTAS = {
     "federal_law": 2,
     "presidential_decree": 1,
@@ -28,14 +33,34 @@ DEFAULT_QUOTAS = {
     "government_order": 1,
     "ministry_order": 2,
 }
+BATCH2_QUOTAS = {
+    "code": 1,
+    "federal_law": 3,
+    "presidential_decree": 1,
+    "government_resolution": 2,
+    "government_order": 1,
+    "ministry_order": 2,
+}
 PAGES_MIN, PAGES_MAX = 3, 60
-AMENDING_PREFIX = "о внесении изменени"
+BATCH2_PAGES = (3, 200)
+BATCH2_LONG_MIN, LONG_PAGES = 4, 20
+# Titles that only change or repeal other acts (compared lowercase, after leading quotes).
+AMENDING_PREFIXES = (
+    "о внесении изменений",
+    "о внесении изменения",
+    "о внесении дополнений",
+    "о признании утратившими силу",
+    "о признании утратившим силу",
+)
 QUOTES = ' "«»“”'  # feed names of laws arrive quoted
 # Rejection reasons. edition_count_unknown: the official tree answered but exposes no
-# edition list (or an error), so "exactly one edition" cannot be established.
+# edition list, so "exactly one edition" cannot be established. lookup_error: the
+# lookup itself failed (network/parse), distinct from a clean "not found".
 REASONS = (
+    "already_used",
     "amending_act",
     "pages_out_of_range",
+    "lookup_error",
     "not_in_official_tree",
     "edition_count_unknown",
     "edition_count_not_1",
@@ -44,7 +69,7 @@ REASONS = (
 # Only metadata may reach a selected record.
 METADATA_FIELDS = (
     "eo_number", "act_type", "date", "number", "title", "pages", "edition_count",
-    "official_source", "official_hash",
+    "official_found", "official_source", "official_hash",
 )
 
 # The feed item carries only documentTypeId/signatoryAuthorityId (no names), so the
@@ -66,10 +91,26 @@ REGIONAL_MARK = re.compile(
     re.IGNORECASE,
 )
 APPROVED_TEXT_MARK = "утвержд"  # government resolutions need an approved text
+# A code is a federal law titled "<...> кодекс <...> Российской Федерации" (the word
+# "кодекс" in the nominative), e.g. "Градостроительный кодекс Российской Федерации".
+ACT_PREFIX = re.compile(
+    r"^(?:Федеральный (?:конституционный )?закон|Указ|Постановление|Распоряжение|Приказ)\b"
+    r"[^\"«]*? от \d\d\.\d\d\.\d{4} № \S+\s*"
+)
+CODE_TITLE = re.compile(r"^(?:.*\s)?кодекс(?:\s.*)?\sРоссийской Федерации$", re.IGNORECASE)
 
 
 def _norm(value):
     return " ".join(str(value).split())
+
+
+def _title(value):
+    """Bare title: older feed names repeat "<Type> от dd.mm.yyyy № N" before the quoted title."""
+    return ACT_PREFIX.sub("", _norm(value).strip(QUOTES), count=1).strip(QUOTES)
+
+
+def is_amending(title):
+    return _title(title).lower().startswith(AMENDING_PREFIXES)
 
 
 def categorize(complex_name, name):
@@ -79,6 +120,8 @@ def categorize(complex_name, name):
         if pattern.match(text):
             if category == "government_resolution" and APPROVED_TEXT_MARK not in _norm(name).lower():
                 return None
+            if category == "federal_law" and CODE_TITLE.match(_title(name)) and not is_amending(name):
+                return "code"
             return category
     match = ORDER_PREFIX.match(text)
     if match and FEDERAL_BODY.match(match.group(1)) and not REGIONAL_MARK.search(match.group(1)):
@@ -95,39 +138,83 @@ def ordered(candidates, seed):
     return sorted(candidates, key=lambda row: order_key(seed, row["eo_number"]))
 
 
-def cheap_reason(row):
+def cheap_reason(row, already_used=frozenset(), pages_range=(PAGES_MIN, PAGES_MAX)):
     """Rejections decidable from feed metadata alone."""
-    if _norm(row.get("title", "")).lstrip(QUOTES).lower().startswith(AMENDING_PREFIX):
+    if row["eo_number"] in already_used:
+        return "already_used"
+    if is_amending(row.get("title", "")):
         return "amending_act"
-    if not PAGES_MIN <= row["pages"] <= PAGES_MAX:
+    if not pages_range[0] <= row["pages"] <= pages_range[1]:
         return "pages_out_of_range"
     return None
 
 
-def select_pool(candidates, quotas, seed):
-    selected, rejected = [], []
-    counts = {kind: 0 for kind in quotas}
-    for row in ordered(candidates, seed):
-        kind = row["act_type"]
-        if kind not in quotas:
-            continue
-        reason = cheap_reason(row)
-        if reason is None:
-            if not row["in_official_tree"]:
-                reason = "not_in_official_tree"
-            elif row["edition_count"] is None:
-                reason = "edition_count_unknown"
-            elif row["edition_count"] != 1:
-                reason = "edition_count_not_1"
-            elif counts[kind] >= quotas[kind]:
-                reason = "quota_full"
-        if reason is None:
-            counts[kind] += 1
+def official_reason(row):
+    """Rejections from the official-tree lookup (used only with require_single_edition)."""
+    if row.get("lookup_error"):
+        return "lookup_error"
+    if not row.get("in_official_tree"):
+        return "not_in_official_tree"
+    if row.get("edition_count") is None:
+        return "edition_count_unknown"
+    if row["edition_count"] != 1:
+        return "edition_count_not_1"
+    return None
+
+
+class Counter:
+    """Incremental quota/long-share counters shared by select_pool and enrich."""
+
+    def __init__(self, quotas, long_min, long_pages):
+        self.quotas, self.long_min, self.long_pages = quotas, long_min, long_pages
+        self.counts = {kind: 0 for kind in quotas}
+        self.long = 0
+
+    def is_long(self, row):
+        return row["pages"] >= self.long_pages
+
+    def wants(self, row, long_phase):
+        if self.counts[row["act_type"]] >= self.quotas[row["act_type"]]:
+            return False
+        return not long_phase or (self.is_long(row) and self.long < self.long_min)
+
+    def take(self, row):
+        self.counts[row["act_type"]] += 1
+        self.long += self.is_long(row)
+
+    def full(self):
+        return all(self.counts[k] >= q for k, q in self.quotas.items()) and self.long >= self.long_min
+
+    def phases(self):
+        return (True, False) if self.long_min else (False,)
+
+
+def select_pool(candidates, quotas, seed, *, require_single_edition=True, already_used=frozenset(),
+                pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES):
+    """Seeded selection. With long_min, a first pass fills the share of acts with at
+    least long_pages pages, then a second pass fills the remaining quotas."""
+    rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
+    reasons = {}
+    for row in rows:
+        reason = cheap_reason(row, already_used, pages_range)
+        if reason is None and require_single_edition:
+            reason = official_reason(row)
+        reasons[row["eo_number"]] = reason
+    counter, taken, selected = Counter(quotas, long_min, long_pages), set(), []
+    for long_phase in counter.phases():
+        for row in rows:
+            eo = row["eo_number"]
+            if eo in taken or reasons[eo] is not None or not counter.wants(row, long_phase):
+                continue
+            counter.take(row)
+            taken.add(eo)
             selected.append({key: row[key] for key in METADATA_FIELDS if key in row})
-        else:
-            rejected.append({"eo_number": row["eo_number"], "reason": reason})
+    rejected = [{"eo_number": row["eo_number"], "reason": reasons[row["eo_number"]] or "quota_full"}
+                for row in rows if row["eo_number"] not in taken]
     return {"schema_version": SCHEMA, "seed": seed, "quotas": dict(quotas),
-            "selected": selected, "rejected": rejected}
+            "require_single_edition": require_single_edition,
+            "pages_range": list(pages_range), "long_min": long_min, "long_pages": long_pages,
+            "long_selected": counter.long, "selected": selected, "rejected": rejected}
 
 
 def selected_counts(result):
@@ -139,7 +226,42 @@ def selected_counts(result):
 
 def quotas_full(result):
     counts = selected_counts(result)
-    return all(counts[kind] >= quota for kind, quota in result["quotas"].items())
+    return (all(counts[kind] >= quota for kind, quota in result["quotas"].items())
+            and result.get("long_selected", 0) >= result.get("long_min", 0))
+
+
+def load_already_used(index_paths, selection_paths):
+    """eo numbers of documents already in development/reserved/pool indexes and
+    selected in earlier batches. Reads metadata files only, never document bodies."""
+    used = set()
+    for path in index_paths:
+        for doc in json.loads(Path(path).read_text(encoding="utf-8"))["documents"]:
+            used.update(re.findall(r"eoNumber=(\d{16})", doc.get("source_url", "")))
+    for path in selection_paths:
+        used.update(row["eo_number"] for row in json.loads(Path(path).read_text(encoding="utf-8"))["selected"])
+    return used
+
+
+def selection_pair_state(output):
+    present = [Path(output).exists(), Path(output).with_name("selection.sha256").exists()]
+    return "complete" if all(present) else "partial" if any(present) else "absent"
+
+
+def write_selection_pair(output, payload):
+    """Write-once selection.json + selection.sha256: both are checked before either is written."""
+    output = Path(output)
+    sha_path = output.with_name("selection.sha256")
+    state = selection_pair_state(output)
+    if state == "complete":
+        return "unchanged"
+    if state == "partial":
+        raise FileExistsError(f"incomplete selection pair in {output.parent}; refusing to write")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("xb") as stream:
+        stream.write(payload)
+    with sha_path.open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(f"{hashlib.sha256(payload).hexdigest()}  {output.name}\n")
+    return "written"
 
 
 def count_actual_editions(response):
@@ -191,8 +313,10 @@ def lookup_official(actual, ips, number, iso):
     dmy = ".".join(reversed(iso.split("-")))
     compact = iso.replace("-", "")
     attrs = [{"AttrId": 6, "AttrMode": 0, "Words": [number]},
-             {"AttrId": 5, "AttrMode": 0, "DateFrom": compact, "DateTo": compact},
-             {"AttrId": 999, "AttrMode": 1, "Words": [10, "position", "20220701", 0, 1]}]
+             {"AttrId": 5, "AttrMode": 0, "DateFrom": compact, "DateTo": compact}]
+    # No AttrId 999 ("position") filter: it hid acts such as 22-FZ/2018 from attrsearch
+    # (data/m1/m1-04a/experiments/20261021-actual-lookup-diagnosis/); the exact
+    # number/date filter below keeps a single identity.
     query = urlencode({"bpa": "ebpi", "q": json.dumps(attrs, separators=(",", ":"))})
     url = actual._api_base + "/attrsearch/?" + query
     body, _ = _retry(lambda: actual._get(url))
@@ -241,27 +365,53 @@ def sample_days(start, end, seed, count=120):
     return random.Random(seed).sample(days, count)
 
 
-def enrich(pool, enriched, details, actual, ips, quotas, seed):
-    """Look up candidates in seeded order until every quota is filled or the pool ends."""
-    for row in ordered(pool.values(), seed):
-        eo = row["eo_number"]
-        if eo in enriched:
-            continue
-        if cheap_reason(row) is not None:
-            enriched[eo] = dict(row, in_official_tree=False, edition_count=None)
-            continue
-        current = select_pool(list(enriched.values()), quotas, seed)
-        if quotas_full(current):
-            return
-        if selected_counts(current)[row["act_type"]] >= quotas[row["act_type"]]:
-            continue
-        try:
-            info = lookup_official(actual, ips, row["number"], row["date"])
-        except Exception as error:
-            info = {"in_official_tree": False, "detail": f"lookup_error {type(error).__name__}: {error}"}
-        details[eo] = info.pop("detail", None)
-        enriched[eo] = dict(row, **info)
-        print(row["act_type"], row["number"], row["date"], info, flush=True)
+def lookup(actual, ips, row):
+    """Official-tree metadata for one card; a failing lookup is a distinct lookup_error."""
+    try:
+        info = lookup_official(actual, ips, row["number"], row["date"])
+    except Exception as error:  # network/parse failure, not a clean "not found"
+        info = {"in_official_tree": False, "lookup_error": f"{type(error).__name__}: {error}"}
+    info["official_found"] = None if info.get("lookup_error") else bool(info["in_official_tree"])
+    print(row["act_type"], row["number"], row["date"], info, flush=True)
+    return info
+
+
+def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
+           pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES):
+    """Single-edition profile: look up candidates in selection order until the quotas are
+    filled. Counters are incremental (one pass per phase), mirroring select_pool."""
+    rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
+    counter, taken = Counter(quotas, long_min, long_pages), set()
+    for long_phase in counter.phases():
+        for row in rows:
+            if counter.full():
+                return
+            eo = row["eo_number"]
+            if (eo in taken or cheap_reason(row, already_used, pages_range) is not None
+                    or not counter.wants(row, long_phase)):
+                continue
+            if eo not in enriched:
+                enriched[eo] = dict(row, **lookup(actual, ips, row))
+            if official_reason(enriched[eo]) is None:
+                counter.take(row)
+                taken.add(eo)
+
+
+PROFILES = {
+    "batch-01": {"quotas": DEFAULT_QUOTAS, "pages_range": (PAGES_MIN, PAGES_MAX), "long_min": 0,
+                 "require_single_edition": True, "exclude_used": False},
+    "batch-02": {"quotas": BATCH2_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True},
+}
+DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
+USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")
+USED_SELECTIONS = (DOCUMENTS / "pool/batch-01/selection.json",)
+
+
+def load_feed_cache(path):
+    if path and Path(path).exists():
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    return {}
 
 
 def run(args):
@@ -270,50 +420,94 @@ def run(args):
     from legal_rag.sources.publication_pravo import PublicationPravoConnector
 
     output = Path(args.output)
-    if output.exists():
+    state = selection_pair_state(output)
+    if state == "complete":
         print("unchanged", hashlib.sha256(output.read_bytes()).hexdigest(), flush=True)
         return 0
+    if state == "partial":
+        raise FileExistsError(f"incomplete selection pair in {output.parent}; refusing to run")
+    profile = PROFILES[args.profile]
+    quotas, pages_range, long_min = profile["quotas"], profile["pages_range"], profile["long_min"]
+    strict = profile["require_single_edition"]
+    used = load_already_used(USED_INDEXES, USED_SELECTIONS) if profile["exclude_used"] else set()
+    options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
+               "long_min": long_min, "long_pages": LONG_PAGES}
     publication = PublicationPravoConnector(timeout=25, request_interval=1)
     actual = ActualPravoConnector(timeout=25, request_interval=1)
     ips = LegislationRussiaConnector(timeout=25, request_interval=1)
-    quotas = DEFAULT_QUOTAS
     all_days = sample_days(date.fromisoformat(args.date_from), date.fromisoformat(args.date_to), args.seed)
-    pool, enriched, details, failed_days = {}, {}, {}, []
-    used = 0
+    cache = load_feed_cache(args.feed_cache)
+    pool, enriched, failed_days, sampled = {}, {}, [], 0
     for limit in (60, 120):
-        for day in all_days[used:limit]:
-            try:
-                for row in feed_candidates(publication, day):
-                    pool.setdefault(row["eo_number"], row)
-            except Exception as error:  # a bad day is recorded, never silently dropped
-                failed_days.append({"date": day.isoformat(), "error": f"{type(error).__name__}: {error}"})
-            print("day", day.isoformat(), "pool", len(pool), flush=True)
-        used = limit
-        enrich(pool, enriched, details, actual, ips, quotas, args.seed)
-        result = select_pool(list(enriched.values()), quotas, args.seed)
+        for day in all_days[sampled:limit]:
+            key = day.isoformat()
+            if key not in cache:
+                try:
+                    cache[key] = feed_candidates(publication, day)
+                except Exception as error:  # a bad day is recorded, never silently dropped
+                    cache[key] = {"error": f"{type(error).__name__}: {error}"}
+            if isinstance(cache[key], dict):
+                failed_days.append({"date": key, "error": cache[key]["error"]})
+                continue
+            for row in cache[key]:
+                pool.setdefault(row["eo_number"], row)
+            print("day", key, "pool", len(pool), flush=True)
+        sampled = limit
+        if args.feed_cache:
+            Path(args.feed_cache).write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        if strict:
+            enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES)
+            rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
+                                              and cheap_reason(r, used, pages_range) is not None]
+        else:
+            rows = list(pool.values())
+        result = select_pool(rows, quotas, args.seed, **options)
         if quotas_full(result):
             break
-    result["rejected"] = [dict(r, detail=details[r["eo_number"]]) if details.get(r["eo_number"]) else r
-                          for r in result["rejected"]]
+    looked_up = len(enriched)
+    if not strict:  # official lookup is metadata for the selected acts only, not a filter
+        for row in result["selected"]:
+            info = lookup(actual, ips, row)
+            enriched[row["eo_number"]] = info
+            row.update({k: info[k] for k in METADATA_FIELDS if k in info})
+            if info.get("lookup_error") or info.get("detail"):
+                row["official_lookup_detail"] = info.get("lookup_error") or info.get("detail")
+        looked_up = len(result["selected"])
+    for row in result["rejected"]:
+        info = enriched.get(row["eo_number"], {})
+        if info.get("lookup_error") or info.get("detail"):
+            row["detail"] = info.get("lookup_error") or info.get("detail")
+    reasons = {}
+    for row in result["rejected"]:
+        reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
     result.update({
+        "profile": args.profile,
         "date_range": [args.date_from, args.date_to],
-        "days_sampled": [d.isoformat() for d in all_days[:used]],
+        "days_sampled": [d.isoformat() for d in all_days[:sampled]],
         "days_failed": failed_days,
         "candidates_per_category": {k: sum(1 for r in pool.values() if r["act_type"] == k) for k in quotas},
-        "looked_up_in_official_tree": len(details),
+        "selected_per_category": selected_counts(result),
+        "rejection_counts": reasons,
+        "already_used": sorted(used),
+        "looked_up_in_official_tree": looked_up,
+        "official_lookup": ("filter: exactly one complete official edition" if strict else
+                            "metadata only (official_found), looked up for selected acts after selection"),
         "quotas_filled": quotas_full(result),
         "classification_source": "feed complexName prefix (feed items carry only type/authority ids); "
-                                 "number and date from feed `number` and `documentDate`",
+                                 "number and date from feed `number` and `documentDate`; "
+                                 "code = federal law titled '... кодекс ... Российской Федерации'",
     })
     payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("xb") as stream:
-        stream.write(payload)
-    digest = hashlib.sha256(payload).hexdigest()
-    with output.with_name("selection.sha256").open("x", encoding="utf-8") as stream:
-        stream.write(f"{digest}  {output.name}\n")
-    print("selection.json sha256", digest, "quotas_filled", result["quotas_filled"], flush=True)
-    return 0 if result["quotas_filled"] else 3
+    if not result["quotas_filled"]:
+        # An incomplete batch is not frozen: the selection pair stays unwritten.
+        if args.partial_output:
+            Path(args.partial_output).write_bytes(payload)
+        print("quotas not filled", result["selected_per_category"], "long", result["long_selected"],
+              "partial", args.partial_output, flush=True)
+        return 3
+    status = write_selection_pair(output, payload)
+    print("selection.json", status, "sha256", hashlib.sha256(payload).hexdigest(), flush=True)
+    return 0
 
 
 def main(argv=None):
@@ -322,6 +516,9 @@ def main(argv=None):
     parser.add_argument("--to", dest="date_to", required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--profile", choices=sorted(PROFILES), default="batch-01")
+    parser.add_argument("--feed-cache", help="optional JSON cache of feed cards per day (outside data/)")
+    parser.add_argument("--partial-output", help="where to write an unfilled result (not frozen)")
     return run(parser.parse_args(argv))
 
 

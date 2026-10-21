@@ -49,7 +49,7 @@ def test_quotas_and_seed_are_deterministic():
     first = P.select_pool(pool(), QUOTAS, 20261021)
     again = P.select_pool(list(reversed(pool())), QUOTAS, 20261021)
     other = P.select_pool(pool(), QUOTAS, 7)
-    assert first["schema_version"] == "m1-04a-pool-selection/1"
+    assert first["schema_version"] == "m1-04a-pool-selection/2"
     assert first["seed"] == 20261021 and first["quotas"] == QUOTAS
     assert ids(first) == ids(again)
     assert ids(first) != ids(other)
@@ -125,6 +125,105 @@ def test_amending_title_is_detected_through_leading_quotes():
         assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "amending_act"}], title
 
 
+
+def test_amending_variants_rejected():
+    titles = (
+        "О внесении изменений в статью 1", "О внесении изменения в пункт 2",
+        "О внесении дополнений в закон", "О признании утратившими силу отдельных актов",
+        "«О признании утратившим силу постановления»",
+    )
+    for title in titles:
+        result = P.select_pool([card(1, title=title)], {"federal_law": 1}, 1, require_single_edition=False)
+        assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "amending_act"}], title
+    kept = P.select_pool([card(1, title="О порядке внесения изменений в реестр")], {"federal_law": 1}, 1)
+    assert ids(kept) == [f"{1:016d}"]
+
+
+def test_already_used_rejected():
+    used = {f"{2:016d}"}
+    result = P.select_pool([card(1), card(2)], {"federal_law": 2}, 1, already_used=used)
+    assert ids(result) == [f"{1:016d}"]
+    assert result["rejected"] == [{"eo_number": f"{2:016d}", "reason": "already_used"}]
+
+
+def test_long_document_share_filled_first():
+    short = [card(n, types, pages=5) for n, types in zip(range(1, 41), ["federal_law", "ministry_order"] * 20)]
+    long = [card(n, "ministry_order", pages=25) for n in range(41, 44)] + [card(44, "federal_law", pages=150)]
+    quotas = {"federal_law": 2, "ministry_order": 2}
+    kwargs = {"require_single_edition": False, "pages_range": (3, 200), "long_min": 3, "long_pages": 20}
+    for seed in (1, 2, 3, 4):
+        result = P.select_pool(short + long, quotas, seed, **kwargs)
+        pages = [row["pages"] for row in result["selected"]]
+        assert sum(p >= 20 for p in pages) >= 3, seed
+        assert len(pages) == 4 and result["long_selected"] >= 3
+        assert P.select_pool(list(reversed(short + long)), quotas, seed, **kwargs)["selected"] == result["selected"]
+    # Without the share the short majority wins for at least one seed.
+    plain = [P.select_pool(short + long, quotas, s, require_single_edition=False, pages_range=(3, 200))
+             for s in (1, 2, 3, 4)]
+    assert any(sum(r["pages"] >= 20 for r in p["selected"]) < 3 for p in plain)
+    assert P.select_pool([card(1, pages=201)], {"federal_law": 1}, 1, pages_range=(3, 200))["rejected"][0][
+        "reason"] == "pages_out_of_range"
+
+
+def test_single_edition_filter_optional():
+    cards = [
+        card(1, edition_count=3),
+        card(2, in_official_tree=False, edition_count=None),
+        card(3, in_official_tree=False, edition_count=None, lookup_error="URLError: timeout"),
+    ]
+    strict = P.select_pool(cards, {"federal_law": 3}, 1)
+    assert {r["eo_number"][-1]: r["reason"] for r in strict["rejected"]} == {
+        "1": "edition_count_not_1", "2": "not_in_official_tree", "3": "lookup_error"}
+    loose = P.select_pool(cards, {"federal_law": 3}, 1, require_single_edition=False)
+    assert loose["rejected"] == [] and len(loose["selected"]) == 3
+    assert loose["require_single_edition"] is False and strict["require_single_edition"] is True
+    # Metadata-only rows (no lookup yet) are selectable when the filter is off.
+    bare = {k: v for k, v in card(4).items() if k not in ("in_official_tree", "edition_count")}
+    assert ids(P.select_pool([bare], {"federal_law": 1}, 1, require_single_edition=False)) == [f"{4:016d}"]
+
+
+def test_code_category_from_title():
+    c = P.categorize
+    law = "Федеральный закон от 08.03.2015 № 21-ФЗ \"{}\""
+    for title in ("Кодекс административного судопроизводства Российской Федерации",
+                  "Градостроительный кодекс Российской Федерации"):
+        assert c(law.format(title), f'"{title}"') == "code", title
+    for title in ("О внесении изменений в Налоговый кодекс Российской Федерации",
+                  "О введении в действие Градостроительного кодекса Российской Федерации",
+                  "О признании утратившими силу положений Кодекса Российской Федерации"):
+        assert c(law.format(title), f'"{title}"') == "federal_law", title
+    order = "Приказ Министерства юстиции Российской Федерации от 01.01.2020 № 1 \"{}\""
+    assert c(order.format("Об утверждении Кодекс Российской Федерации"), "Х") == "ministry_order"
+
+
+def test_selection_pair_write_once(tmp_path):
+    out = tmp_path / "batch" / "selection.json"
+    payload = b"{}" + bytes([10])
+    assert P.write_selection_pair(out, payload) == "written"
+    digest = out.with_name("selection.sha256").read_text(encoding="utf-8")
+    assert digest == P.hashlib.sha256(payload).hexdigest() + "  selection.json" + chr(10)
+    assert P.write_selection_pair(out, b"other") == "unchanged"
+    assert out.read_bytes() == payload
+    assert out.with_name("selection.sha256").read_text(encoding="utf-8") == digest
+    lone = tmp_path / "lone" / "selection.json"
+    lone.parent.mkdir()
+    lone.with_name("selection.sha256").write_text("x  selection.json", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        P.write_selection_pair(lone, payload)
+    assert not lone.exists()
+    assert P.selection_pair_state(lone) == "partial"
+    assert P.selection_pair_state(tmp_path / "none" / "selection.json") == "absent"
+
+
+def test_already_used_from_indexes(tmp_path):
+    index = {"documents": [{"source_url": "http://publication.pravo.gov.ru/File/Pdf?eoNumber=0001201305220001"}]}
+    (tmp_path / "index.json").write_text(P.json.dumps(index), encoding="utf-8")
+    (tmp_path / "selection.json").write_text(P.json.dumps({"selected": [{"eo_number": "0001202001010001"}]}),
+                                             encoding="utf-8")
+    used = P.load_already_used([tmp_path / "index.json"], [tmp_path / "selection.json"])
+    assert used == {"0001201305220001", "0001202001010001"}
+
+
 A = load_script("acquire_m1_04a_pool")
 
 POOL_ACT = {
@@ -191,3 +290,80 @@ def test_pool_slug_rule():
     assert A.slug(order, "Федеральная налоговая служба") == "prikaz-fns-173-2021"
     with pytest.raises(ValueError):
         A.slug(order)
+
+
+class FakeActual:
+    """Authored actual.pravo stand-in: the act is hidden whenever the query carries AttrId 999."""
+
+    _api_base = "http://actual.example/api/ebpi"
+
+    def __init__(self):
+        self.requests = []
+
+    def _url(self, path, params):
+        from urllib.parse import urlencode
+
+        return f"{self._api_base}/{path}?{urlencode(params)}"
+
+    def _get(self, url):
+        from urllib.parse import parse_qs, urlsplit
+
+        self.requests.append(url)
+        if "/attrsearch/" in url:
+            attrs = P.json.loads(parse_qs(urlsplit(url).query)["q"][0])
+            hidden = any(attr.get("AttrId") == 999 for attr in attrs)
+            docs = [] if hidden else [
+                {"docpass0number": "22-ФЗ", "docpass0date": "20180219", "dochash": "h22"},
+                {"docpass0number": "22-ФЗ", "docpass0date": "20170219", "dochash": "other-date"},
+            ]
+            return P.json.dumps({"docs": docs}).encode(), {}
+        edition = {"redofficial": True, "redcompleted": True, "hascontent": True, "contentcomplete": True}
+        return P.json.dumps({"redactions": [edition, edition]}).encode(), {}
+
+
+def test_actual_lookup_query_has_no_position_filter():
+    actual = FakeActual()
+    info = P.lookup_official(actual, None, "22-ФЗ", "2018-02-19")
+    assert info == {"in_official_tree": True, "official_source": "actual", "official_hash": "h22",
+                    "edition_count": 2}
+    assert len(actual.requests) == 2
+
+
+def test_enrich_counts_incrementally_and_matches_selection(monkeypatch):
+    rows = [card(n, ["federal_law", "ministry_order"][n % 2], pages=5 + (n % 4) * 10,
+                 in_official_tree=None, edition_count=None) for n in range(1, 81)]
+    truth = {r["eo_number"]: {"in_official_tree": r["eo_number"][-1] != "3",
+                              "edition_count": 2 if r["eo_number"][-1] == "7" else 1} for r in rows}
+    calls = []
+
+    def fake_lookup(actual, ips, row):
+        calls.append(row["eo_number"])
+        if row["eo_number"][-1] == "9":
+            return {"in_official_tree": False, "lookup_error": "URLError: down", "official_found": None}
+        return dict(truth[row["eo_number"]], official_found=truth[row["eo_number"]]["in_official_tree"])
+
+    monkeypatch.setattr(P, "lookup", fake_lookup)
+    quotas = {"federal_law": 2, "ministry_order": 2}
+    pool_rows = {r["eo_number"]: r for r in rows}
+    enriched = {}
+    P.enrich(pool_rows, enriched, None, None, quotas, 5, pages_range=(3, 200), long_min=2)
+    assert len(calls) == len(set(calls)) < len(rows)
+    partial = P.select_pool(list(enriched.values()), quotas, 5, pages_range=(3, 200), long_min=2)
+    full = P.select_pool([dict(r, **truth[r["eo_number"]]) if r["eo_number"][-1] != "9"
+                          else dict(r, lookup_error="x") for r in rows],
+                         quotas, 5, pages_range=(3, 200), long_min=2)
+    assert ids(partial) == ids(full) and P.quotas_full(partial)
+    assert "lookup_error" in {r["reason"] for r in full["rejected"]}
+
+
+def test_titles_with_full_act_prefix():
+    # Older feed names repeat the act prefix before the quoted title.
+    title = 'Федеральный закон от 02.05.2012 № 41-ФЗ "О внесении изменений в отдельные акты"'
+    assert P.select_pool([card(1, title=title)], {"federal_law": 1}, 1)["rejected"][0]["reason"] == "amending_act"
+    law = "Федеральный закон от 01.01.2015 № 1-ФЗ \"{}\""
+    amending = law.format("О внесении изменений в Налоговый кодекс Российской Федерации")
+    assert P.categorize(amending, amending) == "federal_law"
+    code = law.format("Водный кодекс Российской Федерации")
+    assert P.categorize(code, code) == "code"
+    kept = 'Федеральный закон от 03.12.2011 № 382-ФЗ "О государственной системе"'
+    assert P.select_pool([card(2, title=kept)], {"federal_law": 1}, 1)["selected"]
