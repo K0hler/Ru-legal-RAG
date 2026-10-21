@@ -81,6 +81,7 @@ class Region:
     text: str
     text_node_ids: list
     role: str = "content"  # content | noise | picture | table
+    repeats: int = 0  # running header/footer: regions with exactly the same text
 
 
 def load_regions(extraction: dict) -> list[Region]:
@@ -96,7 +97,12 @@ def load_regions(extraction: dict) -> list[Region]:
             regions.append(Region(len(regions), page["page"], index, rid, region["category"], region["bbox"],
                                   page["image_size"], raw.get(rid, ""), view(raw.get(rid, "")), nodes.get(rid, [])))
     running = Counter(re.sub(r"\d+", "#", r.text) for r in regions if r.category in NOISE_CATEGORIES and r.text)
+    # Exact repeats (not digit-normalised): «Приложение № 1 …» and «Приложение № 2 …»
+    # are different captions, while the same caption on every page is a running header.
+    exact = Counter(r.text for r in regions if r.category in NOISE_CATEGORIES and r.text)
     for r in regions:
+        if r.category in NOISE_CATEGORIES and r.text:
+            r.repeats = exact[r.text]
         if r.category == "Picture":
             r.role = "picture"
         elif r.category == "Table":
@@ -118,8 +124,38 @@ APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]
 ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*№\s*(\d+))?(?:\s+(к\s.+))?$")
 
 
+PROJECT = re.compile(r"^(?:ПРОЕКТ|Проект)(?![А-Яа-яЁё])")
+REPEAT_THRESHOLD = 3
+
+
 def is_caption(text: str) -> bool:
     return bool(APPROVAL.match(text)) or (bool(ANNEX.match(text)) and len(text) <= 120)
+
+
+def is_project_caption(text: str) -> bool:
+    """A standalone «Проект»/«ПРОЕКТ» mark of an attached draft (agreement, treaty):
+    the whole paragraph is at most 40 characters and has no final dot, so a sentence
+    «Проект постановления подлежит ...» is not a caption."""
+    return bool(PROJECT.match(text)) and len(text) <= 40 and not text.rstrip().endswith(".")
+
+
+def annex_caption(p) -> re.Match | None:
+    """An annex caption paragraph. Body captions are short (<= 120 characters); a caption
+    printed as a page header that is not a running header (role content, repeated on fewer
+    than three pages) is positional evidence, so a long reference «к приказу ... от ... №»
+    is accepted up to 300 characters."""
+    text = p.text
+    m = ANNEX.match(text)
+    if not m or text.endswith("."):
+        return None
+    if len(text) <= 120 or (p.first.category == "Page-header" and len(text) < 300):
+        return m
+    return None
+
+
+def running_caption(p) -> bool:
+    """A caption repeated as a running header/footer on three or more pages opens nothing."""
+    return p.first.category in NOISE_CATEGORIES and p.first.repeats >= REPEAT_THRESHOLD
 
 
 @dataclass
@@ -299,15 +335,37 @@ def next_letter_ok(prev: int, new: int) -> bool:
     return new == prev + 1
 
 
-def label_under(marker: Marker, parent: tuple | None) -> str:
-    """An ``int`` marker «1.» directly inside an article is a part ``ч<n>``."""
-    if marker.kind == "int" and parent is not None and parent[0] == "article":
+ABANDON_ARTICLE = 0.5  # a point that leaves an open article without a new heading
+
+
+def label_under(marker: Marker, parent: tuple | None, article_parts: bool = True) -> str:
+    """An ``int`` marker «1.» directly inside an article.
+
+    Controller ruling (M1-04A cycle 2): in the act's own text (scope ``A``: laws and
+    codes) it is a part ``ч<n>``; inside an attached document (``S``, ``S2``, annexes
+    ``S/AN…``/``A/AN…``: agreements, treaties) it is a plain point number, because such
+    documents cite themselves as «пункт 1 статьи 1 Соглашения»."""
+    if marker.kind == "int" and article_parts and parent is not None and parent[0] == "article":
         return f"ч{marker.label}"
     return marker.label
 
 
-def transitions(stack: tuple, marker: Marker, last_int: int | None):
+def abandons_article(stack: tuple, keep: int) -> bool:
+    return any(entry[0] == "article" for entry in stack[keep:])
+
+
+def transitions(stack: tuple, marker: Marker, last_int: int | None, article_parts: bool = True):
     """Yield (new_stack, cost) for one marker. Stack items: (kind, value, label)."""
+    for new_stack, cost in _transitions(stack, marker, last_int, article_parts):
+        # Explicit preference instead of an order-dependent tie: only a named heading may
+        # close an open article; a point that drops it pays ABANDON_ARTICLE.
+        keep = len(new_stack) - 1
+        if marker.kind not in UNIT_RANK and abandons_article(stack, keep):
+            cost += ABANDON_ARTICLE
+        yield new_stack, cost
+
+
+def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_parts: bool):
     depth = len(stack)
     if marker.kind in UNIT_RANK and marker.kind != "roman":
         # A named unit heading is explicit: it closes every open unit of the same
@@ -321,7 +379,7 @@ def transitions(stack: tuple, marker: Marker, last_int: int | None):
     for keep in range(depth, -1, -1):  # keep = number of stack entries retained below the new one
         parent = stack[keep - 1] if keep else None
         sibling = stack[keep] if keep < depth else None
-        item = (marker.kind, marker.value, label_under(marker, parent))
+        item = (marker.kind, marker.value, label_under(marker, parent, article_parts))
         if sibling is not None:
             # continue the sequence at this level
             if sibling[0] == marker.kind:
@@ -369,7 +427,7 @@ def transitions(stack: tuple, marker: Marker, last_int: int | None):
                 yield stack[:keep] + (item,), 4.0
 
 
-def solve_depths(markers: list[Marker], beam: int = 64) -> list[tuple]:
+def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = True) -> list[tuple]:
     """Beam search over the whole marker sequence of one scope; returns stacks."""
     states = [(0.0, (), None, [])]  # cost, stack, last_int, history
     for marker in markers:
@@ -378,7 +436,7 @@ def solve_depths(markers: list[Marker], beam: int = 64) -> list[tuple]:
             continue
         nxt = []
         for cost, stack, last_int, hist in states:
-            options = list(transitions(stack, marker, last_int))
+            options = list(transitions(stack, marker, last_int, article_parts))
             if not options:
                 options = [(stack + ((marker.kind, marker.value, marker.label),), 10.0)]  # unexplained: deep penalty
             for new_stack, c in options:
@@ -405,7 +463,11 @@ def build(extraction: dict) -> dict:
     paragraphs = logical_paragraphs(regions)
 
     # scopes: approving act until the first approval caption, then approved text,
-    # each annex caption opens an annex scope inside the approved text.
+    # each annex caption opens an annex scope inside the approved text. A standalone
+    # «Проект» mark opens an attached draft (S, S2, ...) exactly like «УТВЕРЖДЕН...»:
+    # directly after an approval caption it is part of it, and a preceding «Приложение»
+    # caption joins it. A caption repeated as a running header on three or more pages
+    # opens nothing (it stays a content paragraph of the current scope).
     scope = "A"
     scopes: list[tuple[str, list[Paragraph]]] = [("A", [])]
     pending_annex_caption = None
@@ -417,8 +479,13 @@ def build(extraction: dict) -> dict:
             scopes[-1][1].append(p)
             continue
         text = p.text
-        if p.kind == "text" and APPROVAL.match(text) and len(text) < 300 and not text.endswith("."):
+        caption_here = p.kind == "text" and not running_caption(p)
+        approval = caption_here and bool(APPROVAL.match(text)) and len(text) < 300 and not text.endswith(".")
+        project = caption_here and is_project_caption(text)
+        if approval or project:
             p.kind = "approval"
+            if project:
+                p.evidence.append({"caption": "project", "rule": "standalone «Проект» opens an attached document"})
             previous = next((q for q in reversed(paragraphs[:i]) if q.flow == "body" and q.kind != "picture"), None)
             if previous is None or previous.kind != "approval" or previous is pending_annex_caption:
                 approved_count += 1
@@ -432,12 +499,14 @@ def build(extraction: dict) -> dict:
                     pending_annex_caption = None
             scopes[-1][1].append(p)
             continue
-        m = ANNEX.match(text) if p.kind == "text" else None
-        if m and len(text) <= 120:
+        m = annex_caption(p) if caption_here else None
+        if m:
             p.kind = "annex"
             nxt = next((q for q in paragraphs[i + 1:] if q.flow == "body" and q.kind == "text"), None)
-            if nxt is not None and APPROVAL.match(nxt.text) and not approved_opened:
-                # "Приложение / УТВЕРЖДЕНЫ ..." on the approved text: part of its approval caption
+            if nxt is not None and not running_caption(nxt) and (
+                    (APPROVAL.match(nxt.text) and not approved_opened) or is_project_caption(nxt.text)):
+                # "Приложение / УТВЕРЖДЕНЫ ..." on the approved text, or "Приложение / Проект"
+                # on an attached draft: part of its approval caption
                 p.kind = "approval"
                 pending_annex_caption = p
                 scopes[-1][1].append(p)
@@ -460,7 +529,7 @@ def build(extraction: dict) -> dict:
             p.marker = parse_marker(p.text, p.first.category)
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
-        stacks = solve_depths([p.marker for p in body])
+        stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         for p, stack in zip(body, stacks):
             if signature_like(p.first) and p.marker.kind == "none":
                 p.kind = "signature"

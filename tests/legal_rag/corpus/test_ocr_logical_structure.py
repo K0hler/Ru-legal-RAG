@@ -322,3 +322,90 @@ def test_superscript_and_decimal_article_numbers():
     assert got["1.2"] == "A/ст5¹" and got["1.3"] == "A/ст5¹/ч1"
     assert got["1.4"] == "A/ст12.1" and got["1.5"] == "A/ст12.1"
     assert got["1.6"] == "A/ст13" and got["1.7"] == "A/ст13"
+
+
+def test_standalone_project_caption_opens_attached_document():
+    pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
+              ("Text", "Одобрить представленный проект Соглашения."),
+              ("Text", "Д.Медведев", 1250)],
+             [("Page-header", "Проект", 1330), ("Section-header", "СОГЛАШЕНИЕ"),
+              ("Text", "Стороны согласились о нижеследующем:"),
+              ("Section-header", "Статья 1"),
+              ("Text", "1. Граждане освобождаются от визовых требований."),
+              ("Text", "2. Граждане соблюдают законодательство, указанное в пункте 1 настоящей статьи."),
+              ("Section-header", "Статья 2"), ("Text", "Соглашение вступает в силу.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A" and got["1.3"] == "A"
+    assert got["2.0"] == "S" and got["2.1"] == "S" and got["2.2"] == "S"
+    # controller ruling: «1.» inside an article of an attached document is a point, not a part
+    assert got["2.3"] == "S/ст1" and got["2.4"] == "S/ст1/1" and got["2.5"] == "S/ст1/2"
+    assert got["2.6"] == "S/ст2" and got["2.7"] == "S/ст2"
+    # an annex caption followed by «Проект» is one caption of the attached document
+    pages = [[("Text", "1. Одобрить проект Соглашения."), ("Text", "2. Поручить МИДу подписать Соглашение.")],
+             [("Text", "Приложение\nк распоряжению Правительства", 1000), ("Text", "ПРОЕКТ", 1300),
+              ("Section-header", "СОГЛАШЕНИЕ"), ("Section-header", "Статья 1"), ("Text", "1. Первый пункт.")],
+             [("Text", "Проект", 1300), ("Section-header", "ПРОТОКОЛ"), ("Text", "1. Пункт протокола.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/2"
+    assert got["2.0"] == "S" and got["2.1"] == "S" and got["2.2"] == "S"
+    assert got["2.3"] == "S/ст1" and got["2.4"] == "S/ст1/1"
+    assert got["3.0"] == "S2" and got["3.1"] == "S2" and got["3.2"] == "S2/1"
+
+
+def test_act_article_parts_stay_parts_in_act_scope():
+    pages = [[("Section-header", "Статья 1"), ("Text", "1. Часть первая."), ("Text", "2. Часть вторая."),
+              ("Section-header", "Статья 2"), ("Text", "1. Часть первая второй статьи.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/ст1/ч1" and got["1.2"] == "A/ст1/ч2" and got["1.4"] == "A/ст2/ч1"
+    # the choice is explicit, not an order-dependent tie: a point that leaves an open
+    # article without a new heading costs more than the same point inside the article
+    article = (("article", "1", "ст1"),)
+    assert list(S.transitions(article, S.Marker("int", 1, "1"), None)) == [(article + (("int", 1, "ч1"),), 0.0)]
+    assert S.ABANDON_ARTICLE > 0
+    assert S.abandons_article((("article", "1", "ст1"), ("int", 1, "ч1")), 0)
+    assert not S.abandons_article((("article", "1", "ст1"), ("int", 1, "ч1")), 1)
+
+
+def test_project_word_inside_sentence_is_not_a_caption():
+    pages = [[("Text", "1. Утвердить порядок."),
+              ("Text", "Проект постановления подлежит размещению на официальном сайте."),
+              ("Text", "Проект вносится в Правительство Российской Федерации в установленном порядке"),
+              ("Text", "2. Контроль оставляю за собой.")],
+             [("Page-header", "2"), ("Text", "проект"), ("Text", "3. Приказ вступает в силу.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/1" and got["1.2"] == "A/1" and got["1.3"] == "A/2"
+    assert got["2.1"] == "A/2" and got["2.2"] == "A/3"
+
+
+LONG_ANNEX = ("ПРИЛОЖЕНИЕ\nк приказу Министерства цифрового развития, связи и массовых\nкоммуникаций\n"
+              "Российской Федерации\nот 25.03.2021 г. № 173")
+
+
+def test_annex_caption_in_page_header_opens_scope():
+    assert len(S.view(LONG_ANNEX)) > 120
+    pages = [[("Text", "ПРИКАЗЫВАЮ:"), ("Text", "1. Определить виды имущества согласно приложению."),
+              ("Text", "2. Направить приказ на регистрацию."), ("Text", "М.И. Шадаев", 1340)],
+             [("Page-header", LONG_ANNEX, 888), ("Section-header", "ВИДЫ особо ценного движимого имущества"),
+              ("Text", "1. Транспортные средства."), ("Text", "2. Объекты нематериальных активов.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/2"
+    assert got["2.0"] == "A/AN" and got["2.1"] == "A/AN"
+    assert got["2.2"] == "A/AN/1" and got["2.3"] == "A/AN/2"
+    # a caption repeated as a running header on three or more pages does not reopen the annex
+    running = ("Page-header", "Приложение № 2 к Порядку", 1000)
+    pages = [[("Text", "1. Утвердить Порядок."), ("Text", "Приложение № 2\nк Порядку", 1000),
+              ("Text", "1. Перечень включает:"), ("Text", "а) первое;")],
+             [running, ("Text", "б) второе;"), ("Text", "2. Второй пункт.")],
+             [running, ("Text", "3. Третий пункт.")],
+             [running, ("Text", "4. Четвертый пункт.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/AN2" and got["1.3"] == "A/AN2/1/а"
+    assert got["2.1"] == "A/AN2/1/б" and got["2.2"] == "A/AN2/2"
+    assert got["3.1"] == "A/AN2/3" and got["4.1"] == "A/AN2/4"
+    # captions that differ only in their numbers are not a running header: each opens its annex
+    pages = [[("Text", "1. Правила применяются."), ("Text", "2. Контроль осуществляется.")]]
+    pages += [[("Page-header", f"Приложение № {n} к СП 2.1.3684-21", 1000), ("Text", "1. Первый пункт.")]
+              for n in range(1, 5)]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"{n}.0"] for n in range(2, 6)] == ["A/AN1", "A/AN2", "A/AN3", "A/AN4"]
+    assert got["5.1"] == "A/AN4/1"
