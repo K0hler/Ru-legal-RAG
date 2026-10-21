@@ -352,4 +352,4 @@ Scope: local corpora, raw downloads, fixtures, manifests, and generated database
   it does not qualify its PDF/OCR front end, full extraction, production parsing,
   transfer or legal admission. Read the dated Documind report before interpreting
   an HTTP 200 or `finish_reason=stop` as a usable legal schema.
-- actual.pravo attrsearch finds only a limited set of major acts (checked 21.10.2026: 218-FZ, 229-FZ, 59-FZ found; 22-FZ and No.884 return 0 docs without error although IPS has them); 0/311 hits in pool selection is a source property, not a query defect (`m1/m1-04a/experiments/20261021-actual-lookup-diagnosis/notes.md`).
+- Pool selection's actual.pravo lookup hit 0 of 311 (batch-1 `selection.json`: `looked_up_in_official_tree` 311, no `official_source: actual`) because of a query defect: the `AttrId 999` filter hides acts such as 22-FZ and No.884; without it both are found (21.10.2026, `m1/m1-04a/experiments/20261021-actual-lookup-diagnosis/`). Fix pending in `select_m1_04a_pool.py`; batch 1 stays frozen.
