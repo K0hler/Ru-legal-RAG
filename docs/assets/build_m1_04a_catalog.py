@@ -33,6 +33,15 @@ SANPIN = M1 / "inputs" / "m1-04" / "sanpin-original-amendments.json"
 # Check-pool batches: `<batch>/<slug>/input.json` written by acquire_m1_04a_pool.py. Their
 # rows go to the batch's own index so the frozen `documents/index.json` stays unchanged.
 POOL_BATCHES = ("batch-01",)
+# Protocol life cycle of a pool batch: measured once on frozen code, then it joins
+# development. Recorded in `<batch>/status.json` (write-once) because the indexes are frozen.
+POOL_STATUS = {
+    "batch-01": [
+        {"status": "measured", "date": "2026-10-21", "evidence": "experiments/20261021-batch-01-first-pass"},
+        {"status": "development", "date": "2026-10-21",
+         "report": "docs/milestones/m1/04a/M1_04A_POOL_BATCH_1_2026-10-21.md"},
+    ],
+}
 # SanPiN 2.1.3684-21 bundle: original resolution No. 3 plus nine amending resolutions.
 SANPIN_SLUGS = {
     "66210869f6617b4eb5b38b27fe76fceab46f845fd14c6ecfebe9ae67c8f01a12": "sanpin-2.1.3684-21",
@@ -194,6 +203,11 @@ def main(argv=None) -> int:
         write_once(out / "documents" / group / "index.json",
                    (json.dumps(pool_index, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
         rows += group_rows
+    for batch, history in POOL_STATUS.items():
+        status = {"schema_version": "m1-04a-pool-status/1", "group": f"pool/{batch}",
+                  "status": history[-1]["status"], "history": history}
+        write_once(out / "documents" / "pool" / batch / "status.json",
+                   (json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     for name, text in (("README.md", README), ("LEGACY.md", LEGACY)):
         write_once(out / name, text.encode("utf-8"))
     summary = {}

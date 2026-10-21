@@ -38,6 +38,13 @@
   convention change re-annotates all gold and keeps old numbers. Its stop
   thresholds and the annex `owner` convention are proposals awaiting the owner.
 
+- `milestones/m1/04a/M1_04A_POOL_BATCH_1_2026-10-21.md` is the first check-pool
+  first-pass result (8 acts, 363 regions; prototype 237, `/7` 91) on frozen
+  `code-final`, not G13/Task 3. Gold is single-agent (Codex) annotation of OCR
+  text, not official trees or page images; keep that limit and the selection
+  biases with any number quoted from it. The batch is now development: later
+  scores on it are not progress. Its 30-region sample is a sibling `_SAMPLE_` file.
+
 - `milestones/m1/04a/M1_04A_LOGICAL_TEXT_2026-10-20.md` records the stage-2
   `logical-text/1` implementation and `assets/evaluate_logical_text.py`:
   full prototype parity on the 8 saved documents (0 D1/D2/unexpected),

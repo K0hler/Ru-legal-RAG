@@ -8,6 +8,16 @@
   Never open `reserved/` bodies before Task 3. Earlier M1-04A material was not
   moved (pinned paths); `m1/m1-04a/LEGACY.md` maps it.
 
+- Check-pool batch 1 (21.10.2026): originals in `m1/m1-04a/documents/pool/batch-01/`
+  (slug = `<type>-<number>-<year>`, ministry orders `prikaz-<ministry>-<n>-<year>`;
+  `selection.json` frozen before PDFs, superseded `attempt-01` kept), OCR in
+  `ocr/<slug>/run-01/`, agent gold `gold/<slug>/agent-<slug>.gold.txt` frozen by
+  `experiments/20261021-batch-01-gold-freeze/freeze.json` before any parser run.
+  First pass: `experiments/20261021-batch-01-first-pass/` (`freeze.json` written
+  before `run`). `pool/batch-01/status.json` records measured -> development;
+  indexes stay write-once. IPS gives its single edition `rdk = 0`, so
+  `official_binding` refuses those bundles; only pp-884 would import a tree.
+
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written
   before each evaluated run, all code snapshots, attempt/holdout/final runs and
