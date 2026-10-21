@@ -2,6 +2,8 @@
 
 import copy
 
+import pytest
+
 from legal_rag.corpus import logical_text as L
 from legal_rag.corpus.compiler import content_hash
 
@@ -85,3 +87,132 @@ def test_is_caption_kinds_and_input_not_mutated():
     before = copy.deepcopy(data)
     L.classify_regions(data)
     assert data == before
+
+
+def build(pages):
+    return L.build_logical_text(extraction(pages))
+
+
+def by_text(result, prefix):
+    return next(p for p in result["paragraphs"] if p["text"].startswith(prefix))
+
+
+def test_body_continuation_joins_across_page_break_and_noise():
+    result = build([
+        [("Text", "2. Документы передаются в составе, предусмотренном Правилами содержания,")],
+        [("Page-header", "2"), ("Text", "утвержденных постановлением Правительства Российской Федерации № 491.")],
+    ])
+    assert len(result["paragraphs"]) == 1
+    p = result["paragraphs"][0]
+    assert [f["join"] for f in p["fragments"]] == [None, "body_continuation_after_page_break"]
+    assert p["features"]["caption"] is None
+    assert result["regions"][1]["paragraph_id"] is None
+    assert result["regions"][2]["paragraph_id"] == 0
+
+
+def test_terminated_or_marked_region_is_not_joined():
+    result = build([
+        [("Text", "1. Первый пункт;")],
+        [("Text", "утвержденный иначе.")],
+    ])
+    assert len(result["paragraphs"]) == 2
+    result = build([
+        [("Text", "1. Первый пункт включает")],
+        [("Text", "а) подпункт без продолжения")],
+    ])
+    assert len(result["paragraphs"]) == 2
+
+
+def test_same_page_lowercase_region_is_not_joined():
+    result = build([[("Text", "Первый абзац без точки"), ("Text", "второй абзац со строчной")]])
+    assert len(result["paragraphs"]) == 2
+    assert result["paragraphs"][1]["features"]["starts_lowercase"] is True
+
+
+def test_no_join_across_missing_physical_page():
+    data = extraction([[("Text", "Начало без точки")], [("Text", "Промежуточная.")], [("Text", "строчное начало")]])
+    data["pages"][2]["page"] = 20
+    data["pages"].pop(1)
+    data["blocks"] = [b for b in data["blocks"] if b["source_region_id"] != "r2-0"]
+    data["text_nodes"] = [t for t in data["text_nodes"] if t["text_node_id"] != "t2-0"]
+    result = L.build_logical_text(data)
+    assert [p["text"] for p in result["paragraphs"]] == ["Начало без точки", "строчное начало"]
+
+
+def test_empty_region_never_receives_continuation():
+    result = build([
+        [("Text", "Незаконченный абзац"), ("Text", "")],
+        [("Text", "продолжение строчное.")],
+    ])
+    kinds = [p["kind"] for p in result["paragraphs"]]
+    assert kinds == ["text", "empty"]
+    assert len(result["paragraphs"][0]["fragments"]) == 2
+    assert result["paragraphs"][1]["fragments"][0]["text_node_ids"] == []
+    assert result["paragraphs"][1]["text"] == ""
+
+
+def test_footnote_flow_and_mislabelled_continuation():
+    result = build([
+        [("Section-header", "I. Общие положения"),
+         ("Text", "1. Площадки обустраиваются¹."), ("Text", "2. Срок определяется по оценке²."),
+         ("Footnote", "¹ Статья 13.4 закона."), ("Footnote", "² Приказ от 19.07.2007 № 224, от 04.04.2017 № 208")],
+        [("Page-header", "2"), ("Text", "3. Сортировка не допускается."),
+         ("Text", "4. Расстояние до площадок должно быть не менее 20 метров от зданий организаций"),
+         ("Text", "(зарегистрирован Минюстом России 24.04.2017)."),
+         ("Footnote", "³ Пункт 1 статьи 16 закона.")],
+    ])
+    note2 = by_text(result, "² Приказ")
+    assert note2["flow"] == "footnote" and note2["kind"] == "footnote"
+    assert [f["join"] for f in note2["fragments"]] == [None, "footnote_continuation_after_page_break"]
+    assert note2["fragments"][1]["region_id"] == "r2-3"
+    assert by_text(result, "¹ Статья")["features"]["footnote_number"] == 1
+    assert note2["features"]["footnote_number"] == 2
+    assert by_text(result, "³ Пункт")["features"]["footnote_number"] == 3
+    assert by_text(result, "1. Площадки")["features"]["footnote_refs"] == [1]
+    assert by_text(result, "4. Расстояние")["flow"] == "body"
+    assert len(by_text(result, "4. Расстояние")["fragments"]) == 1
+
+
+def test_fragment_offsets_reproduce_source_text():
+    data = extraction([
+        [("Text", "Начало без точки")],
+        [("Text", "продолжение\nв две строки."), ("Picture", ""), ("Text", "## Заголовок")],
+    ])
+    originals = {r["region_id"]: r["text"] for r in L.classify_regions(data)}
+    result = L.build_logical_text(data)
+    seen = 0
+    for p in result["paragraphs"]:
+        for f in p["fragments"]:
+            assert p["text"][f["start"]:f["end"]] == originals[f["region_id"]]
+            seen += 1
+        assert p["match_text"] == L.match_view(p["text"])
+    assert seen == 4
+    assert [p["kind"] for p in result["paragraphs"]] == ["text", "picture", "text"]
+
+
+def test_accounting_determinism_and_no_mutation():
+    data = extraction([
+        [("Text", "Тело."), ("Page-header", "2"), ("Page-footer", "")],
+        [("Text", "Тело 2.")],
+    ])
+    before = copy.deepcopy(data)
+    first = L.build_logical_text(data)
+    second = L.build_logical_text(data)
+    assert data == before
+    assert first == second and first["logical_text_id"] == second["logical_text_id"]
+    acc = first["accounting"]
+    assert acc["in_paragraphs"] + acc["in_noise"] == acc["text_nodes"] == 3
+    assert first["logical_text_id"] == content_hash({k: v for k, v in first.items() if k != "logical_text_id"})
+    assert first["schema_version"] == L.SCHEMA and first["builder_version"] == L.BUILDER
+
+
+def test_rejects_broken_accounting_and_unknown_region():
+    data = extraction([[("Text", "Тело.")]])
+    broken = copy.deepcopy(data)
+    broken["text_nodes"].append({"text_node_id": "orphan", "raw_text": "x"})
+    with pytest.raises(ValueError, match="token accounting"):
+        L.build_logical_text(broken)
+    unknown = copy.deepcopy(data)
+    unknown["blocks"].append({"source_region_id": "nope", "original_text": "x", "text_node_ids": []})
+    with pytest.raises(ValueError, match="unknown source_region_id"):
+        L.build_logical_text(unknown)
