@@ -10,7 +10,9 @@
   independently of Text/Page-header/Page-footer labels. Caption fragments retain
   individual tokens/spans; repeated physical captions preserve the active owner.
   Require a unique full typed designation/title or matching current-act identity;
-  never merge SP/SanPiN types or identifier prefixes. Missing/ambiguous references
+  match designations by number with type aliases (owner decision 21.10.2026:
+  СП and СанПиН with the same number are one document; /7 still predates it);
+  never merge different numbers or identifier prefixes. Missing/ambiguous references
   keep scope unresolved, including tables, whose cells/topology remain present.
   Canonical numbers are null on unnumbered annexes. Validate caption/title evidence
   order/ownership against actual source blocks, not only a self-consistent graph.

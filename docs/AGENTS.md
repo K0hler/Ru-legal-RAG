@@ -5,8 +5,11 @@
   not G13 qualification. Keep development, holdout-1 (failed before two generic
   fixes, then promoted to development) and frozen-code holdout-2 results apart.
   Owner-path gold is single-annotator text-based; it does not check table cells,
-  quote scopes or legal-ast/2 contracts. The SP/СанПиН annex reference policy
-  differs from `/7` and awaits an owner decision.
+  quote scopes or legal-ast/2 contracts. On 21.10.2026 the owner decided: СП/СанПиН with the same number are one
+  designation (alias dictionary, number is identity); approved texts and act
+  annexes are one attached-document kind with `owner`; thresholds accepted; the
+  check pool takes diverse families with automatic pravo.gov.ru gold; LLM deferred.
+  See section 9 of the evaluation protocol.
 
 - `milestones/m1/04a/M1_04A_TWO_PDF_2026-10-17.md` records the frozen-code
   26-page SP3597/Resolution416 PDF experiment, not G13 qualification. Distinguish
