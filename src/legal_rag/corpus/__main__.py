@@ -22,12 +22,19 @@ def main(argv: list[str] | None = None) -> int:
     provider = extract.add_mutually_exclusive_group(required=True)
     provider.add_argument("--ocr-config", type=Path)
     provider.add_argument("--ocr-results", type=Path)
+    logical = commands.add_parser("logical-text")
+    logical.add_argument("--extraction", type=Path, required=True)
+    logical.add_argument("--output-dir", type=Path, required=True)
     arguments = parser.parse_args(argv)
     try:
         if arguments.command == "extract":
             from .ocr_runtime import extract_input
 
             result = extract_input(arguments.input, arguments.output_dir, arguments.ocr_config, arguments.ocr_results)
+        elif arguments.command == "logical-text":
+            from .logical_text import write_logical_text
+
+            result = write_logical_text(arguments.extraction, arguments.output_dir)
         elif arguments.command == "prepare-html":
             from .html_preparation import prepare_input
 

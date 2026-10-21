@@ -1,17 +1,22 @@
 """Stage 2 logical-text layer over OCR ``text-extraction/1`` JSON.
 
-Pass 1 (this slice): classify physical regions as content, running noise,
-picture or table. Source text, tokens and locators are never replaced or
-mutated; ``match_view`` output is for matching only. Behavior is ported from the
-M1-04A prototype ``docs/assets/ocr_logical_structure.py``.
+Pass 1 classifies physical regions as content, running noise, picture or
+table. Pass 2 groups content regions into logical paragraphs and footnote
+flow (``logical-text/1``). Source text, tokens and locators are never replaced
+or mutated; ``match_view`` output is for matching only. ``write_logical_text``
+is the CLI writer: it verifies the extraction hash and writes one immutable,
+content-addressed record. Behavior is ported from the M1-04A prototype
+``docs/assets/ocr_logical_structure.py``.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter, defaultdict
+from pathlib import Path
 
-from legal_rag.corpus.compiler import content_hash
+from legal_rag.corpus.compiler import _write_once, content_hash, json_bytes
 
 SCHEMA = "logical-text/1"
 BUILDER = "ocr-logical-text/1"
@@ -269,3 +274,26 @@ def build_logical_text(extraction: dict) -> dict:
     }
     result["logical_text_id"] = content_hash(result)
     return result
+
+
+def write_logical_text(extraction_path: Path, output_dir: Path) -> dict:
+    """Verify the extraction, build its logical text and write it once, immutably."""
+    extraction = json.loads(Path(extraction_path).read_text(encoding="utf-8"))
+    if not isinstance(extraction, dict) or extraction.get("schema_version") != "text-extraction/1":
+        raise ValueError("unsupported extraction schema_version")
+    if not extraction.get("extraction_id") or not extraction.get("source_asset_sha256"):
+        raise ValueError("extraction is missing extraction_id or source_asset_sha256")
+    body = {key: value for key, value in extraction.items() if key != "extraction_id"}
+    if content_hash(body) != extraction["extraction_id"]:
+        raise ValueError("extraction hash mismatch")
+    record = build_logical_text(extraction)
+    target = Path(output_dir) / "logical-text" / f"{record['logical_text_id']}.json"
+    payload = json_bytes(record)
+    if target.exists():
+        if target.read_bytes() != payload:
+            raise ValueError(f"refusing to overwrite differing logical-text record {target}")
+        result = "unchanged"
+    else:
+        _write_once(target, payload)
+        result = "new"
+    return {"result": result, "logical_text_id": record["logical_text_id"], "path": str(target)}

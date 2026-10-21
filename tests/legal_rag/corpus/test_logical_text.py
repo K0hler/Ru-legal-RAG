@@ -1,10 +1,13 @@
 """Authored controls for the logical-text layer (stage 2) over text-extraction/1; no corpus or OCR engine."""
 
 import copy
+import json
+from pathlib import Path
 
 import pytest
 
 from legal_rag.corpus import logical_text as L
+from legal_rag.corpus.__main__ import main as cli_main
 from legal_rag.corpus.compiler import content_hash
 
 
@@ -216,3 +219,67 @@ def test_rejects_broken_accounting_and_unknown_region():
     unknown["blocks"].append({"source_region_id": "nope", "original_text": "x", "text_node_ids": []})
     with pytest.raises(ValueError, match="unknown source_region_id"):
         L.build_logical_text(unknown)
+
+
+# --- CLI and immutable writer ---
+
+def _write_extraction(tmp_path, data):
+    path = tmp_path / "extraction.json"
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def _run_cli(path, out):
+    return cli_main(["logical-text", "--extraction", str(path), "--output-dir", str(out)])
+
+
+def test_cli_writes_once_then_reports_unchanged(tmp_path, capsys):
+    path = _write_extraction(tmp_path, extraction([[("Text", "Первый абзац.")]]))
+    out = tmp_path / "out"
+    assert _run_cli(path, out) == 0
+    first = json.loads(capsys.readouterr().out)
+    assert first["result"] == "new"
+    target = out / "logical-text" / f"{first['logical_text_id']}.json"
+    assert target.is_file()
+    before = target.read_bytes()
+    assert _run_cli(path, out) == 0
+    second = json.loads(capsys.readouterr().out)
+    assert second["result"] == "unchanged"
+    assert second["logical_text_id"] == first["logical_text_id"]
+    assert target.read_bytes() == before
+
+
+def test_cli_rejects_tampered_extraction_before_writing(tmp_path, capsys):
+    data = extraction([[("Text", "Первый абзац.")]])
+    data["blocks"][0]["original_text"] = "Первый абзаЦ."
+    path = _write_extraction(tmp_path, data)
+    out = tmp_path / "out"
+    assert _run_cli(path, out) == 2
+    assert "extraction hash mismatch" in capsys.readouterr().err
+    assert not (out / "logical-text").exists()
+
+
+def test_cli_rejects_other_schema(tmp_path, capsys):
+    data = extraction([[("Text", "Первый абзац.")]])
+    data["schema_version"] = "text-extraction/0"
+    path = _write_extraction(tmp_path, data)
+    assert _run_cli(path, tmp_path / "out") == 2
+    assert "failed" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("missing", ["extraction_id", "source_asset_sha256"])
+def test_cli_rejects_missing_identity_fields(tmp_path, missing):
+    data = extraction([[("Text", "Первый абзац.")]])
+    del data[missing]
+    path = _write_extraction(tmp_path, data)
+    assert _run_cli(path, tmp_path / "out") == 2
+    assert not (tmp_path / "out" / "logical-text").exists()
+
+
+def test_write_refuses_to_overwrite_different_bytes(tmp_path):
+    path = _write_extraction(tmp_path, extraction([[("Text", "Первый абзац.")]]))
+    result = L.write_logical_text(path, tmp_path / "out")
+    Path(result["path"]).write_bytes(b"{}")
+    with pytest.raises(ValueError):
+        L.write_logical_text(path, tmp_path / "out")
+    assert Path(result["path"]).read_bytes() == b"{}"
