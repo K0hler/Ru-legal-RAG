@@ -8,6 +8,13 @@
   accounting. Load docs/assets scripts with `sys.modules` registration
   (dataclasses need it). No corpus files or OCR engines.
 
+- `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
+  `docs/assets/` on an authored extraction: the v1 annotator input has only
+  key/category/text (no stage-2 `P`/`join`) and drops Picture and noise regions,
+  the legacy mode still carries stage-2 columns, the `v1` scoring filter removes
+  only Picture/noise gold keys, and the gold freeze hashes the annotator input,
+  refuses a changed gold receipt and never overwrites. No corpus files.
+
 - `corpus/test_logical_text.py` checks stage-2 `logical-text/1` with authored
   extractions: running-noise reasons (incl. digit-normalized repeats), captions
   kept as content, cross-page body/footnote joins and their D1/D2 refusals,

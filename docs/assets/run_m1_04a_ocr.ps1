@@ -50,12 +50,11 @@ Write-Host "dotsmocr healthy after $healthWait s"
 $summary.health_wait_seconds = $healthWait
 try {
     foreach ($slug in $Slugs) {
-        $input = "$base/documents/pool/$Batch/$slug/input.json"
+        $inputJson = "$base/documents/pool/$Batch/$slug/input.json"
         $run = "$base/ocr/$slug/run-01"
-        $replay = "$base/ocr/$slug/run-01-replay"
         if (Test-Path $run) { Write-Host "skip $slug (run-01 exists)"; continue }
         $watch = [Diagnostics.Stopwatch]::StartNew()
-        $out = & $python -m legal_rag.corpus extract --input $input --ocr-config data/m1/ocr.local.json --output-dir $run
+        $out = & $python -m legal_rag.corpus extract --input $inputJson --ocr-config data/m1/ocr.local.json --output-dir $run
         if ($LASTEXITCODE) { $summary.acts[$slug] = @{ status = "failed" }; Write-Host "FAILED $slug"; continue }
         $seconds = [math]::Round($watch.Elapsed.TotalSeconds, 1)
         $result = ($out | Select-Object -Last 1) | ConvertFrom-Json
@@ -95,5 +94,8 @@ foreach ($slug in $Slugs) {
     $replays[$slug] = [ordered]@{ replay_extraction_id = $replayId; replay_match = ($replayId -eq $first.extractions.$digest.extraction_id) }
 }
 $summary.replays = $replays
-Save-Json $summary "$experimentDir/summary.raw.json"
-Write-Host "done; raw timings in $experimentDir/summary.raw.json"
+# A replay-only pass never overwrites the raw summary of an earlier pass.
+$rawName = if ($ReplayOnly) { "summary.raw.replay-$((Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')).json" } else { "summary.raw.json" }
+if (Test-Path "$experimentDir/$rawName") { throw "$experimentDir/$rawName exists; not overwritten" }
+Save-Json $summary "$experimentDir/$rawName"
+Write-Host "done; raw summary in $experimentDir/$rawName (per-act summary: docs/assets/summarize_m1_04a_ocr.py)"

@@ -39,11 +39,24 @@
   thresholds and the annex `owner` convention are proposals awaiting the owner.
 
 - `milestones/m1/04a/M1_04A_POOL_BATCH_1_2026-10-21.md` is the first check-pool
-  first-pass result (8 acts, 363 regions; prototype 237, `/7` 91) on frozen
-  `code-final`, not G13/Task 3. Gold is single-agent (Codex) annotation of OCR
-  text, not official trees or page images; keep that limit and the selection
-  biases with any number quoted from it. The batch is now development: later
-  scores on it are not progress. Its 30-region sample is a sibling `_SAMPLE_` file.
+  first-pass result on frozen `code-final`, not G13/Task 3. Headline numbers use
+  annotation convention v1 (Picture regions not scored, as in earlier ledger
+  rows): prototype 226/333, `/7` 89/333; all 363 regions (237/91) are shown
+  labelled. Frozen gold scored pictures; v1 is a scoring filter, not re-annotation.
+  Gold is single-agent (Codex) annotation of OCR text with two spot page checks;
+  owners are blind to stage 3, continuation is not (the annotator saw stage-2
+  joins). Keep these limits and the selection biases (no actual.pravo hits)
+  with any number quoted from it. The batch is now development: later scores on
+  it are not progress. Its 30-region sample is a sibling `_SAMPLE_` file.
+- `milestones/m1/04a/M1_04A_ANNOTATION_CONVENTION_v1.md` (`m1-04a-annotation/v1`)
+  is the versioned check-pool gold convention; a change needs a new version,
+  re-annotation and retained old numbers. Batch tools in `assets/`:
+  `build_m1_04a_annotation_input.py` (v1 input without stage-2 `P`/`join`,
+  Picture/noise excluded; `--legacy-batch-01` reproduces batch 1 byte for byte),
+  `freeze_m1_04a_gold.py` (write-once, also hashes the annotator input),
+  `run_m1_04a_first_pass.py` (`freeze`/`run`/`rescore`/`sample`, `--convention`),
+  `classify_m1_04a_errors.py` (batch-1 reading, strict variant) and
+  `summarize_m1_04a_ocr.py` (per-act OCR summary).
 
 - `milestones/m1/04a/M1_04A_LOGICAL_TEXT_2026-10-20.md` records the stage-2
   `logical-text/1` implementation and `assets/evaluate_logical_text.py`:

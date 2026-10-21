@@ -14,7 +14,13 @@
   `ocr/<slug>/run-01/`, agent gold `gold/<slug>/agent-<slug>.gold.txt` frozen by
   `experiments/20261021-batch-01-gold-freeze/freeze.json` before any parser run.
   First pass: `experiments/20261021-batch-01-first-pass/` (`freeze.json` written
-  before `run`). `pool/batch-01/status.json` records measured -> development;
+  before `run`, all regions scored); `-first-pass-conv-v1/` rescores the same
+  saved outputs under annotation convention v1 (Picture not scored) with split
+  error classes. Annotator input `-annotation-input/` carried stage-2 `P`/`join`
+  (continuation not blind); future inputs come from
+  `docs/assets/build_m1_04a_annotation_input.py` (v1). `attempt-02-superseded-receipts/`
+  keeps acquisition receipts frozen by a broad `ValueError` catch; superseded,
+  not used. `pool/batch-01/status.json` records measured -> development;
   indexes stay write-once. IPS gives its single edition `rdk = 0`, so
   `official_binding` refuses those bundles; only pp-884 would import a tree.
 
