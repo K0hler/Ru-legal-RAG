@@ -24,6 +24,13 @@
   indexes stay write-once. IPS gives its single edition `rdk = 0`, so
   `official_binding` refuses those bundles; only pp-884 would import a tree.
 
+- Prototype regressions: `m1/m1-04a/experiments/20261021-dev-regression-<tag>/`
+  (baseline, a2, a3 to a3-r4, a4, a4-r2, v1; `summary.json` + `errors.json`, one
+  new folder per run; failed attempts a3 and a3-r3 are kept). The `-v1` run is the
+  last on the frozen prototype. `20261021-prototype-v1-freeze/` holds the
+  prototype copy, `code-v1.sha256` and `freeze.json`; write-once. `code-final`
+  (sha256 a7b81b59...) stays for comparison.
+
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written
   before each evaluated run, all code snapshots, attempt/holdout/final runs and

@@ -57,6 +57,11 @@
   `run_m1_04a_first_pass.py` (`freeze`/`run`/`rescore`/`sample`, `--convention`),
   `classify_m1_04a_errors.py` (batch-1 reading, strict variant) and
   `summarize_m1_04a_ocr.py` (per-act OCR summary).
+- `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
+  development report for prototype `ocr-logical-structure/1-experiment`, frozen in
+  `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59
+  stays for comparison). 1182/1182 is on development documents the rules were
+  written against; never quote it as progress, only batch 2 measures transfer.
 
 - `milestones/m1/04a/M1_04A_LOGICAL_TEXT_2026-10-20.md` records the stage-2
   `logical-text/1` implementation and `assets/evaluate_logical_text.py`:

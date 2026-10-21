@@ -7,6 +7,10 @@
   to the act stay in the act, footnote owners need the marker, and token
   accounting. Load docs/assets scripts with `sys.modules` registration
   (dataclasses need it). No corpus files or OCR engines.
+  Since prototype v1 it also covers named units (article/chapter/part/section
+  markers), attached-document captions («Проект», Page-header annex captions,
+  repeated running captions), requisite blocks after the last norm and their
+  negative probes (inline references, «Министерство…», «Москва и …»).
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only
