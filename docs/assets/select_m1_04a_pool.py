@@ -408,6 +408,17 @@ USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json"
 USED_SELECTIONS = (DOCUMENTS / "pool/batch-01/selection.json",)
 
 
+def override_quotas(base, overrides):
+    """Apply KIND=N overrides to a copy of the profile quotas; unknown kinds are refused."""
+    quotas = dict(base)
+    for item in overrides:
+        kind, _, value = item.partition("=")
+        if kind not in quotas or not value.isdigit():
+            raise ValueError(f"bad quota override {item!r}; kinds: {sorted(quotas)}")
+        quotas[kind] = int(value)
+    return quotas
+
+
 def load_feed_cache(path):
     if path and Path(path).exists():
         return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -427,7 +438,8 @@ def run(args):
     if state == "partial":
         raise FileExistsError(f"incomplete selection pair in {output.parent}; refusing to run")
     profile = PROFILES[args.profile]
-    quotas, pages_range, long_min = profile["quotas"], profile["pages_range"], profile["long_min"]
+    quotas = override_quotas(profile["quotas"], args.quota)
+    pages_range, long_min = profile["pages_range"], profile["long_min"]
     strict = profile["require_single_edition"]
     used = load_already_used(USED_INDEXES, USED_SELECTIONS) if profile["exclude_used"] else set()
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
@@ -462,7 +474,7 @@ def run(args):
         else:
             rows = list(pool.values())
         result = select_pool(rows, quotas, args.seed, **options)
-        if quotas_full(result):
+        if quotas_full(result) and limit >= args.min_days:
             break
     looked_up = len(enriched)
     if not strict:  # official lookup is metadata for the selected acts only, not a filter
@@ -480,6 +492,8 @@ def run(args):
     reasons = {}
     for row in result["rejected"]:
         reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
+    if args.quota_change:
+        result["quota_change"] = json.loads(Path(args.quota_change).read_text(encoding="utf-8"))
     result.update({
         "profile": args.profile,
         "date_range": [args.date_from, args.date_to],
@@ -519,6 +533,11 @@ def main(argv=None):
     parser.add_argument("--profile", choices=sorted(PROFILES), default="batch-01")
     parser.add_argument("--feed-cache", help="optional JSON cache of feed cards per day (outside data/)")
     parser.add_argument("--partial-output", help="where to write an unfilled result (not frozen)")
+    parser.add_argument("--quota", action="append", default=[], metavar="KIND=N",
+                        help="override one profile quota (recorded decision only)")
+    parser.add_argument("--min-days", type=int, default=0,
+                        help="sample at least this many days (60 or 120) even if quotas fill earlier")
+    parser.add_argument("--quota-change", help="JSON file whose object is recorded as `quota_change`")
     return run(parser.parse_args(argv))
 
 

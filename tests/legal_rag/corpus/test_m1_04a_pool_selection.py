@@ -367,3 +367,14 @@ def test_titles_with_full_act_prefix():
     assert P.categorize(code, code) == "code"
     kept = 'Федеральный закон от 03.12.2011 № 382-ФЗ "О государственной системе"'
     assert P.select_pool([card(2, title=kept)], {"federal_law": 1}, 1)["selected"]
+
+
+def test_quota_override_and_zero_quota():
+    quotas = P.override_quotas(P.BATCH2_QUOTAS, ["code=0", "federal_law=4"])
+    assert quotas["code"] == 0 and quotas["federal_law"] == 4 and P.BATCH2_QUOTAS["code"] == 1
+    for bad in (["statute=1"], ["code=x"]):
+        with pytest.raises(ValueError):
+            P.override_quotas(P.BATCH2_QUOTAS, bad)
+    result = P.select_pool([card(1, "code"), card(2)], {"code": 0, "federal_law": 1}, 1)
+    assert ids(result) == [f"{2:016d}"] and P.quotas_full(result)
+    assert result["rejected"] == [{"eo_number": f"{1:016d}", "reason": "quota_full"}]
