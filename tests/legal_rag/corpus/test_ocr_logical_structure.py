@@ -182,7 +182,7 @@ def test_owner_path_v2_typed_segments():
     assert EVAL.variant("S/разд3/гл2", "no_section") == "S/гл2"
     # scope dropping: letter scopes, attached documents and annex scopes
     assert EVAL.variant("A/AN2/разд1/4", "numbers") == "AN2/4"
-    assert EVAL.variant("S2/II/4", "numbers") == "4"
+    assert EVAL.variant("S2/II/4", "numbers") == "S2/4"
     assert EVAL.variant("S/AN4/2", "numbers") == EVAL.variant("A/AN4/2", "numbers")
 
 
@@ -215,3 +215,22 @@ def test_existing_gold_results_unchanged(tmp_path):
     result = EVAL.evaluate(gold, predicted, {"1.3": True})
     assert (result["strict"]["correct"], result["no_section"]["correct"], result["numbers"]["correct"]) == (2, 3, 3)
     assert result["continuation"] == {"tp": 1, "fp": 0, "fn": 0}
+
+
+def test_attached_count_dedupes_annex_one_and_approved_text():
+    def gold_of(*paths):
+        return {f"1.{i}": {"owners": [p], "continuation": False} for i, p in enumerate(paths)}
+
+    assert EVAL.attached_count(gold_of("S/4", "A/AN1/4")) == 1
+    assert EVAL.attached_count(gold_of("S/4", "A/AN/4")) == 1
+    assert EVAL.attached_count(gold_of("S/4", "A/AN2/4")) == 2
+    assert EVAL.attached_count(gold_of("S/4", "S2/4")) == 2
+
+
+def test_equivalence_applies_in_all_variants():
+    gold = {"1.1": {"owners": ["S/II/4"], "continuation": False}}
+    result = EVAL.evaluate(gold, {"1.1": "A/AN/4"})
+    assert (result["strict"]["correct"], result["no_section"]["correct"], result["numbers"]["correct"]) == (0, 1, 1)
+    gold["1.2"] = {"owners": ["A/AN2/1"], "continuation": False}
+    result = EVAL.evaluate(gold, {"1.1": "A/AN1/4", "1.2": "A/AN2/1"})
+    assert result["no_section"]["correct"] == 1 and result["numbers"]["correct"] == 1

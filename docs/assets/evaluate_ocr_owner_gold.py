@@ -47,18 +47,25 @@ ATTACHED_SCOPE = re.compile(r"^S\d*$")
 ANNEX_SEG = re.compile(r"^AN(\d*)$")
 
 
+def alias_annex(path):
+    """Owner decision: the approved text and the act annex are one kind, so
+    ``A/AN`` and ``A/AN1`` -> ``S`` (only meaningful with one attached document)."""
+    parts = norm(path).split("/")
+    if parts[0] == "A" and len(parts) > 1 and parts[1] in {"AN", "AN1"}:
+        return "/".join(["S", *parts[2:]])
+    return "/".join(parts)
+
+
 def first_scope(path):
     """Attached-document scope of an owner path, or None (act ``A`` itself).
 
     ``S``, ``S2``... are attached documents; ``A/AN<n>`` is annex n to the act
-    (bare ``AN`` is annex 1). ``S/AN4`` is a unit inside the approved text."""
-    parts = norm(path).split("/")
+    (``AN1`` is counted as ``S``). ``S/AN4`` is a unit inside the approved text."""
+    parts = alias_annex(path).split("/")
     if ATTACHED_SCOPE.match(parts[0]):
         return parts[0]
-    if parts[0] == "A" and len(parts) > 1:
-        match = ANNEX_SEG.match(parts[1])
-        if match:
-            return f"A/AN{match.group(1) or 1}"
+    if parts[0] == "A" and len(parts) > 1 and ANNEX_SEG.match(parts[1]):
+        return f"A/{parts[1]}"
     return None
 
 
@@ -70,33 +77,29 @@ def attached_count(gold):
 
 
 def canonical(path, attached):
-    """With exactly one attached document the owner decision makes the approved
-    text and the act annex one scope: ``A/AN``, ``A/AN1`` -> ``S``."""
+    """With exactly one attached document ``A/AN``, ``A/AN1`` -> ``S``."""
     if path is None:
         return None
-    path = norm(path)
-    if attached == 1:
-        parts = path.split("/")
-        if parts[0] == "A" and len(parts) > 1 and ANNEX_SEG.match(parts[1]) and parts[1] in {"AN", "AN1"}:
-            return "/".join(["S", *parts[2:]])
-    return path
+    return alias_annex(path) if attached == 1 else norm(path)
 
 
-def equivalent(gold_path, predicted_path, attached_count):
+def equivalent(gold_path, predicted_path, attached_count, name="strict"):
     if gold_path is None or predicted_path is None:
         return gold_path is predicted_path
-    return canonical(gold_path, attached_count) == canonical(predicted_path, attached_count)
+    return variant(canonical(gold_path, attached_count), name) == variant(
+        canonical(predicted_path, attached_count), name
+    )
 
 
 def variant(path, name):
     """strict: full path; no_section: drop section segments (Roman numerals and
     ``разд<n>``; some parsers keep points as siblings of section headings);
-    numbers: also drop the scope (``A``, ``S``, ``S<n>``; for ``A/AN<n>`` the
-    letter ``A`` only, so the annex segment stays like in ``S/AN<n>``)."""
+    numbers: also drop the leading scope letter ``A``/``S`` (``S2`` and the
+    annex segment of ``A/AN<n>`` stay)."""
     if path is None or name == "strict":
         return path
     parts = [p for p in path.split("/") if not (ROMAN_SEG.match(p) or RAZD_SEG.match(p))]
-    if name == "numbers" and parts and (parts[0] == "A" or ATTACHED_SCOPE.match(parts[0])):
+    if name == "numbers" and parts and parts[0] in {"A", "S"}:
         parts = parts[1:]
     return "/".join(parts)
 
@@ -109,11 +112,7 @@ def evaluate(gold, predicted, continuation=None, attached=None):
         ok, rows = 0, []
         for key, g in gold.items():
             p = norm(predicted.get(key))
-            hit = any(
-                variant(canonical(p, attached), name) == variant(canonical(o, attached), name) for o in g["owners"]
-            )
-            if name == "strict":
-                hit = hit or any(equivalent(o, p, attached) for o in g["owners"])
+            hit = any(equivalent(o, p, attached, name) for o in g["owners"])
             ok += hit
             rows.append({"region": key, "gold": g["owners"][0], "predicted": p, "ok": hit})
         result[name] = {"correct": ok, "accuracy": round(ok / len(gold), 4)}
