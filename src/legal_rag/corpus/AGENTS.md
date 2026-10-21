@@ -30,11 +30,13 @@
   paragraphs whose fragments keep region, page, bbox, text nodes, offsets and
   join type. Every text node is in exactly one paragraph or noise region; the
   input is never mutated and `match_text` is a matching view only. Declared
-  prototype deviations: D1 joins continuations only from the immediately
-  preceding physical page; D2 makes an empty-text content region its own
+  prototype deviations: D1 forbids any join across a missing physical page
+  (a multi-region unnumbered footnote on the next page still joins); D2 makes an empty-text content region its own
   `kind=empty` paragraph that is never open or joined to. The `logical-text`
   CLI verifies schema/identity/extraction hash before writing one immutable
-  record. Stage 3 and `compile` do not consume it yet.
+  record. Known limitation: an empty Text region at a page top counts as
+  first_on_page (as in the prototype) and blocks a body continuation onto the
+  next region. Stage 3 and `compile` do not consume it yet.
 
 - M1-04's `pdf_extraction.py` normalizes retained dots.mocr `pages[].layout[]`
   without loading a GPU library. Keep raw region records, physical-page/image

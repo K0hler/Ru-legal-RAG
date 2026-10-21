@@ -355,3 +355,31 @@ def test_evaluator_labels_empty_region_d2_and_same_page_split_unexpected():
     assert unexpected == "unexpected"
     d1 = evaluator.label_component([("a", "c")], [("a",), ("c",)], set(), pages)
     assert d1 == "D1"
+    pages = {"a": 1, "b": 2, "c": 4}
+    mixed = evaluator.label_component([("a", "b", "c")], [("a",), ("b",), ("c",)], set(), pages)
+    assert mixed == "unexpected"  # a|b is an adjacent-page split, not a gap
+    gap_only = evaluator.label_component([("a", "b", "c")], [("a", "b"), ("c",)], set(), pages)
+    assert gap_only == "D1"
+
+
+def test_footnote_continued_in_two_unnumbered_regions_on_next_page_is_one_paragraph():
+    result = build([[("Footnote", "¹ Сноска без точки")],
+                    [("Footnote", "продолжение сноски"), ("Footnote", "и ещё продолжение.")]])
+    assert [[f["region_id"] for f in p["fragments"]] for p in result["paragraphs"]] == [["r1-0", "r2-0", "r2-1"]]
+    assert [f["join"] for f in result["paragraphs"][0]["fragments"]] == [
+        None, L.JOIN_NOTE_UNNUMBERED, L.JOIN_NOTE_UNNUMBERED]
+
+
+@pytest.mark.parametrize("text,category", [
+    ("12. 02. 2026 № 5 приказ", "Text"),
+    ("12.02.2026 № 5 приказ", "Text"),
+    ("IV. Раздел", "Section-header"),
+    ("IV. Раздел", "Text"),
+    ("IV. Длинное предложение, которое заканчивается точкой.", "Text"),
+    ("IV. Длинное предложение, которое заканчивается точкой.", "Section-header"),
+    ("1.2. пункт", "Text"), ("3. пункт", "Text"), ("4) пункт", "Text"), ("а) пункт", "Text"),
+    ("ё) пункт", "Text"), ("- пункт", "Text"), ("обычный текст", "Text"),
+])
+def test_has_marker_agrees_with_prototype_parse_marker(text, category):
+    prototype = _load_script("ocr_logical_structure")
+    assert L._has_marker(text, category) == (prototype.parse_marker(text, category).kind != "none")

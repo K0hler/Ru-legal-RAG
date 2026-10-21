@@ -6,7 +6,7 @@ For every ``<name>.extraction.json`` in ``--inputs`` (gold ``<name>.gold.txt`` i
 parity       region roles and region grouping into paragraphs versus the
              prototype ``ocr_logical_structure.logical_paragraphs``. Differing
              groups that share regions form one difference, labelled ``D1``
-             (the prototype joins across a missing physical page), ``D2`` (an
+             (every split of ours is a prototype join across a missing physical page), ``D2`` (an
              empty-text content region is involved) or ``unexpected``. Every
              role difference is ``unexpected``.
 continuation a region is a continuation when it is not the first fragment of
@@ -51,12 +51,26 @@ GOLD = load_script("evaluate_ocr_owner_gold")
 
 
 def label_component(prototype: list[tuple], ours: list[tuple], empty: set, page_of: dict) -> str:
-    """Label one connected set of differing groups (tuples of region ids)."""
+    """Label one connected set of differing groups (tuples of region ids).
+
+    D1 only when every split point between our groups inside the component is a
+    join the prototype made across a physical page gap greater than one.
+    """
     if any(rid in empty for group in prototype + ours for rid in group):
         return "D2"
+    our_of = {rid: i for i, group in enumerate(ours) for rid in group}
+    splits, cut = [], []
     for group in prototype:
-        if any(page_of[b] - page_of[a] > 1 for a, b in zip(group, group[1:])):
-            return "D1"
+        piece = [group[0]]
+        for a, b in zip(group, group[1:]):
+            if our_of.get(a) != our_of.get(b):
+                splits.append((a, b))
+                cut.append(tuple(piece))
+                piece = []
+            piece.append(b)
+        cut.append(tuple(piece))
+    if splits and sorted(cut) == sorted(ours) and all(page_of[b] - page_of[a] > 1 for a, b in splits):
+        return "D1"
     return "unexpected"
 
 
@@ -91,9 +105,13 @@ def evaluate_document(extraction: dict, gold: dict) -> dict:
     page_of = {r["region_id"]: r["page"] for r in result["regions"]}
     empty = {f["region_id"] for p in result["paragraphs"] if p["kind"] == "empty" for f in p["fragments"]}
 
-    diffs = [{"kind": "role", "label": "unexpected", "region_id": r["region_id"],
-              "prototype": pr.role, "ours": r["role"]}
-             for r, pr in zip(result["regions"], proto_regions) if r["role"] != pr.role]
+    if [r["region_id"] for r in result["regions"]] != [pr.region_id for pr in proto_regions]:
+        diffs = [{"kind": "role", "label": "unexpected", "region_id": None,
+                  "prototype": "region order", "ours": "region order"}]
+    else:
+        diffs = [{"kind": "role", "label": "unexpected", "region_id": r["region_id"],
+                  "prototype": pr.role, "ours": r["role"]}
+                 for r, pr in zip(result["regions"], proto_regions) if r["role"] != pr.role]
     diffs += grouping_diffs(proto_groups, our_groups, empty, page_of)
 
     key = {r["region_id"]: f"{r['page']}.{r['index']}" for r in result["regions"]}

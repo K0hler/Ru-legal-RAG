@@ -192,8 +192,9 @@ def _open_paragraphs(regions: list[dict]) -> list[dict]:
         mt = r["match_text"]
         if r["category"] == "Footnote" or footnote_number(mt) is not None:
             number = footnote_number(mt)
-            if (number is None and open_note is not None and open_note["regions"][-1]["page"] == r["page"] - 1
-                    and not terminated(match(open_note))):  # D1: adjacent page only
+            if (number is None and open_note is not None and open_note["regions"][0]["page"] < r["page"]
+                    and open_note["regions"][-1]["page"] >= r["page"] - 1
+                    and not terminated(match(open_note))):  # D1: no join across a missing physical page
                 open_note["regions"].append(r)
                 open_note["joins"].append(JOIN_NOTE_UNNUMBERED)
                 continue
@@ -211,7 +212,7 @@ def _open_paragraphs(regions: list[dict]) -> list[dict]:
                 open_note["joins"].append(JOIN_NOTE_CONTINUATION)
                 continue
             if (open_body is not None and open_body["regions"][-1]["page"] == r["page"] - 1
-                    and first_on_page and not terminated(match(open_body))):  # D1: adjacent page only
+                    and first_on_page and not terminated(match(open_body))):  # D1: no join across a missing physical page
                 open_body["regions"].append(r)
                 open_body["joins"].append(JOIN_BODY)
                 continue
