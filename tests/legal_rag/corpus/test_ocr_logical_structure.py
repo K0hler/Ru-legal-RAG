@@ -409,3 +409,70 @@ def test_annex_caption_in_page_header_opens_scope():
     got = owners(S.build(extraction(pages)))
     assert [got[f"{n}.0"] for n in range(2, 6)] == ["A/AN1", "A/AN2", "A/AN3", "A/AN4"]
     assert got["5.1"] == "A/AN4/1"
+
+
+def test_dated_body_annex_caption_opens_annex():
+    caption = "Приложение\nк приказу Министерства\nот 12 мая 2020 г."
+    pages = [[("Text", "1. Утвердить перечень."), ("Text", "2. Контроль оставляю за собой.")],
+             [("Text", caption, 1000), ("Text", "1. Первая позиция."), ("Text", "2. Вторая позиция.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "A/AN" and got["2.1"] == "A/AN/1" and got["2.2"] == "A/AN/2"
+    # the long page-header path accepts a final «г.» but not a sentence dot
+    long_dated = LONG_ANNEX.replace(" г. № 173", " г.")
+    assert len(S.view(long_dated)) > 120
+    pages[1][0] = ("Page-header", long_dated, 888)
+    assert owners(S.build(extraction(pages)))["2.1"] == "A/AN/1"
+    pages[1][0] = ("Page-header", long_dated[:-2] + "утверждается министром.", 888)
+    got = owners(S.build(extraction(pages)))
+    assert not got["2.0"].startswith("A/AN") and not got["2.1"].startswith("A/AN")
+
+
+def test_first_running_caption_opens_scope():
+    annex = ("Page-header", "Приложение № 1 к Порядку", 1000)
+    pages = [[("Text", "1. Утвердить Порядок."), ("Text", "2. Контроль.")],
+             [annex, ("Text", "1. Перечень включает:"), ("Text", "а) первое;")],
+             [annex, ("Text", "б) второе;"), ("Text", "2. Второй пункт.")],
+             [annex, ("Text", "3. Третий пункт.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "A/AN1" and got["2.1"] == "A/AN1/1" and got["2.2"] == "A/AN1/1/а"
+    assert got["3.1"] == "A/AN1/1/б" and got["3.2"] == "A/AN1/2" and got["4.1"] == "A/AN1/3"
+    approval = ("Page-header", "УТВЕРЖДЕНЫ приказом Министерства", 1000)
+    pages = [[("Text", "1. Утвердить Правила."), ("Text", "2. Контроль.")],
+             [approval, ("Text", "1. Правила устанавливают:"), ("Text", "а) первое;")],
+             [approval, ("Text", "б) второе;"), ("Text", "2. Второй пункт.")],
+             [approval, ("Text", "3. Третий пункт.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/2"
+    assert got["2.0"] == "S" and got["2.1"] == "S/1" and got["2.2"] == "S/1/а"
+    assert got["3.1"] == "S/1/б" and got["3.2"] == "S/2" and got["4.1"] == "S/3"
+    # the same caption on only two pages is not running: two approved texts open S and S2
+    pages = [[("Text", "1. Утвердить Правила и Критерии.")],
+             [approval, ("Text", "1. Правила устанавливают порядок."), ("Text", "2. Второй пункт.")],
+             [approval, ("Title", "КРИТЕРИИ"), ("Text", "1. Первый критерий.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "S" and got["2.2"] == "S/2"
+    assert got["3.0"] == "S2" and got["3.2"] == "S2/1"
+
+
+def test_project_caption_allows_one_naming_word_only():
+    assert S.is_project_caption("Проект") and S.is_project_caption("ПРОЕКТ")
+    assert S.is_project_caption("Проект соглашения")
+    assert not S.is_project_caption("Проект решения рассмотрен")
+    assert not S.is_project_caption("Проект постановления подлежит размещению.")
+    pages = [[("Text", "1. Утвердить порядок."), ("Text", "Проект решения рассмотрен"),
+              ("Text", "2. Контроль оставляю за собой.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/1" and got["1.2"] == "A/2"
+
+
+def test_abandon_article_penalty_applies_to_points_only():
+    # Named headings close every point, so a real stack never keeps a point below an
+    # article; a synthetic one shows the penalty on a point that would drop the article.
+    stack = (("int", 1, "1"), ("article", "1", "ст1"))
+    options = dict(S.transitions(stack, S.Marker("int", 2, "2"), 1))
+    assert options[(("int", 2, "2"),)] == pytest.approx(0.02 + S.ABANDON_ARTICLE)
+    assert options[stack + (("int", 2, "ч2"),)] == pytest.approx(3.0)
+    # an explicit Roman section heading closes the article without a penalty
+    stack = (("roman", 1, "I"), ("article", "1", "ст1"))
+    options = dict(S.transitions(stack, S.Marker("roman", 2, "II"), None))
+    assert options[(("roman", 2, "II"),)] == pytest.approx(0.02)

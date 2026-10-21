@@ -82,6 +82,7 @@ class Region:
     text_node_ids: list
     role: str = "content"  # content | noise | picture | table
     repeats: int = 0  # running header/footer: regions with exactly the same text
+    repeat_index: int = 0  # 0 for the first of those regions in reading order
 
 
 def load_regions(extraction: dict) -> list[Region]:
@@ -100,9 +101,12 @@ def load_regions(extraction: dict) -> list[Region]:
     # Exact repeats (not digit-normalised): «Приложение № 1 …» and «Приложение № 2 …»
     # are different captions, while the same caption on every page is a running header.
     exact = Counter(r.text for r in regions if r.category in NOISE_CATEGORIES and r.text)
+    seen: Counter = Counter()
     for r in regions:
         if r.category in NOISE_CATEGORIES and r.text:
             r.repeats = exact[r.text]
+            r.repeat_index = seen[r.text]
+            seen[r.text] += 1
         if r.category == "Picture":
             r.role = "picture"
         elif r.category == "Table":
@@ -111,7 +115,7 @@ def load_regions(extraction: dict) -> list[Region]:
             # Running headers/footers are noise only when they carry no caption:
             # a bare page number, or text repeated on three or more pages.
             repeated = (not r.text or re.fullmatch(r"[-–\s]*\d+[-–\s]*", r.text)
-                        or running[re.sub(r"\d+", "#", r.text)] >= 3)
+                        or running[re.sub(r"\d+", "#", r.text)] >= REPEAT_THRESHOLD)
             if repeated and not is_caption(r.text):
                 r.role = "noise"
     return regions
@@ -124,38 +128,48 @@ APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]
 ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*№\s*(\d+))?(?:\s+(к\s.+))?$")
 
 
-PROJECT = re.compile(r"^(?:ПРОЕКТ|Проект)(?![А-Яа-яЁё])")
-REPEAT_THRESHOLD = 3
+# A standalone draft mark: «Проект» / «ПРОЕКТ», optionally followed by one word that
+# names the draft («Проект соглашения»), and nothing else.
+PROJECT = re.compile(r"^(?:ПРОЕКТ|Проект)(?:\s+[А-Яа-яЁё-]+)?$")
+REPEAT_THRESHOLD = 3  # a header/footer text on this many regions is running text
+CAPTION_MAX = 120  # an annex caption in the body
+CAPTION_BLOCK_MAX = 300  # an approval caption; an annex caption printed as a page header
+PROJECT_MAX = 40
 
 
 def is_caption(text: str) -> bool:
-    return bool(APPROVAL.match(text)) or (bool(ANNEX.match(text)) and len(text) <= 120)
+    return bool(APPROVAL.match(text)) or (bool(ANNEX.match(text)) and len(text) <= CAPTION_MAX)
 
 
 def is_project_caption(text: str) -> bool:
-    """A standalone «Проект»/«ПРОЕКТ» mark of an attached draft (agreement, treaty):
-    the whole paragraph is at most 40 characters and has no final dot, so a sentence
-    «Проект постановления подлежит ...» is not a caption."""
-    return bool(PROJECT.match(text)) and len(text) <= 40 and not text.rstrip().endswith(".")
+    """A standalone «Проект»/«ПРОЕКТ» mark of an attached draft (agreement, treaty): the
+    word alone or with one naming word, at most 40 characters, so neither «Проект
+    постановления подлежит ...» nor «Проект решения рассмотрен» is a caption."""
+    return bool(PROJECT.match(text)) and len(text) <= PROJECT_MAX
 
 
 def annex_caption(p) -> re.Match | None:
-    """An annex caption paragraph. Body captions are short (<= 120 characters); a caption
-    printed as a page header that is not a running header (role content, repeated on fewer
-    than three pages) is positional evidence, so a long reference «к приказу ... от ... №»
-    is accepted up to 300 characters."""
+    """An annex caption paragraph. A body caption is short (<= CAPTION_MAX) and may end in
+    a dot («… от 12 мая 2020 г.»). A caption printed as a page header with role content is
+    positional evidence, so a long reference «к приказу ... от ... №» is accepted up to
+    CAPTION_BLOCK_MAX; that longer path rejects a final dot (a sentence) except «г.»."""
     text = p.text
     m = ANNEX.match(text)
-    if not m or text.endswith("."):
+    if not m:
         return None
-    if len(text) <= 120 or (p.first.category == "Page-header" and len(text) < 300):
+    if len(text) <= CAPTION_MAX:
+        return m
+    if p.first.category == "Page-header" and len(text) < CAPTION_BLOCK_MAX and (
+            not text.endswith(".") or re.search(r"\sг\.$", text)):
         return m
     return None
 
 
 def running_caption(p) -> bool:
-    """A caption repeated as a running header/footer on three or more pages opens nothing."""
-    return p.first.category in NOISE_CATEGORIES and p.first.repeats >= REPEAT_THRESHOLD
+    """A later repeat of a caption printed as a running header/footer (same text on three
+    or more regions). Controller ruling: the first occurrence still opens the scope."""
+    r = p.first
+    return r.category in NOISE_CATEGORIES and r.repeats >= REPEAT_THRESHOLD and r.repeat_index > 0
 
 
 @dataclass
@@ -474,13 +488,19 @@ def build(extraction: dict) -> dict:
     approved_opened = False
     approved_count = 0
     approved_scope = "S"
+    scope_captions: set[str] = set()  # caption texts of the current scope
     for i, p in enumerate(paragraphs):
         if p.flow == "footnote" or p.kind in {"picture"}:
             scopes[-1][1].append(p)
             continue
         text = p.text
-        caption_here = p.kind == "text" and not running_caption(p)
-        approval = caption_here and bool(APPROVAL.match(text)) and len(text) < 300 and not text.endswith(".")
+        # A running header/footer (same text on REPEAT_THRESHOLD+ regions) repeating a caption
+        # of the current scope continues that scope instead of reopening it. A caption printed
+        # only twice is not running: two approved texts may carry identical captions.
+        running = p.first.category in NOISE_CATEGORIES and p.first.repeats >= REPEAT_THRESHOLD
+        header_repeat = running and text in scope_captions
+        caption_here = p.kind == "text" and not running_caption(p) and not header_repeat
+        approval = caption_here and bool(APPROVAL.match(text)) and len(text) < CAPTION_BLOCK_MAX and not text.endswith(".")
         project = caption_here and is_project_caption(text)
         if approval or project:
             p.kind = "approval"
@@ -493,11 +513,14 @@ def build(extraction: dict) -> dict:
                 scope = "S" if approved_count == 1 else f"S{approved_count}"
                 approved_scope = scope
                 scopes.append((scope, []))
+                scope_captions = set()
                 if pending_annex_caption is not None:
                     scopes[-2][1].remove(pending_annex_caption)
                     scopes[-1][1].append(pending_annex_caption)
+                    scope_captions.add(pending_annex_caption.text)
                     pending_annex_caption = None
             scopes[-1][1].append(p)
+            scope_captions.add(text)
             continue
         m = annex_caption(p) if caption_here else None
         if m:
@@ -516,10 +539,15 @@ def build(extraction: dict) -> dict:
             reference = m.group(2) or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
             to_act = bool(re.match(r"^к\s+(?:настоящему\s+)?постановлению", reference))
             base = approved_scope if approved_opened and not to_act else "A"
+            if running and f"{base}/{label}" == scopes[-1][0]:
+                p.kind = "text"  # the current annex's caption repeated in a header: no new scope
+                scopes[-1][1].append(p)
+                continue
             scope = f"{base}/{label}"
             p.evidence.append({"annex_reference": reference or None, "attached_to": base,
                                "rule": "reference to the act -> act; otherwise the current approved text"})
             scopes.append((scope, [p]))
+            scope_captions = {text}
             continue
         scopes[-1][1].append(p)
 
