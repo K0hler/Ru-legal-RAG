@@ -476,3 +476,69 @@ def test_abandon_article_penalty_applies_to_points_only():
     stack = (("roman", 1, "I"), ("article", "1", "ст1"))
     options = dict(S.transitions(stack, S.Marker("roman", 2, "II"), None))
     assert options[(("roman", 2, "II"),)] == pytest.approx(0.02)
+
+
+def test_signature_block_after_last_point_owned_by_scope_root():
+    # a law: signer, place/date/number after the last part of the last article
+    pages = [[("Section-header", "Статья 1"), ("Text", "1. Часть первая."),
+              ("Section-header", "Статья 2"), ("Text", "1. Закон вступает в силу."),
+              ("Text", "2. Пункт 1 статьи 1 вступает в силу позднее."),
+              ("Text", "Президент Российской Федерации В.Путин", 580),
+              ("Text", "Москва, Кремль 19 февраля 2018 года № 22-ФЗ"),
+              ("Text", "Зарегистрировано в Минюсте России 1 марта 2018 г. N 50123")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.4"] == "A/ст2/ч2"
+    assert got["1.5"] == "A" and got["1.6"] == "A" and got["1.7"] == "A"
+    # an order: a short signer title opens the block; later certification lines follow it
+    pages = [[("Text", "1. Утвердить перечень."), ("Text", "2. Контроль оставляю за собой."),
+              ("Text", "Министр"), ("Text", "Верно", 800),
+              ("Text", "Ведущий специалист 3-го разряда отдела делопроизводства", 800),
+              ("Text", "28.08.2015"), ("Text", "№ 901")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/2"
+    assert [got[f"1.{k}"] for k in range(2, 7)] == ["A"] * 5
+    # an attached agreement: closing formula and signature places belong to S
+    pages = [[("Text", "Одобрить проект Соглашения.")],
+             [("Page-header", "Проект", 1330), ("Section-header", "СОГЛАШЕНИЕ"),
+              ("Section-header", "Статья 1"), ("Text", "1. Граждане освобождаются от виз."),
+              ("Section-header", "Статья 2"), ("Text", "Настоящее Соглашение вступает в силу."),
+              ("Text", "Совершено в г. Москве в двух экземплярах, каждый на русском и английском языках."),
+              ("Text", "За Правительство Российской Федерации"), ("Text", "За Правительство Ямайки", 980)]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.5"] == "S/ст2"
+    assert got["2.6"] == "S" and got["2.7"] == "S" and got["2.8"] == "S"
+
+
+def test_unmarked_continuation_text_stays_with_last_point():
+    pages = [[("Text", "1. Утвердить Правила."), ("Text", "2. Установить, что:"),
+              ("Text", "Министерство обеспечивает исполнение в пределах ассигнований."),
+              ("Text", "Расходы осуществляются за счет бюджета.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/2" and got["1.3"] == "A/2"
+    # requisite words inside a sentence of the last point do not open a requisite block
+    pages = [[("Text", "1. Утвердить Правила."),
+              ("Text", "2. Министерству обеспечить исполнение:"),
+              ("Text", "Министерство юстиции регистрирует Правила в установленном порядке и публикует их "
+                       "на официальном интернет-портале правовой информации в течение десяти дней."),
+              ("Text", "Москва и Санкт-Петербург применяют Правила с 1 января 2019 года в полном объеме "
+                       "наравне с другими субъектами Российской Федерации без изъятий.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/2" and got["1.3"] == "A/2"
+    assert not S.requisite_like("Министерство юстиции регистрирует Правила в установленном порядке.")
+
+
+def test_barcode_digits_line_is_requisite():
+    assert S.requisite_like("2 100039 06205 0") and S.requisite_like("2100030523895")
+    assert not S.requisite_like("15") and not S.requisite_like("1. Первый пункт.")
+    # a barcode at the bottom of a page in the middle of the act belongs to the root and does
+    # not swallow the continuation of the interrupted paragraph on the next page
+    pages = [[("Section-header", "Статья 1"), ("Text", "1) упразднить:"),
+              ("Text", "Первый районный суд, передав относящиеся к его ведению вопросы в"),
+              ("Text", "2 100039 06204 3", 690)],
+             [("Page-header", "2"), ("Text", "юрисдикцию Второго районного суда;"),
+              ("Text", "2) установить срок.")]]
+    result = S.build(extraction(pages))
+    got, cont = owners(result), conts(result)
+    assert got["1.3"] == "A"
+    assert got["2.1"] == "A/ст1/1" and cont["2.1"] is True
+    assert got["2.2"] == "A/ст1/2"

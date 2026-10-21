@@ -269,6 +269,39 @@ def signature_like(region: Region) -> bool:
     return bool(initials or (title and len(text) < 120) or (right and len(text) < 40 and not is_caption(text)))
 
 
+# Requisites of an act or of an attached document, recognised from text alone (no X
+# coordinate): signer, place, date, number, registration, closing formula, barcode.
+MONTHS = "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря"
+DATE = rf"(?:«?\s*\d{{1,2}}\s*»?\s+(?:{MONTHS})\s+\d{{4}}\s*(?:г\.|года)?|\d{{1,2}}\.\s?\d{{1,2}}\.\s?\d{{4}}(?:\s*г\.)?)"
+NUMBER = r"(?:№|N)\s*\d[\w./-]*"
+REQUISITE_LINES = (
+    re.compile(rf"^(?:от\s+)?{DATE}(?:\s+{NUMBER})?$"),  # «19 февраля 2018 года», «28.08.2015 № 901»
+    re.compile(rf"^{NUMBER}$"),  # «№ 23-ФЗ», «N 204»
+    re.compile(rf"^(?:г\.\s*)?(?:Москва|МОСКВА)(?:,\s*Кремль)?(?:\s+{DATE})?(?:\s+{NUMBER})?$"),
+    re.compile(r"^Зарегистрирован[оа]?\s+в\s+Мин"),  # «Зарегистрировано в Минюсте России ...»
+    re.compile(r"^Совершено\s+в\b"),  # closing formula of an agreement
+    re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
+)
+# signer title or agreement signature place («За Правительство ...»): a short unterminated line
+SIGNER = re.compile(r"^(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
+                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач|За\s+[А-ЯЁ])\b")
+INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
+
+
+def barcode_like(text: str) -> bool:
+    """A line of digits and spaces only, at least 8 digits: a printed barcode number."""
+    return bool(re.fullmatch(r"[\d\s]+", text)) and sum(c.isdigit() for c in text) >= 8
+
+
+def requisite_like(text: str) -> bool:
+    """A requisite line of a signature block: signer title (optionally with initials and
+    surname), initials and surname, «Москва, Кремль»/«Москва», date, number, registration
+    mark, agreement closing formula and signature places, barcode. Text-only."""
+    if barcode_like(text) or any(p.match(text) for p in REQUISITE_LINES) or re.fullmatch(INITIALS, text):
+        return True
+    return bool(SIGNER.match(text)) and len(text) < 120 and not terminated(text)
+
+
 # --------------------------------------------------------------------------- pass 2
 
 
@@ -277,7 +310,7 @@ class Paragraph:
     flow: str  # body | footnote
     regions: list = field(default_factory=list)
     marker: Marker = field(default_factory=Marker)
-    kind: str = "text"  # text | heading | approval | annex | table | signature | footnote | picture
+    kind: str = "text"  # text | heading | approval | annex | table | signature | requisite | footnote | picture
     footnote: int | None = None
     owner: str | None = None
     evidence: list = field(default_factory=list)
@@ -338,6 +371,8 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 continue
         p = Paragraph("body", [r])
         paragraphs.append(p)
+        if barcode_like(r.text):
+            continue  # a barcode is not open text: the next page continues the paragraph before it
         open_body = p
     return paragraphs
 
@@ -558,18 +593,34 @@ def build(extraction: dict) -> dict:
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
+        # The requisite block: after the last numbered or named element of the scope, the
+        # first unmarked paragraph that looks like a requisite (or a signature) opens it, and
+        # everything from there to the end of the scope belongs to the scope root. Unmarked
+        # text before that paragraph stays with the last point.
+        last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
+        block = next((body[k] for k in range(last_marked + 1, len(body))
+                      if requisite_like(body[k].text) or signature_like(body[k].first)), None)
+        in_block = False
         for p, stack in zip(body, stacks):
-            if signature_like(p.first) and p.marker.kind == "none":
+            in_block = in_block or p is block
+            if in_block:
+                p.kind = "requisite"
+                p.owner = scope_path
+                p.evidence.append({"requisite_block": "after the last numbered or named element"})
+            elif p.marker.kind == "none" and (signature_like(p.first) or barcode_like(p.text)):
                 p.kind = "signature"
                 p.owner = scope_path
             else:
                 p.owner = path_of(scope_path, stack)
         # headings/titles before the first marker belong to the scope root (stack empty);
-        # tables, captions, pictures follow the current owner
+        # tables, captions, pictures follow the current owner; inside the requisite block
+        # they belong to the scope root
         current = scope_path
         for p in items:
-            if p.flow == "body" and p.kind == "text" or p.kind in {"heading", "signature"}:
-                current = p.owner if p.kind != "signature" else current
+            if p.flow == "body" and p.kind in {"text", "heading", "requisite"}:
+                current = p.owner
+            elif p.kind == "signature":
+                continue
             elif p.flow == "body":
                 p.owner = current
         for p in items:
