@@ -172,3 +172,46 @@ def test_evaluator_variants_and_alternatives(tmp_path):
     result = EVAL.evaluate(gold, {"1.1": "S/1", "1.2": "S/AN4"}, {"1.2": True})
     assert result["strict"]["correct"] == 1 and result["no_section"]["correct"] == 2
     assert result["continuation"] == {"tp": 1, "fp": 0, "fn": 0}
+
+
+def test_owner_path_v2_typed_segments():
+    assert EVAL.norm("R/гл2/ст5/ч2/3") == "S/гл2/ст5/ч2/3"
+    assert EVAL.norm("A/гл2/ст5/ч2/3") != EVAL.norm("A/гл2/ст5/ч3/3")
+    assert EVAL.variant("A/гл2/ст5/ч2/3", "strict") != EVAL.variant("A/гл2/ст5/ч3/3", "strict")
+    assert EVAL.variant("S/I/разд3/2.1/абз1", "no_section") == "S/2.1/абз1"
+    assert EVAL.variant("S/разд3/гл2", "no_section") == "S/гл2"
+    # scope dropping: letter scopes, attached documents and annex scopes
+    assert EVAL.variant("A/AN2/разд1/4", "numbers") == "AN2/4"
+    assert EVAL.variant("S2/II/4", "numbers") == "4"
+    assert EVAL.variant("S/AN4/2", "numbers") == EVAL.variant("A/AN4/2", "numbers")
+
+
+def test_single_attached_document_equivalence():
+    assert EVAL.equivalent("S/4", "A/AN/4", 1)
+    assert EVAL.equivalent("A/AN1/4", "S/4", 1)
+    assert EVAL.equivalent("R/4", "A/AN1/4", 1)
+    assert EVAL.equivalent("S", "A/AN", 1)
+    assert not EVAL.equivalent("S/4", "A/AN/4", 2)
+    assert not EVAL.equivalent("S/4", "A/AN2/4", 1)
+    assert not EVAL.equivalent("A/4", "S/4", 1)
+    assert EVAL.equivalent("A/2", "A/2", 2)
+    gold = {
+        "1.1": {"owners": ["S/4"], "continuation": False},
+        "1.2": {"owners": ["A/1"], "continuation": False},
+    }
+    assert EVAL.attached_count(gold) == 1
+    assert EVAL.evaluate(gold, {"1.1": "A/AN/4", "1.2": "A/1"})["strict"]["correct"] == 2
+    gold["1.3"] = {"owners": ["A/AN2/1"], "continuation": False}
+    assert EVAL.attached_count(gold) == 2
+    assert EVAL.evaluate(gold, {"1.1": "A/AN1/4", "1.2": "A/1", "1.3": "A/AN2/1"})["strict"]["correct"] == 2
+
+
+def test_existing_gold_results_unchanged(tmp_path):
+    gold_file = tmp_path / "old.txt"
+    gold_file.write_text("1.1 A/1\n1.2 R/II/2.1\n1.3 S/AN4/2|S/AN4 +\n1.4 S/3/а\n", encoding="utf-8")
+    gold = EVAL.load_gold(gold_file)
+    assert EVAL.attached_count(gold) == 1
+    predicted = {"1.1": "A/1", "1.2": "S/2.1", "1.3": "S/AN4", "1.4": "S/3/б"}
+    result = EVAL.evaluate(gold, predicted, {"1.3": True})
+    assert (result["strict"]["correct"], result["no_section"]["correct"], result["numbers"]["correct"]) == (2, 3, 3)
+    assert result["continuation"] == {"tp": 1, "fp": 0, "fn": 0}
