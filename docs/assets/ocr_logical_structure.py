@@ -13,6 +13,13 @@ Output paths use a neutral syntax shared with the hand-made gold:
 ``A`` approving act, ``S`` approved text, ``S/AN4`` annex 4,
 ``S/II/4/в`` subpoint в) of point 4 in section II; named law units use typed
 segments: ``A/гл2/ст5/ч1/3`` point 3) of part 1. of article 5 in chapter 2.
+
+Requisites: after the last numbered or named element of a scope, the first short
+unterminated requisite line (signer, «Москва, Кремль», date, number, registration,
+«Совершено в …», «За …», barcode) opens a requisite block; its paragraphs get kind
+``requisite`` with evidence ``requisite_block`` and, with everything after them in the
+scope, belong to the scope root. A barcode that is the last body line of its page is
+a ``signature`` paragraph of the root (evidence ``barcode``) anywhere in the scope.
 """
 
 from __future__ import annotations
@@ -266,7 +273,11 @@ def signature_like(region: Region) -> bool:
     right = region.bbox[0] > region.page_size[0] * 0.55
     initials = re.fullmatch(r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?", text)
     title = re.match(r"^(Председатель|Руководитель|Министр|Главный государственный санитарный врач)\b", text)
-    return bool(initials or (title and len(text) < 120) or (right and len(text) < 40 and not is_caption(text)))
+    # title and right-edge lines must be short unterminated lines that do not start lowercase:
+    # «Руководитель органа обеспечивает исполнение.» or a right-aligned «… ассигнований;» is text
+    line = bool(text) and not text[0].islower() and not terminated(text)
+    return bool(initials or (line and title and len(text) < 120)
+                or (line and right and len(text) < 40 and not is_caption(text)))
 
 
 # Requisites of an act or of an attached document, recognised from text alone (no X
@@ -283,14 +294,15 @@ REQUISITE_LINES = (
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )
 # signer title or agreement signature place («За Правительство ...»): a short unterminated line
-SIGNER = re.compile(r"^(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
-                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач|За\s+[А-ЯЁ])\b")
+SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
+                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач)\b"
+                    r"|За\s+[А-ЯЁ][а-яё]+)")
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
 
 
 def barcode_like(text: str) -> bool:
-    """A line of digits and spaces only, at least 8 digits: a printed barcode number."""
-    return bool(re.fullmatch(r"[\d\s]+", text)) and sum(c.isdigit() for c in text) >= 8
+    """A printed barcode number: one run of 12-14 digits or EAN-13 grouping «2 100039 06204 3»."""
+    return bool(re.fullmatch(r"\d{12,14}|\d\s\d{6}\s\d{5}\s\d", text))
 
 
 def requisite_like(text: str) -> bool:
@@ -371,8 +383,12 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 continue
         p = Paragraph("body", [r])
         paragraphs.append(p)
-        if barcode_like(r.text):
-            continue  # a barcode is not open text: the next page continues the paragraph before it
+        body_here = [x for x in page_content if x.category != "Footnote" and footnote_number(x.text) is None]
+        if barcode_like(r.text) and body_here and body_here[-1] is r:
+            # a barcode as the last body line of its page is a page requisite, not open text:
+            # the next page continues the paragraph before it
+            p.evidence.append({"barcode": "last body line on its page"})
+            continue
         open_body = p
     return paragraphs
 
@@ -598,8 +614,9 @@ def build(extraction: dict) -> dict:
         # everything from there to the end of the scope belongs to the scope root. Unmarked
         # text before that paragraph stays with the last point.
         last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
-        block = next((body[k] for k in range(last_marked + 1, len(body))
-                      if requisite_like(body[k].text) or signature_like(body[k].first)), None)
+        block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
+                      and not body[k].text[0].islower()
+                      and (requisite_like(body[k].text) or signature_like(body[k].first))), None)
         in_block = False
         for p, stack in zip(body, stacks):
             in_block = in_block or p is block
@@ -607,7 +624,8 @@ def build(extraction: dict) -> dict:
                 p.kind = "requisite"
                 p.owner = scope_path
                 p.evidence.append({"requisite_block": "after the last numbered or named element"})
-            elif p.marker.kind == "none" and (signature_like(p.first) or barcode_like(p.text)):
+            elif p.marker.kind == "none" and (signature_like(p.first) or {"barcode": "last body line on its page"}
+                                              in p.evidence):
                 p.kind = "signature"
                 p.owner = scope_path
             else:

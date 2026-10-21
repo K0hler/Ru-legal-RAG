@@ -542,3 +542,29 @@ def test_barcode_digits_line_is_requisite():
     assert got["1.3"] == "A"
     assert got["2.1"] == "A/ст1/1" and cont["2.1"] is True
     assert got["2.2"] == "A/ст1/2"
+
+
+def test_requisite_block_opens_only_on_short_unterminated_lines():
+    base = [("Text", "1. Утвердить Правила."), ("Text", "2. Установить, что:")]
+    tail = ("Text", "Расходы осуществляются за счет бюджета.")
+    for line in [("Text", "Руководитель органа обеспечивает исполнение."),
+                 ("Text", "Руководитель органа обеспечивает исполнение настоящего пункта."),
+                 ("Text", "Председатель комиссии утверждает состав рабочей группы."),
+                 ("Text", "в пределах ассигнований;", 900),
+                 ("Text", "2019 2020 2021")]:
+        got = owners(S.build(extraction([base + [line, tail]])))
+        assert got["1.2"] == "A/2" and got["1.3"] == "A/2", line
+    for text in ("Председатель комиссии утверждает состав рабочей группы.", "Министр вправе изменить сроки.",
+                 "2019 2020 2021", "123456789"):
+        assert not S.requisite_like(text), text
+    # an agreement signature place is a requisite from text alone
+    assert S.requisite_like("За Правительство Российской Федерации")
+    assert S.requisite_like("За Российскую Федерацию")
+    pages = [[("Section-header", "Статья 1"), ("Text", "Соглашение вступает в силу."),
+              ("Text", "За Правительство Российской Федерации"), ("Text", "Подпись")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/ст1" and got["1.2"] == "A" and got["1.3"] == "A"
+    # a barcode-like digit line that is not the last line of its page stays with its point
+    pages = [[("Text", "1. Утвердить Правила."), ("Text", "2 100039 06204 3"), ("Text", "2. Второй.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/1"
