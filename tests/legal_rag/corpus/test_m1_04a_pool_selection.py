@@ -1,4 +1,5 @@
 import importlib.util
+import subprocess
 from pathlib import Path
 import sys
 
@@ -1001,5 +1002,5 @@ def test_main_records_exact_command(monkeypatch):
     argv = ["--profile", "batch-03", "--from", "2011-01-01", "--to", "2025-12-31", "--seed", "20261023",
             "--output", "a b/selection.json"]
     assert P.main(argv) == 0
-    assert seen == ['python docs/assets/select_m1_04a_pool.py --profile batch-03 --from 2011-01-01 '
+    assert seen == ['PYTHONPATH=src ' + subprocess.list2cmdline([sys.executable]) + ' docs/assets/select_m1_04a_pool.py --profile batch-03 --from 2011-01-01 '
                     '--to 2025-12-31 --seed 20261023 --output "a b/selection.json"']

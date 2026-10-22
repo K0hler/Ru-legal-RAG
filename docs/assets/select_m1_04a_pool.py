@@ -777,7 +777,7 @@ def write_provenance(output, args, feed_cache, selection_sha):
     try:
         commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT, capture_output=True,
                                 text=True, check=True).stdout.strip()
-        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--", "docs/assets"], cwd=PROJECT,
+        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--", "docs/assets", "src/legal_rag/sources"], cwd=PROJECT,
                                     capture_output=True, text=True, check=True).stdout.strip())
     except (OSError, subprocess.CalledProcessError):
         commit, dirty = None, None
@@ -1166,7 +1166,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     import subprocess
 
-    args.command = "python docs/assets/select_m1_04a_pool.py " + subprocess.list2cmdline(argv)
+    args.command = "PYTHONPATH=src " + subprocess.list2cmdline(
+        [sys.executable, "docs/assets/select_m1_04a_pool.py", *argv])
     return run(args)
 
 

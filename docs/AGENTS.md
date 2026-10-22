@@ -123,6 +123,12 @@
   writes it for such rescores or `--cross-scope-v2`. Rescores `20261022-batch-0{2,3}-rescore-cycle3`:
   batch 2 unchanged (v1 1464, transfers 278/278), batch 3 v1 4014 (+6 pp-2249),
   `cross_scope_v2` 30 vs old 0. Batches 1/2 and the old 8 are unaffected.
+- Batches after batch-03 default to the single-annex equivalence: `run_m1_04a_first_pass.py
+  freeze` records `single_annex_equivalence` (override `--[no-]single-annex`), `run` and
+  `rescore` follow it, the classifier writes `cross_scope_v2` for them. Batches 1-3 stay off.
+  `freeze` also hashes the gold `freeze-addendum.json` (if present) into `files`; `run`
+  re-checks it and its listed files. Pool selection provenance now checks `src/legal_rag/sources`
+  too and records `PYTHONPATH=src <interpreter> docs/assets/select_m1_04a_pool.py ...`.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

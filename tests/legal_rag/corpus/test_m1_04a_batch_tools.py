@@ -225,3 +225,135 @@ def test_classifier_reads_single_annex_paths_before_evidence_rules():
     # Without the equivalence the same error is the unnumbered-annex class (batch-3 reading).
     assert C.classify_evidence({"gold": "S/AN1/2", "predicted": "S/AN/2"}, "Text", "Т", False) == (
         C.UNNUMBERED_ANNEX, [])
+
+
+# ---- cycle 3 / A2: freeze coverage and single-annex defaults for new batches
+
+
+def _stub_freeze_world(monkeypatch, tmp_path):
+    """Run do_freeze / do_run on a throw-away root with a fake prototype and no git."""
+    import types
+
+    monkeypatch.setattr(R, "ROOT", tmp_path)
+    proto = tmp_path / "proto.py"
+    proto.write_text("print('p')\n", encoding="utf-8")
+    code_final = tmp_path / "code-final.sha256"
+    code_final.write_text(f"{R.sha(proto)} *docs/assets/ocr_logical_structure.py\n", encoding="utf-8")
+    monkeypatch.setattr(R, "PROTOTYPE", proto)
+    monkeypatch.setattr(R, "CODE_FINAL", code_final)
+    monkeypatch.setattr(R, "tracked", lambda batch, slugs, gold_freeze, extra=(): {R.rel(proto): R.sha(proto)})
+    monkeypatch.setattr(R.subprocess, "run", lambda *a, **k: types.SimpleNamespace(stdout="abc123\n"))
+    gold_file = tmp_path / "gold.txt"
+    gold_file.write_text("1.1 S\n", encoding="utf-8")
+    freeze = tmp_path / "gold-freeze" / "freeze.json"
+    freeze.parent.mkdir()
+    freeze.write_text(json.dumps({"files": {"gold.txt": R.sha(gold_file)}}), encoding="utf-8")
+    return freeze, gold_file
+
+
+def test_single_annex_is_default_only_after_batch_3():
+    assert [R.default_single_annex(b) for b in ("batch-01", "batch-02", "batch-03", "batch-04")] == [
+        False, False, False, True]
+
+
+def test_freeze_records_single_annex_for_batch_4_but_not_batch_3(monkeypatch, tmp_path):
+    freeze, _ = _stub_freeze_world(monkeypatch, tmp_path)
+    R.do_freeze(tmp_path / "run3", "batch-03", ["a"], freeze, "v1")
+    R.do_freeze(tmp_path / "run4", "batch-04", ["a"], freeze, "v1")
+    R.do_freeze(tmp_path / "run4x", "batch-04", ["a"], freeze, "v1", single_annex=False)
+    R.do_freeze(tmp_path / "run3x", "batch-03", ["a"], freeze, "v1", single_annex=True)
+    rec = {n: json.loads((tmp_path / n / "freeze.json").read_text(encoding="utf-8"))
+           for n in ("run3", "run4", "run4x", "run3x")}
+    assert "single_annex_equivalence" not in rec["run3"] and "single_annex_equivalence" not in rec["run4x"]
+    assert rec["run4"]["single_annex_equivalence"] is True and rec["run3x"]["single_annex_equivalence"] is True
+    assert "gold_freeze_addendum" not in rec["run4"]
+
+
+def test_freeze_hashes_and_run_checks_the_gold_addendum(monkeypatch, tmp_path):
+    freeze, gold_file = _stub_freeze_world(monkeypatch, tmp_path)
+    extra = tmp_path / "exceptions.json"
+    extra.write_text("{}", encoding="utf-8")
+    addendum = freeze.with_name("freeze-addendum.json")
+    addendum.write_text(json.dumps({"base_freeze_sha256": "wrong", "files": {"exceptions.json": R.sha(extra)}}),
+                        encoding="utf-8")
+    with pytest.raises(SystemExit, match="base_freeze_sha256"):
+        R.do_freeze(tmp_path / "bad", "batch-04", ["a"], freeze, "v1")
+    addendum.write_text(json.dumps({"base_freeze_sha256": R.sha(freeze), "files": {"exceptions.json": R.sha(extra)}}),
+                        encoding="utf-8")
+    out = tmp_path / "run"
+    R.do_freeze(out, "batch-04", ["a"], freeze, "v1")
+    record = json.loads((out / "freeze.json").read_text(encoding="utf-8"))
+    assert record["gold_freeze_addendum"] == "gold-freeze/freeze-addendum.json"
+    assert record["gold_freeze_addendum_sha256"] == R.sha(addendum)
+    assert record["files"]["gold-freeze/freeze-addendum.json"] == R.sha(addendum)
+    R.check_addendum(addendum, freeze)
+    extra.write_text("changed", encoding="utf-8")
+    with pytest.raises(SystemExit, match="exceptions.json"):
+        R.check_addendum(addendum, freeze)
+    with pytest.raises(SystemExit, match="gold changed after freeze addendum|changed after freeze"):
+        R.do_run(out)
+
+
+class _FakeEvaluator:
+    calls = []
+
+    @staticmethod
+    def load_gold(path):
+        return {"1.1": {"owners": ["S"], "continuation": False}}
+
+    @staticmethod
+    def from_logical(data):
+        return {"1.1": "S"}, {}
+
+    @classmethod
+    def evaluate(cls, g, owners, cont=None, single_annex=False):
+        cls.calls.append(single_annex)
+        return {k: {"correct": 1} for k in R.METRICS} | {"errors": []}
+
+
+class _FakeExporter:
+    @staticmethod
+    def export_current(ext, claim, mode):
+        return {"1.1": "S"}, {}
+
+
+def _run_with(monkeypatch, tmp_path, batch):
+    import types
+
+    tmp_path = tmp_path / batch
+    tmp_path.mkdir()
+    freeze, _ = _stub_freeze_world(monkeypatch, tmp_path)
+    ext = tmp_path / "ext.json"
+    ext.write_text("{}", encoding="utf-8")
+    src = tmp_path / "src.json"
+    src.write_text(json.dumps({"declared_identity": "x"}), encoding="utf-8")
+    monkeypatch.setattr(R, "extraction", lambda slug: ext)
+    monkeypatch.setattr(R, "gold", lambda slug, suffix="gold": ext)
+    monkeypatch.setattr(R, "source", lambda b, slug: src)
+    monkeypatch.setattr(R, "load", lambda name, path: _FakeEvaluator if "evaluate" in name else _FakeExporter)
+    monkeypatch.setattr(R, "apply_convention", lambda g, e, c: (g, []))
+    monkeypatch.setattr(R, "export_current", lambda exporter, e, claim: ({"1.1": "S"}, {"route": "x"}))
+
+    def fake_run(cmd, **kw):
+        if "rev-parse" in cmd:
+            return types.SimpleNamespace(stdout="abc123\n")
+        Path(cmd[cmd.index("--output") + 1]).write_text(json.dumps({"regions": []}), encoding="utf-8")
+
+    monkeypatch.setattr(R.subprocess, "run", fake_run)
+    out = tmp_path / f"run-{batch}"
+    R.do_freeze(out, batch, ["a"], freeze, "v1")
+    _FakeEvaluator.calls.clear()
+    R.do_run(out)
+    return json.loads((out / "summary.json").read_text(encoding="utf-8")), list(_FakeEvaluator.calls)
+
+
+def test_synthetic_batch_4_run_scores_with_single_annex_and_batch_3_does_not(monkeypatch, tmp_path):
+    summary4, calls4 = _run_with(monkeypatch, tmp_path, "batch-04")
+    assert summary4["single_annex_equivalence"] is True and calls4 == [True, True]
+    summary3, calls3 = _run_with(monkeypatch, tmp_path, "batch-03")
+    assert "single_annex_equivalence" not in summary3 and calls3 == [False, False]
+
+
+def test_classifier_cross_scope_v2_defaults_on_for_new_batches():
+    src = (ASSETS / "classify_m1_04a_errors.py").read_text(encoding="utf-8")
+    assert 'batch not in ("batch-01", "batch-02", "batch-03")' in src

@@ -251,7 +251,7 @@ def main(argv=None) -> None:
         freeze = ROOT / summary["rescored_from"] / "freeze.json"
     batch = json.loads(freeze.read_text(encoding="utf-8")).get("batch", "batch-01") if freeze.exists() else "batch-01"
     single_annex = summary.get("single_annex_equivalence", False)
-    scope_v2 = single_annex or args.cross_scope_v2
+    scope_v2 = single_annex or args.cross_scope_v2 or batch not in ("batch-01", "batch-02", "batch-03")
     evaluator = None
     if batch != "batch-01":
         import importlib.util

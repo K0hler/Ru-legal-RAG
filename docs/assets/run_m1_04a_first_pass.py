@@ -64,6 +64,27 @@ EXPORTER = ROOT / "docs" / "assets" / "export_owner_maps.py"
 CODE_FINAL = ROOT / "data" / "m1" / "experiments" / "m1-04a-20261017-logical-v1" / "code-final.sha256"
 CONVENTIONS = ("all-regions", "v1")
 METRICS = ("strict", "no_section", "numbers")
+# Batches 1-3 were scored without the owner-approved single-annex equivalence (cycle 3);
+# every later batch is frozen, run and scored with it.
+LEGACY_BATCHES = ("batch-01", "batch-02", "batch-03")
+
+
+def default_single_annex(batch: str) -> bool:
+    return batch not in LEGACY_BATCHES
+
+
+def addendum_for(gold_freeze: Path) -> Path:
+    return gold_freeze.with_name("freeze-addendum.json")
+
+
+def check_addendum(path: Path, gold_freeze: Path) -> None:
+    """The addendum names the freeze it extends and every file it hashes must be unchanged."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("base_freeze_sha256") != sha(gold_freeze):
+        raise SystemExit(f"{rel(path)}: base_freeze_sha256 does not match {rel(gold_freeze)}")
+    for name, digest in data["files"].items():
+        if sha(ROOT / name) != digest:
+            raise SystemExit(f"gold changed after freeze addendum: {name}")
 
 
 def sha(path: Path) -> str:
@@ -177,7 +198,9 @@ def parse_prototypes(specs: list[str] | None) -> dict[str, Path]:
 
 
 def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, convention: str,
-              prototypes: dict[str, Path] | None = None) -> None:
+              prototypes: dict[str, Path] | None = None, single_annex: bool | None = None) -> None:
+    if single_annex is None:
+        single_annex = default_single_annex(batch)
     code_final = {}
     for line in CODE_FINAL.read_text().splitlines():
         if line.strip():
@@ -189,6 +212,9 @@ def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, conven
     for name, digest in json.loads(gold_freeze.read_text(encoding="utf-8"))["files"].items():
         if sha(ROOT / name) != digest:
             raise SystemExit(f"gold changed after freeze: {name}")
+    addendum = addendum_for(gold_freeze)
+    if addendum.exists():
+        check_addendum(addendum, gold_freeze)
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True,
                           check=True).stdout.strip()
     record = {"schema_version": "m1-04a-first-pass-freeze/2",
@@ -206,6 +232,12 @@ def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, conven
                                  "matches_code_final": sha(path) == expected}
                                 for label, path in prototypes.items()]
         record["files"] = tracked(batch, slugs, gold_freeze, tuple(prototypes.values()))
+    if addendum.exists():
+        record["gold_freeze_addendum"] = rel(addendum)
+        record["gold_freeze_addendum_sha256"] = sha(addendum)
+        record["files"][rel(addendum)] = sha(addendum)
+    if single_annex:
+        record["single_annex_equivalence"] = True
     out.mkdir(parents=True, exist_ok=False)
     write_new(out / "freeze.json", record)
     print(sha(out / "freeze.json"))
@@ -251,7 +283,10 @@ def do_run(out: Path) -> None:
     for name, digest in record["files"].items():
         if sha(ROOT / name) != digest:
             raise SystemExit(f"changed after freeze: {name}")
+    if "gold_freeze_addendum" in record:
+        check_addendum(ROOT / record["gold_freeze_addendum"], ROOT / record["gold_freeze"])
     convention, batch = record["convention"], record["batch"]
+    single_annex = record.get("single_annex_equivalence", False)
     sys.path.insert(0, str(ROOT / "src"))
     exporter = load("export_owner_maps", EXPORTER)
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
@@ -272,7 +307,7 @@ def do_run(out: Path) -> None:
             subprocess.run([sys.executable, str(prototype), "--input", str(ext_path), "--output", str(proto_out)],
                            check=True)
             owners, cont = evaluator.from_logical(json.loads(proto_out.read_text(encoding="utf-8")))
-            res, row[name] = score(evaluator, g, owners, cont)
+            res, row[name] = score(evaluator, g, owners, cont, single_annex)
             write_new(out / "eval" / f"{name}-{slug}.json", res)
         claim = json.loads(source(batch, slug).read_text(encoding="utf-8"))["declared_identity"]
         try:
@@ -280,15 +315,18 @@ def do_run(out: Path) -> None:
         except Exception as error:  # recorded once, not retried
             cur, meta = {}, {"route": "error", "error": f"{type(error).__name__}: {error}"}
         write_new(out / "current" / f"{slug}.json", {"owners": cur, "meta": meta})
-        res, row["current"] = score(evaluator, g, cur)
+        res, row["current"] = score(evaluator, g, cur, single_annex=single_annex)
         row["current"]["meta"] = meta
         write_new(out / "eval" / f"current-{slug}.json", res)
         rows.append(row)
         print(json.dumps(row, ensure_ascii=False))
-    write_new(out / "summary.json", {"schema_version": "m1-04a-first-pass-summary/2", "convention": convention,
-                                     "freeze_sha256": sha(freeze_path),
-                                     "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                     "rows": rows, "total": totals(rows)})
+    summary = {"schema_version": "m1-04a-first-pass-summary/2", "convention": convention,
+               "freeze_sha256": sha(freeze_path),
+               "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "rows": rows, "total": totals(rows)}
+    if single_annex:
+        summary["single_annex_equivalence"] = True
+    write_new(out / "summary.json", summary)
     print(json.dumps(totals(rows), ensure_ascii=False))
 
 
@@ -296,7 +334,7 @@ def do_run(out: Path) -> None:
 
 
 def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = None,
-               single_annex: bool = False) -> None:
+               single_annex: bool | None = None) -> None:
     """Score the saved outputs of ``src`` under ``convention``; systems are not re-run.
 
     Without ``gold_suffix`` and ``single_annex`` the output is that of the batch-1 rescore
@@ -305,11 +343,14 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
     src_freeze = json.loads((src / "freeze.json").read_text(encoding="utf-8"))
     src_summary = json.loads((src / "summary.json").read_text(encoding="utf-8"))
+    if single_annex is None:
+        single_annex = default_single_annex(src_freeze.get("batch", "batch-01"))
     for name, digest in json.loads((ROOT / rel_from_record(src_freeze)).read_text(encoding="utf-8"))["files"].items():
         if sha(ROOT / name) != digest:
             raise SystemExit(f"gold changed after freeze: {name}")
     inputs = {rel(p): sha(p) for p in [src / "freeze.json", src / "summary.json", EVALUATOR, Path(__file__).resolve()]}
     src_convention = src_summary.get("convention", "all-regions")
+    src_single = src_summary.get("single_annex_equivalence", False)
     proto_systems = [s for s in systems(src_summary["rows"]) if s != "current"]
     out.mkdir(parents=True, exist_ok=False)
     (out / "eval").mkdir()
@@ -339,8 +380,8 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         # Rescoring the frozen gold under the source run's convention must reproduce its row exactly.
         ok = len(frozen) == src_row["regions"]
         for system, (owners, cont) in outputs.items():
-            ok = ok and score(evaluator, frozen, owners, cont)[1] == src_row[system]
-        check[slug] = ok and score(evaluator, frozen, current["owners"])[1] == {
+            ok = ok and score(evaluator, frozen, owners, cont, src_single)[1] == src_row[system]
+        check[slug] = ok and score(evaluator, frozen, current["owners"], single_annex=src_single)[1] == {
             k: v for k, v in src_row["current"].items() if k != "meta"}
         g, removed = apply_convention(full, ext, convention)
         row = {"slug": slug, "regions": len(g), "not_scored": removed}
@@ -442,15 +483,16 @@ def main(argv=None) -> None:
                         help="freeze: explicit prototype file (repeatable); default pins code-final")
     parser.add_argument("--system", default="prototype", help="sample: eval prefix, e.g. prototype-v1")
     parser.add_argument("--gold-suffix", help="rescore: score against agent-<slug>.<suffix>.txt, e.g. gold-v2")
-    parser.add_argument("--single-annex", action="store_true",
-                        help="rescore: <doc>/AN == <doc>/AN1 when the document has exactly one annex")
+    parser.add_argument("--single-annex", action=argparse.BooleanOptionalAction, default=None,
+                        help="<doc>/AN == <doc>/AN1 when the document has exactly one annex "
+                             "(freeze, rescore; default on for batches after batch-03, off for batches 1-3)")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
     if args.phase == "freeze":
         if not (args.gold_freeze and args.slugs):
             parser.error("freeze needs --gold-freeze and --slugs")
         do_freeze(out, args.batch, args.slugs, Path(args.gold_freeze).resolve(), args.convention,
-                  parse_prototypes(args.prototype))
+                  parse_prototypes(args.prototype), args.single_annex)
     elif args.phase == "run":
         do_run(out)
     elif args.phase == "rescore":
