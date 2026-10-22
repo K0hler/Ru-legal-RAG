@@ -261,7 +261,9 @@ class Marker:
 # section (named or Roman) > chapter > paragraph § > article.
 ARTICLE = re.compile(r"^Статья\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
 CHAPTER = re.compile(r"^Глава\s+(\d+|[IVXLC]+)\.?(?=\s|$)")
-SECTION_NAMED = re.compile(r"^Раздел\s+(\d+|[IVXLC]+)\.?(?=\s|$)")
+# «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman
+# number may carry OCR Cyrillic Х / Ukrainian І («РАЗДЕЛ ІХ»).
+SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
 PARAGRAPH_SIGN = re.compile(r"^§\s*(\d+)\.?(?=\s|$)")
 UNIT_RANK = {"roman": 0, "section_named": 0, "chapter": 1, "paragraph_sign": 2, "article": 3}
 

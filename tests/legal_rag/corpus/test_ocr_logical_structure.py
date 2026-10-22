@@ -357,6 +357,47 @@ def test_sections_contain_chapters():
     assert got["1.4"] == "A/разд2" and got["1.5"] == "A/разд2/гл2" and got["1.7"] == "A/разд2/гл2/ст2"
 
 
+def test_uppercase_section_heading_closes_previous_section_and_nests_chapters():
+    """Review Focus 4: «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (uppercase, no dot, OCR «ІХ») is the level
+    above chapters; the next section heading closes the previous section's chapter and
+    article stack instead of being absorbed by the last article."""
+    pages = [[("Section-header", "РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ"), ("Section-header", "Глава 1. Основные положения"),
+              ("Section-header", "Статья 1. Предмет"), ("Text", "1. Настоящий Кодекс регулирует порядок."),
+              ("Text", "2. Вторая часть статьи."),
+              ("Section-header", "РАЗДЕЛ II МЕРЫ ПРОЦЕССУАЛЬНОГО ПРИНУЖДЕНИЯ"),
+              ("Section-header", "Глава 2. Меры принуждения"), ("Section-header", "Статья 2. Виды мер"),
+              ("Text", "1. Мерами являются:"), ("Text", "1) привод;"),
+              ("Section-header", "РАЗДЕЛ ІХ ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ"),
+              ("Section-header", "Глава 3. Порядок введения"), ("Section-header", "Статья 3. Вступление в силу"),
+              ("Text", "Настоящий Кодекс вступает в силу.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.0"] == "A/I" and got["1.1"] == "A/I/гл1" and got["1.2"] == "A/I/гл1/ст1"
+    assert got["1.3"] == "A/I/гл1/ст1/ч1" and got["1.4"] == "A/I/гл1/ст1/ч2"
+    assert got["1.5"] == "A/II"                     # not A/I/гл1/ст1/ч2
+    assert got["1.6"] == "A/II/гл2" and got["1.8"] == "A/II/гл2/ст2/ч1" and got["1.9"] == "A/II/гл2/ст2/ч1/1"
+    assert got["1.10"] == "A/IX"                    # OCR Ukrainian І + Cyrillic Х
+    assert got["1.11"] == "A/IX/гл3" and got["1.13"] == "A/IX/гл3/ст3"
+
+
+def test_section_word_forms_and_sentences():
+    for text in ("РАЗДЕЛ I", "РАЗДЕЛ II. ОБЩИЕ ПОЛОЖЕНИЯ", "Раздел IV Требования", "РАЗДЕЛ 3"):
+        assert S.parse_marker(text, "Section-header").kind == "section_named", text
+    assert S.parse_marker("РАЗДЕЛ ІХ ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ", "Section-header").label == "IX"
+    assert S.parse_marker("РАЗДЕЛ 3", "Section-header").label == "разд3"
+    # a sentence that starts with the word is not a heading
+    assert S.parse_marker("Раздел II настоящего Порядка применяется к организациям.", "Text").kind == "none"
+    assert S.parse_marker("РАЗДЕЛЫ I и II применяются.", "Text").kind == "none"
+
+
+def test_roman_sections_without_the_word_still_open_sections():
+    """SanPiN-like approved texts: «I. Общие положения» without «Раздел» stays a section."""
+    pages = [[("Section-header", "I. Общие положения"), ("Text", "1. Первый пункт."),
+              ("Section-header", "II. Требования"), ("Text", "2. Второй пункт."), ("Text", "а) подпункт;")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.0"] == "A/I" and got["1.1"] == "A/I/1"
+    assert got["1.2"] == "A/II" and got["1.3"] == "A/II/2" and got["1.4"] == "A/II/2/а"
+
+
 def test_inline_article_reference_is_not_a_heading():
     pages = [[("Section-header", "Статья 1"),
               ("Text", "1. Порядок определяется в соответствии со статьей 17 настоящего закона."),

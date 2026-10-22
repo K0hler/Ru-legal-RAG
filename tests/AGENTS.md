@@ -27,6 +27,9 @@
   («согласно приложению 1», a sentence starting «Приложение … » and ending in a dot) open no annex.
   Fix round 1: «к приказу …» inside a resolution stays with the attached document (own-kind rule), bare
   «Приложение 2» between points and a broken sentence open nothing, number signs №/N/Н, final dots after a number/date.
+  Cycle 3 B3: uppercase «РАЗДЕЛ I …» (no dot, OCR «ІХ») is the level above chapters and closes the previous
+  section's article (heading not absorbed); sentences starting «Раздел II настоящего …» are not headings;
+  Roman «I. …» sections without the word still open sections.
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only

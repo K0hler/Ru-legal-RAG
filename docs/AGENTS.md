@@ -145,6 +145,11 @@
   Page-header, or being the first text paragraph of its page. A final dot is accepted after «г.», DD.MM.YYYY or
   «№ <number>»; a comma/hyphen/function-word tail is a broken sentence. Attached-document captions need a
   capitalised referent; with two attached documents the annex goes to the last opened one (known limitation).
+- Cycle 3 B3 (prototype): `SECTION_NAMED` accepts uppercase «РАЗДЕЛ» and OCR Roman letters (Cyrillic Х, Ukrainian І),
+  with or without a dot after the number («РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ», «РАЗДЕЛ ІХ …»). As a named unit of rank 0 it
+  closes the previous section's chapter/article stack, so the heading no longer falls into the last article.
+  Roman «I. …» sections without the word are unchanged. Regression `20261022-dev-regression-cycle3-b3`: КАС strict
+  9 -> 2855/2855, total 6976/7072 no_section and strict, `cross_scope_v2` 0, only code-21-2015 changed, no drops.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59
