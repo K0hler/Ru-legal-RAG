@@ -129,6 +129,10 @@
   `freeze` also hashes the gold `freeze-addendum.json` (if present) into `files`; `run`
   re-checks it and its listed files. Pool selection provenance now checks `src/legal_rag/sources`
   too and records `PYTHONPATH=src <interpreter> docs/assets/select_m1_04a_pool.py ...`.
+- `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
+  `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
+  breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen
+  v1: `data/m1/m1-04a/experiments/20261022-dev-regression-cycle3-baseline/` (6660/7072 no_section, `cross_scope_v2` 308).
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

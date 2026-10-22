@@ -119,7 +119,7 @@ def authored_documents(tmp_path):
         ext.write_text(json.dumps(extraction()), encoding="utf-8")
         g = tmp_path / f"{name}.gold.txt"
         g.write_text(gold, encoding="utf-8")
-        docs.append({"name": name, "group": "authored", "extraction": ext, "gold": g})
+        docs.append({"name": name, "group": "authored", "family": "приказы", "extraction": ext, "gold": g})
     return docs
 
 
@@ -133,7 +133,8 @@ def test_dev_regression_on_authored_pair(tmp_path):
     assert rows["one"]["regions"] == 3 and rows["one"]["not_scored"] == ["1.0", "2.2"]
     assert (rows["one"]["strict"], rows["one"]["no_section"], rows["one"]["numbers"]) == (3, 3, 3)
     assert rows["two"]["regions"] == 3 and rows["two"]["strict"] == 2
-    assert summary["total"] == {"regions": 6, "strict": 5, "no_section": 5, "numbers": 5}
+    assert summary["total"] == {"documents": 2, "regions": 6, "strict": 5, "no_section": 5, "numbers": 5,
+                                "cross_scope_v2": 0}
     assert summary["parser_version"] == "fake/1"
     errors = json.loads((out / "errors.json").read_text(encoding="utf-8"))
     assert errors["two"] == [{"region": "1.2", "gold": "S/2", "predicted": "S/1", "category": "Text"}]
@@ -141,6 +142,34 @@ def test_dev_regression_on_authored_pair(tmp_path):
     assert json.loads((out / "summary.json").read_text(encoding="utf-8")) == summary
     with pytest.raises(FileExistsError):
         D.run_dev_regression(proto, out, documents=authored_documents(tmp_path))
+
+
+def test_dev_regression_34_documents_families_and_cross_scope_v2(tmp_path):
+    docs = D.development_documents()
+    assert len(docs) == 34 and len({d["name"] for d in docs}) == 34
+    sizes = {}
+    for d in docs:
+        sizes[d["group"]] = sizes.get(d["group"], 0) + 1
+    assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9}
+    assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-1", "batch-3"))
+    assert {D.family(d["name"]) for d in docs} == set(D.FAMILIES)
+    assert D.family("code-21-2015") == "кодексы" and D.family("holdout2-a0ee4eb3704e") == "санитарные правила"
+    # Single annex (AN == AN1) and a cross-scope transfer (annex region put into the body) on authored gold.
+    ext = tmp_path / "a.extraction.json"
+    ext.write_text(json.dumps(extraction()), encoding="utf-8")
+    gold = tmp_path / "a.gold.txt"
+    gold.write_text("1.1 A/AN\n1.2 A/AN/1\n2.1 A/2\n", encoding="utf-8")
+    proto = tmp_path / "p.py"
+    proto.write_text(FAKE_PROTOTYPE.replace('"1.1": "S", "1.2": "S/1", "2.1": "S/2"',
+                                            '"1.1": "A/AN1", "1.2": "A/1", "2.1": "A/2"'), encoding="utf-8")
+    doc = {"name": "fz-authored", "group": "authored", "extraction": ext, "gold": gold}
+    summary = D.run_dev_regression(proto, tmp_path / "out", documents=[doc])
+    (row,) = summary["rows"]
+    assert row["family"] == "законы" and row["strict"] == 2 and row["cross_scope_v2"] == 1
+    assert summary["families"]["законы"] == {"documents": 1, "regions": 3, "strict": 2, "no_section": 2,
+                                             "numbers": 3, "cross_scope_v2": 1}
+    assert summary["total"]["cross_scope_v2"] == 1 and summary["single_annex_equivalence"] is True
 
 
 def test_first_pass_explicit_prototypes_and_per_system_totals(tmp_path):
