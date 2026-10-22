@@ -7,6 +7,7 @@
   independently, retaining raw response bytes, pagination and indexed reasons.
   `File/Pdf` may return ZIP (observed for December 2011); report the format and
   headers without treating it as PDF or unpacking it. Frozen v1 stays unchanged.
+  The empty-name wrapper applies only to exactly `""`; whitespace-only is rejected.
 
 - `structure_bundle.py` is an opt-in `official-structure-bundle/2` acquisition
   wrapper. It reuses frozen adapters and lifecycle without changing their files

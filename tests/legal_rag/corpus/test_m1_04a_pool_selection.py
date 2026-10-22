@@ -709,3 +709,36 @@ def test_code_page_ceiling_applies_to_codes_only():
     assert [r["eo_number"] for r in wide["selected"]] == ["c1"]
     assert {r["eo_number"]: r["reason"] for r in wide["rejected"]} == {"l1": "pages_out_of_range"}
     assert wide["code_pages_max"] == 500 and wide["pages_range"] == [3, 200]
+
+
+@pytest.mark.parametrize("title", [
+    "Об утверждении Водного кодекса Российской Федерации",
+    "Об утверждении Кодекса Российской Федерации об административных правонарушениях",
+    "О внесении изменений в Водный кодекс Российской Федерации",
+    "О признании утратившим силу Водного кодекса Российской Федерации",
+])
+def test_code_title_excludes_approving_and_amending_forms(title):
+    assert P.categorize("", title) != "code"
+
+
+def test_code_title_still_recognized():
+    assert P.categorize("", "Водный кодекс Российской Федерации") == "code"
+
+
+def test_code_candidates_with_zero_code_quota_is_refused(tmp_path):
+    from types import SimpleNamespace
+
+    args = SimpleNamespace(output=tmp_path / "b" / "selection.json", profile="batch-02",
+                           quota=["code=0"], code_candidates=tmp_path / "codes.json", seed=1,
+                           date_from="2020-01-01", date_to="2020-12-31", feed_cache=None,
+                           min_days=0, partial_output=None, quota_change=None, pages_max=None)
+    with pytest.raises(ValueError, match="code quota is zero"):
+        P.run(args)
+
+
+def test_code_candidates_path_is_repo_relative_and_resolves():
+    inside = P.PROJECT / "data" / "m1" / "m1-04a" / "codes" / "selection.json"
+    assert P.repo_relative(inside) == "data/m1/m1-04a/codes/selection.json"
+    assert P.resolve_repo_path("data/m1/m1-04a/codes/selection.json") == inside
+    absolute = Path(P.PROJECT.anchor) / "elsewhere" / "x.json"
+    assert P.resolve_repo_path(absolute) == absolute

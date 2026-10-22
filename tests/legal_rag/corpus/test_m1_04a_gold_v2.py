@@ -110,3 +110,39 @@ def test_derive_refuses_a_map_for_another_gold(tmp_path):
     with pytest.raises(SystemExit):
         D.derive(slug_dir, write=True)
     assert not (slug_dir / "agent-doc-1-2026.gold-v2.txt").exists()
+
+
+def test_flat_dotted_exception_stays_flat_and_children_nest_under_it():
+    gold = ["1.0 S/II/4", "1.1 S/II/4.1", "1.2 S/II/4.2", "1.3 S/II/4.1.2"]
+    lines, _ = D.derive_lines(gold, {}, ["S/II/4.1"])
+    assert lines == ["1.0 S/II/4", "1.1 S/II/4.1", "1.2 S/II/4/4.2", "1.3 S/II/4.1/4.1.2"]
+    default, _ = D.derive_lines(gold, {})
+    assert default == D.derive_lines(gold, {}, [])[0] != lines
+
+
+@pytest.mark.parametrize("entry", ["", "S/II/4", "S//4.1", 5])
+def test_bad_flat_dotted_entry_is_refused(entry):
+    with pytest.raises(ValueError):
+        D.derive_lines(["1.0 S/4"], {}, [entry])
+
+
+def test_exceptions_json_and_map_flat_dotted_are_applied_and_recorded(tmp_path):
+    slug_dir, _ = write_case(tmp_path, "1.0 S/4\n1.1 S/4.1\n1.2 S/4.2\n1.3 S/5\n1.4 S/5.1\n", {})
+    (slug_dir / "exceptions.json").write_text(json.dumps(
+        {"schema_version": D.EXCEPTIONS_SCHEMA, "flat_dotted": ["S/4.1"]}), encoding="utf-8")
+    map_path = slug_dir / "agent-doc-1-2026.v2-map.json"
+    record = json.loads(map_path.read_text(encoding="utf-8"))
+    record["flat_dotted"] = ["S/5.1"]
+    map_path.write_text(json.dumps(record), encoding="utf-8")
+    report = D.derive(slug_dir, write=True)
+    assert report["flat_dotted"] == ["S/4.1", "S/5.1"]
+    out = (slug_dir / "agent-doc-1-2026.gold-v2.txt").read_text(encoding="utf-8").splitlines()
+    assert out[-5:] == ["1.0 S/4", "1.1 S/4.1", "1.2 S/4/4.2", "1.3 S/5", "1.4 S/5.1"]
+    assert "S/4.1, S/5.1" in out[1]
+
+
+def test_without_exceptions_output_is_unchanged(tmp_path):
+    slug_dir, _ = write_case(tmp_path, "1.0 S/4\n1.1 S/4.1\n", {})
+    assert "flat_dotted" not in D.derive(slug_dir, write=True)
+    out = (slug_dir / "agent-doc-1-2026.gold-v2.txt").read_text(encoding="utf-8")
+    assert "flat dotted" not in out and "1.1 S/4/4.1" in out

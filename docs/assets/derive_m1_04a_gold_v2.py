@@ -17,6 +17,9 @@ Phases:
   derive --slug-dir DIR   -> DIR/agent-<slug>.gold-v2.txt and agent-<slug>.gold-v2.sha256
                              (write-once; needs DIR/agent-<slug>.v2-map.json whose
                              ``source_gold_sha256`` matches the v1 gold)
+                             Optional ``flat_dotted`` (list of owner paths ``S/II/4.1`` that stay flat)
+                             in the map and/or ``DIR/exceptions.json``
+                             (``{"schema_version": "m1-04a-gold-v2-exceptions/1", "flat_dotted": [...]}``).
   check  --slug-dir DIR   -> prints what would change; writes nothing (map optional)
 """
 
@@ -30,6 +33,7 @@ from pathlib import Path
 
 CONVENTION = "m1-04a-annotation/v2"
 MAP_SCHEMA = "m1-04a-gold-v2-map/1"
+EXCEPTIONS_SCHEMA = "m1-04a-gold-v2-exceptions/1"
 DOTTED = re.compile(r"^\d+(?:\.\d+)+$")
 ANNEX_TARGET = re.compile(r"^S/AN\d+$")
 
@@ -55,14 +59,18 @@ def node_prefixes(paths) -> set[tuple[str, ...]]:
     return out
 
 
-def nest_dotted(path: str, nodes: set[tuple[str, ...]]) -> str:
-    """Rule (ii): nest ``N.M`` under an existing sibling node ``N`` (recursively for ``N.M.K``)."""
+def nest_dotted(path: str, nodes: set[tuple[str, ...]], flat: frozenset = frozenset()) -> str:
+    """Rule (ii): nest ``N.M`` under an existing sibling node ``N`` (recursively for ``N.M.K``).
+
+    ``flat`` holds owner paths (``S/II/4.1``) the annotator declared flat: such a segment
+    is never nested, though paths below it still nest under it.
+    """
 
     def nested(seg: tuple[str, ...]) -> tuple[str, ...]:
         out: tuple[str, ...] = ()
         for i, s in enumerate(seg):
             parent = s.rsplit(".", 1)[0] if DOTTED.match(s) else None
-            if parent is not None and (*seg[:i], parent) in nodes:
+            if parent is not None and seg[: i + 1] not in flat and (*seg[:i], parent) in nodes:
                 out = nested((*seg[:i], parent)) + (s,)
             else:
                 out = out + (s,)
@@ -79,9 +87,20 @@ def validate_map(annexes: dict[str, str]) -> None:
         raise ValueError("annex map targets are not unique")
 
 
-def derive_lines(lines: list[str], annexes: dict[str, str]) -> tuple[list[str], dict]:
+def validate_flat(flat_dotted) -> frozenset:
+    out = set()
+    for path in flat_dotted:
+        segments = path.split("/") if isinstance(path, str) else []
+        if not segments or not all(segments) or not DOTTED.match(segments[-1]):
+            raise ValueError(f"bad flat_dotted entry {path!r}: expected an owner path ending in N.M")
+        out.add(tuple(segments))
+    return frozenset(out)
+
+
+def derive_lines(lines: list[str], annexes: dict[str, str], flat_dotted=()) -> tuple[list[str], dict]:
     """Map gold lines (comments kept verbatim); returns new lines and change counts."""
     validate_map(annexes)
+    flat = validate_flat(flat_dotted)
     rows = []
     for line in lines:
         stripped = line.strip()
@@ -107,7 +126,7 @@ def derive_lines(lines: list[str], annexes: dict[str, str]) -> tuple[list[str], 
         key, owners, rest = row
         counts["lines"] += 1
         mapped = next(it)
-        final = [nest_dotted(o, nodes) for o in mapped]
+        final = [nest_dotted(o, nodes, flat) for o in mapped]
         counts["scope"] += mapped != owners
         counts["nested"] += final != mapped
         if final == owners:
@@ -124,13 +143,26 @@ def gold_paths(slug_dir: Path) -> tuple[str, Path, Path, Path, Path]:
             slug_dir / f"agent-{slug}.gold-v2.txt", slug_dir / f"agent-{slug}.gold-v2.sha256")
 
 
-def read_map(map_path: Path, gold_bytes: bytes) -> dict[str, str]:
+def read_map(map_path: Path, gold_bytes: bytes) -> dict:
     record = json.loads(map_path.read_text(encoding="utf-8"))
     if record.get("schema_version") != MAP_SCHEMA:
         raise SystemExit(f"{map_path}: schema_version must be {MAP_SCHEMA}")
     if record.get("source_gold_sha256") != sha(gold_bytes):
         raise SystemExit(f"{map_path}: source_gold_sha256 does not match the v1 gold")
     return record["attached_annexes"]
+
+
+def read_flat_dotted(map_path: Path, exceptions_path: Path) -> list[str]:
+    """Optional ``flat_dotted`` from the map plus the annotator's ``exceptions.json`` (union)."""
+    found: list[str] = []
+    if map_path.exists():
+        found += json.loads(map_path.read_text(encoding="utf-8")).get("flat_dotted", [])
+    if exceptions_path.exists():
+        record = json.loads(exceptions_path.read_text(encoding="utf-8"))
+        if record.get("schema_version") != EXCEPTIONS_SCHEMA:
+            raise SystemExit(f"{exceptions_path}: schema_version must be {EXCEPTIONS_SCHEMA}")
+        found += record.get("flat_dotted", [])
+    return sorted(set(found))
 
 
 def derive(slug_dir: Path, write: bool) -> dict:
@@ -142,8 +174,9 @@ def derive(slug_dir: Path, write: bool) -> dict:
         annexes = {}
     text = raw.decode("utf-8")
     newline = "\r\n" if "\r\n" in text else "\n"
-    lines, counts = derive_lines(text.splitlines(), annexes)
-    report = {"slug": slug, "annexes": annexes, **counts}
+    flat = read_flat_dotted(map_path, slug_dir / "exceptions.json")
+    lines, counts = derive_lines(text.splitlines(), annexes, flat)
+    report = {"slug": slug, "annexes": annexes, **counts, **({"flat_dotted": flat} if flat else {})}
     if not write:
         return report
     header = [f"# convention: {CONVENTION}",
@@ -152,6 +185,8 @@ def derive(slug_dir: Path, write: bool) -> dict:
               f"{counts['changed']} of {counts['lines']} owner lines changed "
               f"(annex-of-attached {counts['scope']}, nested dotted {counts['nested']}); "
               "the v1 comments below are kept verbatim as provenance."]
+    if flat:
+        header.insert(1, "# flat dotted exceptions (annotator): " + ", ".join(flat))
     body = newline.join(header + lines) + (newline if text.endswith(("\n", "\r")) else "")
     with out_path.open("x", encoding="utf-8", newline="") as handle:
         handle.write(body)

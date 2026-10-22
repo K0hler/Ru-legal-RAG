@@ -111,6 +111,21 @@ CODE_TITLE = re.compile(
 )
 
 
+def repo_relative(path):
+    """Path recorded in a selection: relative to the repository root, forward slashes."""
+    resolved = Path(path).resolve()
+    try:
+        return resolved.relative_to(PROJECT).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
+def resolve_repo_path(path):
+    """Inverse of repo_relative; absolute paths (older selections) pass through."""
+    path = Path(path)
+    return path if path.is_absolute() else PROJECT / path
+
+
 def _norm(value):
     return " ".join(str(value).split())
 
@@ -128,7 +143,8 @@ def categorize(complex_name, name):
     """Quota category from feed metadata, or None (ignored, not a rejection)."""
     text = _norm(complex_name)
     title = _title(name) or _title(complex_name)
-    if CODE_TITLE.fullmatch(title) and not title.casefold().startswith("о "):
+    if (CODE_TITLE.fullmatch(title) and not title.casefold().startswith(("о ", "об "))
+            and not is_amending(title)):
         return "code"
     for category, pattern in CATEGORY_PREFIXES:
         if pattern.match(text):
@@ -504,6 +520,9 @@ def run(args):
         raise FileExistsError(f"incomplete selection pair in {output.parent}; refusing to run")
     profile = PROFILES[args.profile]
     quotas = override_quotas(profile["quotas"], args.quota)
+    if args.code_candidates and not quotas.get("code", 0):
+        raise ValueError("--code-candidates given but the code quota is zero; "
+                         "drop --code-candidates or set a positive code quota")
     pages_range, long_min = profile["pages_range"], profile["long_min"]
     if args.pages_max is not None:
         if args.pages_max < pages_range[0]:
@@ -520,7 +539,7 @@ def run(args):
             raise ValueError("a code quota requires --code-candidates frozen by freeze-codes")
         code_rows, digest = load_code_candidates(args.code_candidates)
         code_rows = [r for r in code_rows if args.date_from <= r["date"] <= args.date_to]
-        code_reference = {"path": str(Path(args.code_candidates).resolve()), "sha256": digest}
+        code_reference = {"path": repo_relative(args.code_candidates), "sha256": digest}
     publication = PublicationPoolConnector(timeout=25, request_interval=1)
     actual = ActualPravoConnector(timeout=25, request_interval=1)
     ips = LegislationRussiaConnector(timeout=25, request_interval=1)
@@ -727,7 +746,7 @@ def refill_round(batch_dir, feed_cache, expected_sha=None):
     pool = pool_from_cache(json.loads(Path(feed_cache).read_text(encoding="utf-8")), selection["days_sampled"])
     if selection.get("code_candidates"):
         reference = selection["code_candidates"]
-        codes, code_digest = load_code_candidates(reference["path"])
+        codes, code_digest = load_code_candidates(resolve_repo_path(reference["path"]))
         if code_digest != reference["sha256"]:
             raise ValueError("code candidates differ from frozen selection sha256")
         for row in codes:

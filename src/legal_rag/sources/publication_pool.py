@@ -70,7 +70,7 @@ class PublicationPoolConnector(PublicationPravoConnector):
         if route == "/api/Document":
             self._card_bytes = raw
             if (isinstance(value, dict) and isinstance(value.get("name"), str)
-                    and not value["name"].strip()
+                    and value["name"] == ""
                     and isinstance(value.get("documentType"), dict)
                     and value["documentType"].get("name") == "Распоряжение"
                     and isinstance(value.get("signatoryAuthorities"), list)

@@ -4,7 +4,8 @@
   `milestones/m1/04a/M1_04A_BUG_SOURCE_ACQUISITION_2026-10-22.md` ("Результат").
   Future selection schema /3 uses `publication-pravo-pool/2`, retains per-item
   feed diagnostics, and requires `--code-candidates` when the code quota is
-  positive. `assets/select_m1_04a_pool.py freeze-codes --day ISO --output
+  positive (refused with a zero code quota; the recorded path is repo-relative;
+  code titles exclude «О/Об…» and amending forms). `assets/select_m1_04a_pool.py freeze-codes --day ISO --output
   DIR/selection.json` freezes all code candidates from explicit days before
   selection/body acquisition; this is a bounded targeted pool, not a census.
   KAS publication 2015-03-09 declares 480 pages, so using it requires an explicit
@@ -88,7 +89,8 @@
   «N.M» nests under an existing «N.», exceptions noted by the annotator); v1 §8
   proposals 3–5 remain proposals. `assets/derive_m1_04a_gold_v2.py` derives v2
   gold mechanically from frozen v1 gold with a per-document annex map (data, not
-  code); `run_m1_04a_first_pass.py rescore --gold-suffix gold-v2` and
+  code; optional `flat_dotted` in the map and annotator `exceptions.json` keep
+  listed «N.M» flat, empty by default); `run_m1_04a_first_pass.py rescore --gold-suffix gold-v2` and
   `classify_m1_04a_errors.py --gold-suffix gold-v2` score it. Batch 2 report
   section 10 is a development re-score (v1 1464/1782); never replace the 60.4%
   first-pass ledger entry with it.

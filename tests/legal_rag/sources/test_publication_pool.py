@@ -118,3 +118,9 @@ def test_unknown_signature_is_not_accepted_as_pdf(monkeypatch, raw):
     replay(monkeypatch, [card(name="Об авторском примере"), raw])
     with pytest.raises(PublicationPravoFailure, match="not PDF"):
         Connector().fetch(EO)
+
+
+def test_whitespace_only_order_name_is_not_replaced(monkeypatch):
+    replay(monkeypatch, [card(name="   ")])
+    with pytest.raises(PublicationPravoFailure, match="document card is not valid"):
+        Connector().fetch(EO)
