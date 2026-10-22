@@ -139,6 +139,12 @@
   A body caption up to 300 characters is accepted when its reference names the act or a capitalised document
   («к Порядку …», «к СП …»); a caption ending in a dot is a sentence unless it ends in «г.». Regression
   `20261022-dev-regression-cycle3-b2`: 6968/7072 no_section (+308: fz-431/433, fsnson-282), `cross_scope_v2` 0, no drops.
+  Fix round 1 (`…-cycle3-b2-r2`, same scores): an act word names the act only for the act's own kind (header line
+  «ПОСТАНОВЛЕНИЕ»/«ПРИКАЗ»/…, else the first approval caption «УТВЕРЖДЕН приказом …») or with «настоящему»; unknown
+  kind -> act. A bare number («Приложение 2», no №/N/Н/Ν) needs a «к …» reference on the line or next paragraph, a
+  Page-header, or being the first text paragraph of its page. A final dot is accepted after «г.», DD.MM.YYYY or
+  «№ <number>»; a comma/hyphen/function-word tail is a broken sentence. Attached-document captions need a
+  capitalised referent; with two attached documents the annex goes to the last opened one (known limitation).
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

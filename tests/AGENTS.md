@@ -25,6 +25,8 @@
   Cycle 3 B2: long annex captions to the act («Приложение 1 к Федеральному закону "…"» -> `A/AN1`)
   and to an attached document («Приложение к Порядку …» -> `S/AN`), and in-sentence references
   («согласно приложению 1», a sentence starting «Приложение … » and ending in a dot) open no annex.
+  Fix round 1: «к приказу …» inside a resolution stays with the attached document (own-kind rule), bare
+  «Приложение 2» between points and a broken sentence open nothing, number signs №/N/Н, final dots after a number/date.
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only

@@ -693,3 +693,56 @@ def test_annex_reference_inside_a_sentence_opens_no_annex():
     assert got["2.3"] == "S/I/1" and got["2.4"] == "S/I/1" and got["2.5"] == "S/I/1"
     assert got["2.6"] == "S/I/2"
     assert not any(owner and "/AN" in owner for owner in got.values())
+
+
+def ordered_porydok(*tail, approved_by="приказом Министерства"):
+    return [[("Text", "1. Утвердить прилагаемый Порядок."), ("Text", "Министр", 1200)],
+            [("Text", f"УТВЕРЖДЕН\n{approved_by}", 1000), ("Section-header", "I. Общие положения"),
+             ("Text", "1. Первый пункт."), *tail]]
+
+
+def test_act_word_referent_names_the_act_only_for_its_own_kind():
+    # R1a: in a resolution, «к приказу Минфина …» names a foreign act: annex of the attached document
+    pages = ordered_porydok(("Text", "Приложение № 2 к приказу Минфина России от 12 мая 2020 г. № 5н", 900),
+                            ("Text", "1. Позиция формы."), approved_by="постановлением Правительства")
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/AN2" and got["2.4"] == "S/AN2/1"
+    # the act kind can also come from the act header line
+    pages[0].insert(0, ("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ\nПОСТАНОВЛЕНИЕ"))
+    pages[1][0] = ("Text", "УТВЕРЖДЕН", 1000)
+    assert owners(S.build(extraction(pages)))["2.3"] == "S/AN2"
+    # R1b: in an order, «к приказу …» names the act itself
+    pages = ordered_porydok(("Text", "Приложение № 1\nк приказу Министерства\nот 12 мая 2020 г. № 5", 900),
+                            ("Text", "1. Позиция."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "A/AN1" and got["2.4"] == "A/AN1/1"
+    # «к настоящему постановлению» names the act whatever the approval caption says
+    pages = ordered_porydok(("Text", "Приложение № 3 к настоящему постановлению", 900), ("Text", "1. Позиция."))
+    assert owners(S.build(extraction(pages)))["2.3"] == "A/AN3"
+
+
+def test_bare_annex_number_needs_evidence():
+    # R2a: a bare «Приложение 2» line between points opens nothing
+    got = owners(S.build(extraction(ordered_porydok(("Text", "Приложение 2"), ("Text", "2. Второй пункт.")))))
+    assert got["2.3"] == "S/I/1" and got["2.4"] == "S/I/2"
+    # R2b: a broken sentence starting with a caption-like phrase opens nothing
+    sentence = ("Text", "Приложение 3 к настоящему Порядку содержит перечень форм, которые")
+    got = owners(S.build(extraction(ordered_porydok(sentence, ("Text", "2. Второй пункт.")))))
+    assert got["2.3"] == "S/I/1" and got["2.4"] == "S/I/2"
+    # evidence: the reference in the next paragraph, or the first body line of a page
+    pages = ordered_porydok(("Text", "Приложение 2", 1000), ("Text", "к Порядку", 1000), ("Text", "1. Строка."))
+    assert owners(S.build(extraction(pages)))["2.5"] == "S/AN2/1"
+    pages = ordered_porydok() + [[("Text", "Приложение 2", 1000), ("Title", "ФОРМА"), ("Text", "1. Строка.")]]
+    assert owners(S.build(extraction(pages)))["3.2"] == "S/AN2/1"
+    # a number sign is evidence enough: «№», Latin «N», Cyrillic «Н»
+    for sign in ("№ ", "N ", "Н "):
+        pages = ordered_porydok(("Text", f"Приложение {sign}2"), ("Text", "1. Строка."))
+        assert owners(S.build(extraction(pages)))["2.4"] == "S/AN2/1", sign
+
+
+def test_caption_final_dot_after_number_or_numeric_date():
+    # R5: a caption may end in «№ 5н.» or a DD.MM.YYYY date with a dot
+    for caption in ("Приложение № 1 к Порядку, утв. приказом от 01.02.2020 № 5н.",
+                    "Приложение № 1 к Порядку, утвержденному приказом от 01.02.2020."):
+        got = owners(S.build(extraction(ordered_porydok(("Text", caption, 900), ("Text", "1. Строка.")))))
+        assert got["2.3"] == "S/AN1" and got["2.4"] == "S/AN1/1", caption

@@ -132,8 +132,15 @@ def load_regions(extraction: dict) -> list[Region]:
 
 
 APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]?)\b(?:\s|$)")  # case-sensitive capitalised word
-# the number may follow «№», «N» or a plain space: «Приложение № 2», «Приложение N 2», «Приложение 2»
-ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?:№|N)?\s*(\d+))?(?:\s+(к\s.+))?$")
+# The number follows a number sign («№», Latin «N», Cyrillic «Н», OCR Greek «Ν») or a plain space:
+# «Приложение № 2», «Приложение N 2», «Приложение 2». A bare number needs more evidence (annex_caption).
+ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?P<sign>№|N|Н|Ν)?\s*(?P<number>\d+))?(?:\s+(?P<ref>к\s.+))?$")
+# A caption is not a sentence: a final dot only after a date («г.», «01.02.2020.») or a number «№ 5н.».
+CAPTION_FINAL_DOT = re.compile(r"(?:\sг\.|\d{1,2}\.\d{1,2}\.\d{4}\.|(?:№|N)\s*\d[\w/-]*\.)$")
+# A caption ends in a noun, a quote, a date or a number, never mid-phrase: a final comma, hyphen or a
+# function word («которые», «и», «в») is a broken sentence («Приложение 3 к Порядку содержит формы, которые»).
+CAPTION_BROKEN_TAIL = re.compile(r"(?:[,\-–—]|(?<![А-Яа-яЁё])(?:который|которая|которое|которые|которых|что|и|или|а"
+                                 r"|но|в|во|на|с|со|по|для|к|о|об|из|за|при|без|не))$")
 
 
 # A standalone draft mark: «Проект» / «ПРОЕКТ», optionally followed by one word that
@@ -166,26 +173,69 @@ ACT_REFERENT = re.compile(r"^к\s+(?:настоящему\s+)?(?:(?:федера
 DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[А-ЯЁA-Z]")
 
 
-def annex_to_act(reference: str) -> bool:
-    return bool(ACT_REFERENT.match(reference))
+# The kind of the act itself, from a header line («ПОСТАНОВЛЕНИЕ», «ПРИКАЗ», «ФЕДЕРАЛЬНЫЙ ЗАКОН») or
+# from the approval caption («УТВЕРЖДЕН приказом …»); it decides whether «к приказу» names the act.
+ACT_KIND_DATIVE = {"закону": "закон", "кодексу": "кодекс", "постановлению": "постановление", "приказу": "приказ",
+                   "указу": "указ", "распоряжению": "распоряжение", "решению": "решение"}
+ACT_HEADER = re.compile(r"^(?:#+\s*)?(?:ФЕДЕРАЛЬНЫЙ\s+(?:КОНСТИТУЦИОННЫЙ\s+)?)?(ЗАКОН|ПОСТАНОВЛЕНИЕ|ПРИКАЗ|УКАЗ"
+                        r"|РАСПОРЯЖЕНИЕ|РЕШЕНИЕ)$")
+APPROVED_BY = re.compile(r"(?<![а-яё])(законом|постановлением|приказом|указом|распоряжением|решением)(?![а-яё])",
+                         re.IGNORECASE)
+INSTRUMENTAL_KIND = {"законом": "закон", "постановлением": "постановление", "приказом": "приказ", "указом": "указ",
+                     "распоряжением": "распоряжение", "решением": "решение"}
 
 
-def annex_caption(p) -> re.Match | None:
+def act_kind_of_header(raw: str) -> str | None:
+    """A whole header line naming the act's own kind: «ПОСТАНОВЛЕНИЕ», «ФЕДЕРАЛЬНЫЙ ЗАКОН»."""
+    for line in raw.splitlines():
+        m = ACT_HEADER.match(line.strip())
+        if m:
+            return m.group(1).lower()
+    return None
+
+
+def act_kind_of_approval(text: str) -> str | None:
+    """The act kind of an approval caption: «УТВЕРЖДЕНЫ постановлением Правительства» -> постановление."""
+    m = APPROVED_BY.search(text)
+    return INSTRUMENTAL_KIND[m.group(1).lower()] if m else None
+
+
+def annex_to_act(reference: str, act_kind: str | None = None) -> bool:
+    """The reference names the act itself: «к настоящему приказу», or an act word of the act's own
+    kind («к приказу …» in an order). Another kind («к приказу Минфина …» inside a resolution) is
+    a foreign act, so the annex stays with the current attached document. With an unknown act
+    kind any act word names the act."""
+    m = ACT_REFERENT.match(reference)
+    if not m:
+        return False
+    words = m.group(0).lower().split()
+    if "настоящему" in words or act_kind is None:
+        return True
+    return ACT_KIND_DATIVE[words[-1]] == act_kind
+
+
+def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Match | None:
     """An annex caption paragraph «Приложение [№] N [к <referent>]», never a sentence: a final
-    dot is accepted only after a date («… от 12 мая 2020 г.»). A body caption is short (<=
-    CAPTION_MAX). A longer one, up to CAPTION_BLOCK_MAX, is a caption when it is printed as a
-    page header (positional evidence) or when its reference names the act or a document
-    («Приложение 1 к Федеральному закону "О бюджете …"», «Приложение к Порядку …,
-    утвержденному приказом …»). A reference inside a sentence («согласно приложению 1»)
-    does not start the paragraph and opens nothing."""
+    dot only after a date or a number (CAPTION_FINAL_DOT) and no broken tail (CAPTION_BROKEN_TAIL).
+    A bare number without a number sign («Приложение 2») needs evidence: a «к …» reference on
+    the line or in the next paragraph, a page-header category, or the first text paragraph of its
+    page (a table or picture above it does not count).
+    A body caption is short (<= CAPTION_MAX). A longer one, up to CAPTION_BLOCK_MAX, is a caption
+    when it is printed as a page header (positional evidence) or when its reference names the
+    act or a capitalised document («Приложение 1 к Федеральному закону "О бюджете …"»,
+    «Приложение к Порядку …, утвержденному приказом …»). A reference inside a sentence
+    («согласно приложению 1») does not start the paragraph and opens nothing."""
     text = p.text
     m = ANNEX.match(text)
-    if not m or (text.endswith(".") and not re.search(r"\sг\.$", text)):
+    if not m or (text.endswith(".") and not CAPTION_FINAL_DOT.search(text)) or CAPTION_BROKEN_TAIL.search(text):
+        return None
+    if m.group("number") and not m.group("sign") and not (
+            m.group("ref") or next_text.startswith("к ") or p.first.category == "Page-header" or first_on_page):
         return None
     if len(text) <= CAPTION_MAX:
         return m
-    reference = m.group(2) or ""
-    if len(text) < CAPTION_BLOCK_MAX and (p.first.category == "Page-header" or annex_to_act(reference)
+    reference = m.group("ref") or ""
+    if len(text) < CAPTION_BLOCK_MAX and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
                                           or DOCUMENT_REFERENT.match(reference)):
         return m
     return None
@@ -559,11 +609,18 @@ def build(extraction: dict) -> dict:
     approved_count = 0
     approved_scope = "S"
     scope_captions: set[str] = set()  # caption texts of the current scope
+    act_kind = None  # the act's own kind: a header line, else the first approval caption
+    page_first: dict[int, Paragraph] = {}  # the first body text paragraph of each page
+    for q in paragraphs:
+        if q.flow == "body" and q.kind == "text":
+            page_first.setdefault(q.first.page, q)
     for i, p in enumerate(paragraphs):
         if p.flow == "footnote" or p.kind in {"picture"}:
             scopes[-1][1].append(p)
             continue
         text = p.text
+        if not approved_opened and act_kind is None and p.kind == "text":
+            act_kind = act_kind_of_header(p.first.raw)
         # A running header/footer (same text on REPEAT_THRESHOLD+ regions) repeating a caption
         # of the current scope continues that scope instead of reopening it. A caption printed
         # only twice is not running: two approved texts may carry identical captions.
@@ -574,6 +631,8 @@ def build(extraction: dict) -> dict:
         project = caption_here and is_project_caption(text)
         if approval or project:
             p.kind = "approval"
+            if approval and act_kind is None:
+                act_kind = act_kind_of_approval(text)
             if project:
                 p.evidence.append({"caption": "project", "rule": "standalone «Проект» opens an attached document"})
             previous = next((q for q in reversed(paragraphs[:i]) if q.flow == "body" and q.kind != "picture"), None)
@@ -592,10 +651,11 @@ def build(extraction: dict) -> dict:
             scopes[-1][1].append(p)
             scope_captions.add(text)
             continue
-        m = annex_caption(p) if caption_here else None
+        nxt = next((q for q in paragraphs[i + 1:] if q.flow == "body" and q.kind == "text"), None)
+        m = annex_caption(p, nxt.text if nxt is not None else "", page_first.get(p.first.page) is p) \
+            if caption_here else None
         if m:
             p.kind = "annex"
-            nxt = next((q for q in paragraphs[i + 1:] if q.flow == "body" and q.kind == "text"), None)
             if nxt is not None and not running_caption(nxt) and (
                     (APPROVAL.match(nxt.text) and not approved_opened) or is_project_caption(nxt.text)):
                 # "Приложение / УТВЕРЖДЕНЫ ..." on the approved text, or "Приложение / Проект"
@@ -604,10 +664,10 @@ def build(extraction: dict) -> dict:
                 pending_annex_caption = p
                 scopes[-1][1].append(p)
                 continue
-            number = m.group(1)
+            number = m.group("number")
             label = f"AN{number}" if number else "AN"
-            reference = m.group(2) or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
-            to_act = annex_to_act(reference)
+            reference = m.group("ref") or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
+            to_act = annex_to_act(reference, act_kind)
             base = approved_scope if approved_opened and not to_act else "A"
             if running and f"{base}/{label}" == scopes[-1][0]:
                 p.kind = "text"  # the current annex's caption repeated in a header: no new scope
@@ -615,7 +675,9 @@ def build(extraction: dict) -> dict:
                 continue
             scope = f"{base}/{label}"
             p.evidence.append({"annex_reference": reference or None, "attached_to": base,
-                               "rule": "reference to the act -> act; otherwise the current approved text"})
+                               "act_kind": act_kind,
+                               "rule": "reference to the act (its own kind or «настоящему») -> act; "
+                                       "otherwise the current approved text"})
             scopes.append((scope, [p]))
             scope_captions = {text}
             continue
