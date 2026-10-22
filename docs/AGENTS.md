@@ -98,8 +98,11 @@
   strict 9 because v1 builds no «Раздел» level) and the without-KAS figure
   (1161/1253). The evaluator's `first_scope` counts 0 cross-scope, but 30
   annex-of-attached-document regions went silently to the body (§7 violated).
-  `classify_m1_04a_errors.py` gained batch-3 evidence rules that fire only where
-  batch-2 rules found no class (batch-1/2 class files unchanged). Batch 3 is now
+  `classify_m1_04a_errors.py` gained batch-3 evidence rules: for v1 every
+  reassigned error was previously unclassified; for code-final one error
+  (fsnson 14.1) moved from a batch-2 class to ATTACHED_ANNEX because three new
+  checks run before the batch-2 rules (batch-1/2 outputs unchanged). Without KAS
+  and the award-list decree: v1 954/1046 (91.2%). Batch 3 is now
   development. Open convention question: `S/AN` vs `S/AN1` for a single unnumbered annex.
 - `milestones/m1/04a/M1_04A_ANNOTATION_CONVENTION_v2.md` (`m1-04a-annotation/v2`,
   22.10.2026) adds the owner's two rules (attached-document annexes `S/AN<n>`;
