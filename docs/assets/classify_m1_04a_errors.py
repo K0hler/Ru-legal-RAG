@@ -29,7 +29,14 @@ owner (caption or scale line left at the annex root), amendment quote
 also records ``cross_scope`` (silent: owner given, in another attached-document
 scope than gold, by the evaluator's ``first_scope``).
 
+A rescore directory (no ``freeze.json``) takes the batch from the run it was
+rescored from. ``--gold-suffix gold-v2`` reads ``agent-<slug>.gold-v2.txt`` (gold
+derived under annotation convention v2) for the attached-document count and must
+match the gold recorded in the rescore summary; under v2 a scheme-description
+list may sit in an annex of an attached document (``S/AN<n>``) as well as in ``S<k>``.
+
     python docs/assets/classify_m1_04a_errors.py --run <first-pass dir> --output <new json> [--system prototype-v1]
+        [--gold-suffix gold-v2]
 """
 
 from __future__ import annotations
@@ -134,7 +141,7 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         cause = DOTTED
     elif p.startswith(g + "/") and text.startswith("(") and re.search(r"подпис|фамилия|должност", text):
         cause = SIGNATURE
-    elif p.startswith(g + "/") and re.match(r"^S\d*$", g):
+    elif p.startswith(g + "/") and re.match(r"^S(\d*|/AN\d+)$", g):
         cause = SCHEME_LIST
     elif p.startswith(g + "/") and g in {"A", "S"}:
         cause = requisite_kind(category, text)
@@ -165,10 +172,15 @@ def main(argv=None) -> None:
     parser.add_argument("--run", required=True, help="first-pass directory with summary.json and eval/")
     parser.add_argument("--output", required=True, help="new JSON file")
     parser.add_argument("--system", default="prototype", help="eval prefix, e.g. prototype-v1 (batch 2+)")
+    parser.add_argument("--gold-suffix", default="gold", help="gold file agent-<slug>.<suffix>.txt, e.g. gold-v2")
     args = parser.parse_args(argv)
     run = Path(args.run)
     summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
+    if summary.get("gold", "agent-<slug>.gold.txt") != f"agent-<slug>.{args.gold_suffix}.txt":
+        raise SystemExit(f"run was scored against {summary.get('gold')}, not --gold-suffix {args.gold_suffix}")
     freeze = run / "freeze.json"
+    if not freeze.exists() and "rescored_from" in summary:
+        freeze = ROOT / summary["rescored_from"] / "freeze.json"
     batch = json.loads(freeze.read_text(encoding="utf-8")).get("batch", "batch-01") if freeze.exists() else "batch-01"
     evaluator = None
     if batch != "batch-01":
@@ -185,7 +197,7 @@ def main(argv=None) -> None:
         errors = json.loads((run / "eval" / f"{args.system}-{slug}.json").read_text(encoding="utf-8"))["errors"]
         attached = None
         if evaluator is not None:
-            gold_path = M / "gold" / slug / f"agent-{slug}.gold.txt"
+            gold_path = M / "gold" / slug / f"agent-{slug}.{args.gold_suffix}.txt"
             attached = evaluator.attached_count(evaluator.load_gold(gold_path))
         for error in errors:
             category, text = info[error["region"]]
@@ -207,6 +219,8 @@ def main(argv=None) -> None:
     if evaluator is not None:
         record.update({"schema_version": "m1-04a-error-classes/3", "system": args.system, "batch": batch,
                        "cross_scope": sum(1 for r in rows if r["cross_scope"])})
+        if args.gold_suffix != "gold":
+            record["gold"] = f"agent-<slug>.{args.gold_suffix}.txt"
     with open(args.output, "x", encoding="utf-8") as handle:
         json.dump(record, handle, ensure_ascii=False, indent=1, sort_keys=True)
     print(json.dumps({k: sum(v.values()) for k, v in counts.items()}, ensure_ascii=False, indent=1))

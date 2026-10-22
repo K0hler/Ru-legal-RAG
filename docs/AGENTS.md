@@ -71,6 +71,15 @@
   `run_m1_04a_first_pass.py --prototype LABEL=PATH` (freeze schema /3) and
   `classify_m1_04a_errors.py --system` with evidence rules (batch 2+) were
   added; batch-1 outputs still reproduce byte for byte.
+- `milestones/m1/04a/M1_04A_ANNOTATION_CONVENTION_v2.md` (`m1-04a-annotation/v2`,
+  22.10.2026) adds the owner's two rules (attached-document annexes `S/AN<n>`;
+  «N.M» nests under an existing «N.», exceptions noted by the annotator); v1 §8
+  proposals 3–5 remain proposals. `assets/derive_m1_04a_gold_v2.py` derives v2
+  gold mechanically from frozen v1 gold with a per-document annex map (data, not
+  code); `run_m1_04a_first_pass.py rescore --gold-suffix gold-v2` and
+  `classify_m1_04a_errors.py --gold-suffix gold-v2` score it. Batch 2 report
+  section 10 is a development re-score (v1 1464/1782); never replace the 60.4%
+  first-pass ledger entry with it.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

@@ -17,10 +17,13 @@ to ``code-final`` and the run writes ``prototype/`` exactly as batch 1 did (sche
 With one or more explicit ``--prototype LABEL=PATH`` the freeze records each file's
 SHA-256 (schema /3) and the run writes ``prototype-LABEL/``, ``eval/prototype-LABEL-<slug>.json``
 and summary rows keyed ``prototype-LABEL``; ``sample`` then takes ``--system prototype-LABEL``.
-  rescore  --out DIR --source RUN_DIR [--convention v1]
+  rescore  --out DIR --source RUN_DIR [--convention v1] [--gold-suffix gold-v2]
            -> re-scores the saved outputs of an earlier run under a convention
-              (systems are not re-run); checks that the all-regions rescore
-              reproduces the source summary rows.
+              (systems are not re-run); checks that rescoring the frozen gold
+              under the source run's convention reproduces its summary rows.
+              ``--gold-suffix`` scores against ``agent-<slug>.<suffix>.txt``
+              (gold derived under annotation convention v2, verified against its
+              ``.sha256`` receipt); every system of the source run is rescored.
   sample   --out FILE --source RUN_DIR --seed N --size K
            -> random gold sample with OCR text for owner review (+ ``--markdown``)
 
@@ -73,8 +76,17 @@ def extraction(slug: str) -> Path:
     return path
 
 
-def gold(slug: str) -> Path:
-    return M / "gold" / slug / f"agent-{slug}.gold.txt"
+def gold(slug: str, suffix: str = "gold") -> Path:
+    return M / "gold" / slug / f"agent-{slug}.{suffix}.txt"
+
+
+def checked_gold(slug: str, suffix: str) -> Path:
+    """Derived gold whose hash matches its write-once ``agent-<slug>.<suffix>.sha256`` receipt."""
+    path = gold(slug, suffix)
+    receipt = path.with_name(f"agent-{slug}.{suffix}.sha256").read_text(encoding="utf-8")
+    if f"{sha(path)}  {path.name}" not in receipt.splitlines():
+        raise SystemExit(f"{rel(path)} does not match its receipt")
+    return path
 
 
 def source(batch: str, slug: str) -> Path:
@@ -278,8 +290,10 @@ def do_run(out: Path) -> None:
 # --------------------------------------------------------------------------- rescore
 
 
-def do_rescore(out: Path, src: Path, convention: str) -> None:
-    """Score the saved outputs of ``src`` under ``convention``; systems are not re-run."""
+def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = None) -> None:
+    """Score the saved outputs of ``src`` under ``convention``; systems are not re-run.
+
+    Without ``gold_suffix`` the output is that of the batch-1 rescore (keys and files)."""
     sys.path.insert(0, str(ROOT / "src"))
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
     src_freeze = json.loads((src / "freeze.json").read_text(encoding="utf-8"))
@@ -288,6 +302,8 @@ def do_rescore(out: Path, src: Path, convention: str) -> None:
         if sha(ROOT / name) != digest:
             raise SystemExit(f"gold changed after freeze: {name}")
     inputs = {rel(p): sha(p) for p in [src / "freeze.json", src / "summary.json", EVALUATOR, Path(__file__).resolve()]}
+    src_convention = src_summary.get("convention", "all-regions")
+    proto_systems = [s for s in systems(src_summary["rows"]) if s != "current"]
     out.mkdir(parents=True, exist_ok=False)
     (out / "eval").mkdir()
     rows, check = [], {}
@@ -296,33 +312,51 @@ def do_rescore(out: Path, src: Path, convention: str) -> None:
         ext_path = extraction(slug)
         inputs[rel(ext_path)] = sha(ext_path)
         ext = json.loads(ext_path.read_text(encoding="utf-8"))
-        full = evaluator.load_gold(gold(slug))
-        proto_path, cur_path = src / "prototype" / f"{slug}.json", src / "current" / f"{slug}.json"
-        inputs[rel(proto_path)], inputs[rel(cur_path)] = sha(proto_path), sha(cur_path)
-        owners, cont = evaluator.from_logical(json.loads(proto_path.read_text(encoding="utf-8")))
+        frozen = evaluator.load_gold(gold(slug))
+        full = frozen
+        if gold_suffix:
+            scored_gold = checked_gold(slug, gold_suffix)
+            inputs[rel(scored_gold)] = sha(scored_gold)
+            full = evaluator.load_gold(scored_gold)
+            if list(full) != list(frozen):
+                raise SystemExit(f"{rel(scored_gold)}: region keys differ from the frozen gold")
+        frozen, _ = apply_convention(frozen, ext, src_convention)
+        outputs = {}
+        for system in proto_systems:
+            proto_path = src / system / f"{slug}.json"
+            inputs[rel(proto_path)] = sha(proto_path)
+            outputs[system] = evaluator.from_logical(json.loads(proto_path.read_text(encoding="utf-8")))
+        cur_path = src / "current" / f"{slug}.json"
+        inputs[rel(cur_path)] = sha(cur_path)
         current = json.loads(cur_path.read_text(encoding="utf-8"))
-        # The all-regions rescore must reproduce the source run row exactly.
-        _, p_all = score(evaluator, full, owners, cont)
-        _, c_all = score(evaluator, full, current["owners"])
-        check[slug] = (p_all == src_row["prototype"]
-                       and c_all == {k: v for k, v in src_row["current"].items() if k != "meta"}
-                       and len(full) == src_row["regions"])
+        # Rescoring the frozen gold under the source run's convention must reproduce its row exactly.
+        ok = len(frozen) == src_row["regions"]
+        for system, (owners, cont) in outputs.items():
+            ok = ok and score(evaluator, frozen, owners, cont)[1] == src_row[system]
+        check[slug] = ok and score(evaluator, frozen, current["owners"])[1] == {
+            k: v for k, v in src_row["current"].items() if k != "meta"}
         g, removed = apply_convention(full, ext, convention)
         row = {"slug": slug, "regions": len(g), "not_scored": removed}
-        res, row["prototype"] = score(evaluator, g, owners, cont)
-        write_new(out / "eval" / f"prototype-{slug}.json", res)
+        for system, (owners, cont) in outputs.items():
+            res, row[system] = score(evaluator, g, owners, cont)
+            write_new(out / "eval" / f"{system}-{slug}.json", res)
         res, row["current"] = score(evaluator, g, current["owners"])
         row["current"]["meta"] = current["meta"]
         write_new(out / "eval" / f"current-{slug}.json", res)
         rows.append(row)
     if not all(check.values()):
-        raise SystemExit(f"all-regions rescore differs from the source run: {check}")
-    write_new(out / "summary.json", {
+        raise SystemExit(f"rescore of the frozen gold differs from the source run: {check}")
+    record = {
         "schema_version": "m1-04a-first-pass-summary/2", "convention": convention,
         "rescored_from": rel(src), "systems_rerun": False, "all_regions_matches_source": True,
         "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": inputs, "rows": rows, "total": totals(rows),
-        "source_total_all_regions": src_summary["total"]})
+        "source_total_all_regions": src_summary["total"]}
+    if gold_suffix:
+        del record["all_regions_matches_source"], record["source_total_all_regions"]
+        record.update({"gold": f"agent-<slug>.{gold_suffix}.txt", "source_convention": src_convention,
+                       "frozen_gold_matches_source": True, "source_total": src_summary["total"]})
+    write_new(out / "summary.json", record)
     print(json.dumps(totals(rows), ensure_ascii=False))
 
 
@@ -398,6 +432,7 @@ def main(argv=None) -> None:
     parser.add_argument("--prototype", action="append", metavar="LABEL=PATH",
                         help="freeze: explicit prototype file (repeatable); default pins code-final")
     parser.add_argument("--system", default="prototype", help="sample: eval prefix, e.g. prototype-v1")
+    parser.add_argument("--gold-suffix", help="rescore: score against agent-<slug>.<suffix>.txt, e.g. gold-v2")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
     if args.phase == "freeze":
@@ -408,7 +443,7 @@ def main(argv=None) -> None:
     elif args.phase == "run":
         do_run(out)
     elif args.phase == "rescore":
-        do_rescore(out, Path(args.source).resolve(), args.convention)
+        do_rescore(out, Path(args.source).resolve(), args.convention, args.gold_suffix)
     else:
         sample = build_sample(Path(args.source).resolve(), args.seed, args.size, args.system)
         _write_sample(out, sample)

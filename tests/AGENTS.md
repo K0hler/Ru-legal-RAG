@@ -19,6 +19,11 @@
   only Picture/noise gold keys, and the gold freeze hashes the annotator input,
   refuses a changed gold receipt and never overwrites. No corpus files.
 
+- `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
+  lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested
+  only under an existing sibling «N.» (recursively), typed `ст12.1` untouched,
+  bad/stale/colliding maps refused, write-once output and a hash-pinned map.
+
 - `corpus/test_logical_text.py` checks stage-2 `logical-text/1` with authored
   extractions: running-noise reasons (incl. digit-normalized repeats), captions
   kept as content, cross-page body/footnote joins and their D1/D2 refusals,

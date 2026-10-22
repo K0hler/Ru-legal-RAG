@@ -33,6 +33,12 @@
   names that must not be copied into docs). Gold frozen in
   `20261022-batch-02-gold-freeze/`. `pool/batch-02/status.json` records
   measured -> development.
+- Convention v2 (22.10.2026): `gold/<slug>/agent-<slug>.gold-v2.txt` is derived
+  write-once from the frozen v1 gold by `docs/assets/derive_m1_04a_gold_v2.py`
+  with the hand-written annex map `agent-<slug>.v2-map.json` (pinned to the v1
+  gold hash) and receipt `.gold-v2.sha256`; only batch 2 has them (pp-931 and
+  favt changed, batch 1 would not change). `experiments/20261022-batch-02-rescore-v2/`
+  rescores the saved first-pass outputs against it (no system re-run); development only.
 
 - Prototype regressions: `m1/m1-04a/experiments/20261021-dev-regression-<tag>/`
   (baseline, a2, a3 to a3-r4, a4, a4-r2, v1; `summary.json` + `errors.json`, one
