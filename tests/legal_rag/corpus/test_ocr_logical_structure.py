@@ -236,6 +236,67 @@ def test_equivalence_applies_in_all_variants():
     assert result["no_section"]["correct"] == 1 and result["numbers"]["correct"] == 1
 
 
+def gold_lines(*paths):
+    return {f"1.{i}": {"owners": p.split("|"), "continuation": False} for i, p in enumerate(paths)}
+
+
+def test_single_annex_documents_counted_per_document_from_gold():
+    assert EVAL.single_annex_documents(gold_lines("S/1", "S/AN1/2", "S/AN1")) == {"S"}
+    assert EVAL.single_annex_documents(gold_lines("S/AN/2", "S/AN1/3")) == {"S"}       # AN and AN1: one annex
+    assert EVAL.single_annex_documents(gold_lines("S/AN1/2", "S/AN2/3")) == set()      # two annexes
+    assert EVAL.single_annex_documents(gold_lines("S/AN4/2")) == set()                 # only annex 4 seen
+    assert EVAL.single_annex_documents(gold_lines("A/1|S/AN2", "S/AN1")) == set()      # alternatives count
+    assert EVAL.single_annex_documents(gold_lines("A/AN/1", "S2/AN1", "S3/AN1", "S3/AN2")) == {"A", "S2"}
+
+
+def test_single_annex_equivalence_only_with_exactly_one_annex():
+    # One annex of the attached document: S/AN == S/AN1 in every variant, only with the flag.
+    gold = gold_lines("S/I/1", "S/AN1/II/2", "S/AN1")
+    predicted = {"1.0": "S/I/1", "1.1": "S/AN/II/2", "1.2": "S/AN"}
+    for name in ("strict", "no_section", "numbers"):
+        assert EVAL.evaluate(gold, predicted, single_annex=True)[name]["correct"] == 3
+        assert EVAL.evaluate(gold, predicted)[name]["correct"] == 1
+    result = EVAL.evaluate(gold, predicted, single_annex=True)
+    assert result["single_annex_documents"] == ["S"] and result["errors"] == []
+    assert "single_annex_documents" not in EVAL.evaluate(gold, predicted)
+    # The other direction (gold unnumbered, prediction numbered) as well.
+    assert EVAL.evaluate(gold_lines("S/AN/2"), {"1.0": "S/AN1/2"}, single_annex=True)["strict"]["correct"] == 1
+    # Two annexes: numbering must match exactly.
+    two = gold_lines("S/AN1/2", "S/AN2/3")
+    assert EVAL.evaluate(two, {"1.0": "S/AN/2", "1.1": "S/AN2/3"}, single_annex=True)["strict"]["correct"] == 1
+    # S<k>/AN == S<k>/AN1, and A/AN/... == A/AN1/... inside the act (two attached documents, no S alias).
+    many = gold_lines("S/1", "S2/AN1/4", "A/AN1/5")
+    assert EVAL.attached_count(many) == 2      # first_scope counts A/AN1 as S
+    got = EVAL.evaluate(many, {"1.0": "S/1", "1.1": "S2/AN/4", "1.2": "A/AN/5"}, single_annex=True)
+    assert got["strict"]["correct"] == 3
+    # Equivalence is per document: S has one annex, S2 has two.
+    mixed = gold_lines("S/AN1/1", "S2/AN1/1", "S2/AN2/1")
+    got = EVAL.evaluate(mixed, {"1.0": "S/AN/1", "1.1": "S2/AN/1", "1.2": "S2/AN2/1"}, single_annex=True)
+    assert got["strict"]["correct"] == 2 and [e["region"] for e in got["errors"]] == ["1.1"]
+    # The single-attached-document alias still applies on top.
+    assert EVAL.equivalent("S/4", "A/AN/4", 1, single=frozenset({"A"}))
+
+
+def test_scope_v2_catches_transfers_between_body_and_annexes():
+    assert [EVAL.scope_v2(p) for p in ("A", "A/ст1/2", "A/AN3/1", "S", "S/II/4", "S/AN1/2", "S2/AN/2")] == [
+        "A", "A", "A/AN3", "S", "S", "S/AN1", "S2/AN"]
+    assert EVAL.scope_v2(None) is None
+    # Annex of the attached document -> its body, and back; between annexes; between documents.
+    assert EVAL.cross_scope_v2("S/AN1/3", "S/3", 1)
+    assert EVAL.cross_scope_v2("S/3", "S/AN1/3", 1)
+    assert EVAL.cross_scope_v2("S/AN1/2", "S/AN2/2", 1)
+    assert EVAL.cross_scope_v2("A/AN2/1", "A/1", 2)
+    assert EVAL.cross_scope_v2("S2/1", "S/1", 2)
+    # Same scope, no owner, and the evaluator's equivalences are not transfers.
+    assert not EVAL.cross_scope_v2("S/II/2", "S/II/3", 1)
+    assert not EVAL.cross_scope_v2("S/AN1/2", None, 1)
+    assert not EVAL.cross_scope_v2("S/4", "A/AN1/5", 1)
+    assert not EVAL.cross_scope_v2("S/AN1/2", "S/AN/3", 1, frozenset({"S"}))
+    assert EVAL.cross_scope_v2("S/AN1/2", "S/AN/3", 1)
+    # The old first_scope does not see a unit inside the approved text as its own scope.
+    assert EVAL.first_scope("S/AN1/3") == EVAL.first_scope("S/3") == "S"
+
+
 LAW = [
     [("Title", "РОССИЙСКАЯ ФЕДЕРАЦИЯ\nФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Text", "Об упразднении некоторых судов"),
      ("Text", "Принят Государственной Думой"),

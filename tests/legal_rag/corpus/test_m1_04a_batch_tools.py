@@ -198,3 +198,30 @@ def test_batch3_error_classes_from_evidence_only():
     assert cls("S/AN3/11", "S/AN3", text="(серия, номер, дата выдачи)") == (C.CAPTION_ROOT, [])
     # A region that starts with a point marker is not an unnumbered subheading.
     assert cls("S/II", "S/II/9", text="9. Государственная услуга")[0] != C.SUBHEADING
+
+
+def test_rescore_scoring_single_annex_is_opt_in():
+    ev = load_script("evaluate_ocr_owner_gold")
+    gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}
+    owners = {"1.1": "S/AN/2", "1.2": "S/AN1/3"}
+    res, row = R.score(ev, gold, owners)
+    assert row["strict"] == 0 and "single_annex_documents" not in res
+    res, row = R.score(ev, gold, owners, single_annex=True)
+    assert row["strict"] == 1 and res["single_annex_documents"] == ["S"]
+    # The remaining error is a transfer from the attached document's body into its annex.
+    (error,) = res["errors"]
+    assert ev.cross_scope_v2(error["gold"], error["predicted"], res["attached_count"], frozenset({"S"}))
+    assert ev.first_scope(error["gold"]) == ev.first_scope(error["predicted"])  # the old check misses it
+
+
+def test_classifier_reads_single_annex_paths_before_evidence_rules():
+    ev = load_script("evaluate_ocr_owner_gold")
+    single = frozenset({"S"})
+    error = {"gold": "S/AN1/2", "predicted": "S/AN/2/а"}
+    read = {"gold": ev.number_single_annex(error["gold"], single),
+            "predicted": ev.number_single_annex(error["predicted"], single)}
+    assert read == {"gold": "S/AN1/2", "predicted": "S/AN1/2/а"}
+    assert C.classify_evidence(read, "Text", "По решению", False) == (C.CLOSING, [])
+    # Without the equivalence the same error is the unnumbered-annex class (batch-3 reading).
+    assert C.classify_evidence({"gold": "S/AN1/2", "predicted": "S/AN/2"}, "Text", "Т", False) == (
+        C.UNNUMBERED_ANNEX, [])

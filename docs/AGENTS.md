@@ -114,6 +114,15 @@
   `classify_m1_04a_errors.py --gold-suffix gold-v2` score it. Batch 2 report
   section 10 is a development re-score (v1 1464/1782); never replace the 60.4%
   first-pass ledger entry with it.
+- Cycle 3 (22.10.2026, owner decision in convention v2 §5): with exactly one
+  annex (`AN`/`AN1`, counted per document from the gold) `<doc>/AN` == `<doc>/AN1`;
+  opt-in `--single-annex` in `evaluate_ocr_owner_gold.py` and
+  `run_m1_04a_first_pass.py rescore` (summary `single_annex_equivalence`), so old
+  outputs reproduce without it. `scope_v2`/`cross_scope_v2` (nearest document or
+  annex) sits beside the unchanged `first_scope`/`cross_scope`; the classifier
+  writes it for such rescores or `--cross-scope-v2`. Rescores `20261022-batch-0{2,3}-rescore-cycle3`:
+  batch 2 unchanged (v1 1464, transfers 278/278), batch 3 v1 4014 (+6 pp-2249),
+  `cross_scope_v2` 30 vs old 0. Batches 1/2 and the old 8 are unaffected.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

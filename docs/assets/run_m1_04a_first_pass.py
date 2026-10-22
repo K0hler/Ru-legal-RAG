@@ -17,13 +17,17 @@ to ``code-final`` and the run writes ``prototype/`` exactly as batch 1 did (sche
 With one or more explicit ``--prototype LABEL=PATH`` the freeze records each file's
 SHA-256 (schema /3) and the run writes ``prototype-LABEL/``, ``eval/prototype-LABEL-<slug>.json``
 and summary rows keyed ``prototype-LABEL``; ``sample`` then takes ``--system prototype-LABEL``.
-  rescore  --out DIR --source RUN_DIR [--convention v1] [--gold-suffix gold-v2]
+  rescore  --out DIR --source RUN_DIR [--convention v1] [--gold-suffix gold-v2] [--single-annex]
            -> re-scores the saved outputs of an earlier run under a convention
               (systems are not re-run); checks that rescoring the frozen gold
               under the source run's convention reproduces its summary rows.
               ``--gold-suffix`` scores against ``agent-<slug>.<suffix>.txt``
               (gold derived under annotation convention v2, verified against its
               ``.sha256`` receipt); every system of the source run is rescored.
+              ``--single-annex`` scores with ``<doc>/AN`` == ``<doc>/AN1`` for a
+              document with exactly one annex (evaluator ``--single-annex``,
+              owner decision 22.10.2026); the reproduction check of the source
+              run still uses the evaluator without it.
   sample   --out FILE --source RUN_DIR --seed N --size K
            -> random gold sample with OCR text for owner review (+ ``--markdown``)
 
@@ -128,8 +132,9 @@ def apply_convention(gold_map: dict, extraction_data: dict, convention: str) -> 
     return {key: value for key, value in gold_map.items() if key not in skip}, removed
 
 
-def score(evaluator, g: dict, owners: dict, cont: dict | None = None) -> tuple[dict, dict]:
-    res = evaluator.evaluate(g, owners, cont)
+def score(evaluator, g: dict, owners: dict, cont: dict | None = None,
+          single_annex: bool = False) -> tuple[dict, dict]:
+    res = evaluator.evaluate(g, owners, cont, single_annex=single_annex)
     row = {k: res[k]["correct"] for k in METRICS}
     if cont is not None:
         row["continuation"] = res.get("continuation")
@@ -290,10 +295,12 @@ def do_run(out: Path) -> None:
 # --------------------------------------------------------------------------- rescore
 
 
-def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = None) -> None:
+def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = None,
+               single_annex: bool = False) -> None:
     """Score the saved outputs of ``src`` under ``convention``; systems are not re-run.
 
-    Without ``gold_suffix`` the output is that of the batch-1 rescore (keys and files)."""
+    Without ``gold_suffix`` and ``single_annex`` the output is that of the batch-1 rescore
+    (keys and files)."""
     sys.path.insert(0, str(ROOT / "src"))
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
     src_freeze = json.loads((src / "freeze.json").read_text(encoding="utf-8"))
@@ -338,9 +345,9 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         g, removed = apply_convention(full, ext, convention)
         row = {"slug": slug, "regions": len(g), "not_scored": removed}
         for system, (owners, cont) in outputs.items():
-            res, row[system] = score(evaluator, g, owners, cont)
+            res, row[system] = score(evaluator, g, owners, cont, single_annex)
             write_new(out / "eval" / f"{system}-{slug}.json", res)
-        res, row["current"] = score(evaluator, g, current["owners"])
+        res, row["current"] = score(evaluator, g, current["owners"], single_annex=single_annex)
         row["current"]["meta"] = current["meta"]
         write_new(out / "eval" / f"current-{slug}.json", res)
         rows.append(row)
@@ -352,10 +359,12 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": inputs, "rows": rows, "total": totals(rows),
         "source_total_all_regions": src_summary["total"]}
-    if gold_suffix:
+    if gold_suffix or single_annex:
         del record["all_regions_matches_source"], record["source_total_all_regions"]
-        record.update({"gold": f"agent-<slug>.{gold_suffix}.txt", "source_convention": src_convention,
+        record.update({"gold": f"agent-<slug>.{gold_suffix or 'gold'}.txt", "source_convention": src_convention,
                        "frozen_gold_matches_source": True, "source_total": src_summary["total"]})
+    if single_annex:
+        record["single_annex_equivalence"] = True
     write_new(out / "summary.json", record)
     print(json.dumps(totals(rows), ensure_ascii=False))
 
@@ -433,6 +442,8 @@ def main(argv=None) -> None:
                         help="freeze: explicit prototype file (repeatable); default pins code-final")
     parser.add_argument("--system", default="prototype", help="sample: eval prefix, e.g. prototype-v1")
     parser.add_argument("--gold-suffix", help="rescore: score against agent-<slug>.<suffix>.txt, e.g. gold-v2")
+    parser.add_argument("--single-annex", action="store_true",
+                        help="rescore: <doc>/AN == <doc>/AN1 when the document has exactly one annex")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
     if args.phase == "freeze":
@@ -443,7 +454,7 @@ def main(argv=None) -> None:
     elif args.phase == "run":
         do_run(out)
     elif args.phase == "rescore":
-        do_rescore(out, Path(args.source).resolve(), args.convention, args.gold_suffix)
+        do_rescore(out, Path(args.source).resolve(), args.convention, args.gold_suffix, args.single_annex)
     else:
         sample = build_sample(Path(args.source).resolve(), args.seed, args.size, args.system)
         _write_sample(out, sample)

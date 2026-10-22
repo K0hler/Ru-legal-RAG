@@ -29,6 +29,11 @@
   the legacy mode still carries stage-2 columns, the `v1` scoring filter removes
   only Picture/noise gold keys, and the gold freeze hashes the annotator input,
   refuses a changed gold receipt and never overwrites. No corpus files.
+  It also checks that rescore scoring with the single-annex equivalence is
+  opt-in and that the classifier reads `<doc>/AN` as `<doc>/AN1` under it;
+  `test_ocr_logical_structure.py` covers per-document annex counting, one vs
+  two annexes in all variants, and `cross_scope_v2` transfers (annex↔body,
+  between annexes) that the old `first_scope` misses.
 
 - `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
   lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested
