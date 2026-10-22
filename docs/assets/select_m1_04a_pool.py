@@ -14,6 +14,10 @@ freeze passed as `--code-candidates`. The seed orders that list along with day-f
 candidates. Scope is explicit publication days, not a portal-wide census. The
 200-page profile ceiling stays unchanged unless `--pages-max` is supplied; codes alone
 may run to CODE_PAGES_MAX (500, owner decision 22.10.2026) whenever the code quota is positive.
+
+`census-codes --output DIR/selection.json` is the code census: every CODE_REFERENCE code is
+verified in actual.pravo (number+date), its portal publication is confirmed in the day feed,
+`freeze-codes` runs on the eligible days and `census.json` records each code's reason.
 """
 
 import argparse
@@ -341,9 +345,8 @@ def _ips_search(ips, number, dmy):
     return json.loads(body).get("docs", [])  # no hits: the key is absent
 
 
-def lookup_official(actual, ips, number, iso):
-    """Find one act in the official tree by number+date and count its editions."""
-    dmy = ".".join(reversed(iso.split("-")))
+def actual_exact_docs(actual, number, iso):
+    """actual.pravo attrsearch by number+date; only exact number/date matches are kept."""
     compact = iso.replace("-", "")
     attrs = [{"AttrId": 6, "AttrMode": 0, "Words": [number]},
              {"AttrId": 5, "AttrMode": 0, "DateFrom": compact, "DateTo": compact}]
@@ -355,6 +358,13 @@ def lookup_official(actual, ips, number, iso):
     body, _ = _retry(lambda: actual._get(url))
     docs = [d for d in json.loads(body).get("docs", [])
             if str(d.get("docpass0number")).upper() == number.upper() and d.get("docpass0date") == compact]
+    return docs, url, hashlib.sha256(body).hexdigest()
+
+
+def lookup_official(actual, ips, number, iso):
+    """Find one act in the official tree by number+date and count its editions."""
+    dmy = ".".join(reversed(iso.split("-")))
+    docs, _, _ = actual_exact_docs(actual, number, iso)
     if len(docs) == 1:
         h = docs[0]["dochash"]
         rb, _ = _retry(lambda: actual._get(actual._url("redactions/", {"hash": h, "ttl": 4})))
@@ -438,6 +448,233 @@ def load_code_candidates(path):
         date.fromisoformat(row["date"])
         seen.add(eo)
     return rows, digest
+
+
+CODE_CENSUS_SCHEMA = "m1-04a-code-census/1"
+# Authored reference list of codes of the Russian Federation adopted by federal law
+# (adoption acts only, never amending/introducing laws), including codes that lost
+# force. Every entry is verified in actual.pravo by exact number+date; the census
+# never trusts this list for titles, publication dates or EO numbers.
+CODE_REFERENCE = (
+    ("Гражданский кодекс Российской Федерации (часть первая)", "51-ФЗ", "1994-11-30"),
+    ("Гражданский кодекс Российской Федерации (часть вторая)", "14-ФЗ", "1996-01-26"),
+    ("Гражданский кодекс Российской Федерации (часть третья)", "146-ФЗ", "2001-11-26"),
+    ("Гражданский кодекс Российской Федерации (часть четвертая)", "230-ФЗ", "2006-12-18"),
+    ("Налоговый кодекс Российской Федерации (часть первая)", "146-ФЗ", "1998-07-31"),
+    ("Налоговый кодекс Российской Федерации (часть вторая)", "117-ФЗ", "2000-08-05"),
+    ("Бюджетный кодекс Российской Федерации", "145-ФЗ", "1998-07-31"),
+    ("Уголовный кодекс Российской Федерации", "63-ФЗ", "1996-06-13"),
+    ("Уголовно-процессуальный кодекс Российской Федерации", "174-ФЗ", "2001-12-18"),
+    ("Уголовно-исполнительный кодекс Российской Федерации", "1-ФЗ", "1997-01-08"),
+    ("Кодекс Российской Федерации об административных правонарушениях", "195-ФЗ", "2001-12-30"),
+    ("Гражданский процессуальный кодекс Российской Федерации", "138-ФЗ", "2002-11-14"),
+    ("Арбитражный процессуальный кодекс Российской Федерации", "95-ФЗ", "2002-07-24"),
+    ("Кодекс административного судопроизводства Российской Федерации", "21-ФЗ", "2015-03-08"),
+    ("Трудовой кодекс Российской Федерации", "197-ФЗ", "2001-12-30"),
+    ("Семейный кодекс Российской Федерации", "223-ФЗ", "1995-12-29"),
+    ("Жилищный кодекс Российской Федерации", "188-ФЗ", "2004-12-29"),
+    ("Земельный кодекс Российской Федерации", "136-ФЗ", "2001-10-25"),
+    ("Градостроительный кодекс Российской Федерации", "190-ФЗ", "2004-12-29"),
+    ("Лесной кодекс Российской Федерации", "200-ФЗ", "2006-12-04"),
+    ("Водный кодекс Российской Федерации", "74-ФЗ", "2006-06-03"),
+    ("Воздушный кодекс Российской Федерации", "60-ФЗ", "1997-03-19"),
+    ("Кодекс торгового мореплавания Российской Федерации", "81-ФЗ", "1999-04-30"),
+    ("Кодекс внутреннего водного транспорта Российской Федерации", "24-ФЗ", "2001-03-07"),
+    ("Таможенный кодекс Российской Федерации", "61-ФЗ", "2003-05-28"),
+    ("Арбитражный процессуальный кодекс Российской Федерации (1995)", "70-ФЗ", "1995-05-05"),
+    ("Водный кодекс Российской Федерации (1995)", "167-ФЗ", "1995-11-16"),
+    ("Лесной кодекс Российской Федерации (1997)", "22-ФЗ", "1997-01-29"),
+    ("Градостроительный кодекс Российской Федерации (1998)", "73-ФЗ", "1998-05-07"),
+)
+CENSUS_REASONS = (
+    "lookup_error",
+    "not_in_official_tree",
+    "ambiguous_official_identity",
+    "not_a_code_title",
+    "no_portal_publication",
+    "not_in_day_feed",
+    "eo_mismatch",
+    "pages_out_of_range",
+)
+PORTAL_PUBLICATION = re.compile(r"pravo\.gov\.ru\)\D*?(\d\d)\.(\d\d)\.(\d{4})\D*?(\d{16})")
+DMY = re.compile(r"\b(\d\d)\.(\d\d)\.(\d{4})\b")
+# actual.pravo names code parts "<Code>. Часть первая"; the feed form is "(часть первая)".
+CODE_PART_SUFFIX = re.compile(r"\.\s+Часть\s+\S+$")
+
+
+def portal_publication(publications):
+    """(ISO date, EO number) of the portal entry in an actual.pravo publications list."""
+    for entry in publications or ():
+        match = PORTAL_PUBLICATION.search(_norm(entry))
+        if match:
+            d, m, y, eo = match.groups()
+            return f"{y}-{m}-{d}", eo
+    return None
+
+
+def first_publication_day(publications, adoption_iso):
+    """Earliest dated publication on/after adoption; the adoption day when none is dated."""
+    days = sorted(f"{y}-{m}-{d}" for entry in publications or () for d, m, y in DMY.findall(_norm(entry))
+                  if f"{y}-{m}-{d}" >= adoption_iso)
+    return days[0] if days else adoption_iso
+
+
+def scan_feed_day(publication, day):
+    """All pages of one day feed: item count, code rows (feed metadata only) and page diagnostics."""
+    rows, pages, items, page, total = [], [], 0, 1, 1
+    while page <= total:
+        feed = _retry(lambda: publication.fetch_feed(day, page))
+        total = feed["pages_total"]
+        items += len(feed["events"])
+        pages.append({"page": page, "source_url": feed["source_url"],
+                      "sha256": hashlib.sha256(feed["raw_bytes"]).hexdigest(),
+                      "rejected_items": feed.get("rejected_items", [])})
+        for item in feed["events"]:
+            if categorize(item["complexName"], item["name"]) == "code":
+                rows.append({"eo_number": item["eoNumber"], "date": item["documentDate"][:10],
+                             "number": item["number"].strip(), "title": _norm(item["name"]),
+                             "pages": item["pagesCount"]})
+        page += 1
+    return {"day": day.isoformat(), "pages_total": total, "items": items, "code_rows": rows, "feed_pages": pages}
+
+
+def census_entry(actual, publication, title, number, adoption, feed_cache, code_pages_max, previous=None):
+    entry = {"reference_title": title, "number": number, "adoption_date": adoption,
+             "status": "excluded", "reason": None}
+
+    def excluded(reason, **extra):
+        entry.update(extra, reason=reason)
+        return entry
+
+    if previous is not None:  # one recorded exact actual.pravo match from an earlier unfrozen run
+        record = previous["actual"]
+        docs = [{"dochash": record["hash"], "docnames": record["title"], "docstate": record["state"],
+                 "publications": record["publications"], "docimagepath": record["image_path"]}]
+        url, sha = record["request_url"], record["response_sha256"]
+    else:
+        try:
+            docs, url, sha = actual_exact_docs(actual, number, adoption)
+        except Exception as error:
+            return excluded("lookup_error", detail=f"{type(error).__name__}: {error}")
+    entry["actual"] = {"request_url": url, "response_sha256": sha, "exact_matches": len(docs)}
+    if previous is not None:
+        entry["actual"]["reused_from"] = previous["source"]
+    if not docs:
+        return excluded("not_in_official_tree")
+    if len(docs) > 1:
+        return excluded("ambiguous_official_identity")
+    doc = docs[0]
+    publications = doc.get("publications") if isinstance(doc.get("publications"), list) else []
+    entry["actual"].update(hash=doc.get("dochash"), title=_norm(doc.get("docnames") or ""),
+                           state=doc.get("docstate"), publications=[_norm(p) for p in publications],
+                           image_path=doc.get("docimagepath"))
+    if categorize("", CODE_PART_SUFFIX.sub("", entry["actual"]["title"])) != "code":
+        return excluded("not_a_code_title")
+    portal = portal_publication(publications)
+    entry["portal_publication"] = {"date": portal[0], "eo_number": portal[1]} if portal else None
+    day = date.fromisoformat(portal[0] if portal else first_publication_day(publications, adoption))
+    if day not in feed_cache:
+        try:
+            feed_cache[day] = scan_feed_day(publication, day)
+        except Exception as error:
+            feed_cache[day] = {"day": day.isoformat(), "error": f"{type(error).__name__}: {error}"}
+    scan = feed_cache[day]
+    entry["feed_check"] = {k: scan[k] for k in ("day", "pages_total", "items", "error", "reused_from") if k in scan}
+    matches = [r for r in scan.get("code_rows", [])
+               if r["number"].upper() == number.upper() and r["date"] == adoption]
+    if len(matches) != 1:
+        # A failed or empty feed on a non-portal act still leaves no portal publication.
+        return excluded("not_in_day_feed" if portal else "no_portal_publication")
+    row = matches[0]
+    entry.update(eo_number=row["eo_number"], pages=row["pages"], feed_title=row["title"])
+    if portal and portal[1] != row["eo_number"]:
+        return excluded("eo_mismatch")
+    if not 0 < row["pages"] <= code_pages_max:
+        return excluded("pages_out_of_range")
+    entry.update(status="eligible")
+    return entry
+
+
+def reusable_census(path):
+    """Recorded exact actual.pravo matches and empty feed days from an earlier unfrozen census.
+
+    A day with feed items is never reused: its code rows were not recorded.
+    """
+    previous = json.loads(Path(path).read_text(encoding="utf-8"))
+    if previous.get("schema_version") != CODE_CENSUS_SCHEMA:
+        raise ValueError("unsupported previous census schema")
+    source = repo_relative(path)
+    matches, days = {}, {}
+    for e in previous["codes"]:
+        if e.get("actual", {}).get("exact_matches") == 1 and "publications" in e["actual"]:
+            matches[(e["number"], e["adoption_date"])] = {"actual": e["actual"], "source": source}
+        check = e.get("feed_check")
+        if check and check.get("items") == 0 and check.get("pages_total") == 0 and not check.get("error"):
+            day = date.fromisoformat(check["day"])
+            days[day] = {"day": check["day"], "pages_total": 0, "items": 0, "code_rows": [], "reused_from": source}
+    return matches, days
+
+
+def census_codes(actual, publication, reference=CODE_REFERENCE, code_pages_max=CODE_PAGES_MAX, previous=None):
+    """Every reference code with its status; eligible codes carry the portal EO number and pages."""
+    matches, feed_cache = reusable_census(previous) if previous else ({}, {})
+    entries = []
+    for title, number, adoption in reference:
+        entry = census_entry(actual, publication, title, number, adoption, feed_cache, code_pages_max,
+                             matches.get((number, adoption)))
+        print(number, adoption, entry["status"], entry["reason"], flush=True)
+        entries.append(entry)
+    coverage = sorted(({"day": s["day"], "items": s.get("items"), "error": s.get("error"),
+                        "reused_from": s.get("reused_from")}
+                       for s in feed_cache.values()), key=lambda r: r["day"])
+    return entries, coverage
+
+
+def write_code_census(actual, publication, output, counter=None, reference=CODE_REFERENCE, previous=None):
+    """Census, then freeze-codes on the eligible days into ``output``; census.json is write-once."""
+    output = Path(output)
+    census_path = output.with_name("census.json")
+    if selection_pair_state(output) != "absent" or census_path.exists():
+        raise FileExistsError(f"code census already exists in {output.parent}")
+    entries, coverage = census_codes(actual, publication, reference, previous=previous)
+    days = sorted({date.fromisoformat(e["feed_check"]["day"]) for e in entries if e["status"] == "eligible"})
+    freeze_code_candidates(publication, days, output)
+    reasons = {}
+    for e in entries:
+        if e["reason"]:
+            reasons[e["reason"]] = reasons.get(e["reason"], 0) + 1
+    result = {
+        "schema_version": CODE_CENSUS_SCHEMA,
+        "scope": ("Codes of the Russian Federation from an authored reference list, each verified in "
+                  "actual.pravo by exact number+date; portal publication from the actual.pravo "
+                  "publications list, EO number and pages from the publication day feed. Metadata only."),
+        "code_pages_max": CODE_PAGES_MAX,
+        "codes": entries,
+        "eligible": [{k: e[k] for k in ("eo_number", "number", "adoption_date", "pages", "feed_title")}
+                     for e in entries if e["status"] == "eligible"],
+        "excluded_by_reason": dict(sorted(reasons.items())),
+        "portal_feed_checks": coverage,
+        "selection": repo_relative(output),
+        "selection_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+        "requests": dict(counter) if counter is not None else None,
+        "previous_census": repo_relative(previous) if previous else None,
+    }
+    payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    with census_path.open("xb") as stream:
+        stream.write(payload)
+    return result
+
+
+def count_requests(connector, counter, name):
+    """Count every transport call (retries included) without changing the connector."""
+    original = connector._get
+
+    def counted(*args, **kwargs):
+        counter[name] = counter.get(name, 0) + 1
+        return original(*args, **kwargs)
+
+    connector._get = counted
+    return connector
 
 
 def sample_days(start, end, seed, count=120):
@@ -811,6 +1048,23 @@ def main(argv=None):
                             help="new directory's selection.json; freezes metadata only")
         args = parser.parse_args(argv[1:])
         freeze_code_candidates(PublicationPoolConnector(timeout=25, request_interval=1), args.day, args.output)
+        return 0
+    if argv[:1] == ["census-codes"]:
+        from legal_rag.sources.actual_pravo import ActualPravoConnector
+        from legal_rag.sources.publication_pool import PublicationPoolConnector
+
+        parser = argparse.ArgumentParser(prog="select_m1_04a_pool.py census-codes")
+        parser.add_argument("--output", required=True, type=Path,
+                            help="new directory's selection.json; census.json is written beside it")
+        parser.add_argument("--previous", type=Path,
+                            help="earlier unfrozen census.json: reuse its exact actual.pravo matches and empty feed days")
+        args = parser.parse_args(argv[1:])
+        counter = {}
+        actual = count_requests(ActualPravoConnector(timeout=25, request_interval=1), counter, "actual.pravo")
+        publication = count_requests(PublicationPoolConnector(timeout=25, request_interval=1), counter,
+                                     "publication.pravo")
+        result = write_code_census(actual, publication, args.output, counter, previous=args.previous)
+        print("census-codes", result["eligible"], result["excluded_by_reason"], result["requests"], flush=True)
         return 0
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--from", dest="date_from", required=True)

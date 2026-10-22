@@ -6,6 +6,10 @@
   480-page code: the old 200-page ceiling remains the default; a declared
   `--pages-max` override must reach selection and refill. New feed caches carry
   candidates and indexed rejection diagnostics; old list caches remain readable.
+  The code census uses authored actual.pravo/day-feed fakes: reasons
+  (`no_portal_publication` from the earliest dated publication day, EO mismatch,
+  pages, non-code titles, «. Часть …» titles), feed failure never eligible,
+  `--previous` reuse without repeated requests, and write-once outputs.
 
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open

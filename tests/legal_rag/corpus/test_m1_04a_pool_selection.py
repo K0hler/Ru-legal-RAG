@@ -742,3 +742,142 @@ def test_code_candidates_path_is_repo_relative_and_resolves():
     assert P.resolve_repo_path("data/m1/m1-04a/codes/selection.json") == inside
     absolute = Path(P.PROJECT.anchor) / "elsewhere" / "x.json"
     assert P.resolve_repo_path(absolute) == absolute
+
+
+class CensusActual:
+    """Authored actual.pravo stand-in for the code census: exact number+date hits only."""
+
+    _api_base = "http://actual.example/api/ebpi"
+
+    def __init__(self, docs):
+        self.docs, self.requests = docs, []
+
+    def _get(self, url):
+        from urllib.parse import parse_qs, urlsplit
+
+        self.requests.append(url)
+        attrs = P.json.loads(parse_qs(urlsplit(url).query)["q"][0])
+        assert all(attr.get("AttrId") != 999 for attr in attrs)
+        number = attrs[0]["Words"][0]
+        docs = [d for d in self.docs if d["docpass0number"] == number]
+        return P.json.dumps({"docs": docs}, ensure_ascii=False).encode(), {}
+
+
+class CensusPublication:
+    """Authored day feeds: {iso day: [items]}; every other day is empty."""
+
+    def __init__(self, days):
+        self.days, self.calls = days, []
+
+    def fetch_feed(self, day, page):
+        self.calls.append((day, page))
+        events = self.days.get(day.isoformat(), [])
+        return {"events": events, "pages_total": 1 if events else 0,  # the portal reports 0 for empty days
+                "raw_bytes": f"authored {day}".encode(), "source_url": f"http://feed/{day}",
+                "rejected_items": []}
+
+
+def census_fixture():
+    portal = "Официальный интернет-портал правовой информации (www.pravo.gov.ru), 09.03.2015,\xa0№\xa00001201503090041"
+    docs = [
+        {"docpass0number": "21-ФЗ", "docpass0date": "20150308", "dochash": "kas",
+         "docnames": "Кодекс административного судопроизводства Российской Федерации",
+         "publications": [portal, '"Российская газета" от 11.03.2015']},
+        {"docpass0number": "63-ФЗ", "docpass0date": "19960613", "dochash": "uk",
+         "docnames": "Уголовный кодекс Российской Федерации",
+         "publications": ["Собрание законодательства РФ, 17.06.1996, № 25, ст. 2954",
+                          '"Российская газета" от 18.06.1996']},
+        {"docpass0number": "7-ФЗ", "docpass0date": "20200101", "dochash": "big",
+         "docnames": "Авторский кодекс Российской Федерации",
+         "publications": ["Официальный интернет-портал правовой информации (www.pravo.gov.ru), 02.01.2020, № 0001202001020001"]},
+        {"docpass0number": "8-ФЗ", "docpass0date": "20200101", "dochash": "amend",
+         "docnames": "О внесении изменений в Авторский кодекс Российской Федерации", "publications": []},
+    ]
+    kas = {"eoNumber": "0001201503090041", "complexName": "Федеральный закон от 08.03.2015 № 21-ФЗ",
+           "name": "Кодекс административного судопроизводства Российской Федерации", "number": "21-ФЗ",
+           "documentDate": "2015-03-08T00:00:00", "pagesCount": 480}
+    big = dict(kas, eoNumber="0001202001020001", name="Авторский кодекс Российской Федерации",
+               number="7-ФЗ", documentDate="2020-01-01T00:00:00", pagesCount=900)
+    reference = (("КАС", "21-ФЗ", "2015-03-08"), ("УК", "63-ФЗ", "1996-06-13"),
+                 ("Авторский", "7-ФЗ", "2020-01-01"), ("Поправка", "8-ФЗ", "2020-01-01"),
+                 ("Нет", "9-ФЗ", "2020-01-01"))
+    return CensusActual(docs), CensusPublication({"2015-03-09": [kas], "2020-01-02": [big]}), reference
+
+
+def test_code_census_reasons_and_freeze(tmp_path):
+    from datetime import date
+
+    actual, publication, reference = census_fixture()
+    output = tmp_path / "codes/selection.json"
+    result = P.write_code_census(actual, publication, output, {"x": 1}, reference)
+    by_number = {e["number"]: e for e in result["codes"]}
+    assert by_number["21-ФЗ"]["status"] == "eligible" and by_number["21-ФЗ"]["pages"] == 480
+    assert by_number["21-ФЗ"]["portal_publication"] == {"date": "2015-03-09", "eo_number": "0001201503090041"}
+    assert by_number["63-ФЗ"]["reason"] == "no_portal_publication"
+    assert by_number["63-ФЗ"]["feed_check"]["day"] == "1996-06-17"  # earliest dated publication
+    assert by_number["7-ФЗ"]["reason"] == "pages_out_of_range"
+    assert by_number["8-ФЗ"]["reason"] == "not_a_code_title"
+    assert by_number["9-ФЗ"]["reason"] == "not_in_official_tree"
+    assert set(result["excluded_by_reason"]) <= set(P.CENSUS_REASONS)
+    rows, digest = P.load_code_candidates(output)
+    assert [r["eo_number"] for r in rows] == ["0001201503090041"]
+    assert digest == result["selection_sha256"]
+    # The freeze reads only the eligible day again; act bodies are never requested.
+    assert publication.calls.count((date(2015, 3, 9), 1)) == 2
+    assert len(actual.requests) == 5
+    with pytest.raises(FileExistsError):
+        P.write_code_census(actual, publication, output, None, reference)
+
+
+def test_code_census_refuses_feed_eo_that_contradicts_actual(tmp_path):
+    actual, publication, reference = census_fixture()
+    publication.days["2015-03-09"][0] = dict(publication.days["2015-03-09"][0], eoNumber="0001201503090099")
+    entries, _ = P.census_codes(actual, publication, reference[:1])
+    assert entries[0]["reason"] == "eo_mismatch"
+
+
+def test_code_census_feed_failure_is_not_eligible(monkeypatch):
+    actual, publication, reference = census_fixture()
+
+    def broken(day, page):
+        raise RuntimeError("feed down")
+
+    publication.fetch_feed = broken
+    monkeypatch.setattr(P.time, "sleep", lambda seconds: None)
+    entries, coverage = P.census_codes(actual, publication, reference[:2])
+    assert [e["reason"] for e in entries] == ["not_in_day_feed", "no_portal_publication"]
+    assert all(c["error"] for c in coverage)
+
+
+def test_reference_codes_are_code_titles_and_adoption_acts():
+    for title, number, adoption in P.CODE_REFERENCE:
+        assert P.categorize("", title.split(" (")[0]) == "code", title
+        assert number.endswith("-ФЗ") and P.date.fromisoformat(adoption)
+
+
+def test_code_census_accepts_actual_part_titles():
+    actual, publication, _ = census_fixture()
+    actual.docs.append({"docpass0number": "51-ФЗ", "docpass0date": "19941130", "dochash": "gk1",
+                        "docnames": "Гражданский кодекс Российской Федерации. Часть первая",
+                        "publications": ['"Российская газета" от 08.12.1994']})
+    entries, _ = P.census_codes(actual, publication, (("ГК 1", "51-ФЗ", "1994-11-30"),))
+    assert entries[0]["reason"] == "no_portal_publication"
+    assert P.categorize("", "Кодекс Российской Федерации. Часть первая") is None  # feed rule unchanged
+
+
+def test_code_census_reuses_previous_matches_and_empty_days(tmp_path):
+    from datetime import date
+
+    actual, publication, reference = census_fixture()
+    first = P.write_code_census(actual, publication, tmp_path / "one/selection.json", None, reference[:2])
+    previous = tmp_path / "one/census.json"
+    actual.requests.clear()
+    publication.calls.clear()
+    second = P.write_code_census(actual, publication, tmp_path / "two/selection.json", None, reference[:3],
+                                 previous=previous)
+    assert len(actual.requests) == 1  # only the code missing from the previous census
+    # The empty 1996 day is reused; days with items are fetched again.
+    assert (date(1996, 6, 17), 1) not in publication.calls and (date(2015, 3, 9), 1) in publication.calls
+    assert [e["status"] for e in second["codes"][:2]] == [e["status"] for e in first["codes"]]
+    assert second["codes"][0]["actual"]["reused_from"].endswith("one/census.json")
+    assert second["selection_sha256"] == first["selection_sha256"]

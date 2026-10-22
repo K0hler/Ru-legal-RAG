@@ -12,6 +12,14 @@
   `--pages-max 500`; the old page limit is not silently relaxed. Refills verify
   and reuse the pinned code list. Batch-01/02 data and their v1 acquisition
   route remain frozen; future acquisition directories use the opt-in wrapper.
+- `select_m1_04a_pool.py census-codes --output DIR/selection.json [--previous OLD/census.json]`
+  is the code census: an authored `CODE_REFERENCE` (adoption acts only, incl.
+  codes that lost force), each verified in actual.pravo by exact number+date;
+  the portal entry in the actual.pravo `publications` list gives the date/EO,
+  the day feed confirms EO and pages, then `freeze-codes` runs on eligible days
+  and `census.json` records every code with its reason. actual.pravo names code
+  parts «<Кодекс>. Часть первая» (accepted only inside the census). `--previous`
+  reuses recorded exact matches and empty feed days of an unfrozen earlier run.
 
 - `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
   logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),
