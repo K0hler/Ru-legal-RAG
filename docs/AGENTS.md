@@ -164,6 +164,15 @@
   `20261022-dev-regression-cycle3-b4-r2`: 7020/7072 no_section and strict (+44: minkultury-1321 +42,
   fsnson-282 +2), `cross_scope_v2` 0, no drops. `…-b4` (failed, kept): favt-547 −5, «Схема N» captions before
   a picture were taken as subheadings.
+  Fix round 1 (`…-cycle3-b4-r3`, current): subheading length <= 200 as body text, <= 500 only with OCR
+  Section-header/Title; a body-text subheading also needs two header-category subheading runs in the same scope
+  (an OCR-cut sentence without its dot otherwise qualifies); captions by text («Схема 2», «Рисунок 1 - …»,
+  «Рис. 3», «Таблица», «Форма N», «Диаграмма», «График» + number) and labelled lines («Адрес: …») are never
+  subheadings; no subpoint closing inside an unbalanced «…» opened in the subpoint or on a paragraph ending «»»/«».».
+  Score 7015/7072 (minkultury 447, −5 vs r2: Text-category subheadings of 214-452 characters 8.4, 9.9, 11.4, 11.9,
+  14.5 are now left with the previous point), still no document below b3. Known limitations (pinned in tests): a
+  subheading after a table or an editorial note «(в ред. …)» is missed; a capitalised second paragraph of the last
+  subpoint (previous ends «.») goes to the point.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

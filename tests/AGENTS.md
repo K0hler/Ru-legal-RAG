@@ -35,6 +35,9 @@
   no enclosing section. A capitalised paragraph after the last subpoint returns to the point; negatives:
   lowercase, «;» item after «;», text after «:», list that goes on. «8.1» closes an open «4)»; uppercase
   «ГЛАВА»/«СТАТЬЯ» and OCR Х/І in chapters (parametrised, sentences stay text).
+  B4 fix round 1: captions by text («Схема 2», «Рисунок 1 - …», «Форма N 2», parametrised), «Адрес: …» lines and
+  an OCR-cut 130-character sentence are not subheadings; Text over 200 characters or without two Section-header
+  subheadings in the scope stays with the point; no closing inside quoted amending text; pinned known limitations.
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only

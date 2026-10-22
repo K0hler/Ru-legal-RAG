@@ -472,6 +472,8 @@ def next_letter_ok(prev: int, new: int) -> bool:
     return new == prev + 1
 
 
+SUBPOINT_KINDS = {"paren", "letter"}  # «1)» / «а)» subpoints
+POINT_KINDS = {"int", "decimal"}  # «N.» / «N.M» points
 ABANDON_ARTICLE = 0.5  # a point that leaves an open article without a new heading
 
 
@@ -593,9 +595,14 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
     return states[0][3]
 
 
-SUBPOINT_KINDS = {"paren", "letter"}
-POINT_KINDS = {"int", "decimal"}
-SUBHEADING_MAX = 500  # administrative regulations print subheadings of up to ~450 characters
+SUBHEADING_MAX = 200  # a subheading printed as body text
+SUBHEADING_HEADER_MAX = 500  # with OCR heading evidence (Section-header/Title): regulations print ~450
+SUBHEADING_CORROBORATION = 2  # body-text subheadings need this many header-category ones in the scope
+HEADING_CATEGORIES = {"Section-header", "Title"}
+# A figure/table/form caption by its text: «Схема 2», «Рисунок 1 - Знак …», «Рис. 3», «Таблица 3», «Форма N 2».
+FIGURE_CAPTION = re.compile(r"^(?:Схема|Рисунок|Рис\.|Таблица|Форма|Диаграмма|График)\s*(?:№|N)?\s*\d")
+# A labelled value line: «Адрес: …», «Почтовый адрес: …», «Телефон: …».
+LABEL_LINE = re.compile(r"^\S+(?:\s\S+)?:\s")
 
 
 def final_char(text: str) -> str:
@@ -603,14 +610,22 @@ def final_char(text: str) -> str:
     return t[-1] if t else ""
 
 
+def heading_evidence(p: Paragraph) -> bool:
+    return p.first.category in HEADING_CATEGORIES
+
+
 def subheading_candidate(p: Paragraph) -> bool:
-    """An unmarked capitalised line that is not a sentence and not a figure/table caption (OCR
-    category Caption: «Схема 1», «Таблица 2»): no final «.;:!?», no broken tail
-    («,», hyphen), not a requisite or signature line and not a rejected caption («Приложение 2»)."""
+    """An unmarked capitalised line that is not a sentence: no final «.;:!?», no broken tail («,»,
+    hyphen). Not a figure/table/form caption (OCR category Caption or the text «Схема 1», «Рисунок
+    1 - …», «Таблица 2», «Форма N 3»), a labelled value («Адрес: …»), a requisite or signature line,
+    or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text,
+    SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
     text = p.text
+    limit = SUBHEADING_HEADER_MAX if heading_evidence(p) else SUBHEADING_MAX
     return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
             and bool(text) and text[0].isupper()
-            and len(text) <= SUBHEADING_MAX and not terminated(text) and final_char(text) not in ",-–—"
+            and len(text) <= limit and not terminated(text) and final_char(text) not in ",-–—"
+            and not FIGURE_CAPTION.match(text) and not LABEL_LINE.match(text)
             and not requisite_like(text) and not signature_like(p.first) and not is_caption(text)
             and not is_project_caption(text))
 
@@ -618,14 +633,17 @@ def subheading_candidate(p: Paragraph) -> bool:
 def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> set[int]:
     """Review Focus 5: unnumbered subheadings inside a section. A run of subheading candidates that
     follows a finished body paragraph (final «.» or «;») and is immediately followed by a numbered
-    point («N.» or «N.M», no table or caption in between) belongs to that point's parent when the
-    parent is a section or another named unit («II.», «Раздел 2», «Глава 3»): the enclosing
-    section, not the previous point or subpoint. Without an enclosing section (points directly in
-    the scope root) such a line stays with the open point: there it is as likely a sentence cut
-    by OCR. Returns the changed body indices."""
+    point («N.» or «N.M», no table, picture or caption in between) belongs to that point's parent
+    when the parent is a section or another named unit («II.», «Раздел 2», «Глава 3»): the
+    enclosing section, not the previous point or subpoint. Without an enclosing section (points
+    directly in the scope root) such a line stays with the open point: there it is as likely a
+    sentence cut by OCR. A run printed as body text (no Section-header/Title region) also needs
+    corroboration: at least SUBHEADING_CORROBORATION such runs with heading evidence in the same
+    scope (the document's subheading style); otherwise an OCR-cut sentence would qualify.
+    Returns the changed body indices."""
     index = {id(p): k for k, p in enumerate(body)}
     seq = [p for p in items if p.flow == "body"]  # a table or picture in between blocks the rule
-    changed: set[int] = set()
+    runs = []  # (run paragraphs, parent stack)
     k = 0
     while k < len(seq):
         if id(seq[k]) not in index or not subheading_candidate(seq[k]):
@@ -639,17 +657,25 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
         if (prev is not None and id(prev) in index and final_char(prev.text) in ".;"
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
-            if not parent or parent[-1][0] not in UNIT_RANK:
-                k = end + 1
-                continue
-            for q in seq[k:end + 1]:
-                j = index[id(q)]
-                if stacks[j][:len(parent)] == parent:
-                    stacks[j] = parent
-                    changed.add(j)
-                    q.evidence.append({"subheading": "unmarked line before a numbered point -> its parent"})
+            if parent and parent[-1][0] in UNIT_RANK:
+                runs.append((seq[k:end + 1], parent))
         k = end + 1
+    styled = sum(any(heading_evidence(q) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
+    changed: set[int] = set()
+    for run, parent in runs:
+        if not styled and not any(heading_evidence(q) for q in run):
+            continue
+        for q in run:
+            j = index[id(q)]
+            if stacks[j][:len(parent)] == parent:
+                stacks[j] = parent
+                changed.add(j)
+                q.evidence.append({"subheading": "unmarked line before a numbered point -> its parent"})
     return changed
+
+
+def quote_balance(text: str) -> int:
+    return text.count("«") - text.count("»")
 
 
 def continues_level(nxt: tuple, stack: tuple, level: int) -> bool:
@@ -663,12 +689,19 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
     enumeration: the previous paragraph ended with «.», or it ended with «;» and this paragraph is
     a sentence of its own (final «.»). Only list levels that the next marked paragraph does not
     continue are closed; later unmarked paragraphs up to the next marker follow the point. A
-    lowercase start, a «;» item, text after «:» or a list that goes on stay in the subpoint."""
+    lowercase start, a «;» item, text after «:» or a list that goes on stay in the subpoint. Nothing
+    closes inside a quotation: while a «…» opened in the subpoint (from its marked paragraph on) is
+    unbalanced, or when the paragraph itself ends a quotation («…».» / «…»»), as in amending text
+    («а) пункт 3 изложить в следующей редакции: «3. …»»)."""
     closed = None
+    opened = 0  # quotation balance since the last marked paragraph
     for k, p in enumerate(body):
         if p.marker.kind not in {"none", "dash"}:
             closed = None
+            opened = quote_balance(p.text)
             continue
+        inside_quote = opened > 0
+        opened += quote_balance(p.text)
         if k in keep or p.kind != "text":
             continue
         if closed is not None:
@@ -676,6 +709,8 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             continue
         stack = stacks[k]
         if not k or not stack or stack[-1][0] not in SUBPOINT_KINDS or not p.text[:1].isupper():
+            continue
+        if inside_quote or strip_sup(p.text).rstrip(" .").endswith("»"):
             continue
         before, own = final_char(body[k - 1].text), final_char(p.text)
         if not (before == "." or (before == ";" and own == ".")):

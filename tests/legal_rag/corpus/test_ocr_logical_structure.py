@@ -798,18 +798,19 @@ def regulation(*body):
 def test_unnumbered_subheading_inside_section_belongs_to_the_section():
     """Review Focus 5: an unmarked unterminated capitalised line after a finished paragraph and
     right before a numbered point is a subheading of the enclosing section, not text of the
-    previous point or subpoint."""
+    previous point or subpoint. Body-text (Text) subheadings of up to 200 characters count when the
+    scope has two header-category ones; a Section-header subheading may be up to 500 characters."""
     long_heading = ("Исчерпывающий перечень документов, необходимых в соответствии с нормативными правовыми "
                     "актами для предоставления государственной услуги и услуг, которые являются необходимыми "
                     "и обязательными для предоставления государственной услуги, подлежащих представлению "
                     "заявителем, способы их получения заявителем, в том числе в электронной форме")
     assert len(long_heading) > 250
-    pages = regulation(("Text", "Предмет регулирования"), ("Text", "1. Регламент устанавливает порядок."),
-                       ("Text", "Круг заявителей"), ("Text", "2. Заявителями являются:"),
+    pages = regulation(("Section-header", "Предмет регулирования"), ("Text", "1. Регламент устанавливает порядок."),
+                       ("Section-header", "Круг заявителей"), ("Text", "2. Заявителями являются:"),
                        ("Text", "1) юридические лица;"), ("Text", "2) индивидуальные предприниматели."),
                        ("Text", "Требования к порядку информирования"), ("Text", "3. Информация размещается."),
                        ("Section-header", "II. Стандарт"), ("Text", "4. Услугой является ведение реестра."),
-                       ("Text", long_heading), ("Text", "5. Для получения услуги представляются:"),
+                       ("Section-header", long_heading), ("Text", "5. Для получения услуги представляются:"),
                        ("Text", "а) заявление;"), ("Text", "б) договор."),
                        ("Text", "Сроки рассмотрения"), ("Text", "Порядок обжалования"),
                        ("Text", "6. Срок составляет 5 дней."))
@@ -822,6 +823,13 @@ def test_unnumbered_subheading_inside_section_belongs_to_the_section():
     assert got["2.12"] == "S/II" and got["2.13"] == "S/II/5"        # a long subheading
     assert got["2.16"] == "S/II" and got["2.17"] == "S/II"          # two subheading lines in a row
     assert got["2.18"] == "S/II/6"
+    # a body-text line over 200 characters is not a subheading without heading evidence
+    pages[1][12] = ("Text", long_heading)
+    assert owners(S.build(extraction(pages)))["2.12"] == "S/II/4"
+    # without two header-category subheadings in the scope a body-text line stays with its point
+    pages = regulation(("Text", "1. Регламент устанавливает порядок."), ("Text", "Круг заявителей"),
+                       ("Text", "2. Заявителями являются юридические лица."))
+    assert owners(S.build(extraction(pages)))["2.3"] == "S/I/1"
 
 
 def test_unterminated_line_is_not_a_subheading_without_its_evidence():
@@ -921,3 +929,79 @@ def test_uppercase_chapter_and_article_headings(text, kind, label):
     chapter numbers; a sentence that starts with the word stays text (heading_like)."""
     marker = S.parse_marker(text, "Text")
     assert (marker.kind, marker.label) == (kind, label)
+
+
+def styled_regulation(*body):
+    """A regulation whose subheading style is established by two Section-header subheadings."""
+    return regulation(("Text", "1. Регламент устанавливает порядок."), ("Section-header", "Круг заявителей"),
+                      ("Text", "2. Заявителями являются юридические лица."),
+                      ("Section-header", "Требования к информированию"), ("Text", "3. Информация размещается."),
+                      *body)
+
+
+@pytest.mark.parametrize("line", ["Схема 2", "Рисунок 1 - Знак доступности", "Рис. 3", "Таблица 3",
+                                  "Форма N 2", "Форма № 4", "Диаграмма 1", "График 2 - Динамика показателей"])
+def test_figure_and_form_captions_by_text_are_not_subheadings(line):
+    """Fix round 1: a caption recognised by its text (category Text, no Picture region) stays with
+    the point that refers to it, even in a scope with an established subheading style."""
+    got = owners(S.build(extraction(styled_regulation(("Text", "4. Изображение приведено ниже."), ("Text", line),
+                                                      ("Text", "5. Следующий пункт.")))))
+    assert got["2.2"] == "S/I/1" and got["2.4"] == "S/I/2"     # the style is there
+    assert got["2.8"] == "S/I/4", line
+
+
+def test_cut_sentence_and_labelled_line_stay_with_the_point():
+    """Fix round 1: an OCR-cut sentence (lost final dot, 130 characters) and a labelled value line
+    («Адрес: …») before the next point stay with the open point."""
+    cut = ("Жалоба подается в письменной форме на бумажном носителе или в электронной форме в орган, "
+           "предоставляющий государственную услугу")
+    got = owners(S.build(extraction(regulation(("Text", "1. Заявитель вправе подать жалобу."), ("Text", cut),
+                                               ("Text", "2. Следующий пункт.")))))
+    assert got["2.3"] == "S/I/1"
+    for label in ("Адрес: г. Москва, ул. Тверская, д. 7", "Почтовый адрес: 101000, Москва",
+                  "Телефон: 8 (495) 123-45-67"):
+        got = owners(S.build(extraction(styled_regulation(("Text", "4. Справочные сведения приведены ниже."),
+                                                          ("Text", label), ("Text", "5. Следующий пункт.")))))
+        assert got["2.8"] == "S/I/4", label
+
+
+def test_no_subpoint_closing_inside_a_quotation():
+    """Fix round 1: amending text quoted inside a subpoint («изложить в следующей редакции: «3. …»»)
+    stays in the subpoint, including its capitalised last paragraph ending «.».»."""
+    pages = regulation(("Text", "1. Внести изменения:"), ("Text", "а) пункт 3 изложить в следующей редакции:"),
+                       ("Text", "«3. Порядок утверждается министерством."),
+                       ("Text", "Положение применяется с 1 января.»."), ("Text", "2. Следующий пункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/1/а" and got["2.5"] == "S/I/1/а" and got["2.6"] == "S/I/2"
+    # a paragraph ending a quotation does not close even when the quotation opened in it
+    pages = regulation(("Text", "1. Внести изменения:"), ("Text", "а) в пункте 2 слова заменить."),
+                       ("Text", "Пункт 4 дополнить словами «и иные документы»."), ("Text", "2. Следующий пункт."))
+    assert owners(S.build(extraction(pages)))["2.4"] == "S/I/1/а"
+
+
+def test_split_proper_noun_and_dash_items_after_a_closed_subpoint():
+    """Pinned behaviour: a subpoint cut before «Российской Федерации.» (unterminated previous line)
+    stays in the subpoint; dash items after a closing paragraph follow the point."""
+    pages = regulation(("Text", "1. Заявление содержит:"), ("Text", "а) сведения о заявителе;"),
+                       ("Text", "б) сведения, предусмотренные законодательством"), ("Text", "Российской Федерации."),
+                       ("Text", "2. Состав:"), ("Text", "а) первый;"), ("Text", "б) второй."),
+                       ("Text", "Кроме того, включаются следующие лица."), ("Text", "- эксперты;"),
+                       ("Text", "3. Следующий пункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.5"] == "S/I/1/б"
+    assert got["2.9"] == "S/I/2" and got["2.10"] == "S/I/2"
+
+
+def test_known_limitations_are_pinned():
+    """Known limitations (docs/AGENTS.md): a subheading after a table or after an editorial note
+    stays with the previous point; a capitalised second paragraph of the last subpoint goes to the point."""
+    got = owners(S.build(extraction(styled_regulation(
+        ("Text", "4. Показатели приведены в таблице."), ("Table", "<table><tr><td>1</td></tr></table>"),
+        ("Section-header", "Сроки предоставления услуги"), ("Text", "5. Срок составляет 5 дней."),
+        ("Text", "(в ред. Приказа Минкультуры России от 01.02.2020 N 5)"),
+        ("Section-header", "Порядок обжалования"), ("Text", "6. Жалоба подается в письменной форме.")))))
+    assert got["2.9"] == "S/I/4" and got["2.12"] == "S/I/5"
+    pages = regulation(("Text", "1. Заявление содержит:"), ("Text", "а) сведения о заявителе;"),
+                       ("Text", "б) сведения о документе."), ("Text", "Российской Федерации гражданам выдается справка."),
+                       ("Text", "2. Следующий пункт."))
+    assert owners(S.build(extraction(pages)))["2.5"] == "S/I/1"
