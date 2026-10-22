@@ -133,6 +133,12 @@
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen
   v1: `data/m1/m1-04a/experiments/20261022-dev-regression-cycle3-baseline/` (6660/7072 no_section, `cross_scope_v2` 308).
+- Cycle 3 B2 (prototype, VERSION unchanged until B5): an annex caption «Приложение [№|N] N к <referent>» opens
+  an annex without «УТВЕРЖДЕН». Referent = the act (`ACT_REFERENT`: закону/кодексу/постановлению/приказу/указу/
+  распоряжению/решению, optional «настоящему») -> `A/AN<n>`; otherwise the current attached document `S<k>/AN<n>`.
+  A body caption up to 300 characters is accepted when its reference names the act or a capitalised document
+  («к Порядку …», «к СП …»); a caption ending in a dot is a sentence unless it ends in «г.». Regression
+  `20261022-dev-regression-cycle3-b2`: 6968/7072 no_section (+308: fz-431/433, fsnson-282), `cross_scope_v2` 0, no drops.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

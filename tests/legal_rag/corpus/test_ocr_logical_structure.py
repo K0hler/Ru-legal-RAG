@@ -629,3 +629,67 @@ def test_requisite_block_opens_only_on_short_unterminated_lines():
     pages = [[("Text", "1. Утвердить Правила."), ("Text", "2 100039 06204 3"), ("Text", "2. Второй.")]]
     got = owners(S.build(extraction(pages)))
     assert got["1.1"] == "A/1"
+
+
+LAW_TITLE = '"О бюджете Фонда социального страхования Российской Федерации на 2019 год и на плановый период 2020 и 2021 годов"'
+
+
+def test_law_annex_caption_opens_annex_of_the_act():
+    # «Приложение N к Федеральному закону "…"»: a long body caption (no «УТВЕРЖДЕН») after the
+    # signer block opens annex N of the act; the signer block stays with the act root.
+    caption = f"Приложение {{n}}\nк Федеральному закону\n{LAW_TITLE}"
+    assert len(S.view(caption.format(n=1))) > 120
+    pages = [[("Section-header", "Статья 1"), ("Text", "1. Утвердить перечень согласно приложению 1 "
+                                                       "к настоящему Федеральному закону."),
+              ("Text", "2. Утвердить источники согласно приложению 2 к настоящему Федеральному закону."),
+              ("Text", "Президент Российской Федерации В.Путин", 580),
+              ("Text", "Москва, Кремль 28 ноября 2018 года № 431-ФЗ")],
+             [("Text", caption.format(n=1), 900), ("Section-header", "Перечень главных администраторов"),
+              ("Table", "<table><tr><td>100</td></tr></table>")],
+             [("Text", caption.format(n=2), 900), ("Section-header", "Источники финансирования"),
+              ("Text", "(тыс. рублей)"), ("Table", "<table><tr><td>394</td></tr></table>")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/ст1/ч1" and got["1.3"] == "A" and got["1.4"] == "A"
+    assert [got[f"2.{k}"] for k in range(3)] == ["A/AN1"] * 3
+    assert [got[f"3.{k}"] for k in range(4)] == ["A/AN2"] * 4
+
+
+def test_annex_caption_to_attached_document_opens_its_annex():
+    # «Приложение к Порядку …» after the approved Порядок: annex of the attached document
+    # (S/AN), with no «УТВЕРЖДЕН»; a later «Приложение № 2 к приказу …» is an annex of the act.
+    caption = ("Приложение\nк Порядку составления и утверждения\nплана финансово-хозяйственной деятельности\n"
+               "федеральных государственных учреждений\nнаходящихся в ведении Федеральной службы\n"
+               "по надзору в сфере образования и науки,\nутвержденному приказом Рособрнадзора")
+    assert len(S.view(caption)) > 120
+    pages = [[("Text", "1. Утвердить прилагаемый Порядок."), ("Text", "2. Контроль оставляю за собой."),
+              ("Text", "Министр", 1200)],
+             [("Page-header", "Приложение", 1100), ("Text", "УТВЕРЖДЕН\nприказом Федеральной службы", 1000),
+              ("Title", "Порядок составления плана"), ("Section-header", "I. Общие положения"),
+              ("Text", "1. Рекомендуемый образец Плана приведен в приложении к настоящему Порядку."),
+              ("Text", "2. План утверждается руководителем.")],
+             [("Text", caption, 900), ("Text", 'от "___" ______ 2020 г. № ______'),
+              ("Text", "Рекомендуемый образец"), ("Section-header", "Раздел I. Поступления и выплаты"),
+              ("Table", "<table><tr><td>1</td></tr></table>")],
+             [("Text", "Приложение № 2\nк приказу Федеральной службы\nот 12 мая 2020 г.", 900),
+              ("Text", "1. Первая позиция.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/1" and got["2.5"] == "S/I/2"
+    assert got["3.0"] == "S/AN" and got["3.1"] == "S/AN" and got["3.2"] == "S/AN"
+    assert got["3.3"] == "S/AN/I" and got["3.4"] == "S/AN/I"
+    assert got["4.0"] == "A/AN2" and got["4.1"] == "A/AN2/1"
+
+
+def test_annex_reference_inside_a_sentence_opens_no_annex():
+    pages = [[("Text", "1. Утвердить Порядок."), ("Text", "2. Контроль оставляю за собой.")],
+             [("Text", "УТВЕРЖДЕН\nприказом Федеральной службы", 1000), ("Section-header", "I. Общие положения"),
+              ("Text", "1. Образец приведен в приложении к настоящему Порядку."),
+              ("Text", "согласно приложению 1 к Федеральному закону, и в приложении к Правилам."),
+              ("Text", f"Приложение 1 к Федеральному закону {LAW_TITLE} применяется в части, "
+                       "не противоречащей настоящему Порядку."),
+              ("Text", "Приложение к Порядку утверждается руководителем учреждения."),
+              ("Text", "2. План утверждается руководителем.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == "S/I/1"
+    assert got["2.3"] == "S/I/1" and got["2.4"] == "S/I/1" and got["2.5"] == "S/I/1"
+    assert got["2.6"] == "S/I/2"
+    assert not any(owner and "/AN" in owner for owner in got.values())

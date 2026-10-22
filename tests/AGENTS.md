@@ -22,6 +22,9 @@
   markers), attached-document captions («Проект», Page-header annex captions,
   repeated running captions), requisite blocks after the last norm and their
   negative probes (inline references, «Министерство…», «Москва и …»).
+  Cycle 3 B2: long annex captions to the act («Приложение 1 к Федеральному закону "…"» -> `A/AN1`)
+  and to an attached document («Приложение к Порядку …» -> `S/AN`), and in-sentence references
+  («согласно приложению 1», a sentence starting «Приложение … » and ending in a dot) open no annex.
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only

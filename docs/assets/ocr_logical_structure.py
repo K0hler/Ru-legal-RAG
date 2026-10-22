@@ -132,7 +132,8 @@ def load_regions(extraction: dict) -> list[Region]:
 
 
 APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]?)\b(?:\s|$)")  # case-sensitive capitalised word
-ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*№\s*(\d+))?(?:\s+(к\s.+))?$")
+# the number may follow «№», «N» or a plain space: «Приложение № 2», «Приложение N 2», «Приложение 2»
+ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?:№|N)?\s*(\d+))?(?:\s+(к\s.+))?$")
 
 
 # A standalone draft mark: «Проект» / «ПРОЕКТ», optionally followed by one word that
@@ -155,19 +156,37 @@ def is_project_caption(text: str) -> bool:
     return bool(PROJECT.match(text)) and len(text) <= PROJECT_MAX
 
 
+# The referent of an annex caption «Приложение [№] N к <referent>». The act itself: a law,
+# code, resolution, order, decree, directive or decision («к Федеральному закону», «к
+# настоящему приказу»). Any other referent is a document: an attached document named by its
+# kind («к Правилам», «к Порядку», «к Административному регламенту») or its designation («к
+# СП 2.1.3684-21»), which a capitalised word right after «к» (and «настоящ…») marks.
+ACT_REFERENT = re.compile(r"^к\s+(?:настоящему\s+)?(?:(?:федеральному\s+)?(?:конституционному\s+)?закону"
+                          r"|кодексу|постановлению|приказу|указу|распоряжению|решению)(?![а-яё])", re.IGNORECASE)
+DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[А-ЯЁA-Z]")
+
+
+def annex_to_act(reference: str) -> bool:
+    return bool(ACT_REFERENT.match(reference))
+
+
 def annex_caption(p) -> re.Match | None:
-    """An annex caption paragraph. A body caption is short (<= CAPTION_MAX) and may end in
-    a dot («… от 12 мая 2020 г.»). A caption printed as a page header with role content is
-    positional evidence, so a long reference «к приказу ... от ... №» is accepted up to
-    CAPTION_BLOCK_MAX; that longer path rejects a final dot (a sentence) except «г.»."""
+    """An annex caption paragraph «Приложение [№] N [к <referent>]», never a sentence: a final
+    dot is accepted only after a date («… от 12 мая 2020 г.»). A body caption is short (<=
+    CAPTION_MAX). A longer one, up to CAPTION_BLOCK_MAX, is a caption when it is printed as a
+    page header (positional evidence) or when its reference names the act or a document
+    («Приложение 1 к Федеральному закону "О бюджете …"», «Приложение к Порядку …,
+    утвержденному приказом …»). A reference inside a sentence («согласно приложению 1»)
+    does not start the paragraph and opens nothing."""
     text = p.text
     m = ANNEX.match(text)
-    if not m:
+    if not m or (text.endswith(".") and not re.search(r"\sг\.$", text)):
         return None
     if len(text) <= CAPTION_MAX:
         return m
-    if p.first.category == "Page-header" and len(text) < CAPTION_BLOCK_MAX and (
-            not text.endswith(".") or re.search(r"\sг\.$", text)):
+    reference = m.group(2) or ""
+    if len(text) < CAPTION_BLOCK_MAX and (p.first.category == "Page-header" or annex_to_act(reference)
+                                          or DOCUMENT_REFERENT.match(reference)):
         return m
     return None
 
@@ -588,7 +607,7 @@ def build(extraction: dict) -> dict:
             number = m.group(1)
             label = f"AN{number}" if number else "AN"
             reference = m.group(2) or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
-            to_act = bool(re.match(r"^к\s+(?:настоящему\s+)?постановлению", reference))
+            to_act = annex_to_act(reference)
             base = approved_scope if approved_opened and not to_act else "A"
             if running and f"{base}/{label}" == scopes[-1][0]:
                 p.kind = "text"  # the current annex's caption repeated in a header: no new scope
