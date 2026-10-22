@@ -694,3 +694,18 @@ def test_refill_round_write_once_and_chain(tmp_path):
     (batch / "selection-refill-02.json").write_text("{}")
     with pytest.raises(ValueError, match="differs from its sha256"):
         A.frozen_selection(batch)
+
+
+def test_code_page_ceiling_applies_to_codes_only():
+    rows = [{"eo_number": "c1", "act_type": "code", "pages": 480, "title": "Кодекс административного судопроизводства Российской Федерации",
+             "number": "21-ФЗ", "date": "2015-03-08"},
+            {"eo_number": "l1", "act_type": "federal_law", "pages": 480, "title": "О бюджете",
+             "number": "1-ФЗ", "date": "2015-03-08"}]
+    quotas = {"code": 1, "federal_law": 1}
+    narrow = P.select_pool(rows, quotas, 7, require_single_edition=False, pages_range=(3, 200))
+    assert narrow["selected"] == [] and "code_pages_max" not in narrow
+    wide = P.select_pool(rows, quotas, 7, require_single_edition=False, pages_range=(3, 200),
+                         code_pages_max=P.CODE_PAGES_MAX)
+    assert [r["eo_number"] for r in wide["selected"]] == ["c1"]
+    assert {r["eo_number"]: r["reason"] for r in wide["rejected"]} == {"l1": "pages_out_of_range"}
+    assert wide["code_pages_max"] == 500 and wide["pages_range"] == [3, 200]

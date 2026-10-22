@@ -12,7 +12,8 @@ Future selection schema /3 uses the opt-in pool adapter. A positive code quota
 requires a separate `freeze-codes --day ISO --output DIR/selection.json` metadata
 freeze passed as `--code-candidates`. The seed orders that list along with day-feed
 candidates. Scope is explicit publication days, not a portal-wide census. The
-200-page profile ceiling stays unchanged unless `--pages-max` is supplied.
+200-page profile ceiling stays unchanged unless `--pages-max` is supplied; codes alone
+may run to CODE_PAGES_MAX (500, owner decision 22.10.2026) whenever the code quota is positive.
 """
 
 import argparse
@@ -50,6 +51,9 @@ BATCH2_QUOTAS = {
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
 BATCH2_LONG_MIN, LONG_PAGES = 4, 20
+# Owner decision 22.10.2026: codes may run up to 500 pages (KAS RF has 480); the
+# profile ceiling for every other category is unchanged.
+CODE_PAGES_MAX = 500
 # Titles that only change or repeal other acts (compared lowercase, after leading quotes).
 AMENDING_PREFIXES = (
     "о внесении изменений",
@@ -146,13 +150,15 @@ def ordered(candidates, seed):
     return sorted(candidates, key=lambda row: order_key(seed, row["eo_number"]))
 
 
-def cheap_reason(row, already_used=frozenset(), pages_range=(PAGES_MIN, PAGES_MAX)):
-    """Rejections decidable from feed metadata alone."""
+def cheap_reason(row, already_used=frozenset(), pages_range=(PAGES_MIN, PAGES_MAX), code_pages_max=None):
+    """Rejections decidable from feed metadata alone. ``code_pages_max`` raises the page
+    ceiling for codes only."""
     if row["eo_number"] in already_used:
         return "already_used"
     if is_amending(row.get("title", "")):
         return "amending_act"
-    if not pages_range[0] <= row["pages"] <= pages_range[1]:
+    upper = code_pages_max if code_pages_max and row.get("act_type") == "code" else pages_range[1]
+    if not pages_range[0] <= row["pages"] <= upper:
         return "pages_out_of_range"
     return None
 
@@ -198,13 +204,13 @@ class QuotaCounter:
 
 
 def select_pool(candidates, quotas, seed, *, require_single_edition=True, already_used=frozenset(),
-                pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES):
+                pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None):
     """Seeded selection. With long_min, a first pass fills the share of acts with at
     least long_pages pages, then a second pass fills the remaining quotas."""
     rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
     reasons = {}
     for row in rows:
-        reason = cheap_reason(row, already_used, pages_range)
+        reason = cheap_reason(row, already_used, pages_range, code_pages_max)
         if reason is None and require_single_edition:
             reason = official_reason(row)
         reasons[row["eo_number"]] = reason
@@ -219,10 +225,13 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
             selected.append({key: row[key] for key in METADATA_FIELDS if key in row})
     rejected = [{"eo_number": row["eo_number"], "reason": reasons[row["eo_number"]] or "quota_full"}
                 for row in rows if row["eo_number"] not in taken]
-    return {"schema_version": SCHEMA, "seed": seed, "quotas": dict(quotas),
-            "require_single_edition": require_single_edition,
-            "pages_range": list(pages_range), "long_min": long_min, "long_pages": long_pages,
-            "long_selected": counter.long, "selected": selected, "rejected": rejected}
+    result = {"schema_version": SCHEMA, "seed": seed, "quotas": dict(quotas),
+              "require_single_edition": require_single_edition,
+              "pages_range": list(pages_range), "long_min": long_min, "long_pages": long_pages,
+              "long_selected": counter.long, "selected": selected, "rejected": rejected}
+    if code_pages_max:
+        result["code_pages_max"] = code_pages_max
+    return result
 
 
 def selected_counts(result):
@@ -432,7 +441,7 @@ def lookup(actual, ips, row):
 
 
 def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
-           pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES):
+           pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None):
     """Single-edition profile: look up candidates in selection order until the quotas are
     filled. Counters are incremental (one pass per phase), mirroring select_pool."""
     rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
@@ -442,7 +451,7 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
             if counter.full():
                 return
             eo = row["eo_number"]
-            if (eo in taken or cheap_reason(row, already_used, pages_range) is not None
+            if (eo in taken or cheap_reason(row, already_used, pages_range, code_pages_max) is not None
                     or not counter.wants(row, long_phase)):
                 continue
             if eo not in enriched:
@@ -502,8 +511,9 @@ def run(args):
         pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
     used = load_already_used(USED_INDEXES, USED_SELECTIONS) if profile["exclude_used"] else set()
+    code_pages_max = CODE_PAGES_MAX if quotas.get("code", 0) else None
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
-               "long_min": long_min, "long_pages": LONG_PAGES}
+               "long_min": long_min, "long_pages": LONG_PAGES, "code_pages_max": code_pages_max}
     code_rows, code_reference = [], None
     if quotas.get("code", 0):
         if not args.code_candidates:
@@ -542,9 +552,10 @@ def run(args):
         if args.feed_cache:
             Path(args.feed_cache).write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
         if strict:
-            enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES)
+            enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES,
+                   code_pages_max)
             rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
-                                              and cheap_reason(r, used, pages_range) is not None]
+                                              and cheap_reason(r, used, pages_range, code_pages_max) is not None]
         else:
             rows = list(pool.values())
         result = select_pool(rows, quotas, args.seed, **options)
@@ -640,6 +651,7 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
     attempts = attempts or {}
     used = set(selection.get("already_used", ())) | set(taken) | set(failures)
     pages_range, seed = tuple(selection["pages_range"]), selection["seed"]
+    code_pages_max = selection.get("code_pages_max")
     long_min, long_pages = selection["long_min"], selection["long_pages"]
     by_eo = {row["eo_number"]: row for row in selection["selected"]}
     kept = [row for row in selection["selected"] if row["eo_number"] not in failures]
@@ -653,7 +665,7 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
         for row in ordered(pool.values(), seed):
             if row["act_type"] != failed["act_type"] or row["eo_number"] in used:
                 continue
-            if cheap_reason(row, frozenset(), pages_range) is not None:
+            if cheap_reason(row, frozenset(), pages_range, code_pages_max) is not None:
                 continue
             if need_long and row["pages"] < long_pages:
                 continue
@@ -665,10 +677,13 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
         chosen.append(new)
         replaced.append({"failed_eo_number": eo, "failed_reason": failures[eo], "act_type": failed["act_type"],
                          "attempt": attempt, "replacement": new})
-    return {"schema_version": REFILL_SCHEMA, "seed": seed, "pages_range": list(pages_range),
-            "long_min": long_min, "long_pages": long_pages, "procedure": REFILL_PROCEDURE,
-            "replaced": replaced, "selected": chosen,
-            "long_selected_after": sum(r["pages"] >= long_pages for r in kept + chosen)}
+    result = {"schema_version": REFILL_SCHEMA, "seed": seed, "pages_range": list(pages_range),
+              "long_min": long_min, "long_pages": long_pages, "procedure": REFILL_PROCEDURE,
+              "replaced": replaced, "selected": chosen,
+              "long_selected_after": sum(r["pages"] >= long_pages for r in kept + chosen)}
+    if code_pages_max:
+        result["code_pages_max"] = code_pages_max
+    return result
 
 
 def refill_files(batch_dir):
