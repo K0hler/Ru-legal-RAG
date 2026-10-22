@@ -7,6 +7,12 @@ acquire_official_json_transfer.py::discover) and only their list of editions is 
 Profiles: `batch-01` (frozen; single-edition filter) and `batch-02` (official lookup is
 metadata only, codes, pages 3..200, a long-document share filled first, documents
 already used in development/reserved/batch 1 excluded).
+
+Future selection schema /3 uses the opt-in pool adapter. A positive code quota
+requires a separate `freeze-codes --day ISO --output DIR/selection.json` metadata
+freeze passed as `--code-candidates`. The seed orders that list along with day-feed
+candidates. Scope is explicit publication days, not a portal-wide census. The
+200-page profile ceiling stays unchanged unless `--pages-max` is supplied.
 """
 
 import argparse
@@ -91,13 +97,14 @@ REGIONAL_MARK = re.compile(
     re.IGNORECASE,
 )
 APPROVED_TEXT_MARK = "утвержд"  # government resolutions need an approved text
-# A code is a federal law titled "<...> кодекс <...> Российской Федерации" (the word
-# "кодекс" in the nominative), e.g. "Градостроительный кодекс Российской Федерации".
+# Recognize a title, not a reference to a code inside another law's title.
 ACT_PREFIX = re.compile(
     r"^(?:Федеральный (?:конституционный )?закон|Указ|Постановление|Распоряжение|Приказ)\b"
     r"[^\"«]*? от \d\d\.\d\d\.\d{4} № \S+\s*"
 )
-CODE_TITLE = re.compile(r"^(?:.*\s)?кодекс(?:\s.*)?\sРоссийской Федерации$", re.IGNORECASE)
+CODE_TITLE = re.compile(
+    r"^(?:[\w-]+\s+)*кодекс\s+(?:[\w-]+\s+)*Российской Федерации(?:\s+.*)?$", re.IGNORECASE,
+)
 
 
 def _norm(value):
@@ -116,12 +123,13 @@ def is_amending(title):
 def categorize(complex_name, name):
     """Quota category from feed metadata, or None (ignored, not a rejection)."""
     text = _norm(complex_name)
+    title = _title(name) or _title(complex_name)
+    if CODE_TITLE.fullmatch(title) and not title.casefold().startswith("о "):
+        return "code"
     for category, pattern in CATEGORY_PREFIXES:
         if pattern.match(text):
             if category == "government_resolution" and APPROVED_TEXT_MARK not in _norm(name).lower():
                 return None
-            if category == "federal_law" and CODE_TITLE.match(_title(name)) and not is_amending(name):
-                return "code"
             return category
     match = ORDER_PREFIX.match(text)
     if match and FEDERAL_BODY.match(match.group(1)) and not REGIONAL_MARK.search(match.group(1)):
@@ -341,11 +349,15 @@ def lookup_official(actual, ips, number, iso):
             "detail": "ambiguous_official_identity" if docs else "not_found"}
 
 
-def feed_candidates(publication, day):
+def feed_candidates(publication, day, diagnostics=None):
     """Feed-only cards for one publication day (all pages), quota-relevant types only."""
     cards, page, total = [], 1, 1
     while page <= total:
         feed = _retry(lambda: publication.fetch_feed(day, page))
+        if diagnostics is not None:
+            diagnostics.append({"date": day.isoformat(), "page": page, "source_url": feed["source_url"],
+                                "sha256": hashlib.sha256(feed["raw_bytes"]).hexdigest(),
+                                "rejected_items": feed.get("rejected_items", [])})
         total = feed["pages_total"]
         for item in feed["events"]:
             kind = categorize(item["complexName"], item["name"])
@@ -358,6 +370,49 @@ def feed_candidates(publication, day):
             })
         page += 1
     return cards
+
+
+CODE_CANDIDATES_SCHEMA = "m1-04a-code-candidates/1"
+
+
+def freeze_code_candidates(publication, days, output):
+    """Freeze all code candidates from explicit publication days, before any body fetch."""
+    if selection_pair_state(output) != "absent":
+        raise FileExistsError(f"code candidate selection already exists: {output}")
+    pages, candidates = [], {}
+    for day in sorted(set(days)):
+        for row in feed_candidates(publication, day, pages):
+            if row["act_type"] == "code":
+                candidates.setdefault(row["eo_number"], row)
+    result = {"schema_version": CODE_CANDIDATES_SCHEMA,
+              "scope": "All non-amending code titles in the listed publication days; not a portal-wide census",
+              "days": [d.isoformat() for d in sorted(set(days))], "feed_pages": pages,
+              "candidates": sorted(candidates.values(), key=lambda r: r["eo_number"])}
+    payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    write_selection_pair(output, payload)
+
+
+def load_code_candidates(path):
+    path = Path(path)
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != path.with_name("selection.sha256").read_text(encoding="utf-8").split()[0]:
+        raise ValueError("code candidates differ from recorded sha256")
+    result = json.loads(raw)
+    if result["schema_version"] != CODE_CANDIDATES_SCHEMA:
+        raise ValueError("unsupported code candidates schema")
+    rows = result["candidates"]
+    seen = set()
+    for row in rows:
+        eo = row["eo_number"]
+        if (not isinstance(eo, str) or not re.fullmatch(r"[0-9]{16}", eo) or eo in seen
+                or row["act_type"] != "code" or categorize("", row["title"]) != "code"
+                or not isinstance(row["number"], str) or not row["number"].strip()
+                or type(row["pages"]) is not int or row["pages"] <= 0):
+            raise ValueError("invalid code candidate metadata")
+        date.fromisoformat(row["date"])
+        seen.add(eo)
+    return rows, digest
 
 
 def sample_days(start, end, seed, count=120):
@@ -429,7 +484,7 @@ def load_feed_cache(path):
 def run(args):
     from legal_rag.sources.actual_pravo import ActualPravoConnector
     from legal_rag.sources.legislation_russia import LegislationRussiaConnector
-    from legal_rag.sources.publication_pravo import PublicationPravoConnector
+    from legal_rag.sources.publication_pool import PublicationPoolConnector
 
     output = Path(args.output)
     state = selection_pair_state(output)
@@ -441,28 +496,46 @@ def run(args):
     profile = PROFILES[args.profile]
     quotas = override_quotas(profile["quotas"], args.quota)
     pages_range, long_min = profile["pages_range"], profile["long_min"]
+    if args.pages_max is not None:
+        if args.pages_max < pages_range[0]:
+            raise ValueError("--pages-max must be at least the profile's minimum")
+        pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
     used = load_already_used(USED_INDEXES, USED_SELECTIONS) if profile["exclude_used"] else set()
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
                "long_min": long_min, "long_pages": LONG_PAGES}
-    publication = PublicationPravoConnector(timeout=25, request_interval=1)
+    code_rows, code_reference = [], None
+    if quotas.get("code", 0):
+        if not args.code_candidates:
+            raise ValueError("a code quota requires --code-candidates frozen by freeze-codes")
+        code_rows, digest = load_code_candidates(args.code_candidates)
+        code_rows = [r for r in code_rows if args.date_from <= r["date"] <= args.date_to]
+        code_reference = {"path": str(Path(args.code_candidates).resolve()), "sha256": digest}
+    publication = PublicationPoolConnector(timeout=25, request_interval=1)
     actual = ActualPravoConnector(timeout=25, request_interval=1)
     ips = LegislationRussiaConnector(timeout=25, request_interval=1)
     all_days = sample_days(date.fromisoformat(args.date_from), date.fromisoformat(args.date_to), args.seed)
     cache = load_feed_cache(args.feed_cache)
-    pool, enriched, failed_days, sampled = {}, {}, [], 0
+    pool = {row["eo_number"]: row for row in code_rows}
+    enriched, failed_days, sampled, feed_pages = {}, [], 0, []
     for limit in (60, 120):
         for day in all_days[sampled:limit]:
             key = day.isoformat()
             if key not in cache:
                 try:
-                    cache[key] = feed_candidates(publication, day)
+                    diagnostics = []
+                    cards = feed_candidates(publication, day, diagnostics)
+                    cache[key] = {"candidates": cards, "feed_pages": diagnostics}
                 except Exception as error:  # a bad day is recorded, never silently dropped
                     cache[key] = {"error": f"{type(error).__name__}: {error}"}
-            if isinstance(cache[key], dict):
+            if isinstance(cache[key], dict) and "error" in cache[key]:
                 failed_days.append({"date": key, "error": cache[key]["error"]})
                 continue
-            for row in cache[key]:
+            day_result = cache[key]
+            if isinstance(day_result, dict):
+                feed_pages.extend(day_result["feed_pages"])
+                day_result = day_result["candidates"]
+            for row in day_result:
                 pool.setdefault(row["eo_number"], row)
             print("day", key, "pool", len(pool), flush=True)
         sampled = limit
@@ -496,6 +569,10 @@ def run(args):
     if args.quota_change:
         result["quota_change"] = json.loads(Path(args.quota_change).read_text(encoding="utf-8"))
     result.update({
+        "schema_version": "m1-04a-pool-selection/3",
+        "publication_adapter": publication.adapter_version,
+        "code_candidates": code_reference,
+        "feed_pages": feed_pages,
         "profile": args.profile,
         "min_days": args.min_days,
         "date_range": [args.date_from, args.date_to],
@@ -511,7 +588,8 @@ def run(args):
         "quotas_filled": quotas_full(result),
         "classification_source": "feed complexName prefix (feed items carry only type/authority ids); "
                                  "number and date from feed `number` and `documentDate`; "
-                                 "code = federal law titled '... кодекс ... Российской Федерации'",
+                                 "code = standalone code title, independent of the portal type; "
+                                 "targeted code candidates frozen separately before selection",
     })
     payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     if not result["quotas_filled"]:
@@ -544,6 +622,8 @@ def pool_from_cache(cache, days):
     pool = {}
     for day in days:
         cards = cache.get(day)
+        if isinstance(cards, dict):
+            cards = cards.get("candidates")
         if isinstance(cards, list):
             for row in cards:
                 pool.setdefault(row["eo_number"], row)
@@ -630,6 +710,14 @@ def refill_round(batch_dir, feed_cache, expected_sha=None):
     selection = json.loads(sel_path.read_text(encoding="utf-8"))
     prior = refill_files(batch_dir)
     pool = pool_from_cache(json.loads(Path(feed_cache).read_text(encoding="utf-8")), selection["days_sampled"])
+    if selection.get("code_candidates"):
+        reference = selection["code_candidates"]
+        codes, code_digest = load_code_candidates(reference["path"])
+        if code_digest != reference["sha256"]:
+            raise ValueError("code candidates differ from frozen selection sha256")
+        for row in codes:
+            if selection["date_range"][0] <= row["date"] <= selection["date_range"][1]:
+                pool.setdefault(row["eo_number"], row)
     attempts = {r["eo_number"]: 0 for r in selection["selected"]}
     acts = list(selection["selected"])
     for record in prior:
@@ -679,6 +767,17 @@ def main(argv=None):
         argv = sys.argv[1:]
     if argv[:1] == ["refill"]:
         return refill_main(argv[1:])
+    if argv[:1] == ["freeze-codes"]:
+        from legal_rag.sources.publication_pool import PublicationPoolConnector
+
+        parser = argparse.ArgumentParser(prog="select_m1_04a_pool.py freeze-codes")
+        parser.add_argument("--day", action="append", required=True, type=date.fromisoformat,
+                            help="target publication day; repeat to cover more days (all pages)")
+        parser.add_argument("--output", required=True, type=Path,
+                            help="new directory's selection.json; freezes metadata only")
+        args = parser.parse_args(argv[1:])
+        freeze_code_candidates(PublicationPoolConnector(timeout=25, request_interval=1), args.day, args.output)
+        return 0
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--from", dest="date_from", required=True)
     parser.add_argument("--to", dest="date_to", required=True)
@@ -692,6 +791,8 @@ def main(argv=None):
     parser.add_argument("--min-days", type=int, default=0, choices=MIN_DAYS_CHOICES,
                         help="sample at least this many days even if quotas fill earlier")
     parser.add_argument("--quota-change", help="JSON file whose object is recorded as `quota_change`")
+    parser.add_argument("--code-candidates", type=Path, help="freeze-codes selection.json (required for code quota)")
+    parser.add_argument("--pages-max", type=int, help="explicit page ceiling override (e.g. 500 for a 480-page code)")
     return run(parser.parse_args(argv))
 
 

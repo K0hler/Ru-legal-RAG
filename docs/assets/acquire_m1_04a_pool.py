@@ -35,6 +35,8 @@ short prepositions/conjunctions). "Российской Федерации" is r
 Receipts `<batch>/receipts/<eo>.json` and failures `<batch>/failures/` are written once; a repeated run
 verifies every recorded file hash without network access and reports `unchanged`.
 Network: existing connectors only, request_interval 1 s.
+Batch-01/02 retain their frozen v1 publication adapter; other batch directories
+use publication-pravo-pool/2. Codes use the `code-<number>-<year>` slug.
 """
 
 import argparse
@@ -52,6 +54,7 @@ from legal_rag.corpus.compiler import json_bytes, load_input, manifest_digest  #
 from legal_rag.sources.acquisition import acquire_publication  # noqa: E402
 from legal_rag.sources.legislation_russia import LegislationRussiaConnector  # noqa: E402
 from legal_rag.sources.publication_pravo import PublicationPravoConnector  # noqa: E402
+from legal_rag.sources.publication_pool import PublicationPoolConnector  # noqa: E402
 from legal_rag.sources.structure_bundle import StructureConnector, acquire_bundle  # noqa: E402
 
 M1_04A = PROJECT / "data/m1/m1-04a"
@@ -77,7 +80,7 @@ AUTHORIZATION_OCR_GOLD = (
     "dated-edition admission, no external document transmission."
 )
 AUTHORIZED_BY = "project-owner-decision-2026-10-21-recorded-by-agent"
-KIND_PREFIX = {"federal_law": "fz", "presidential_decree": "ukaz", "government_resolution": "pp",
+KIND_PREFIX = {"code": "code", "federal_law": "fz", "presidential_decree": "ukaz", "government_resolution": "pp",
                "government_order": "rp", "ministry_order": "prikaz"}
 TRANSLIT = dict(zip(
     "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
@@ -186,6 +189,15 @@ def check_edition(card, act):
 # ------------------------------------------------------------------ connectors
 
 class PoolPublication(PublicationPravoConnector):
+    act = None
+
+    def fetch(self, eo_number):
+        fetched = super().fetch(eo_number)
+        check_publication(fetched, self.act)
+        return fetched
+
+
+class PoolPublicationV2(PublicationPoolConnector):
     act = None
 
     def fetch(self, eo_number):
@@ -454,7 +466,8 @@ def retryable(failure):
 
 def run(batch, gold, with_official=False):
     selection, selection_sha = frozen_selection(batch, with_official)
-    publication = PoolPublication(timeout=60, request_interval=1)
+    connector = PoolPublication if batch.name in {"batch-01", "batch-02"} else PoolPublicationV2
+    publication = connector(timeout=60, request_interval=1)
     ips = PoolIPS(timeout=40, request_interval=1)
     failed = 0
     for act in selection["selected"]:

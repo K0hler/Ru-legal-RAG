@@ -1,5 +1,13 @@
 # Source acquisition module
 
+- `publication_pool.py` is opt-in `publication-pravo-pool/2` for future M1-04A
+  batches. It reuses frozen v1 validators through temporary metadata views:
+  accept an empty string `name` only on Government orders, with a `complexName`
+  warning; archive the exact original card and its hash. Reject feed items
+  independently, retaining raw response bytes, pagination and indexed reasons.
+  `File/Pdf` may return ZIP (observed for December 2011); report the format and
+  headers without treating it as PDF or unpacking it. Frozen v1 stays unchanged.
+
 - `structure_bundle.py` is an opt-in `official-structure-bundle/2` acquisition
   wrapper. It reuses frozen adapters and lifecycle without changing their files
   or `edition-candidate/1`. Both requests use the selected edition; archive the

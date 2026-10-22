@@ -1,5 +1,12 @@
 # Test instructions
 
+- `corpus/test_m1_04a_pool_selection.py` covers targeted code metadata freezes,
+  checksum refusal, standalone code titles across portal types, code slugs and
+  selection/refill from the same frozen candidate list. Include an authored
+  480-page code: the old 200-page ceiling remains the default; a declared
+  `--pages-max` override must reach selection and refill. New feed caches carry
+  candidates and indexed rejection diagnostics; old list caches remain readable.
+
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open
   approval scope, terminated list abzacy stay separate, decimal/global point

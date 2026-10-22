@@ -1,5 +1,17 @@
 # Documentation instructions
 
+- M1-04A source-pool fixes are recorded in
+  `milestones/m1/04a/M1_04A_BUG_SOURCE_ACQUISITION_2026-10-22.md` ("Результат").
+  Future selection schema /3 uses `publication-pravo-pool/2`, retains per-item
+  feed diagnostics, and requires `--code-candidates` when the code quota is
+  positive. `assets/select_m1_04a_pool.py freeze-codes --day ISO --output
+  DIR/selection.json` freezes all code candidates from explicit days before
+  selection/body acquisition; this is a bounded targeted pool, not a census.
+  KAS publication 2015-03-09 declares 480 pages, so using it requires an explicit
+  `--pages-max 500`; the old page limit is not silently relaxed. Refills verify
+  and reuse the pinned code list. Batch-01/02 data and their v1 acquisition
+  route remain frozen; future acquisition directories use the opt-in wrapper.
+
 - `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
   logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),
   not G13 qualification. Keep development, holdout-1 (failed before two generic

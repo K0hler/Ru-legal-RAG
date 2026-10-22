@@ -368,6 +368,98 @@ def test_titles_with_full_act_prefix():
     assert P.select_pool([card(2, title=kept)], {"federal_law": 1}, 1)["selected"]
 
 
+@pytest.mark.parametrize("title", [
+    "Кодекс Российской Федерации об административных правонарушениях",
+    "Кодекс административного судопроизводства Российской Федерации",
+    "Градостроительный кодекс Российской Федерации",
+])
+def test_code_titles_with_different_portal_types(title):
+    for prefix in ("Федеральный закон от 01.01.2020 № 1-ФЗ", title):
+        assert P.categorize(prefix, title) == "code"
+    assert P.categorize("Федеральный закон от 01.01.2020 № 1-ФЗ",
+                        "О введении в действие " + title) == "federal_law"
+
+
+def test_code_slug_can_be_acquired():
+    assert A.slug(card(1, "code", number="21-ФЗ", date="2015-03-08")) == "code-21-2015"
+
+
+def test_targeted_code_candidates_frozen_before_selection(tmp_path):
+    import json
+    from datetime import date
+
+    title = "Кодекс Российской Федерации об авторских примерах"
+
+    class Publication:
+        calls = []
+
+        def fetch_feed(self, day, page):
+            self.calls.append((day, page))
+            return {"events": [{"eoNumber": f"{page:016d}", "complexName": title,
+                                "name": title, "number": str(page), "documentDate": day.isoformat(),
+                                "pagesCount": 30}], "pages_total": 2,
+                    "raw_bytes": f"authored page {page}".encode(), "source_url": f"http://source/{page}",
+                    "rejected_items": []}
+
+    publication = Publication()
+    path = tmp_path / "selection.json"
+    P.freeze_code_candidates(publication, [date(2020, 1, 1)], path)
+    rows, digest = P.load_code_candidates(path)
+    assert len(rows) == 2 and publication.calls == [(date(2020, 1, 1), 1), (date(2020, 1, 1), 2)]
+    assert len(json.loads(path.read_bytes())["feed_pages"]) == 2
+    result = P.select_pool(rows, {"code": 1}, 71, require_single_edition=False)
+    assert ids(result) == ids(P.select_pool(list(reversed(rows)), {"code": 1}, 71,
+                                          require_single_edition=False))
+    assert digest == P.hashlib.sha256(path.read_bytes()).hexdigest()
+    path.write_bytes(path.read_bytes() + b" ")
+    with pytest.raises(ValueError, match="sha256"):
+        P.load_code_candidates(path)
+
+
+def test_new_feed_cache_retains_candidates_with_rejections():
+    cache = {"2020-01-01": {"candidates": [card(1)], "feed_pages": [{"rejected_items": ["bad"]}]}}
+    assert P.pool_from_cache(cache, ["2020-01-01"]) == {card(1)["eo_number"]: card(1)}
+
+
+def test_selection_and_refill_use_frozen_targeted_codes(tmp_path, monkeypatch):
+    import json
+    from datetime import date, timedelta
+    from types import SimpleNamespace
+
+    codes = [card(i, "code", title="Водный кодекс Российской Федерации", pages=480) for i in (1, 2)]
+    code_path = tmp_path / "codes" / "selection.json"
+    P.write_selection_pair(code_path, json.dumps({"schema_version": P.CODE_CANDIDATES_SCHEMA,
+                                                "candidates": codes}).encode())
+    days = [date(2020, 1, 1) + timedelta(days=i) for i in range(120)]
+    cache = {d.isoformat(): [] for d in days}
+    cache[days[0].isoformat()] = {"candidates": [card(3)],
+                                "feed_pages": [{"rejected_items": [{"index": 1, "reason": "invalid_feed"}]}]}
+    cache_path = tmp_path / "feed.json"
+    cache_path.write_text(json.dumps(cache), encoding="utf-8")
+    monkeypatch.setattr(P, "sample_days", lambda *args: days)
+    monkeypatch.setitem(P.PROFILES, "test", {"quotas": {"code": 1, "federal_law": 1},
+                       "pages_range": (3, 200), "long_min": 1,
+                       "require_single_edition": False, "exclude_used": False})
+    monkeypatch.setattr(P, "lookup", lambda *args: {"in_official_tree": False, "official_found": False})
+    batch = tmp_path / "batch-03"
+    args = SimpleNamespace(output=batch / "selection.json", profile="test", quota=[],
+                           code_candidates=code_path, seed=7, date_from="2020-01-01", date_to="2020-12-31",
+                           feed_cache=cache_path, min_days=0, partial_output=None, quota_change=None,
+                           pages_max=500)
+    assert P.run(args) == 0
+    selection = json.loads(Path(args.output).read_bytes())
+    assert selection["schema_version"] == "m1-04a-pool-selection/3"
+    assert selection["selected_per_category"] == {"code": 1, "federal_law": 1}
+    assert selection["pages_range"] == [3, 500]
+    assert selection["feed_pages"][0]["rejected_items"][0]["index"] == 1
+    failed = next(r for r in selection["selected"] if r["act_type"] == "code")
+    (batch / "failures").mkdir()
+    (batch / "failures" / f"{failed['eo_number']}-test.json").write_text(json.dumps({"reason": "authored"}))
+    refill = P.refill_round(batch, cache_path)
+    assert refill["selected"][0]["act_type"] == "code"
+    assert refill["selected"][0]["eo_number"] != failed["eo_number"]
+
+
 def test_quota_override_and_zero_quota():
     quotas = P.override_quotas(P.BATCH2_QUOTAS, ["code=0", "federal_law=4"])
     assert quotas["code"] == 0 and quotas["federal_law"] == 4 and P.BATCH2_QUOTAS["code"] == 1
@@ -432,6 +524,25 @@ def test_pool_publication_refuses_before_any_write(tmp_path, monkeypatch):
     with pytest.raises(A.PublicationMismatch):
         A.acquire_pdf(POOL_ACT, connector, tmp_path)
     assert [p for p in tmp_path.rglob("*") if p.is_file()] == []
+
+
+def test_pool_v2_checks_selected_identity_before_persistence(tmp_path, monkeypatch):
+    monkeypatch.setattr(A.PublicationPoolConnector, "fetch",
+                        lambda self, eo: make_fetched(POOL_ACT, pages_count=999))
+    with pytest.raises(A.PublicationMismatch):
+        A.acquire_pdf(POOL_ACT, A.PoolPublicationV2(), tmp_path)
+    assert not list(tmp_path.rglob("*"))
+
+
+@pytest.mark.parametrize("batch, expected", [("batch-01", "v1"), ("batch-02", "v1"), ("batch-03", "v2")])
+def test_batch_connector_version_is_independent_of_target_date(monkeypatch, batch, expected):
+    seen = []
+    monkeypatch.setitem(A.TARGET_DATES, "batch-03", "2026-10-22")
+    monkeypatch.setattr(A, "frozen_selection", lambda *args: ({"selected": []}, "sha"))
+    monkeypatch.setattr(A, "PoolPublication", lambda **kwargs: seen.append("v1"))
+    monkeypatch.setattr(A, "PoolPublicationV2", lambda **kwargs: seen.append("v2"))
+    assert A.run(Path(batch), Path("unused")) == 0
+    assert seen == [expected]
 
 
 def test_write_once_conflict(tmp_path):
