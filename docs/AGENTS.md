@@ -62,7 +62,11 @@
   G13/Task 3: v1 1077/1782, `code-final` 597, `/7` 123. Gold is blind
   (no stage 2/3, no pictures/noise), three parallel Codex jobs, text-only with
   spot page checks. Quote the 75.4% `S/AN<n>`=`S<n+1>` figure only as a
-  labelled reference; the naming and «4.1.» depth are open convention questions.
+  labelled reference; the naming and «4.1.» depth are open convention questions where
+  the prototype follows the earlier SanPiN 2.1.3684-21 development gold (`S/AN<n>`, `A/4/4.1`)
+  and the batch-2 gold departs from it (v1 is silent; annotators could not see the precedent).
+  Both go into convention v2 before batch 3 (proposals: convention v1 section 8, not in
+  force); batch 2 is then re-scored as development, 60.4% stays the first-pass headline.
   No code or government order in the batch. Batch 2 is now development.
   `run_m1_04a_first_pass.py --prototype LABEL=PATH` (freeze schema /3) and
   `classify_m1_04a_errors.py --system` with evidence rules (batch 2+) were

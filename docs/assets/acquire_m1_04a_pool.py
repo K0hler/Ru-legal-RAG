@@ -1,16 +1,21 @@
 """M1-04A check pool: acquire original PDFs (and optionally official IPS trees) for a frozen batch.
 
-`--batch batch-01|batch-02` (a name under `documents/pool/` or a path); official trees only with
-`--with-official` (batch 1 was acquired with them, batch 2 without). Examples below say batch-01.
+`--batch batch-01|batch-02|...` (a name under `documents/pool/` or a path); official trees only
+with `--with-official` (batch 1 was acquired with them, batch 2 and later without: their gold is
+agent annotation of OCR text, see the pool batch 2 report). `<batch>` below is that directory.
 
-Reads only `selection.json` (verified against `selection.sha256`). For every selected act:
+Reads `selection.json` (verified against `selection.sha256`) and any write-once
+`selection-refill-NN.json` (verified against its `.sha256`). For every selected act:
 
 1. Original PDF through `acquire_publication` + `PublicationPravoConnector` into the shared
-   content-addressed archive `documents/pool/batch-01/archive/`; the card must match the
+   content-addressed archive `<batch>/archive/`; the card must match the
    selection (EO number, number, date, pages) and the PDF length must equal the card's
    `pdfFileLength` before anything is persisted. Two runs: `new`, then `unchanged`.
-2. `documents/pool/batch-01/<slug>/input.json` (`corpus-input/1`, role `original`) with a
-   diagnostic processing permission scoped to the exact PDF SHA-256.
+2. `<batch>/<slug>/input.json` (`corpus-input/1`, role `original`, target date from
+   `target_date`) with a diagnostic processing permission scoped to the exact PDF SHA-256.
+   Its `rights_basis` is `AUTHORIZATION_OFFICIAL` with `--with-official`, otherwise
+   `AUTHORIZATION_OCR_GOLD`. Permissions are write-once: the batch-2 files were written before
+   this split and keep the official-gold text (stale; left as is).
 3. (`--with-official`) Official text + structure through `StructureConnector` + `acquire_bundle` (IPS) into
    `gold/<slug>/official/archive/`. Before any request for text the card must carry the
    selected `official_hash`, the act number/date and exactly the one complete edition the
@@ -27,7 +32,7 @@ other authority -> initials of its significant words (without "Российск�
 short prepositions/conjunctions). "Российской Федерации" is removed wherever it stands;
 "Министерство" must be the first remaining word. Lowercase ASCII transliteration: see `TRANSLIT`.
 
-Receipts `documents/pool/batch-01/receipts/<eo>.json` are written once; a repeated run
+Receipts `<batch>/receipts/<eo>.json` and failures `<batch>/failures/` are written once; a repeated run
 verifies every recorded file hash without network access and reports `unchanged`.
 Network: existing connectors only, request_interval 1 s.
 """
@@ -54,12 +59,22 @@ POOL = M1_04A / "documents/pool"
 BATCH = POOL / "batch-01"
 GOLD = M1_04A / "gold"
 TARGET_DATE = "2026-10-21"
-AUTHORIZATION = (
+# Target dates already written into write-once inputs; a batch not listed here uses the UTC run date.
+TARGET_DATES = {"batch-01": TARGET_DATE, "batch-02": TARGET_DATE}
+AUTHORIZATION_OFFICIAL = (
     "Owner decision of 21 October 2026 (docs/milestones/m1/04a/M1_04A_EVALUATION_PROTOCOL_2026-10-20.md, "
     "section 9, item 3 'Pool'): diverse official acts are acquired for the M1-04A check pool and an "
     "automatic gold standard is built by matching OCR against the official pravo.gov.ru structured text. "
     "Diagnostic processing of these exact source assets only; not a legal admission, no dated-edition "
     "admission, no external document transmission."
+)
+AUTHORIZATION = AUTHORIZATION_OFFICIAL  # name used when batch 1 was acquired
+AUTHORIZATION_OCR_GOLD = (
+    "Owner decisions of 21 October 2026 (docs/milestones/m1/04a/M1_04A_EVALUATION_PROTOCOL_2026-10-20.md, "
+    "section 9, item 3 'Pool', and the pool batch 1 plan): diverse official acts are acquired for the M1-04A "
+    "check pool; the gold standard is agent annotation of the OCR text of the original publication, frozen "
+    "before any run. Diagnostic processing of these exact source assets only; not a legal admission, no "
+    "dated-edition admission, no external document transmission."
 )
 AUTHORIZED_BY = "project-owner-decision-2026-10-21-recorded-by-agent"
 KIND_PREFIX = {"federal_law": "fz", "presidential_decree": "ukaz", "government_resolution": "pp",
@@ -232,12 +247,17 @@ def rel(path):
     return Path(path).resolve().relative_to(PROJECT).as_posix()
 
 
-def permission(path, identity, hashes):
+def target_date(batch):
+    """Recorded target date of a known batch, otherwise the UTC date of this run."""
+    return TARGET_DATES.get(Path(batch).name) or datetime.now(UTC).date().isoformat()
+
+
+def permission(path, identity, hashes, rights_basis=AUTHORIZATION_OFFICIAL):
     if not path.exists():
         write(path, {"schema_version": "processing-permission/1", "decision": "allowed", "scope": "diagnostic",
                      "act_identity": identity, "source_asset_sha256s": sorted(hashes),
                      "authorized_by": AUTHORIZED_BY, "authorized_at": datetime.now(UTC).isoformat(),
-                     "rights_basis": AUTHORIZATION})
+                     "rights_basis": rights_basis})
     record = read(path)
     if record["act_identity"] != identity or record["source_asset_sha256s"] != sorted(hashes):
         raise ValueError(f"existing permission has another scope: {path}")
@@ -276,16 +296,18 @@ def acquire_pdf(act, connector, batch):
             "pdf_file_length": card.get("pdfFileLength")}
 
 
-def write_pdf_input(act, key, pdf, batch):
+def write_pdf_input(act, key, pdf, batch, with_official=True):
     archive = batch / "archive"
     item, digest = pdf["item"], pdf["sha256"]
     identity = item["declared_act_identity"]
+    target = target_date(batch)
     permission_path = archive / "reviews" / (key + "-permission.json")
-    reference = permission(permission_path, identity, [digest])
+    rights = AUTHORIZATION_OFFICIAL if with_official else AUTHORIZATION_OCR_GOLD
+    reference = permission(permission_path, identity, [digest], rights)
     reference["path"] = permission_path.relative_to(archive).as_posix()
     url = pdf["asset"]["source_url"]
     manifest = {"schema_version": "corpus-input/1", "kind": "original_amendments", "archive_root": "../archive",
-                "act_identity_claim": {"declared_identity": identity}, "target_dates": [TARGET_DATE],
+                "act_identity_claim": {"declared_identity": identity}, "target_dates": [target],
                 "admission_status": "unresolved",
                 "admission_blockers": ["m1_04a_pool_diagnostic_only", "legal_admission_not_requested"],
                 "unresolved_questions": ["Original publication for the M1-04A check pool; legal admission is not requested."],
@@ -296,7 +318,7 @@ def write_pdf_input(act, key, pdf, batch):
     manifest["manifest_hash"] = manifest_digest(manifest)
     path = batch / key / "input.json"
     write(path, manifest)
-    normalized, _, _ = load_input(path, TARGET_DATE)
+    normalized, _, _ = load_input(path, target)
     assert normalized["manifest_hash"] == manifest["manifest_hash"]
     return path, permission_path
 
@@ -305,7 +327,7 @@ def import_tree(input_path):
     from legal_rag.corpus.native_text import extract_native
     from legal_rag.corpus.official_import import import_official_tree
 
-    normalized, raw, _ = load_input(input_path, TARGET_DATE)
+    normalized, raw, _ = load_input(input_path, read(input_path)["target_dates"][0])
     asset = next(a for a in normalized["assets"] if a["role"] == "consolidated")
     binding = normalized["structure_bundle"]
     extraction = extract_native(asset, raw[asset["sha256"]])
@@ -315,7 +337,7 @@ def import_tree(input_path):
                                 binding["structure_sha256"], binding["source_system"])
 
 
-def acquire_official(act, key, base, gold):
+def acquire_official(act, key, base, gold, target=TARGET_DATE):
     """Bundle + corpus-input/2. Edition mismatches raise before any write."""
     official = gold / key / "official"
     archive = official / "archive"
@@ -331,7 +353,7 @@ def acquire_official(act, key, base, gold):
     reference = permission(permission_path, claim, [bundle["text_sha256"], bundle["structure_sha256"]])
     reference["path"] = "reviews/permission.json"
     manifest = {"schema_version": "corpus-input/2", "kind": "official_consolidated", "archive_root": "archive",
-                "act_identity_claim": {"declared_identity": claim}, "target_dates": [TARGET_DATE],
+                "act_identity_claim": {"declared_identity": claim}, "target_dates": [target],
                 "admission_status": "unresolved",
                 "admission_blockers": ["m1_04a_auto_gold_source_only", "temporal_coverage_unknown",
                                        "legal_admission_not_requested"],
@@ -453,12 +475,12 @@ def run(batch, gold, with_official=False):
                 print(json.dumps({"eo": act["eo_number"], "result": "failed", "stage": pdf["stage"]}), flush=True)
                 continue
             key = slug(act, pdf["authority"] if act["act_type"] == "ministry_order" else None)
-            input_path, pdf_permission = write_pdf_input(act, key, pdf, batch)
+            input_path, pdf_permission = write_pdf_input(act, key, pdf, batch, with_official)
             if not with_official:
                 official = {"status": "not_requested"}
             else:
                 try:
-                    official = acquire_official(act, key, ips, gold)
+                    official = acquire_official(act, key, ips, gold, target_date(batch))
                 except EditionMismatch as error:
                     official = {"status": "failed", "stage": "official_validation", "reason": str(error)}
             if with_official and official["status"] != "ok":
