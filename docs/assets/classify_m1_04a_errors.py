@@ -29,6 +29,13 @@ owner (caption or scale line left at the annex root), amendment quote
 also records ``cross_scope`` (silent: owner given, in another attached-document
 scope than gold, by the evaluator's ``first_scope``).
 
+Batch 3 adds evidence rules that fire only where the batch-2 rules found no class
+(batch-1/2 class files reproduce byte for byte): «РАЗДЕЛ N» of a code (also strict-only
+errors whose paths differ just by the roman section), single unnumbered annex of an
+attached document ``S/AN`` vs gold ``S/AN1``, annex of an attached document not opened,
+unnumbered subheading inside a section given to a point, closing paragraph of a point
+left in its last subpoint, and a form-field caption «(…)» left at the annex root.
+
 A rescore directory (no ``freeze.json``) takes the batch from the run it was
 rescored from. ``--gold-suffix gold-v2`` reads ``agent-<slug>.gold-v2.txt`` (gold
 derived under annotation convention v2) for the attached-document count and must
@@ -65,6 +72,15 @@ SCHEME_LIST = "Нумерованный перечень в описании с�
 QUOTE = "Цитата поправки: нумерация цитируемой новой редакции (поправки) открыла части изменяющей статьи"
 OCR_MARKER = "Ошибка OCR в маркере пункта («б)» вместо «6)»)"
 FOOTNOTE = "Владелец сноски: сноска осталась без владельца"
+SECTION_MARKER = "Неизвестный вид маркера: «РАЗДЕЛ N» кодекса не открывает раздел"
+UNNUMBERED_ANNEX = ("Единственное ненумерованное приложение приложенного документа: в эталоне `S/AN1`, "
+                    "у прототипа `S/AN` (соглашение v2 их не приравнивает)")
+ATTACHED_ANNEX = ("Неизвестная форма области: «Приложение к Порядку» обычным текстом не открывает "
+                  "приложение приложенного документа")
+SUBHEADING = "Ненумерованный подзаголовок внутри раздела отнесён к пункту"
+CLOSING = "Не закрыт последний подпункт: следующий абзац пункта (вывод, заключительная фраза) отнесён к подпункту"
+ROMAN = re.compile(r"^[IVXLC]+$")
+MARKER_START = re.compile(r"^(\d+(\.\d+)*[.)]|[а-я]\))")
 OTHER = "Не классифицировано"
 CONFUSABLE = {"6": "б", "3": "з", "0": "о"}
 CYRILLIC_WORD = re.compile(r"[А-Яа-яЁё]{2}")
@@ -113,12 +129,44 @@ def _without_dotted_parents(path: str) -> str:
                     if not (i + 1 < len(seg) and re.match(rf"^{re.escape(x)}\.\d+$", seg[i + 1])))
 
 
+def _without_sections(path: str) -> str:
+    return "/".join(x for x in path.split("/") if not ROMAN.match(x))
+
+
+def _drops_subitem(gold: str, predicted: str) -> tuple[bool, bool]:
+    """(predicted is gold plus one extra numbered/lettered segment, that holds only via dotted nesting)."""
+    seg = predicted.split("/")
+    for i in range(1, len(seg)):
+        if not re.match(r"^(\d+|[а-я])$", seg[i]):
+            continue
+        candidate = "/".join(seg[:i] + seg[i + 1:])
+        if candidate == gold:
+            return True, False
+        if _without_dotted_parents(candidate) == gold:
+            return True, True
+    return False, False
+
+
 def classify_evidence(error: dict, category: str, text: str, single_annex: bool) -> tuple[str, list[str]]:
-    """Batch 2+: reviewer's reading as rules over paths, OCR category and text (no act names)."""
+    """Batch 2+: reviewer's reading as rules over paths, OCR category and text (no act names).
+
+    Batch-3 forms (rules apply only where the batch-2 rules found no class; batch-2 class files
+    reproduce byte for byte): «РАЗДЕЛ N» of a code (header or a path that differs only by
+    the roman section), unnumbered single annex of an attached document ``S/AN`` vs ``S/AN1``,
+    annex of an attached document not opened, unnumbered subheading inside a section given to a
+    point, closing paragraph of a point given to its last subpoint."""
     gold, predicted = error["gold"], error["predicted"]
     text = " ".join(text.split())
     if predicted is None:
         return (FOOTNOTE if category == "Footnote" else OTHER), []
+    if (any(ROMAN.match(x) for x in gold.split("/")) and not any(ROMAN.match(x) for x in predicted.split("/"))
+            and (_without_sections(gold) == predicted
+                 or (ROMAN.match(gold.split("/")[-1]) and re.match(r"^#*\s*РАЗДЕЛ\s+\S+", text)))):
+        return SECTION_MARKER, []
+    if re.match(r"^S\d*/AN1(/|$)", gold) and re.sub(r"^(S\d*/AN)1(?=/|$)", r"\1", gold) == predicted:
+        return UNNUMBERED_ANNEX, []
+    if re.match(r"^S\d*/AN\d+(/|$)", gold) and not any(x.startswith("AN") for x in predicted.split("/")):
+        return ATTACHED_ANNEX, []
     if (re.match(r"^A/AN\d+(/|$)", gold) and not single_annex
             and re.match(r"^A(/(?!AN)[^/]+)*$", predicted)):
         return LAW_ANNEX, []
@@ -149,6 +197,14 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         cause = CAPTION_ROOT
     elif g.startswith(p + "/") and text[:1].islower():
         cause = PAGE_CONTINUATION
+    elif p.startswith(g + "/") and ROMAN.match(g_seg[-1]) and not MARKER_START.match(text):
+        cause = SUBHEADING
+    elif g.startswith(p + "/") and text.startswith("("):
+        cause = CAPTION_ROOT  # caption of a form field, e.g. «(серия, номер, дата выдачи)»
+    elif _drops_subitem(g, p)[0]:
+        cause = CLOSING
+        if _drops_subitem(g, p)[1]:
+            secondary.append(DOTTED)
     else:
         cause = OTHER
     if primary is None:

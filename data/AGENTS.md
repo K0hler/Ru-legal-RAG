@@ -26,6 +26,13 @@
 
 - Check-pool batch 2: `m1/m1-04a/documents/pool/batch-02/selection.json` (frozen, quotas code 1→0 / federal_law 3→4 recorded as `quota_change`); its `--min-days 120`, exact command, feed-cache hash and the meaning of `attempt-01-partial-unfilled.json` are in the write-once sidecar `selection-provenance.json`.
 
+- Check-pool batch 3 first pass: `m1/m1-04a/experiments/20261022-batch-03-first-pass/`
+  (`freeze.json` /3, v1 + `code-final`, `git_head` 17d4de9; it hashes the gold
+  freeze `20261022-batch-03-gold-freeze/freeze.json` but not its
+  `freeze-addendum.json`, which was verified separately before the run). Run once;
+  never re-run. `sample-30.json` has no ukaz-980 rows; ukaz-980 personal names
+  stay out of docs. `pool/batch-03/status.json` records measured -> development.
+
 - Check-pool batch 2 first pass: `m1/m1-04a/experiments/20261022-batch-02-first-pass/`
   (`freeze.json` schema /3 with v1 and `code-final` prototype hashes, written
   before `run`; outputs `prototype-v1/`, `prototype-code-final/`, `current/`;

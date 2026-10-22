@@ -92,6 +92,15 @@
   `run_m1_04a_first_pass.py --prototype LABEL=PATH` (freeze schema /3) and
   `classify_m1_04a_errors.py --system` with evidence rules (batch 2+) were
   added; batch-1 outputs still reproduce byte for byte.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_3_2026-10-22.md` is the batch-3 first
+  pass on frozen v1 (+ `code-final`, `/7`), not G13/Task 3: 4008/1125/170 of
+  4108. KAS RF is 69% of the regions: always quote it separately (v1 2847/2855;
+  strict 9 because v1 builds no «Раздел» level) and the without-KAS figure
+  (1161/1253). The evaluator's `first_scope` counts 0 cross-scope, but 30
+  annex-of-attached-document regions went silently to the body (§7 violated).
+  `classify_m1_04a_errors.py` gained batch-3 evidence rules that fire only where
+  batch-2 rules found no class (batch-1/2 class files unchanged). Batch 3 is now
+  development. Open convention question: `S/AN` vs `S/AN1` for a single unnumbered annex.
 - `milestones/m1/04a/M1_04A_ANNOTATION_CONVENTION_v2.md` (`m1-04a-annotation/v2`,
   22.10.2026) adds the owner's two rules (attached-document annexes `S/AN<n>`;
   «N.M» nests under an existing «N.», exceptions noted by the annotator); v1 §8

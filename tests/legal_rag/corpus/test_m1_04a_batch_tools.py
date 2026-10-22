@@ -181,3 +181,20 @@ def test_batch2_error_classes_from_evidence_only():
     assert cls("A/ст1", "A/7") == (C.ARTICLE, [])
     assert cls("A/AN1", None, "Footnote") == (C.FOOTNOTE, [])
     assert cls("S", "A/AN/5", text="(место для подписи должностного лица)", single=True) == (C.SIGNATURE, [])
+
+
+def test_batch3_error_classes_from_evidence_only():
+    def cls(gold, predicted, category="Text", text="Текст", single=False):
+        return C.classify_evidence({"gold": gold, "predicted": predicted}, category, text, single)
+
+    assert cls("A/II", "A/гл10/ст115", "Section-header", "РАЗДЕЛ II МЕРЫ") == (C.SECTION_MARKER, [])
+    assert cls("A/I/гл1/ст1/ч1", "A/гл1/ст1/ч1", text="1. Настоящий Кодекс") == (C.SECTION_MARKER, [])
+    assert cls("S/AN1/2", "S/AN/2") == (C.UNNUMBERED_ANNEX, [])
+    assert cls("S/AN1/I", "S/I", "Caption", "Раздел I. Поступления") == (C.ATTACHED_ANNEX, [])
+    assert cls("S/AN1", "S/IV/47", text="Приложение к Порядку") == (C.ATTACHED_ANNEX, [])
+    assert cls("S/II", "S/II/11/5", "Section-header", "Сроки предоставления") == (C.SUBHEADING, [])
+    assert cls("S/II/8", "S/II/8/б", text="По решению руководителя") == (C.CLOSING, [])
+    assert cls("S/I/8.1/1", "S/I/8/4/8.1/1", text="1) по письменному обращению") == (C.CLOSING, [C.DOTTED])
+    assert cls("S/AN3/11", "S/AN3", text="(серия, номер, дата выдачи)") == (C.CAPTION_ROOT, [])
+    # A region that starts with a point marker is not an unnumbered subheading.
+    assert cls("S/II", "S/II/9", text="9. Государственная услуга")[0] != C.SUBHEADING
