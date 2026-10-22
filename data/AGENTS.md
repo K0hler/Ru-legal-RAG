@@ -53,6 +53,9 @@
   last on the frozen prototype. `20261021-prototype-v1-freeze/` holds the
   prototype copy, `code-v1.sha256` and `freeze.json`; write-once. `code-final`
   (sha256 a7b81b59...) stays for comparison.
+  Cycle 3: `20261022-dev-regression-cycle3-<tag>/` (baseline = v1, b2, b2-r2, b3, b4 failed and kept, b4-r2,
+  b4-r3), final `20261022-dev-regression-v2/` (+ `baseline-comparison.json`), and the write-once
+  `20261022-prototype-v2-freeze/` (prototype copy, `code-v2.sha256` with sha256 and git blob ids, `freeze.json`).
 
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written

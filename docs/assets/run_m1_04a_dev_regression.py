@@ -7,9 +7,13 @@ one annex) and ``cross_scope_v2`` (an owner in another document or annex than go
 per document. The summary also has a per-family breakdown (``FAMILIES``). The prototype is loaded
 from an explicit file so that a snapshot can be compared with ``code-final``.
 
-    python docs/assets/run_m1_04a_dev_regression.py --prototype FILE --output NEW_DIR
+    python docs/assets/run_m1_04a_dev_regression.py --prototype FILE --output NEW_DIR [--baseline SUMMARY]
 
 Writes ``summary.json`` and ``errors.json`` into a new directory; an existing one is refused.
+With ``--baseline`` (an earlier ``summary.json``) it also writes ``baseline-comparison.json``:
+per document ``no_section``, ``strict`` and ``cross_scope_v2`` against the baseline. A document is
+below baseline when ``no_section`` or ``strict`` fell, ``cross_scope_v2`` rose, its region count
+changed or it is missing; the CLI then exits with status 1 (the track-B no-drop gate).
 Documents: the 8 earlier development documents (``logical-v1/inputs`` + ``gold``), the 8 of
 check-pool batch 1 and the 9 + 9 of batches 2 (gold-v2) and 3 (gold as frozen); all are
 development since their first pass. Only gold keys are scored, so a gold that covers a
@@ -47,6 +51,8 @@ PREFIX_FAMILY = {"fz": "законы", "code": "кодексы", "pp": "пост
 FAMILY_OVERRIDE = {"holdout2-3712bfea85ea": "санитарные правила", "holdout2-a0ee4eb3704e": "санитарные правила",
                    "holdout2-d13680559014": "санитарные правила"}
 CONVENTION = "v1"
+# Higher is better for the first two, lower is better for cross_scope_v2.
+COMPARED = ("no_section", "strict", "cross_scope_v2")
 
 
 def load(name: str, path: Path):
@@ -84,10 +90,40 @@ def region_categories(extraction: dict) -> dict[str, str]:
     return {f'{p["page"]}.{i}': r["category"] for p in extraction["pages"] for i, r in enumerate(p["regions"])}
 
 
-def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict] | None = None) -> dict:
+def compare_to_baseline(summary: dict, baseline: dict) -> dict:
+    """Per-document comparison of ``summary`` with ``baseline`` on ``COMPARED``; lists the drops."""
+    current = {r["name"]: r for r in summary["rows"]}
+    rows, below = [], []
+    for base in baseline["rows"]:
+        name, row = base["name"], current.get(base["name"])
+        entry = {"name": name, "family": base.get("family"), "regions": base["regions"],
+                 "baseline": {m: base[m] for m in COMPARED}}
+        if row is None:
+            reasons = ["missing"]
+        else:
+            entry["current"] = {m: row[m] for m in COMPARED}
+            entry["delta"] = {m: row[m] - base[m] for m in COMPARED}
+            reasons = [m for m in ("no_section", "strict") if row[m] < base[m]]
+            reasons += ["cross_scope_v2"] if row["cross_scope_v2"] > base["cross_scope_v2"] else []
+            reasons += ["regions"] if row["regions"] != base["regions"] else []
+        entry["below_baseline"] = reasons
+        rows.append(entry)
+        if reasons:
+            below.append(name)
+    added = sorted(set(current) - {b["name"] for b in baseline["rows"]})
+    totals = {m: {"baseline": baseline["total"][m], "current": summary["total"][m]} for m in COMPARED}
+    return {"schema_version": "m1-04a-dev-regression-comparison/1",
+            "baseline_prototype_sha256": baseline.get("prototype_sha256"),
+            "current_prototype_sha256": summary.get("prototype_sha256"),
+            "rows": rows, "below_baseline": below, "not_in_baseline": added, "total": totals}
+
+
+def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict] | None = None,
+                       baseline: Path | None = None) -> dict:
     prototype_path, output = Path(prototype_path).resolve(), Path(output)
     if output.exists():
         raise FileExistsError(f"output exists: {output}")
+    base = json.loads(Path(baseline).read_text(encoding="utf-8")) if baseline is not None else None
     sys.path.insert(0, str(ROOT / "src"))
     first_pass = load("run_m1_04a_first_pass", ASSETS / "run_m1_04a_first_pass.py")
     evaluator = load("evaluate_ocr_owner_gold", ASSETS / "evaluate_ocr_owner_gold.py")
@@ -124,8 +160,15 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
                "parser_version": versions.pop() if len(versions) == 1 else sorted(map(str, versions)),
                "single_annex_equivalence": True, "rows": rows, "groups": groups, "families": families,
                "total": total}
+    outputs = [("summary.json", summary), ("errors.json", errors)]
+    if base is not None:
+        comparison = compare_to_baseline(summary, base)
+        comparison["baseline"] = str(Path(baseline).resolve())
+        summary["baseline_comparison"] = {"baseline": comparison["baseline"],
+                                          "below_baseline": comparison["below_baseline"]}
+        outputs.append(("baseline-comparison.json", comparison))
     output.mkdir(parents=True)
-    for name, data in (("summary.json", summary), ("errors.json", errors)):
+    for name, data in outputs:
         with (output / name).open("x", encoding="utf-8") as handle:
             json.dump(data, handle, ensure_ascii=False, indent=1, sort_keys=True)
     return summary
@@ -135,10 +178,14 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--prototype", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--baseline", type=Path, help="earlier summary.json; exit 1 if any document is below it")
     args = parser.parse_args(argv)
-    summary = run_dev_regression(args.prototype, args.output)
+    summary = run_dev_regression(args.prototype, args.output, baseline=args.baseline)
     print(json.dumps({"parser_version": summary["parser_version"], "groups": summary["groups"], "families": summary["families"],
-                      "total": summary["total"]}, ensure_ascii=False))
+                      "total": summary["total"], "baseline_comparison": summary.get("baseline_comparison")},
+                     ensure_ascii=False))
+    if summary.get("baseline_comparison", {}).get("below_baseline"):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

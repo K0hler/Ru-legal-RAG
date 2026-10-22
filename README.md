@@ -81,6 +81,9 @@ inference is versioned and saved replay is deterministic. Inferred legal PDF
 hierarchy remains unqualified.
 The planned [M1-04A OCR structure parser](docs/plans/2026-10-17-m1-04a-ocr-structure.md)
 adds legal hierarchy reconstruction and independent experiments on additional official acts.
+Its development prototype v2 is frozen and reported in
+[M1_04A_PROTOTYPE_V2_2026-10-22.md](docs/milestones/m1/04a/M1_04A_PROTOTYPE_V2_2026-10-22.md);
+development-document scores are not progress, pool batch 4 is the first real measure.
 
 ```powershell
 $env:PYTHONPATH = "src"

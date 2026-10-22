@@ -50,6 +50,8 @@
   `test_ocr_logical_structure.py` covers per-document annex counting, one vs
   two annexes in all variants, and `cross_scope_v2` transfers (annex↔body,
   between annexes) that the old `first_scope` misses.
+  `test_dev_regression_baseline_comparison_flags_drops` covers `--baseline`: per-document drops
+  (no_section/strict down, `cross_scope_v2` up, region count changed, missing) and CLI exit 1.
 
 - `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
   lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested

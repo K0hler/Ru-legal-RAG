@@ -173,6 +173,12 @@
   14.5 are now left with the previous point), still no document below b3. Known limitations (pinned in tests): a
   subheading after a table or an editorial note «(в ред. …)» is missed; a capitalised second paragraph of the last
   subpoint (previous ends «.») goes to the point.
+- Cycle 3 B5: prototype v2 `ocr-logical-structure/2-experiment` (sha256 081c95f9…, blob e8573d8f; behaviour of
+  48fd085) frozen in `data/m1/m1-04a/experiments/20261022-prototype-v2-freeze/`; regression
+  `20261022-dev-regression-v2` 7015/7072 no_section and strict, `cross_scope_v2` 0, no document below the v1
+  baseline. `run_m1_04a_dev_regression.py --baseline SUMMARY` writes `baseline-comparison.json` and exits 1
+  when a document falls (no_section/strict down, `cross_scope_v2` up, regions changed or missing). Report:
+  `milestones/m1/04a/M1_04A_PROTOTYPE_V2_2026-10-22.md` (development, not progress; batch 4 is the measure).
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

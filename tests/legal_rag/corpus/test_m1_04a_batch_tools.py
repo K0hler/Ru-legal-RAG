@@ -144,6 +144,43 @@ def test_dev_regression_on_authored_pair(tmp_path):
         D.run_dev_regression(proto, out, documents=authored_documents(tmp_path))
 
 
+def test_dev_regression_baseline_comparison_flags_drops(tmp_path, monkeypatch):
+    proto = tmp_path / "fake_prototype.py"
+    proto.write_text(FAKE_PROTOTYPE, encoding="utf-8")
+    first = D.run_dev_regression(proto, tmp_path / "base", documents=authored_documents(tmp_path))
+    assert "baseline_comparison" not in first
+    base = tmp_path / "base" / "summary.json"
+    same = D.run_dev_regression(proto, tmp_path / "same", documents=authored_documents(tmp_path), baseline=base)
+    assert same["baseline_comparison"]["below_baseline"] == []
+    comparison = json.loads((tmp_path / "same" / "baseline-comparison.json").read_text(encoding="utf-8"))
+    assert [r["delta"] for r in comparison["rows"]] == [{"no_section": 0, "strict": 0, "cross_scope_v2": 0}] * 2
+    # A worse prototype: "one" loses 1.2 (S/1 -> S/2); "two" gains 1.2 (S/2 is gold there).
+    worse = tmp_path / "worse.py"
+    worse.write_text(FAKE_PROTOTYPE.replace('"1.2": "S/1"', '"1.2": "S/2"'), encoding="utf-8")
+    out = D.run_dev_regression(worse, tmp_path / "worse", documents=authored_documents(tmp_path), baseline=base)
+    assert out["baseline_comparison"]["below_baseline"] == ["one"]
+    rows = {r["name"]: r for r in json.loads((tmp_path / "worse" / "baseline-comparison.json")
+                                             .read_text(encoding="utf-8"))["rows"]}
+    assert rows["one"]["below_baseline"] == ["no_section", "strict"]
+    assert rows["two"]["delta"]["strict"] == 1 and rows["two"]["below_baseline"] == []
+    # cross_scope_v2 rising, a changed region count and a missing document are drops too.
+    summary = json.loads(base.read_text(encoding="utf-8"))
+    raised = json.loads(json.dumps(summary))
+    raised["rows"][0]["cross_scope_v2"] = 2
+    raised["rows"][1]["regions"] = 4
+    got = D.compare_to_baseline(raised, summary)
+    assert got["below_baseline"] == ["one", "two"]
+    assert [r["below_baseline"] for r in got["rows"]] == [["cross_scope_v2"], ["regions"]]
+    partial = dict(summary, rows=summary["rows"][:1])
+    assert D.compare_to_baseline(partial, summary)["rows"][1]["below_baseline"] == ["missing"]
+    # The CLI exits non-zero when a document is below baseline, and returns normally otherwise.
+    monkeypatch.setattr(D, "development_documents", lambda: authored_documents(tmp_path))
+    D.main(["--prototype", str(proto), "--output", str(tmp_path / "cli-ok"), "--baseline", str(base)])
+    with pytest.raises(SystemExit) as stop:
+        D.main(["--prototype", str(worse), "--output", str(tmp_path / "cli"), "--baseline", str(base)])
+    assert stop.value.code == 1
+
+
 def test_dev_regression_34_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
     assert len(docs) == 34 and len({d["name"] for d in docs}) == 34
