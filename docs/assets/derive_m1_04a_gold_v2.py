@@ -118,6 +118,11 @@ def derive_lines(lines: list[str], annexes: dict[str, str], flat_dotted=()) -> t
         raise ValueError(f"annex map target already used in the gold: {taken}")
     scoped = [[map_scope(o, annexes) for o in row[1]] for _, row in rows if row]
     nodes = node_prefixes({o for owners in scoped for o in owners})
+    # Entries are written in v1-gold scope; accept the post-mapping form too.
+    flat = frozenset(tuple(map_scope("/".join(e), annexes).split("/")) for e in flat)
+    unmatched = sorted("/".join(e) for e in flat if e not in nodes)
+    if unmatched:
+        raise ValueError(f"flat_dotted entries match no owner path in the gold: {unmatched}")
     out, counts, it = [], {"lines": 0, "scope": 0, "nested": 0, "changed": 0}, iter(scoped)
     for line, row in rows:
         if row is None:
@@ -156,7 +161,10 @@ def read_flat_dotted(map_path: Path, exceptions_path: Path) -> list[str]:
     """Optional ``flat_dotted`` from the map plus the annotator's ``exceptions.json`` (union)."""
     found: list[str] = []
     if map_path.exists():
-        found += json.loads(map_path.read_text(encoding="utf-8")).get("flat_dotted", [])
+        record = json.loads(map_path.read_text(encoding="utf-8"))
+        if record.get("schema_version") != MAP_SCHEMA:
+            raise SystemExit(f"{map_path}: schema_version must be {MAP_SCHEMA}")
+        found += record.get("flat_dotted", [])
     if exceptions_path.exists():
         record = json.loads(exceptions_path.read_text(encoding="utf-8"))
         if record.get("schema_version") != EXCEPTIONS_SCHEMA:
@@ -174,7 +182,8 @@ def derive(slug_dir: Path, write: bool) -> dict:
         annexes = {}
     text = raw.decode("utf-8")
     newline = "\r\n" if "\r\n" in text else "\n"
-    flat = read_flat_dotted(map_path, slug_dir / "exceptions.json")
+    exceptions_path = slug_dir / "exceptions.json"
+    flat = read_flat_dotted(map_path, exceptions_path)
     lines, counts = derive_lines(text.splitlines(), annexes, flat)
     report = {"slug": slug, "annexes": annexes, **counts, **({"flat_dotted": flat} if flat else {})}
     if not write:
@@ -193,6 +202,8 @@ def derive(slug_dir: Path, write: bool) -> dict:
     with sha_path.open("x", encoding="utf-8", newline="\n") as handle:
         handle.write(f"{sha(out_path.read_bytes())}  {out_path.name}\n")
         handle.write(f"{sha(map_path.read_bytes())}  {map_path.name}\n")
+        if exceptions_path.exists():
+            handle.write(f"{sha(exceptions_path.read_bytes())}  {exceptions_path.name}\n")
     return report
 
 

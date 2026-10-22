@@ -146,3 +146,28 @@ def test_without_exceptions_output_is_unchanged(tmp_path):
     assert "flat_dotted" not in D.derive(slug_dir, write=True)
     out = (slug_dir / "agent-doc-1-2026.gold-v2.txt").read_text(encoding="utf-8")
     assert "flat dotted" not in out and "1.1 S/4/4.1" in out
+
+
+def test_flat_dotted_entry_in_v1_scope_follows_annex_rename():
+    gold = ["1.0 S2/4", "1.1 S2/4.1", "1.2 S2/4.2"]
+    for entry in ("S2/4.1", "S/AN1/4.1"):
+        lines, _ = D.derive_lines(gold, {"S2": "S/AN1"}, [entry])
+        assert lines == ["1.0 S/AN1/4", "1.1 S/AN1/4.1", "1.2 S/AN1/4/4.2"]
+
+
+def test_unmatched_flat_dotted_entry_raises():
+    with pytest.raises(ValueError, match="match no owner path"):
+        D.derive_lines(["1.0 S/4", "1.1 S/4.1"], {}, ["S/9.9"])
+
+
+def test_receipt_records_exceptions_hash_and_check_validates_map_schema(tmp_path):
+    slug_dir, _ = write_case(tmp_path, "1.0 S/4\n1.1 S/4.1\n", {})
+    ex = slug_dir / "exceptions.json"
+    ex.write_text(json.dumps({"schema_version": D.EXCEPTIONS_SCHEMA, "flat_dotted": ["S/4.1"]}), encoding="utf-8")
+    D.derive(slug_dir, write=True)
+    receipt = (slug_dir / "agent-doc-1-2026.gold-v2.sha256").read_text(encoding="utf-8")
+    assert f"{hashlib.sha256(ex.read_bytes()).hexdigest()}  exceptions.json" in receipt
+    map_path = slug_dir / "agent-doc-1-2026.v2-map.json"
+    map_path.write_text(json.dumps({"schema_version": "bad", "flat_dotted": []}), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        D.derive(slug_dir, write=False)
