@@ -881,3 +881,125 @@ def test_code_census_reuses_previous_matches_and_empty_days(tmp_path):
     assert [e["status"] for e in second["codes"][:2]] == [e["status"] for e in first["codes"]]
     assert second["codes"][0]["actual"]["reused_from"].endswith("one/census.json")
     assert second["selection_sha256"] == first["selection_sha256"]
+
+
+def test_batch_03_profile_matches_plan():
+    profile = P.PROFILES["batch-03"]
+    assert profile["quotas"] == {"code": 2, "federal_law": 2, "presidential_decree": 1,
+                                 "government_resolution": 2, "government_order": 1, "ministry_order": 2}
+    assert profile["pages_range"] == (3, 200) and profile["long_min"] == 4 and P.LONG_PAGES == 20
+    assert profile["codes_from_census"] and profile["prior_batches"] == ("batch-01", "batch-02")
+    assert not profile["require_single_edition"] and P.CODE_PAGES_MAX == 500
+    # Earlier profiles keep their frozen behaviour.
+    assert "prior_batches" not in P.PROFILES["batch-02"] and P.BATCH2_QUOTAS["federal_law"] == 3
+
+
+def test_sample_days_excludes_earlier_days_and_keeps_old_order():
+    from datetime import date
+
+    start, end = date(2020, 1, 1), date(2020, 12, 31)
+    assert P.sample_days(start, end, 5, 120, ()) == P.sample_days(start, end, 5)
+    earlier = [d.isoformat() for d in P.sample_days(start, end, 4, 120)]
+    fresh = P.sample_days(start, end, 5, 120, earlier)
+    assert len(fresh) == 120 and not {d.isoformat() for d in fresh} & set(earlier)
+
+
+def prior_tree(root):
+    """Authored metadata of two earlier batches (no bodies)."""
+    import json
+
+    docs = root / "documents"
+    (docs / "pool/batch-01/failures").mkdir(parents=True)
+    (docs / "pool/batch-02/failures").mkdir(parents=True)
+    url = "http://publication.pravo.gov.ru/File/Pdf?eoNumber="
+    (docs / "index.json").write_text(json.dumps({"documents": [{"source_url": url + "1" * 16}]}))
+    for name, eo, day in (("batch-01", "2" * 16, "2020-01-05"), ("batch-02", "3" * 16, "2020-02-07")):
+        (docs / "pool" / name / "index.json").write_text(json.dumps({"documents": [{"source_url": url + eo}]}))
+        (docs / "pool" / name / "selection.json").write_text(json.dumps(
+            {"selected": [{"eo_number": eo}], "days_sampled": [day]}))
+    (docs / "pool/batch-02/selection-refill-01.json").write_text(json.dumps({"selected": [{"eo_number": "4" * 16}]}))
+    (docs / "pool/batch-02/failures" / f"{'5' * 16}-x.json").write_text("{}")  # failed refill pick
+    (docs / "pool/batch-01/failures" / f"{'6' * 16}-official-1.json").write_text("{}")
+    (docs / "pool/batch-01/failures" / "notes.json").write_text("{}")  # not an eo-named record
+    return docs
+
+
+def test_prior_batch_exclusions_cover_indexes_refills_and_failures(tmp_path):
+    used, days = P.prior_batch_exclusions(("batch-01", "batch-02"), prior_tree(tmp_path))
+    assert used == {c * 16 for c in "123456"}
+    assert days == {"2020-01-05", "2020-02-07"}
+
+
+def batch3_run(tmp_path, monkeypatch, n_codes):
+    import json
+    from datetime import date, timedelta
+    from types import SimpleNamespace
+
+    docs = prior_tree(tmp_path)
+    monkeypatch.setattr(P, "DOCUMENTS", docs)
+    codes = [card(100 + i, "code", title="Водный кодекс Российской Федерации", pages=480) for i in range(n_codes)]
+    code_path = tmp_path / "codes" / "selection.json"
+    P.write_selection_pair(code_path, json.dumps({"schema_version": P.CODE_CANDIDATES_SCHEMA,
+                                                "candidates": codes}).encode())
+    seen = {}
+
+    def days(start, end, seed, count, exclude):
+        seen["exclude"] = exclude
+        return [date(2020, 3, 1) + timedelta(days=i) for i in range(120)]
+
+    rows = [card(1, "federal_law"), card(7, "federal_law", pages=30), card(8, "federal_law", pages=40),
+            card(9, "presidential_decree", pages=25), card(10, "government_resolution", pages=22),
+            card(11, "government_resolution"), card(12, "government_order"), card(13, "ministry_order"),
+            card(14, "ministry_order"), card(15, "federal_law")]
+    batch = docs / "pool" / "batch-03"
+    batch.mkdir()
+    cache_path = batch / "feed-cache-b3.json"
+    cache = {d.isoformat(): [] for d in days(None, None, None, None, None)}
+    cache["2020-03-01"] = {"candidates": rows, "feed_pages": []}
+    cache_path.write_text(json.dumps(cache), encoding="utf-8")
+    monkeypatch.setattr(P, "sample_days", days)
+    monkeypatch.setattr(P, "lookup", lambda *args: {"in_official_tree": True, "official_found": True})
+    args = SimpleNamespace(output=batch / "selection.json", profile="batch-03", quota=[],
+                           code_candidates=code_path, seed=20261023, date_from="2011-01-01",
+                           date_to="2025-12-31", feed_cache=cache_path, min_days=120, partial_output=None,
+                           quota_change=None, pages_max=None, command="python select ... --profile batch-03")
+    return P.run(args), args, seen
+
+
+def test_batch_03_run_takes_census_codes_excludes_prior_and_writes_provenance(tmp_path, monkeypatch):
+    import json
+
+    status, args, seen = batch3_run(tmp_path, monkeypatch, 1)
+    assert status == 0 and seen["exclude"] == ["2020-01-05", "2020-02-07"]
+    selection = json.loads(Path(args.output).read_bytes())
+    assert selection["selected_per_category"]["code"] == 1  # one census code -> quota 1, not an error
+    assert selection["quotas_filled"] and selection["long_selected"] >= 4
+    assert {c * 16 for c in "123456"} <= set(selection["already_used"])
+    assert selection["days_excluded_from_sampling"] == ["2020-01-05", "2020-02-07"]
+    assert selection["code_pages_max"] == 500 and selection["pages_range"] == [3, 200]
+    provenance = json.loads((args.output.parent / "selection-provenance.json").read_text(encoding="utf-8"))
+    raw = Path(args.output).read_bytes()
+    assert provenance["selection_sha256"] == P.hashlib.sha256(raw).hexdigest()
+    assert provenance["min_days"] == 120 and provenance["command"] == args.command
+    assert provenance["feed_cache"]["sha256"] == P.hashlib.sha256(args.feed_cache.read_bytes()).hexdigest()
+    assert P.run(args) == 0  # frozen pair: unchanged, provenance untouched
+    assert json.loads((args.output.parent / "selection-provenance.json").read_text(encoding="utf-8")) == provenance
+
+
+@pytest.mark.parametrize("n_codes, expected", [(2, 2), (3, 2)])
+def test_batch_03_code_quota_is_census_count_capped_at_two(tmp_path, monkeypatch, n_codes, expected):
+    import json
+
+    status, args, _ = batch3_run(tmp_path, monkeypatch, n_codes)
+    assert status == 0
+    assert json.loads(Path(args.output).read_bytes())["quotas"]["code"] == expected
+
+
+def test_main_records_exact_command(monkeypatch):
+    seen = []
+    monkeypatch.setattr(P, "run", lambda args: seen.append(args.command) or 0)
+    argv = ["--profile", "batch-03", "--from", "2011-01-01", "--to", "2025-12-31", "--seed", "20261023",
+            "--output", "a b/selection.json"]
+    assert P.main(argv) == 0
+    assert seen == ['python docs/assets/select_m1_04a_pool.py --profile batch-03 --from 2011-01-01 '
+                    '--to 2025-12-31 --seed 20261023 --output "a b/selection.json"']

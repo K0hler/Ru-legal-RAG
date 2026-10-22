@@ -6,7 +6,11 @@ acquire_official_json_transfer.py::discover) and only their list of editions is 
 
 Profiles: `batch-01` (frozen; single-edition filter) and `batch-02` (official lookup is
 metadata only, codes, pages 3..200, a long-document share filled first, documents
-already used in development/reserved/batch 1 excluded).
+already used in development/reserved/batch 1 excluded). `batch-03` takes every census
+code up to 2 (code quota = min(2, frozen code candidates)), excludes batches 1-2 with
+their refill picks and every failed acquisition, and samples 120 days that no earlier
+batch sampled. A newly frozen selection gets a write-once `selection-provenance.json`
+(exact command, `min_days`, feed-cache hash, code commit).
 
 Future selection schema /3 uses the opt-in pool adapter. A positive code quota
 requires a separate `freeze-codes --day ISO --output DIR/selection.json` metadata
@@ -47,6 +51,14 @@ DEFAULT_QUOTAS = {
 BATCH2_QUOTAS = {
     "code": 1,
     "federal_law": 3,
+    "presidential_decree": 1,
+    "government_resolution": 2,
+    "government_order": 1,
+    "ministry_order": 2,
+}
+BATCH3_QUOTAS = {
+    "code": 2,  # upper bound: the effective quota is min(2, frozen census codes)
+    "federal_law": 2,
     "presidential_decree": 1,
     "government_resolution": 2,
     "government_order": 1,
@@ -677,8 +689,11 @@ def count_requests(connector, counter, name):
     return connector
 
 
-def sample_days(start, end, seed, count=120):
+def sample_days(start, end, seed, count=120, exclude=()):
+    """`exclude` (ISO days sampled by earlier batches) is removed before sampling."""
+    skip = set(exclude)
     days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+    days = [day for day in days if day.isoformat() not in skip]
     return random.Random(seed).sample(days, count)
 
 
@@ -719,11 +734,66 @@ PROFILES = {
                  "require_single_edition": True, "exclude_used": False},
     "batch-02": {"quotas": BATCH2_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True},
+    "batch-03": {"quotas": BATCH3_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True, "codes_from_census": True,
+                 "prior_batches": ("batch-01", "batch-02")},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")
 USED_SELECTIONS = (DOCUMENTS / "pool/batch-01/selection.json",)
+PROVENANCE_SCHEMA = "m1-04a-pool-selection-provenance/2"
+
+
+def prior_batch_exclusions(prior_batches, documents=None):
+    """(used eo numbers, sampled days) of earlier pool batches, from metadata files only:
+    development/reserved and batch indexes, frozen selections and refill picks, and every
+    act with a failure record (`failures/<eo>-*.json`), whether or not it was refilled."""
+    documents = Path(documents or DOCUMENTS)
+    batches = [documents / "pool" / name for name in prior_batches]
+    indexes = [documents / "index.json"] + [b / "index.json" for b in batches]
+    selections = []
+    for batch in batches:
+        selections.append(batch / "selection.json")
+        selections.extend(sorted(batch.glob("selection-refill-??.json")))
+    used = load_already_used(indexes, selections)
+    days = set()
+    for batch in batches:
+        used.update(path.name[:16] for path in (batch / "failures").glob("*.json")
+                    if re.fullmatch(r"\d{16}", path.name[:16]))
+        days.update(json.loads((batch / "selection.json").read_text(encoding="utf-8")).get("days_sampled", ()))
+    return used, days
+
+
+def write_provenance(output, args, feed_cache, selection_sha):
+    """Write-once `selection-provenance.json` beside a newly frozen selection."""
+    import subprocess
+
+    path = Path(output).with_name("selection-provenance.json")
+    cache = None
+    if feed_cache and Path(feed_cache).exists():
+        cache = {"path": repo_relative(feed_cache),
+                 "sha256": hashlib.sha256(Path(feed_cache).read_bytes()).hexdigest()}
+    try:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT, capture_output=True,
+                                text=True, check=True).stdout.strip()
+        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--", "docs/assets"], cwd=PROJECT,
+                                    capture_output=True, text=True, check=True).stdout.strip())
+    except (OSError, subprocess.CalledProcessError):
+        commit, dirty = None, None
+    payload = {
+        "schema_version": PROVENANCE_SCHEMA,
+        "selection": Path(output).name,
+        "selection_sha256": selection_sha,
+        "command": getattr(args, "command", None),
+        "min_days": args.min_days,
+        "feed_cache": cache,
+        "code_commit": commit,
+        "scripts_dirty": dirty,
+    }
+    with path.open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
 
 
 def override_quotas(base, overrides):
@@ -766,7 +836,13 @@ def run(args):
             raise ValueError("--pages-max must be at least the profile's minimum")
         pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
-    used = load_already_used(USED_INDEXES, USED_SELECTIONS) if profile["exclude_used"] else set()
+    prior_days = set()
+    if profile.get("prior_batches"):
+        used, prior_days = prior_batch_exclusions(profile["prior_batches"])
+    elif profile["exclude_used"]:
+        used = load_already_used(USED_INDEXES, USED_SELECTIONS)
+    else:
+        used = set()
     code_pages_max = CODE_PAGES_MAX if quotas.get("code", 0) else None
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
                "long_min": long_min, "long_pages": LONG_PAGES, "code_pages_max": code_pages_max}
@@ -777,10 +853,13 @@ def run(args):
         code_rows, digest = load_code_candidates(args.code_candidates)
         code_rows = [r for r in code_rows if args.date_from <= r["date"] <= args.date_to]
         code_reference = {"path": repo_relative(args.code_candidates), "sha256": digest}
+        if profile.get("codes_from_census"):  # every census code, at most the profile bound
+            quotas["code"] = min(quotas["code"], len(code_rows))
     publication = PublicationPoolConnector(timeout=25, request_interval=1)
     actual = ActualPravoConnector(timeout=25, request_interval=1)
     ips = LegislationRussiaConnector(timeout=25, request_interval=1)
-    all_days = sample_days(date.fromisoformat(args.date_from), date.fromisoformat(args.date_to), args.seed)
+    all_days = sample_days(date.fromisoformat(args.date_from), date.fromisoformat(args.date_to), args.seed,
+                           120, sorted(prior_days))
     cache = load_feed_cache(args.feed_cache)
     pool = {row["eo_number"]: row for row in code_rows}
     enriched, failed_days, sampled, feed_pages = {}, [], 0, []
@@ -849,6 +928,7 @@ def run(args):
         "selected_per_category": selected_counts(result),
         "rejection_counts": reasons,
         "already_used": sorted(used),
+        "days_excluded_from_sampling": sorted(prior_days),
         "looked_up_in_official_tree": looked_up,
         "official_lookup": ("filter: exactly one complete official edition" if strict else
                             "metadata only (official_found), looked up for selected acts after selection"),
@@ -867,6 +947,8 @@ def run(args):
               "partial", args.partial_output, flush=True)
         return 3
     status = write_selection_pair(output, payload)
+    if status != "unchanged":
+        write_provenance(output, args, args.feed_cache, hashlib.sha256(payload).hexdigest())
     print("selection.json", status, "sha256", hashlib.sha256(payload).hexdigest(), flush=True)
     return 0
 
@@ -1072,7 +1154,7 @@ def main(argv=None):
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--profile", choices=sorted(PROFILES), default="batch-01")
-    parser.add_argument("--feed-cache", help="optional JSON cache of feed cards per day (outside data/)")
+    parser.add_argument("--feed-cache", help="optional JSON cache of feed cards per day (batch-03: inside the batch dir)")
     parser.add_argument("--partial-output", help="where to write an unfilled result (not frozen)")
     parser.add_argument("--quota", action="append", default=[], metavar="KIND=N",
                         help="override one profile quota (recorded decision only)")
@@ -1081,7 +1163,11 @@ def main(argv=None):
     parser.add_argument("--quota-change", help="JSON file whose object is recorded as `quota_change`")
     parser.add_argument("--code-candidates", type=Path, help="freeze-codes selection.json (required for code quota)")
     parser.add_argument("--pages-max", type=int, help="explicit page ceiling override (e.g. 500 for a 480-page code)")
-    return run(parser.parse_args(argv))
+    args = parser.parse_args(argv)
+    import subprocess
+
+    args.command = "python docs/assets/select_m1_04a_pool.py " + subprocess.list2cmdline(argv)
+    return run(args)
 
 
 if __name__ == "__main__":
