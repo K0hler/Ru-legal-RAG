@@ -150,6 +150,20 @@
   closes the previous section's chapter/article stack, so the heading no longer falls into the last article.
   Roman «I. …» sections without the word are unchanged. Regression `20261022-dev-regression-cycle3-b3`: КАС strict
   9 -> 2855/2855, total 6976/7072 no_section and strict, `cross_scope_v2` 0, only code-21-2015 changed, no drops.
+  Untested: a document mixing «РАЗДЕЛ I» headings (`section_named`) with Roman «I.» points (`roman`) — both are
+  rank 0 and may nest unexpectedly; none in development, check on batch 4.
+- Cycle 3 B4 (prototype): after the depth solver, (1) a run of unmarked capitalised unterminated lines (no final
+  «.;:!?», «,» or hyphen; not a requisite, signature, caption or OCR Caption region; <= 500 characters) that follows
+  a paragraph ending «.»/«;» and is immediately followed by a numbered point «N.»/«N.M» (no table or picture
+  between) belongs to that point's parent, but only when the parent is a section or named unit (Review Focus 5);
+  without an enclosing section the line stays with the open point. (2) An unmarked paragraph inside a «1)»/«а)»
+  subpoint that starts with a capital letter returns to the point when the previous paragraph ended with «.», or
+  with «;» and the paragraph itself ends with «.»; only list levels the next marked paragraph does not continue
+  close, and later unmarked paragraphs up to the next marker follow. (3) A dotted «N.M» may close an open
+  paren/letter subpoint. (4) Uppercase «ГЛАВА»/«СТАТЬЯ», OCR Х/І in chapter numbers. Regression
+  `20261022-dev-regression-cycle3-b4-r2`: 7020/7072 no_section and strict (+44: minkultury-1321 +42,
+  fsnson-282 +2), `cross_scope_v2` 0, no drops. `…-b4` (failed, kept): favt-547 −5, «Схема N» captions before
+  a picture were taken as subheadings.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

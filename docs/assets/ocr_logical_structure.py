@@ -259,8 +259,9 @@ class Marker:
 
 # Named law units, recognised only at the start of a paragraph. Hierarchy:
 # section (named or Roman) > chapter > paragraph § > article.
-ARTICLE = re.compile(r"^Статья\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
-CHAPTER = re.compile(r"^Глава\s+(\d+|[IVXLC]+)\.?(?=\s|$)")
+# Uppercase «СТАТЬЯ»/«ГЛАВА» as in codes; chapter numbers may carry OCR Cyrillic Х / Ukrainian І.
+ARTICLE = re.compile(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
+CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
 # «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman
 # number may carry OCR Cyrillic Х / Ukrainian І («РАЗДЕЛ ІХ»).
 SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
@@ -531,7 +532,9 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
                     elif len(a) == len(b) and a[:-1] != b[:-1] and b[-1] == 1:
                         yield stack[:keep] + (item,), 1.5  # e.g. 2.4 -> 3.1 under a flat section
-            continue
+            if not (marker.kind == "decimal" and sibling[0] in SUBPOINT_KINDS):
+                continue
+            # a dotted «8.1» closes an open «4)» / «б)» subpoint and opens under the point
         # open a new child level under `parent`
         if marker.kind == "roman":
             if parent is None:
@@ -588,6 +591,102 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
             if len(states) >= beam:
                 break
     return states[0][3]
+
+
+SUBPOINT_KINDS = {"paren", "letter"}
+POINT_KINDS = {"int", "decimal"}
+SUBHEADING_MAX = 500  # administrative regulations print subheadings of up to ~450 characters
+
+
+def final_char(text: str) -> str:
+    t = strip_sup(text).rstrip(" »\")")
+    return t[-1] if t else ""
+
+
+def subheading_candidate(p: Paragraph) -> bool:
+    """An unmarked capitalised line that is not a sentence and not a figure/table caption (OCR
+    category Caption: «Схема 1», «Таблица 2»): no final «.;:!?», no broken tail
+    («,», hyphen), not a requisite or signature line and not a rejected caption («Приложение 2»)."""
+    text = p.text
+    return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
+            and bool(text) and text[0].isupper()
+            and len(text) <= SUBHEADING_MAX and not terminated(text) and final_char(text) not in ",-–—"
+            and not requisite_like(text) and not signature_like(p.first) and not is_caption(text)
+            and not is_project_caption(text))
+
+
+def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> set[int]:
+    """Review Focus 5: unnumbered subheadings inside a section. A run of subheading candidates that
+    follows a finished body paragraph (final «.» or «;») and is immediately followed by a numbered
+    point («N.» or «N.M», no table or caption in between) belongs to that point's parent when the
+    parent is a section or another named unit («II.», «Раздел 2», «Глава 3»): the enclosing
+    section, not the previous point or subpoint. Without an enclosing section (points directly in
+    the scope root) such a line stays with the open point: there it is as likely a sentence cut
+    by OCR. Returns the changed body indices."""
+    index = {id(p): k for k, p in enumerate(body)}
+    seq = [p for p in items if p.flow == "body"]  # a table or picture in between blocks the rule
+    changed: set[int] = set()
+    k = 0
+    while k < len(seq):
+        if id(seq[k]) not in index or not subheading_candidate(seq[k]):
+            k += 1
+            continue
+        end = k
+        while end + 1 < len(seq) and id(seq[end + 1]) in index and subheading_candidate(seq[end + 1]):
+            end += 1
+        prev = seq[k - 1] if k else None
+        nxt = seq[end + 1] if end + 1 < len(seq) else None
+        if (prev is not None and id(prev) in index and final_char(prev.text) in ".;"
+                and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
+            parent = stacks[index[id(nxt)]][:-1]
+            if not parent or parent[-1][0] not in UNIT_RANK:
+                k = end + 1
+                continue
+            for q in seq[k:end + 1]:
+                j = index[id(q)]
+                if stacks[j][:len(parent)] == parent:
+                    stacks[j] = parent
+                    changed.add(j)
+                    q.evidence.append({"subheading": "unmarked line before a numbered point -> its parent"})
+        k = end + 1
+    return changed
+
+
+def continues_level(nxt: tuple, stack: tuple, level: int) -> bool:
+    """The next marked paragraph stays in the list at ``level`` of ``stack`` (same parent, same kind)."""
+    return len(nxt) > level and nxt[:level] == stack[:level] and nxt[level][0] == stack[level][0]
+
+
+def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) -> None:
+    """A paragraph after the last subpoint returns to the point. An unmarked paragraph inside a
+    «1)» / «а)» subpoint closes it when it starts with a capital letter and does not continue the
+    enumeration: the previous paragraph ended with «.», or it ended with «;» and this paragraph is
+    a sentence of its own (final «.»). Only list levels that the next marked paragraph does not
+    continue are closed; later unmarked paragraphs up to the next marker follow the point. A
+    lowercase start, a «;» item, text after «:» or a list that goes on stay in the subpoint."""
+    closed = None
+    for k, p in enumerate(body):
+        if p.marker.kind not in {"none", "dash"}:
+            closed = None
+            continue
+        if k in keep or p.kind != "text":
+            continue
+        if closed is not None:
+            stacks[k] = closed
+            continue
+        stack = stacks[k]
+        if not k or not stack or stack[-1][0] not in SUBPOINT_KINDS or not p.text[:1].isupper():
+            continue
+        before, own = final_char(body[k - 1].text), final_char(p.text)
+        if not (before == "." or (before == ";" and own == ".")):
+            continue
+        nxt = next((stacks[j] for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), ())
+        depth = len(stack)
+        while depth and stack[depth - 1][0] in SUBPOINT_KINDS and not continues_level(nxt, stack, depth - 1):
+            depth -= 1
+        if depth < len(stack):
+            closed = stacks[k] = stack[:depth]
+            p.evidence.append({"subpoint_closed": "capitalised paragraph after the last subpoint -> the point"})
 
 
 def path_of(scope: str, stack: tuple) -> str:
@@ -692,6 +791,7 @@ def build(extraction: dict) -> dict:
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
+        close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and
         # everything from there to the end of the scope belongs to the scope root. Unmarked

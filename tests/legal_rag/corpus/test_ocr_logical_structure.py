@@ -787,3 +787,137 @@ def test_caption_final_dot_after_number_or_numeric_date():
                     "Приложение № 1 к Порядку, утвержденному приказом от 01.02.2020."):
         got = owners(S.build(extraction(ordered_porydok(("Text", caption, 900), ("Text", "1. Строка.")))))
         assert got["2.3"] == "S/AN1" and got["2.4"] == "S/AN1/1", caption
+
+
+def regulation(*body):
+    """An order approving a regulation; ``body`` follows the section heading «I. Общие положения»."""
+    return [[("Text", "1. Утвердить прилагаемый Административный регламент."), ("Text", "Министр", 1200)],
+            [("Text", "УТВЕРЖДЕН\nприказом Министерства", 1000), ("Section-header", "I. Общие положения"), *body]]
+
+
+def test_unnumbered_subheading_inside_section_belongs_to_the_section():
+    """Review Focus 5: an unmarked unterminated capitalised line after a finished paragraph and
+    right before a numbered point is a subheading of the enclosing section, not text of the
+    previous point or subpoint."""
+    long_heading = ("Исчерпывающий перечень документов, необходимых в соответствии с нормативными правовыми "
+                    "актами для предоставления государственной услуги и услуг, которые являются необходимыми "
+                    "и обязательными для предоставления государственной услуги, подлежащих представлению "
+                    "заявителем, способы их получения заявителем, в том числе в электронной форме")
+    assert len(long_heading) > 250
+    pages = regulation(("Text", "Предмет регулирования"), ("Text", "1. Регламент устанавливает порядок."),
+                       ("Text", "Круг заявителей"), ("Text", "2. Заявителями являются:"),
+                       ("Text", "1) юридические лица;"), ("Text", "2) индивидуальные предприниматели."),
+                       ("Text", "Требования к порядку информирования"), ("Text", "3. Информация размещается."),
+                       ("Section-header", "II. Стандарт"), ("Text", "4. Услугой является ведение реестра."),
+                       ("Text", long_heading), ("Text", "5. Для получения услуги представляются:"),
+                       ("Text", "а) заявление;"), ("Text", "б) договор."),
+                       ("Text", "Сроки рассмотрения"), ("Text", "Порядок обжалования"),
+                       ("Text", "6. Срок составляет 5 дней."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == "S/I" and got["2.3"] == "S/I/1"
+    assert got["2.4"] == "S/I" and got["2.5"] == "S/I/2"            # not S/I/1
+    assert got["2.6"] == "S/I/2/1" and got["2.7"] == "S/I/2/2"
+    assert got["2.8"] == "S/I" and got["2.9"] == "S/I/3"            # not S/I/2/2
+    assert got["2.10"] == "S/II" and got["2.11"] == "S/II/4"
+    assert got["2.12"] == "S/II" and got["2.13"] == "S/II/5"        # a long subheading
+    assert got["2.16"] == "S/II" and got["2.17"] == "S/II"          # two subheading lines in a row
+    assert got["2.18"] == "S/II/6"
+
+
+def test_unterminated_line_is_not_a_subheading_without_its_evidence():
+    """Negative controls: a terminated sentence, a line after «:», a line before a table or before a
+    subpoint stay with the open point."""
+    pages = regulation(("Text", "1. Регламент устанавливает порядок."),
+                       ("Text", "Количество взаимодействий ограничивается режимом работы."),   # terminated
+                       ("Text", "2. Сведения указываются по форме:"),
+                       ("Text", "Наименование организации"),                                   # after «:»
+                       ("Text", "3. Показатели приведены ниже."),
+                       ("Text", "Таблица 1"), ("Table", "<table><tr><td>1</td></tr></table>"),  # before a table
+                       ("Text", "4. Документы представляются."),
+                       ("Text", "Перечень документов"), ("Text", "1) заявление;"),             # before a subpoint
+                       ("Text", "5. Графическое изображение приведено на схеме 1."),
+                       ("Caption", "Схема 1"), ("Text", "6. Графическое изображение приведено на схеме 2."),
+                       ("Text", "Схема 2"), ("Picture", ""), ("Text", "7. Последний пункт."))   # before a picture
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/I/1"
+    assert got["2.5"] == "S/I/2"
+    assert got["2.7"] == "S/I/3" and got["2.8"] == "S/I/3"
+    assert got["2.10"] == "S/I/4" and got["2.11"] == "S/I/4/1"
+    assert got["2.13"] == "S/I/5"                                    # an OCR Caption region
+    assert got["2.15"] == "S/I/6"
+    # without an enclosing section the line stays with the open point (an OCR-cut sentence)
+    pages = [[("Text", "1. Утвердить порядок."), ("Text", "Проект вносится в Правительство в установленном порядке"),
+              ("Text", "2. Контроль оставляю за собой.")]]
+    assert owners(S.build(extraction(pages)))["1.1"] == "A/1"
+
+
+def test_paragraph_after_last_subpoint_returns_to_the_point():
+    """A capitalised paragraph after the last subpoint that does not continue the enumeration
+    belongs to the point: the subpoint ended with «.», or it ended with «;» and the paragraph is a
+    sentence of its own; later unmarked paragraphs stay with the point."""
+    pages = regulation(("Text", "1. Должностные лица сообщают:"), ("Text", "1) о сроках;"),
+                       ("Text", "2) об исполнителе."),
+                       ("Text", "Время разговора не должно превышать 5 минут."),
+                       ("Text", "Иные вопросы рассматриваются на основании обращения."),
+                       ("Text", "2. Показатели формируются:"), ("Text", "а) по доходам;"),
+                       ("Text", "б) по выплатам:"), ("Text", "по расходам;"), ("Text", "по налогам;"),
+                       ("Text", "По решению руководителя показатели формируются с детализацией."),
+                       ("Section-header", "II. Реорганизация"),
+                       ("Text", "3. При реорганизации:"), ("Text", "а) в форме слияния;"),
+                       ("Text", "б) в форме выделения."),
+                       ("Text", "После завершения реорганизации показатели утверждаются."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/I/1/1" and got["2.4"] == "S/I/1/2"
+    assert got["2.5"] == "S/I/1" and got["2.6"] == "S/I/1"
+    assert got["2.9"] == "S/I/2/б" and got["2.10"] == "S/I/2/б" and got["2.11"] == "S/I/2/б"
+    assert got["2.12"] == "S/I/2"
+    assert got["2.17"] == "S/II/3"                 # the last subpoint before the end of the scope
+
+
+def test_continued_enumeration_stays_in_the_subpoint():
+    """Negative controls: a lowercase paragraph, a «;»-terminated item, text after «:» and a
+    paragraph before the next subpoint of the same list stay in the subpoint."""
+    pages = regulation(("Text", "1. Заявление содержит:"), ("Text", "1) сведения о заявителе;"),
+                       ("Text", "в том числе его адрес;"),                                     # lowercase
+                       ("Text", "2) сведения о туроператоре;"),
+                       ("Text", "Сведения о членстве в объединении;"),                         # «;» item after «;»
+                       ("Text", "3) реквизиты:"),
+                       ("Text", "Наименование банка и номер счета."),                          # after «:»
+                       ("Text", "4) подпись."),
+                       ("Text", "Подпись проставляется руководителем."),                       # list continues
+                       ("Text", "5) дату."),
+                       ("Text", "2. Следующий пункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/1/1"
+    assert got["2.6"] == "S/I/1/2"
+    assert got["2.8"] == "S/I/1/3"
+    assert got["2.10"] == "S/I/1/4" and got["2.11"] == "S/I/1/5"
+
+
+def test_dotted_point_closes_an_open_subpoint():
+    """«8.1» after subpoint «4)» of point 8 is subpoint 8.1 of point 8, not a child of «4)»."""
+    pages = regulation(("Text", "8. Должностные лица сообщают:"), ("Text", "1) о сроках;"),
+                       ("Text", "2) об исполнителе."), ("Text", "8.1 При предоставлении информации:"),
+                       ("Text", "1) по письменному обращению;"), ("Text", "а) почтой;"),
+                       ("Text", "8.2. Второй подпункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/8/2"
+    assert got["2.5"] == "S/I/8/8.1" and got["2.6"] == "S/I/8/8.1/1" and got["2.7"] == "S/I/8/8.1/1/а"
+    assert got["2.8"] == "S/I/8/8.2"
+
+
+@pytest.mark.parametrize(("text", "kind", "label"), [
+    ("ГЛАВА 1. ОБЩИЕ ПОЛОЖЕНИЯ", "chapter", "гл1"),
+    ("ГЛАВА 2", "chapter", "гл2"),
+    ("Глава ІХ. Заключительные положения", "chapter", "гл9"),
+    ("ГЛАВА Х", "chapter", "гл10"),
+    ("СТАТЬЯ 5. Предмет регулирования", "article", "ст5"),
+    ("СТАТЬЯ 12.1", "article", "ст12.1"),
+    ("ГЛАВА 3 настоящего Кодекса применяется к спорам.", "none", ""),
+    ("СТАТЬЯ 17 закона применяется к отношениям.", "none", ""),
+])
+def test_uppercase_chapter_and_article_headings(text, kind, label):
+    """Controller ruling (B3 review): uppercase «ГЛАВА»/«СТАТЬЯ» and OCR Roman letters (Х, І) in
+    chapter numbers; a sentence that starts with the word stays text (heading_like)."""
+    marker = S.parse_marker(text, "Text")
+    assert (marker.kind, marker.label) == (kind, label)

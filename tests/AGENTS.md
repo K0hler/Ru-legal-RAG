@@ -30,6 +30,11 @@
   Cycle 3 B3: uppercase «РАЗДЕЛ I …» (no dot, OCR «ІХ») is the level above chapters and closes the previous
   section's article (heading not absorbed); sentences starting «Раздел II настоящего …» are not headings;
   Roman «I. …» sections without the word still open sections.
+  Cycle 3 B4: unnumbered subheadings inside a section go to the section (incl. long and two-line ones);
+  negatives: terminated sentence, line after «:», before a table/picture/subpoint, OCR Caption region,
+  no enclosing section. A capitalised paragraph after the last subpoint returns to the point; negatives:
+  lowercase, «;» item after «;», text after «:», list that goes on. «8.1» closes an open «4)»; uppercase
+  «ГЛАВА»/«СТАТЬЯ» and OCR Х/І in chapters (parametrised, sentences stay text).
 
 - `corpus/test_m1_04a_batch_tools.py` checks the check-pool batch tools in
   `docs/assets/` on an authored extraction: the v1 annotator input has only
