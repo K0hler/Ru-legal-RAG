@@ -26,6 +26,14 @@
 
 - Check-pool batch 2: `m1/m1-04a/documents/pool/batch-02/selection.json` (frozen, quotas code 1→0 / federal_law 3→4 recorded as `quota_change`); its `--min-days 120`, exact command, feed-cache hash and the meaning of `attempt-01-partial-unfilled.json` are in the write-once sidecar `selection-provenance.json`.
 
+- Check-pool batch 2 first pass: `m1/m1-04a/experiments/20261022-batch-02-first-pass/`
+  (`freeze.json` schema /3 with v1 and `code-final` prototype hashes, written
+  before `run`; outputs `prototype-v1/`, `prototype-code-final/`, `current/`;
+  `error-classes-{v1,code-final}.json`, `sample-30.json` with ukaz-919 personal
+  names that must not be copied into docs). Gold frozen in
+  `20261022-batch-02-gold-freeze/`. `pool/batch-02/status.json` records
+  measured -> development.
+
 - Prototype regressions: `m1/m1-04a/experiments/20261021-dev-regression-<tag>/`
   (baseline, a2, a3 to a3-r4, a4, a4-r2, v1; `summary.json` + `errors.json`, one
   new folder per run; failed attempts a3 and a3-r3 are kept). The `-v1` run is the

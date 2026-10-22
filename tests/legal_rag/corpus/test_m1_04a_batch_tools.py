@@ -141,3 +141,43 @@ def test_dev_regression_on_authored_pair(tmp_path):
     assert json.loads((out / "summary.json").read_text(encoding="utf-8")) == summary
     with pytest.raises(FileExistsError):
         D.run_dev_regression(proto, out, documents=authored_documents(tmp_path))
+
+
+def test_first_pass_explicit_prototypes_and_per_system_totals(tmp_path):
+    got = R.parse_prototypes([f"v1={tmp_path / 'a.py'}", f"code-final={tmp_path / 'b.py'}"])
+    assert list(got) == ["v1", "code-final"] and got["v1"] == (tmp_path / "a.py").resolve()
+    assert R.parse_prototypes(None) == {}
+    for bad in (["v1"], ["=x.py"], ["v1=a.py", "v1=b.py"], ["a/b=x.py"]):
+        with pytest.raises(SystemExit):
+            R.parse_prototypes(bad)
+    zero = {"strict": 0, "no_section": 0, "numbers": 0, "false_exclusion": 0}
+    one = {"strict": 1, "no_section": 1, "numbers": 1, "false_exclusion": 0}
+    rows = [{"slug": "a", "regions": 2, "prototype-v1": one, "prototype-code-final": zero, "current": zero},
+            {"slug": "b", "regions": 1, "prototype-v1": one, "prototype-code-final": one, "current": zero}]
+    assert R.systems(rows) == ["prototype-v1", "prototype-code-final", "current"]
+    total = R.totals(rows)
+    assert total["regions"] == 3 and total["prototype-v1"]["no_section"] == 2
+    assert total["prototype-code-final"]["strict"] == 1 and total["current"]["strict"] == 0
+    # Batch-1 summaries (single ``prototype`` key) keep their totals shape.
+    legacy = [{"slug": "a", "regions": 1, "prototype": one, "current": zero}]
+    assert set(R.totals(legacy)) == {"regions", "prototype", "current"}
+
+
+C = load_script("classify_m1_04a_errors")
+
+
+def test_batch2_error_classes_from_evidence_only():
+    def cls(gold, predicted, category="Text", text="текст", single=False):
+        return C.classify_evidence({"gold": gold, "predicted": predicted}, category, text, single)
+
+    assert cls("A/AN2", "A") == (C.LAW_ANNEX, [])
+    assert cls("S3/5", "S/AN2/5") == (C.NESTED_ANNEX, [])
+    assert cls("S3", "S/AN2/8", "List-item", "8. Файл обмена") == (C.NESTED_ANNEX, [C.SCHEME_LIST])
+    assert cls("S/II/4.1", "A/AN/II/4/4.1", single=True) == (C.DOTTED, [])
+    assert cls("S/II/4.2", "A/AN", "Caption", "Таблица 1.1", single=True) == (C.CAPTION_ROOT, [])
+    assert cls("S/2", "S", text="значении, определенном", single=True) == (C.PAGE_CONTINUATION, [])
+    assert cls("A/ст12", "A/ст12/ч1") == (C.QUOTE, [])
+    assert cls("A/ст13/6", "A/ст13/5/б/б", text="б) пункт 7") == (C.OCR_MARKER, [])
+    assert cls("A/ст1", "A/7") == (C.ARTICLE, [])
+    assert cls("A/AN1", None, "Footnote") == (C.FOOTNOTE, [])
+    assert cls("S", "A/AN/5", text="(место для подписи должностного лица)", single=True) == (C.SIGNATURE, [])

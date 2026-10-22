@@ -41,6 +41,11 @@ POOL_STATUS = {
         {"status": "development", "date": "2026-10-21",
          "report": "docs/milestones/m1/04a/M1_04A_POOL_BATCH_1_2026-10-21.md"},
     ],
+    "batch-02": [
+        {"status": "measured", "date": "2026-10-22", "evidence": "experiments/20261022-batch-02-first-pass"},
+        {"status": "development", "date": "2026-10-22",
+         "report": "docs/milestones/m1/04a/M1_04A_POOL_BATCH_2_2026-10-22.md"},
+    ],
 }
 # SanPiN 2.1.3684-21 bundle: original resolution No. 3 plus nine amending resolutions.
 SANPIN_SLUGS = {

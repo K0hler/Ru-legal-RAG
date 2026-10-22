@@ -57,6 +57,16 @@
   `run_m1_04a_first_pass.py` (`freeze`/`run`/`rescore`/`sample`, `--convention`),
   `classify_m1_04a_errors.py` (batch-1 reading, strict variant) and
   `summarize_m1_04a_ocr.py` (per-act OCR summary).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_2_2026-10-22.md` is the batch-2 first
+  pass on frozen prototype v1 (+ `code-final` and `/7` for comparison), not
+  G13/Task 3: v1 1077/1782, `code-final` 597, `/7` 123. Gold is blind
+  (no stage 2/3, no pictures/noise), three parallel Codex jobs, text-only with
+  spot page checks. Quote the 75.4% `S/AN<n>`=`S<n+1>` figure only as a
+  labelled reference; the naming and «4.1.» depth are open convention questions.
+  No code or government order in the batch. Batch 2 is now development.
+  `run_m1_04a_first_pass.py --prototype LABEL=PATH` (freeze schema /3) and
+  `classify_m1_04a_errors.py --system` with evidence rules (batch 2+) were
+  added; batch-1 outputs still reproduce byte for byte.
 - `milestones/m1/04a/M1_04A_PROTOTYPE_V1_2026-10-21.md` is the Russian
   development report for prototype `ocr-logical-structure/1-experiment`, frozen in
   `data/m1/m1-04a/experiments/20261021-prototype-v1-freeze/` (`code-final` a7b81b59

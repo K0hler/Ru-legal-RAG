@@ -6,11 +6,17 @@ Committed port of ``experiments/20261021-batch-01-first-pass/code/run_first_pass
 applied. Every phase writes once into a new directory and never overwrites.
 
 Phases:
-  freeze   --out DIR --gold-freeze F --batch B --slugs ...
+  freeze   --out DIR --gold-freeze F --batch B --slugs ... [--prototype LABEL=PATH ...]
            -> DIR/freeze.json (prototype, evaluator, exporter, this runner, gold
               freeze, production corpus code, every extraction/gold/notes/source)
   run      --out DIR [--convention v1]
            -> DIR/prototype/, current/, eval/, summary.json (one run, no retries)
+
+Prototypes: without ``--prototype`` the freeze pins ``docs/assets/ocr_logical_structure.py``
+to ``code-final`` and the run writes ``prototype/`` exactly as batch 1 did (schema /2).
+With one or more explicit ``--prototype LABEL=PATH`` the freeze records each file's
+SHA-256 (schema /3) and the run writes ``prototype-LABEL/``, ``eval/prototype-LABEL-<slug>.json``
+and summary rows keyed ``prototype-LABEL``; ``sample`` then takes ``--system prototype-LABEL``.
   rescore  --out DIR --source RUN_DIR [--convention v1]
            -> re-scores the saved outputs of an earlier run under a convention
               (systems are not re-run); checks that the all-regions rescore
@@ -119,9 +125,14 @@ def score(evaluator, g: dict, owners: dict, cont: dict | None = None) -> tuple[d
     return res, row
 
 
+def systems(rows: list[dict]) -> list[str]:
+    """Scored systems of a summary: ``prototype`` (or ``prototype-LABEL``...) and ``current``."""
+    return [k for k in rows[0] if k == "current" or k.startswith("prototype")] if rows else []
+
+
 def totals(rows: list[dict]) -> dict:
     total = {"regions": sum(r["regions"] for r in rows)}
-    for system in ("prototype", "current"):
+    for system in systems(rows):
         total[system] = {k: sum(r[system][k] for r in rows) for k in (*METRICS, "false_exclusion")}
     return total
 
@@ -129,22 +140,34 @@ def totals(rows: list[dict]) -> dict:
 # --------------------------------------------------------------------------- freeze / run
 
 
-def tracked(batch: str, slugs: list[str], gold_freeze: Path) -> dict:
-    files = [PROTOTYPE, EVALUATOR, EXPORTER, Path(__file__).resolve(), gold_freeze]
+def tracked(batch: str, slugs: list[str], gold_freeze: Path, extra: tuple[Path, ...] = ()) -> dict:
+    files = [PROTOTYPE, EVALUATOR, EXPORTER, Path(__file__).resolve(), gold_freeze, *extra]
     files += sorted((ROOT / "src" / "legal_rag" / "corpus").glob("*.py"))
     for slug in slugs:
         files += [extraction(slug), gold(slug), M / "gold" / slug / "annotation-notes.md", source(batch, slug)]
     return {rel(p): sha(p) for p in files}
 
 
-def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, convention: str) -> None:
+def parse_prototypes(specs: list[str] | None) -> dict[str, Path]:
+    """``LABEL=PATH`` arguments -> {label: resolved path}; labels are unique."""
+    out: dict[str, Path] = {}
+    for spec in specs or []:
+        label, sep, path = spec.partition("=")
+        if not sep or not label or not path or label in out or any(c in label for c in "/\\"):
+            raise SystemExit(f"bad --prototype {spec!r}: expected unique LABEL=PATH")
+        out[label] = Path(path).resolve()
+    return out
+
+
+def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, convention: str,
+              prototypes: dict[str, Path] | None = None) -> None:
     code_final = {}
     for line in CODE_FINAL.read_text().splitlines():
         if line.strip():
             digest, name = line.split(maxsplit=1)
             code_final[name.lstrip("*").strip()] = digest
     expected = code_final["docs/assets/ocr_logical_structure.py"]
-    if sha(PROTOTYPE) != expected:
+    if not prototypes and sha(PROTOTYPE) != expected:
         raise SystemExit("prototype differs from code-final")
     for name, digest in json.loads(gold_freeze.read_text(encoding="utf-8"))["files"].items():
         if sha(ROOT / name) != digest:
@@ -158,6 +181,14 @@ def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, conven
               "gold_freeze": rel(gold_freeze), "gold_freeze_sha256": sha(gold_freeze),
               "gold_matches_gold_freeze": True, "runs_before_freeze": 0, "slugs": slugs,
               "files": tracked(batch, slugs, gold_freeze)}
+    if prototypes:
+        for key in ("prototype", "prototype_sha256", "prototype_matches_code_final"):
+            del record[key]
+        record["schema_version"] = "m1-04a-first-pass-freeze/3"
+        record["prototypes"] = [{"label": label, "path": rel(path), "sha256": sha(path),
+                                 "matches_code_final": sha(path) == expected}
+                                for label, path in prototypes.items()]
+        record["files"] = tracked(batch, slugs, gold_freeze, tuple(prototypes.values()))
     out.mkdir(parents=True, exist_ok=False)
     write_new(out / "freeze.json", record)
     print(sha(out / "freeze.json"))
@@ -207,7 +238,11 @@ def do_run(out: Path) -> None:
     sys.path.insert(0, str(ROOT / "src"))
     exporter = load("export_owner_maps", EXPORTER)
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
-    for name in ("prototype", "current", "eval"):
+    if "prototypes" in record:
+        runs = [(f'prototype-{p["label"]}', ROOT / p["path"]) for p in record["prototypes"]]
+    else:
+        runs = [("prototype", PROTOTYPE)]
+    for name in (*(name for name, _ in runs), "current", "eval"):
         (out / name).mkdir()
     rows = []
     for slug in record["slugs"]:
@@ -215,12 +250,13 @@ def do_run(out: Path) -> None:
         ext = json.loads(ext_path.read_text(encoding="utf-8"))
         g, removed = apply_convention(evaluator.load_gold(gold(slug)), ext, convention)
         row = {"slug": slug, "regions": len(g), "not_scored": removed}
-        proto_out = out / "prototype" / f"{slug}.json"
-        subprocess.run([sys.executable, str(PROTOTYPE), "--input", str(ext_path), "--output", str(proto_out)],
-                       check=True)
-        owners, cont = evaluator.from_logical(json.loads(proto_out.read_text(encoding="utf-8")))
-        res, row["prototype"] = score(evaluator, g, owners, cont)
-        write_new(out / "eval" / f"prototype-{slug}.json", res)
+        for name, prototype in runs:
+            proto_out = out / name / f"{slug}.json"
+            subprocess.run([sys.executable, str(prototype), "--input", str(ext_path), "--output", str(proto_out)],
+                           check=True)
+            owners, cont = evaluator.from_logical(json.loads(proto_out.read_text(encoding="utf-8")))
+            res, row[name] = score(evaluator, g, owners, cont)
+            write_new(out / "eval" / f"{name}-{slug}.json", res)
         claim = json.loads(source(batch, slug).read_text(encoding="utf-8"))["declared_identity"]
         try:
             cur, meta = export_current(exporter, ext, claim)
@@ -310,8 +346,10 @@ def region_text(ext: dict, page: int, index: int) -> tuple[str, str]:
     return region["category"], " ".join(b["display_text"].strip().replace("\n", " ") for b in blocks)
 
 
-def build_sample(src: Path, seed: int, size: int) -> dict:
-    """``random.Random(seed).sample`` over gold rows in gold-file order, slugs in freeze order."""
+def build_sample(src: Path, seed: int, size: int, system: str = "prototype") -> dict:
+    """``random.Random(seed).sample`` over gold rows in gold-file order, slugs in freeze order.
+
+    ``prototype_ok`` is read from the strict errors in ``eval/<system>-<slug>.json``."""
     slugs = json.loads((src / "freeze.json").read_text(encoding="utf-8"))["slugs"]
     rows = []
     for slug in slugs:
@@ -322,7 +360,7 @@ def build_sample(src: Path, seed: int, size: int) -> dict:
     picked, cache, out = random.Random(seed).sample(rows, size), {}, []
     for slug, fields in picked:
         if slug not in cache:
-            errors = json.loads((src / "eval" / f"prototype-{slug}.json").read_text(encoding="utf-8"))["errors"]
+            errors = json.loads((src / "eval" / f"{system}-{slug}.json").read_text(encoding="utf-8"))["errors"]
             cache[slug] = (json.loads(extraction(slug).read_text(encoding="utf-8")), {e["region"] for e in errors})
         ext, errors = cache[slug]
         page, index = map(int, fields[0].split("."))
@@ -357,18 +395,22 @@ def main(argv=None) -> None:
     parser.add_argument("--seed", type=int, default=20261021)
     parser.add_argument("--size", type=int, default=30)
     parser.add_argument("--markdown", help="sample: also write the Markdown table to this new file")
+    parser.add_argument("--prototype", action="append", metavar="LABEL=PATH",
+                        help="freeze: explicit prototype file (repeatable); default pins code-final")
+    parser.add_argument("--system", default="prototype", help="sample: eval prefix, e.g. prototype-v1")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
     if args.phase == "freeze":
         if not (args.gold_freeze and args.slugs):
             parser.error("freeze needs --gold-freeze and --slugs")
-        do_freeze(out, args.batch, args.slugs, Path(args.gold_freeze).resolve(), args.convention)
+        do_freeze(out, args.batch, args.slugs, Path(args.gold_freeze).resolve(), args.convention,
+                  parse_prototypes(args.prototype))
     elif args.phase == "run":
         do_run(out)
     elif args.phase == "rescore":
         do_rescore(out, Path(args.source).resolve(), args.convention)
     else:
-        sample = build_sample(Path(args.source).resolve(), args.seed, args.size)
+        sample = build_sample(Path(args.source).resolve(), args.seed, args.size, args.system)
         _write_sample(out, sample)
         if args.markdown:
             with open(args.markdown, "x", encoding="utf-8", newline="\n") as handle:
