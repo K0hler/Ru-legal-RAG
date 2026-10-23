@@ -136,6 +136,12 @@
   too and records `PYTHONPATH=src <interpreter> docs/assets/select_m1_04a_pool.py ...`.
 - Selection profile `batch-04` (`BATCH4_QUOTAS`): no code quota (no `--code-candidates`), FZ 3, decree 1,
   PP 2, RP 2, ministry 3, pages 3..200, at least 4 acts of 20+ pages; excludes batches 1-3 (refills, failures, days).
+- Selection profile `batch-05`: batch-04 quotas, excludes batches 1-4, plus soft preferences `preferred_pages_min 5`
+  and `one_per_issuer_day` (type + feed `signatoryAuthorityId` + `publishDateShort`; fallback `name:` + complexName
+  prefix). Each phase (long share first) runs with them, then without; `soft_fallbacks`/`soft_fallback_counts` record
+  relaxed picks. Off by default: batch-04 reproduces from its feed cache (test). New feed cards carry `issuer` and
+  `publication_date`. `refill` does not apply the preferences. The batch directory must exist before the run
+  (the feed cache is written into it).
 - `milestones/m1/04a/M1_04A_POOL_BATCH_4_2026-10-23.md` is the batch-4 first pass, the first measure of frozen v2
   (+ v1, `/7`), not G13/Task 3: 1579/1546/35 of 2465. Two near-identical Mintrans estimate-table orders (954 regions)
   hold 864 of 886 v2 errors; always quote the without-them figure (1489/1511, 98.5%) and the diversity caveat.

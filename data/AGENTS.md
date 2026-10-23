@@ -39,6 +39,12 @@
   v1 is the script constant, `freeze-addendum.json` records v2, `--single-annex` default, doubts and
   the 107/136 blind-pair check). No format fixes were needed.
 
+- Check-pool batch 5: `m1/m1-04a/documents/pool/batch-05/selection.json` (frozen 23.10, sha256 ab90d9c9…,
+  profile `batch-05`, seed 20261025, 120 days 2011-2025 not sampled by batches 1-4, pool/2, 11 acts, 7 long,
+  `soft_fallbacks` 0; feed cache `feed-cache-b5.json` 0ebdaedd…, command in `selection-provenance.json`, code e4a82d0).
+  Without `one_per_issuer_day` FZ 334+335/2019 (same day) would both be picked; 395-FZ/2023 replaced 335.
+  Ukaz 669/2016 is an appointment decree (judges): personal names stay out of docs. RP 3721-r has an empty feed name.
+
 - Check-pool batch 4 first pass: `m1/m1-04a/experiments/20261023-batch-04-first-pass/` (`freeze.json` /3 f5dd824a…,
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
   re-run. `error-classes-{v2,v1}.json` carry `cross_scope_v2`; `sample-30.json` has three ukaz-481 name rows that
