@@ -172,6 +172,11 @@
   frozen `20261023-batch-05-gold-freeze`, rp-1099 = stitched `.gold.txt`). Baseline of frozen v3.1
   `…/20261023-dev-regression-cycle5-baseline/`: 11623/11805 no_section (strict 11556), `cross_scope_v2` 3; old 45
   9479 with rows/errors equal to `…-v3-1`; batch 5 2144/2268 (rp-1099 853/972, rp-3721 90/94 cross 3, minnauki 72/73).
+- Cycle 5 B2 (prototype): a footnote's mark is also found as HTML `<sup>N</sup>` (tables print it so); the owner
+  stays the latest preceding body paragraph with the mark, a footnote without one stays unowned. Cause of the
+  batch-5 transfers: the second list's marks were `<sup>`, so «¹» matched the first list. Regression
+  `…-cycle5-b2`: 11753/11805 no_section (strict 11743), `cross_scope_v2` 3 -> 0, rp-3721 94/94, rp-1099 972/972,
+  batch 5 2267/2268, no drops, no other error changed.
 - Cycle 5 B1 (prototype, VERSION unchanged until B4): `table_rows` — in an annex scope (`…/AN<n>`) that opens with
   a table (no marker before its first table), a roman/«N.»/«N.M»/paren/letter marker between its first and last
   table is a table row (marker `none`, evidence `table_row`); named units, markers after the last table, an annex

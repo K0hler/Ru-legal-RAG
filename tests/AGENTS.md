@@ -68,6 +68,8 @@
   parts of a table that opens an annex are annex text (evidence `table_row`); negatives: «2.» after a table in
   ordinary text or in an annex whose first point precedes the table, a point after the last table, and an
   approved text `S` that is a table keep their points.
+  Cycle 5 B2: two lists numbering footnotes from «¹» (second marks `<sup>N</sup>` or «¹») keep their own
+  footnotes; a footnote whose mark is absent (other `<sup>` number, bare digit) stays unowned.
   Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,

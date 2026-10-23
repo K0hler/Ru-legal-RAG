@@ -987,7 +987,9 @@ def build(extraction: dict) -> dict:
             if p.kind in {"approval", "annex"}:
                 p.owner = scope_path
 
-    # footnotes: owner = latest preceding body paragraph carrying the same superscript marker
+    # footnotes: owner = latest preceding body paragraph carrying the same superscript marker; a table
+    # may print the mark as HTML «<sup>1</sup>» instead of «¹» (Review Focus 2: two lists numbering
+    # their footnotes from «¹» each keep their own footnotes)
     body_seen = []
     for p in paragraphs:
         if p.flow == "body":
@@ -999,7 +1001,8 @@ def build(extraction: dict) -> dict:
             p.evidence.append({"footnote_owner": "unnumbered"})
             continue
         token = "".join(SUP[int(d)] for d in str(number))
-        hits = [q for q in body_seen if re.search(rf"(?<![{SUP}]){token}(?![{SUP}])", q.text)]
+        mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
+        hits = [q for q in body_seen if mark.search(q.text)]
         p.owner = hits[-1].owner if hits else None
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})
 

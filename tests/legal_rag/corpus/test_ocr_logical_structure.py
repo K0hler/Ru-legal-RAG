@@ -1269,3 +1269,39 @@ def test_approved_text_opening_with_a_table_keeps_its_row_numbers():
     got = owners(result)
     assert got["2.4"] == "S/1" and got["2.5"] == "S/1"
     assert not any("table_row" in e for p in result["paragraphs"] for e in p["evidence"])
+
+
+def two_lists_with_footnotes(second_table, notes):
+    """An order with two annex lists that both number their footnotes from «¹»."""
+    return [[("Text", "1. Утвердить прилагаемые перечни."), ("Text", "Председатель Правительства", 1100)],
+            [("Page-header", "ПРИЛОЖЕНИЕ № 1\nк распоряжению Правительства", 900), ("Section-header", "ПЕРЕЧЕНЬ товаров"),
+             ("Table", "<table><tr><td>Наименование товара¹</td><td>Код²</td></tr><tr><td>Шины³</td></tr></table>"),
+             ("Footnote", "¹ Наименования приводятся по классификатору."), ("Footnote", "² Код товарной позиции."),
+             ("Footnote", "³ Только новые шины.")],
+            [("Page-header", "ПРИЛОЖЕНИЕ № 2\nк распоряжению Правительства", 900), ("Section-header", "ПЕРЕЧЕНЬ упаковки"),
+             ("Table", second_table), *notes]]
+
+
+@pytest.mark.parametrize("second_table", [
+    "<table><tr><td>Материал упаковки<sup>1</sup></td><td>Код<sup>2</sup></td></tr><tr><td>Поддоны<sup>3</sup></td></tr></table>",
+    "<table><tr><td>Материал упаковки¹</td><td>Код²</td></tr><tr><td>Поддоны³</td></tr></table>"])
+def test_footnote_goes_to_the_area_of_the_last_mark_before_it(second_table):
+    """Cycle 5 B2 (Review Focus 2): two lists number their footnotes «¹ ² ³»; the footnotes after the second list
+    belong to it, where their mark last occurred, not to the first list. A table may print the mark as HTML
+    «<sup>1</sup>» instead of «¹»."""
+    notes = [("Footnote", "¹ Идентификация материала по маркировке."), ("Text", "² Буквенное обозначение упаковки."),
+             ("Text", "³ За исключением поддонов.")]
+    got = owners(S.build(extraction(two_lists_with_footnotes(second_table, notes))))
+    assert [got[f"2.{k}"] for k in (2, 3, 4, 5)] == ["A/AN1"] * 4
+    assert [got[f"3.{k}"] for k in (2, 3, 4, 5)] == ["A/AN2"] * 4
+
+
+def test_footnote_without_a_found_mark_stays_unowned():
+    """Negative controls: a footnote whose mark occurs nowhere before it has no owner, as before; a
+    superscript <sup> with another number or a bare digit is not its mark."""
+    second = "<table><tr><td>Материал<sup>2</sup></td><td>Код 4</td></tr></table>"
+    notes = [("Footnote", "⁴ Сноска без значка в тексте.")]
+    result = S.build(extraction(two_lists_with_footnotes(second, notes)))
+    assert owners(result)["3.3"] is None
+    note = next(p for p in result["paragraphs"] if p["flow"] == "footnote" and p["text_preview"].startswith("⁴"))
+    assert {"footnote_owner": "unresolved", "candidates": 0} in note["evidence"]
