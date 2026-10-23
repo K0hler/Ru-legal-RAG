@@ -161,6 +161,12 @@
   counter still 0. Classifier batch-5 rules (`_batch5_cause`, only where earlier rules give no class): section
   heading as OCR Text, footnote given by its mark to another annex; batch 1-4 class files reproduce byte for byte.
   `build_m1_04a_catalog.py` `POOL_STATUS` has batch-05 (development).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_6_2026-10-24.md`: batch-6 first pass of frozen v4 (+ v3.1): 1844/1830 of 1925;
+  quote the without-prikaz-37 figure (1634/1637) and the gold memory-exposure limitation. `cross_scope_v2` 0, one new
+  class (dotted-section gap), counter still 0. Rules fired: v4 `table_row`, `<sup>` marks, v3 `restart` once;
+  `list_line`/`roman_sequence` never. Classifier batch-6 rules (`_batch6_before_scheme_list`, `_batch6_cause`): dotted
+  gap, footnote to another point, subpoint closed early, signature heading of an attached document; batch 1-5 class
+  files unchanged (21 files equal before/after). `POOL_STATUS` has batch-06 (development).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -85,6 +85,11 @@
   earlier annotation jobs before its job file; no sign of influence in the notes). minek-37 27.1-28.2 carry
   `S/AN5|S/AN5/5.2`; its flat `S/AN5/5.N` are not §5 exceptions (annex 5 has no point «5.»).
 
+- Check-pool batch 6 first pass: `m1/m1-04a/experiments/20261024-batch-06-first-pass/` (`freeze.json` /3 fe1d356b…,
+  v4 + v3-1 frozen copies, `git_head` 78f4ac0, both equivalences). Run once (23.10 19:00 UTC); never re-run.
+  `error-classes-{v4,v3-1}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261026, no ukaz-1711 rows) stays
+  local. `pool/batch-06/status.json` records measured -> development.
+
 - Check-pool batch 5 first pass: `m1/m1-04a/experiments/20261023-batch-05-first-pass/` (`freeze.json` /3 3da171ed…,
   v3-1 + v2 frozen copies, `git_head` b0aa2f7, both batch-5 equivalences). Run once (12:20 UTC); never re-run.
   `error-classes-{v3-1,v2}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261025) has ukaz-669 name rows that

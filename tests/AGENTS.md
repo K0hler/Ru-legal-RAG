@@ -58,6 +58,8 @@
   a closing error.
   `test_batch5_error_classes_from_evidence_only` pins the batch-5 rules (roman heading as OCR Text, footnote to
   another annex by its mark) and that earlier classes keep priority.
+  `test_batch6_error_classes_from_evidence_only` pins the batch-6 rules (dotted-section gap, footnote to another
+  point, subpoint closed early, attached-document signature heading) and earlier-class priority.
   `test_dev_regression_baseline_comparison_flags_drops` covers `--baseline`: per-document drops
   (no_section/strict down, `cross_scope_v2` up, region count changed, missing) and CLI exit 1.
   Cycle 4 A1: `attached_ordinal` tests (both files) pin ordinal heads by first appearance, `S, S2` == `S, A/AN`,

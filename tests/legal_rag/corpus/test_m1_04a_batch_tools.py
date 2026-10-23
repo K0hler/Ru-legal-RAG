@@ -323,6 +323,39 @@ def test_batch5_error_classes_from_evidence_only():
     assert cls("S/AN1", "S/AN1/III/11", "Text", "441,8") == (C.SCHEME_LIST, [])
 
 
+def test_batch6_error_classes_from_evidence_only():
+    def cls(gold, predicted, category="Text", text="Текст", single=False):
+        return C.classify_evidence({"gold": gold, "predicted": predicted}, category, text, single)
+
+    # «5.3.» after «5.1.» with no «5.2.»: the next dotted section is nested under the earlier sibling.
+    assert cls("S/AN5/5.3", "S/AN5/5.1/5.3", "Text", "5.3. Затраты") == (C.DOTTED_GAP, [])
+    assert cls("S/AN5/5.3", "S/AN5/5.1/5.3", "Table", "<table>") == (C.DOTTED_GAP, [])
+    assert cls("S/AN5/5.1", "S/AN5/5.3/5.1")[0] != C.DOTTED_GAP
+    assert cls("S/AN5/6.3", "S/AN5/5.1/6.3")[0] != C.DOTTED_GAP
+    # The unnumbered block between them stays in «5.1» (gold: the annex itself).
+    assert cls("S/AN5", "S/AN5/5.1", "Text", "Пусковые расходы¹,²") == (C.DOTTED_GAP, [])
+    assert cls("S/AN5", "S/AN5/5.1", "Footnote", "¹ В соответствии") == (C.DOTTED_GAP, [])
+    assert cls("S/AN5", "S/AN5/5.1", "Text", "5.1. Статьи")[0] != C.DOTTED_GAP
+    # A footnote given by its mark to another point of the same document.
+    assert cls("S/5/3/а", "S/6", "Footnote", "¹ Данный индекс") == (C.FOOTNOTE_OTHER_POINT, [])
+    assert cls("S/6", "S/6/2/а", "Footnote", "¹ Перечень") == (C.FOOTNOTE_OTHER_POINT, [])
+    assert cls("S/AN5/5.5", "S/AN5/5.1/5.4", "Footnote", "² Индекс") == (C.FOOTNOTE_OTHER_POINT, [])
+    assert cls("S/6", "S/6/2/а", "Text", "Перечень")[0] != C.FOOTNOTE_OTHER_POINT
+    # A capitalised paragraph that still belongs to the last subpoint is given to the point.
+    assert cls("S/5/4", "S/5", "Text", "Коэффициенты перевода") == (C.SUBPOINT_CLOSED_EARLY, [])
+    assert cls("S/8/1/в", "S/8/1", "Text", "В случае отсутствия") == (C.SUBPOINT_CLOSED_EARLY, [])
+    assert cls("S/5/4", "S/5", "Text", "коэффициенты")[0] != C.SUBPOINT_CLOSED_EARLY
+    # The signature block of an attached agreement under its last point.
+    assert cls("S", "S/ст4/7", "Section-header", "Подписи и реквизиты Сторон") == (C.SIGNATURE, [])
+    assert cls("S", "S/ст4/7", "Text", "От Правительства Российской Федерации") == (C.SIGNATURE, [])
+    # Earlier classes keep priority.
+    assert cls("S/V", "S/IV/19", "Text", "V. Согласование проекта") == (C.SECTION_AS_TEXT, [])
+    assert cls("S2", "S", "Footnote", "¹ Идентификация материала") == (C.FOOTNOTE_OTHER_SCOPE, [])
+    assert cls("S/II/8", "S/II/8/б", "Text", "По решению") == (C.CLOSING, [])
+    assert cls("S", "S/1", "Table", "Наименование мероприятия") == (C.SCHEME_LIST, [])
+    assert cls("S/AN1", "S/AN1/III/11", "Text", "441,8") == (C.SCHEME_LIST, [])
+
+
 def test_rescore_scoring_single_annex_is_opt_in():
     ev = load_script("evaluate_ocr_owner_gold")
     gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}

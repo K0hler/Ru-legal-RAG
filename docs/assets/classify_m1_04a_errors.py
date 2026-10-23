@@ -121,6 +121,13 @@ SECTION_AS_TEXT = ("Заголовок раздела «V. …» распозн�
                    "заголовок и пункты после него остались в прежнем разделе")
 FOOTNOTE_OTHER_SCOPE = ("Владелец сноски: сноска отдана по знаку («¹», «²») другому приложению или документу "
                         "с теми же знаками")
+DOTTED_GAP = ("Пропуск номера в последовательности дробных разделов («5.1.», блок без номера, «5.3.»): "
+              "блок без номера и следующие разделы вложены в «5.1»")
+FOOTNOTE_OTHER_POINT = "Владелец сноски: сноска отдана по знаку другому пункту или подпункту того же документа"
+SUBPOINT_CLOSED_EARLY = ("Подпункт закрыт раньше времени: абзац последнего подпункта (с заглавной буквы) отнесён "
+                         "к пункту")
+SIGNATURE_HEADING = re.compile(r"^#*\s*(Подписи и реквизиты|От |За )")
+DOTTED_NUMBER = re.compile(r"^(\d+(?:\.\d+)*)\.(\d+)$")
 ROMAN = re.compile(r"^[IVXLC]+$")
 ROMAN_HEADING = re.compile(r"^#*\s*[IVXLC]+\.\s+\S")
 SUPERSCRIPT_MARK = re.compile(r"^[¹²³⁴⁵⁶⁷⁸⁹⁰*]")
@@ -218,6 +225,46 @@ def _batch5_cause(gold: str, predicted: str, category: str, text: str) -> str:
     if ((category == "Footnote" or SUPERSCRIPT_MARK.match(text)) and g and p
             and g.group(0) != p.group(0) and gold == g.group(0)):
         return FOOTNOTE_OTHER_SCOPE
+    return _batch6_cause(gold, predicted, category, text)
+
+
+def _dotted_sibling_inserted(gold: str, predicted: str) -> bool:
+    """Predicted is gold with one extra dotted segment ``5.1`` right above a later sibling ``5.3``."""
+    g, p = gold.split("/"), predicted.split("/")
+    if len(p) != len(g) + 1:
+        return False
+    for i in range(len(g)):
+        if p[:i] == g[:i] and p[i + 1:] == g[i:]:
+            a, b = DOTTED_NUMBER.match(p[i]), DOTTED_NUMBER.match(g[i])
+            return bool(a and b and a.group(1) == b.group(1) and int(a.group(2)) < int(b.group(2)))
+    return False
+
+
+def _batch6_before_scheme_list(g: str, p: str, category: str, text: str) -> str | None:
+    """Batch 6: readings that the earlier scheme-list rule would otherwise take (earlier class files unchanged)."""
+    if not p.startswith(g + "/"):
+        return None
+    if (re.match(r"^(A|S\d*)/AN\d+$", g) and p.count("/") == g.count("/") + 1
+            and DOTTED_NUMBER.match(p.rsplit("/", 1)[1]) and not MARKER_START.match(text)):
+        return DOTTED_GAP
+    if category == "Footnote":
+        return FOOTNOTE_OTHER_POINT
+    if re.match(r"^S\d*$", g) and SIGNATURE_HEADING.match(text):
+        return SIGNATURE
+    return None
+
+
+def _batch6_cause(gold: str, predicted: str, category: str, text: str) -> str:
+    """Batch 6: classes for errors no earlier rule explains (earlier class files are unchanged)."""
+    if _dotted_sibling_inserted(gold, predicted):
+        return DOTTED_GAP
+    g, p = SCOPE_HEAD.match(gold), SCOPE_HEAD.match(predicted)
+    if ((category == "Footnote" or SUPERSCRIPT_MARK.match(text)) and g and p
+            and g.group(0) == p.group(0)):
+        return FOOTNOTE_OTHER_POINT
+    if (gold.startswith(predicted + "/") and re.match(r"^(\d+|[а-я])$", gold[len(predicted) + 1:])
+            and text[:1].isupper()):
+        return SUBPOINT_CLOSED_EARLY
     return OTHER
 
 
@@ -268,6 +315,8 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         cause = SIGNATURE
     elif p.startswith(g + "/") and category in MARK_CATEGORIES and not CYRILLIC_WORD.search(text):
         cause = PAGE_MARK  # batch 4: a typographic file code «200716A9.doc» in a page footer
+    elif _batch6_before_scheme_list(g, p, category, text):
+        cause = _batch6_before_scheme_list(g, p, category, text)
     elif p.startswith(g + "/") and re.match(r"^S(\d*|/AN\d+)$", g):
         cause = SCHEME_LIST
     elif p.startswith(g + "/") and g in {"A", "S"}:

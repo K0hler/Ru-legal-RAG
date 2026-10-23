@@ -88,7 +88,9 @@ development-document scores are not progress. Its first measure, pool batch 5
 2144/2268 (94.5%; 99.6% without the coal Program rp-1099), same owners as v2.
 Prototype v4 (cycle 5, batch 5 now development) is frozen and reported in
 [M1_04A_PROTOTYPE_V4_2026-10-23.md](docs/milestones/m1/04a/M1_04A_PROTOTYPE_V4_2026-10-23.md):
-11754/11805 on 56 development documents (v3.1 11623); not progress, batch 6 is its measure.
+11754/11805 on 56 development documents (v3.1 11623); not progress. Its first measure, pool batch 6
+([M1_04A_POOL_BATCH_6_2026-10-24.md](docs/milestones/m1/04a/M1_04A_POOL_BATCH_6_2026-10-24.md)):
+1844/1925 (95.8%; 99.8% without Minekonomrazvitiya order No. 37), `cross_scope_v2` 0.
 
 ```powershell
 $env:PYTHONPATH = "src"
