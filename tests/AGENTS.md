@@ -128,6 +128,12 @@
   accounting through the shared grammar. Unknown categories remain source data.
   Impossible table grids (batch-5 span-past-rows and overlap shapes) degrade one
   table with null columns and kept cell text; a resolved table has no `grid` key.
+  Rotation retry: an accepted cw90 page and 13 mutations (bbox/text/category/labels, selection,
+  sideways or earlier-accepted attempts, sizes, unknown/third turns); `test_ocr_runtime.py` keeps
+  the flag off by default and refuses non-boolean values.
+- `docs/assets/check_ocr_lab_rotation.py <lab-root>` checks the external client's
+  rotation retry on real PIL images: coordinate mapping for both turns, the
+  upright-text rule, first accepted turn, retained attempts and the two-turn bound.
 - `corpus/test_ocr_runtime.py` checks CLI saved import, subprocess argument
   construction, permission-before-write, immutable replay, fresh-runtime
   provenance replay and index/extraction/native corruption. Keep external OCR

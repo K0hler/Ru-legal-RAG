@@ -1,6 +1,7 @@
 """Normalize retained OCR evidence without importing an inference runtime."""
 
 from html.parser import HTMLParser
+import json
 import math
 import re
 
@@ -111,6 +112,61 @@ def _positive(value):
     return type(value) is int and value > 0
 
 
+# The OCR-Lab rotation retry: at most these turns, in this order, after a token-limited page.
+ROTATIONS = ("cw90", "ccw90")
+UPRIGHT_TEXT = {"Text", "Title", "Section-header", "List-item", "Footnote", "Caption"}
+
+
+def _unrotate(bbox, rotation, width, height):
+    left, top, right, bottom = bbox
+    if rotation == "cw90":
+        return [top, height - right, bottom, height - left]
+    return [width - bottom, left, width - top, right]
+
+
+def _upright_cells(attempt):
+    """Return an attempt's layout if it is complete and reads upright, otherwise None."""
+    choices = attempt["native"].get("choices") if isinstance(attempt.get("native"), dict) else None
+    if (not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict)
+            or choices[0].get("finish_reason") != "stop" or attempt["native"].get("local_stop_reason")
+            or not isinstance(choices[0].get("message"), dict)):
+        return None
+    try:
+        cells = json.loads(choices[0]["message"].get("content") or "")
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(cells, list) or any(
+            not isinstance(c, dict) or not isinstance(c.get("bbox"), list) or len(c["bbox"]) != 4
+            or any(type(n) not in {int, float} for n in c["bbox"]) or "category" not in c for c in cells):
+        return None
+    text = [c["bbox"] for c in cells if c["category"] in UPRIGHT_TEXT]
+    if not text or any(b[3] - b[1] >= 3 * (b[2] - b[0]) for b in text):
+        return None
+    return cells
+
+
+def _check_rotated_layout(native, dimensions, layout):
+    """A token-limited page may use the first accepted turned retry, re-derived from its evidence."""
+    retry = native.get("orientation_retry")
+    attempts = retry.get("attempts") if isinstance(retry, dict) else None
+    if (not isinstance(attempts, list) or not 1 <= len(attempts) <= len(ROTATIONS)
+            or any(not isinstance(a, dict) for a in attempts)
+            or [a.get("rotation") for a in attempts] != list(ROTATIONS[:len(attempts)])
+            or any(a.get("image_size") != dimensions[::-1] for a in attempts)
+            or retry.get("selected") != len(attempts) - 1
+            or any(_upright_cells(a) is not None for a in attempts[:-1])):
+        raise ValueError("invalid OCR rotation retry record")
+    cells, rotation = _upright_cells(attempts[-1]), attempts[-1]["rotation"]
+    if cells is None or not isinstance(layout, list) or len(layout) != len(cells) or any(
+            not isinstance(region, dict) or region.get("category") != cell["category"]
+            or region.get("rotated_bbox") != cell["bbox"] or region.get("page_rotation") != rotation
+            or region.get("bbox") != _unrotate(cell["bbox"], rotation, *dimensions)
+            or (region.get("text") != cell.get("text") and region.get("text_source") != "picture_ocr")
+            for region, cell in zip(layout, cells)):
+        raise ValueError("rotated OCR layout does not match its retained attempt")
+    return rotation
+
+
 def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
     """Keep native layout claims, exact OCR-string locators and all physical pages."""
     if not isinstance(document, dict) or not isinstance(run, dict):
@@ -149,15 +205,21 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                 or not isinstance(choices[0].get("message"), dict)):
             raise ValueError("native OCR choice/message must be objects")
         content = choices[0]["message"].get("content")
-        if (source_page.get("error") or choices[0].get("finish_reason") != "stop"
-                or not isinstance(content, str) or not content.strip()):
-            raise ValueError("failed or truncated native OCR response")
         layout = source_page.get("layout")
+        rotation = None
+        if "orientation_retry" in native and choices[0].get("finish_reason") == "length":
+            rotation = _check_rotated_layout(native, dimensions, layout)
+            uncertainties.add("page_orientation_retry")
+        elif (source_page.get("error") or choices[0].get("finish_reason") != "stop"
+                or "orientation_retry" in native or not isinstance(content, str) or not content.strip()):
+            raise ValueError("failed or truncated native OCR response")
         if not isinstance(layout, list) or not layout:
             raise ValueError("empty OCR layout requires explicit page review")
         page = {"page": requested[page_index], "mode": "ocr", "confidence": None,
                 "image_size": dimensions, "coordinate_space": "rendered_image_pixels",
                 "regions": [], "blocks": []}
+        if rotation is not None:
+            page["orientation_retry"] = rotation
         for region_index, source_region in enumerate(layout):
             if not isinstance(source_region, dict):
                 raise ValueError("OCR regions must be objects")
@@ -235,8 +297,6 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                            "children": [{"kind": "cell", **cell} for cell in r.get("table", {}).get("cells", [])]}
                           for r in p["regions"]]} for p in pages]}}
     # Freeze independent copies: callers must not be able to mutate retained source records.
-    import json
-
     extraction = json.loads(json.dumps(extraction, ensure_ascii=False, allow_nan=False))
     extraction["extraction_id"] = content_hash(extraction)
     return extraction

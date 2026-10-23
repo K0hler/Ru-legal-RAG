@@ -252,6 +252,18 @@ class OcrRuntimeTest(unittest.TestCase):
             self.assertEqual(json.loads(snapshot_config.read_bytes())["max_tokens"], 2048)
             self.assertEqual(json.loads(snapshot_config.read_bytes())["failure_policy"], "retain_unresolved")
             self.assertEqual(json.loads((lab / "config/dotsmocr_picture_ocr.json").read_bytes())["max_tokens"], 512)
+            self.assertNotIn("--rotation-retry", command)
+            self.assertNotIn("rotation_retry", json.loads((receipt / "runtime.json").read_bytes()))
+            turned = Path(temporary) / "run-turned"
+            turned.mkdir()
+            with patch.object(runtime.subprocess, "run", side_effect=execute):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "rotation_retry": True}, b"%PDF-fixture", "a" * 64, turned)
+            self.assertIn("--rotation-retry", commands[-1])
+            self.assertTrue(json.loads((turned / "runtime.json").read_bytes())["rotation_retry"])
+            with self.assertRaises(ValueError):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "rotation_retry": "yes"}, b"%PDF-fixture", "a" * 64, turned)
 
     def test_output_subdirectory_symlink_cannot_write_into_raw_archive(self):
         with tempfile.TemporaryDirectory() as temporary:

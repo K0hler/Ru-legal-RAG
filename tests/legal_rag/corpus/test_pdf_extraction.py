@@ -35,7 +35,85 @@ def saved_result():
     return document, run
 
 
+TURNED = [{"category": "Text", "bbox": [20, 10, 140, 30], "text": "1. Объем субсидии"},
+          {"category": "Table", "bbox": [20, 40, 140, 90], "text": "<table><tr><td>1</td></tr></table>"}]
+
+
+def rotated_result(attempts=(("cw90", TURNED),)):
+    """Page 1 hit the token limit and was retried turned; layout is the accepted turn mapped back."""
+    document, run = saved_result()
+    page = document["pages"][0]
+    page["image_size"] = [100, 150]
+    page["native"]["choices"][0].update(finish_reason="length")
+    page["native"]["choices"][0]["message"]["content"] = '[{"bbox": [10, 10, 30, 130], "category": "Table", "text": "<tr>'
+    page["native"]["orientation_retry"] = {"trigger": "length", "selected": len(attempts) - 1, "attempts": [
+        {"rotation": rotation, "image_size": [150, 100],
+         "native": {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(cells, ensure_ascii=False)}}]}}
+        for rotation, cells in attempts]}
+    # cw90 on a 100x150 page: turned (x1, y1, x2, y2) -> (y1, 150 - x2, y2, 150 - x1).
+    page["layout"] = [{**cell, "bbox": [cell["bbox"][1], 150 - cell["bbox"][2], cell["bbox"][3], 150 - cell["bbox"][0]],
+                       "rotated_bbox": cell["bbox"], "page_rotation": attempts[-1][0]} for cell in attempts[-1][1]]
+    return document, run
+
+
 class PdfExtractionTest(unittest.TestCase):
+    def test_rotated_retry_layout_is_accepted_only_from_its_retained_attempt(self):
+        document, run = rotated_result()
+        extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+        page = extraction["pages"][0]
+        self.assertEqual(page["orientation_retry"], "cw90")
+        self.assertEqual(page["regions"][0]["bbox"], [10, 10, 30, 130])
+        self.assertEqual(page["regions"][0]["source_record"]["rotated_bbox"], [20, 10, 140, 30])
+        self.assertIn("page_orientation_retry", extraction["uncertainties"])
+        self.assertNotIn("orientation_retry", extraction["pages"][1])
+        sideways = [{"category": "Text", "bbox": [10, 10, 30, 140], "text": "боком"}]
+        second = rotated_result((("cw90", sideways), ("ccw90", TURNED)))[0]
+        second["pages"][0]["layout"] = document["pages"][0]["layout"]
+        for cell in second["pages"][0]["layout"]:
+            cell["page_rotation"] = "ccw90"
+        # ccw90 maps differently, so a cw90-shaped layout must not pass as the second turn.
+        with self.assertRaises(ValueError):
+            pdf.normalize_dotsmocr(second, run, DIGEST)
+
+    def test_rotated_retry_mutations_are_rejected(self):
+        for mutation in ("bbox", "text", "category", "rotated_bbox", "rotation_label", "no_selection",
+                         "not_last", "sideways", "image_size", "primary_stop", "unknown_rotation",
+                         "extra_region", "third_attempt"):
+            with self.subTest(mutation=mutation):
+                document, run = rotated_result()
+                page = document["pages"][0]
+                retry = page["native"]["orientation_retry"]
+                if mutation == "bbox":
+                    page["layout"][0]["bbox"] = [10, 10, 30, 129]
+                elif mutation == "text":
+                    page["layout"][0]["text"] = "2. Иной текст"
+                elif mutation == "category":
+                    page["layout"][1]["category"] = "Picture"
+                elif mutation == "rotated_bbox":
+                    del page["layout"][0]["rotated_bbox"]
+                elif mutation == "rotation_label":
+                    page["layout"][0]["page_rotation"] = "ccw90"
+                elif mutation == "no_selection":
+                    retry["selected"] = None
+                elif mutation == "not_last":
+                    retry["attempts"].append(copy.deepcopy(retry["attempts"][0]) | {"rotation": "ccw90"})
+                elif mutation == "sideways":
+                    sideways = [{"category": "Text", "bbox": [20, 10, 40, 140], "text": "боком"}]
+                    retry["attempts"][0]["native"]["choices"][0]["message"]["content"] = json.dumps(sideways)
+                elif mutation == "image_size":
+                    retry["attempts"][0]["image_size"] = [100, 150]
+                elif mutation == "primary_stop":
+                    page["native"]["choices"][0]["finish_reason"] = "stop"
+                elif mutation == "unknown_rotation":
+                    retry["attempts"][0]["rotation"] = "flip180"
+                elif mutation == "extra_region":
+                    page["layout"].append({"category": "Text", "bbox": [1, 1, 2, 2], "text": "x"})
+                else:
+                    retry["attempts"] = [copy.deepcopy(retry["attempts"][0]) for _ in range(3)]
+                    retry["selected"] = 2
+                with self.assertRaises(ValueError):
+                    pdf.normalize_dotsmocr(document, run, DIGEST)
+
     def test_preserves_physical_tree_text_coordinates_and_merged_empty_cells(self):
         document, run = saved_result()
         extraction = pdf.normalize_dotsmocr(document, run, DIGEST)

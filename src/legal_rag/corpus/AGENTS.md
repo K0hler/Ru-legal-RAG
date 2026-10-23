@@ -54,8 +54,14 @@
   `column`/`columns` are null, `grid: unresolved` + `grid_error`, uncertainty
   `table_grid_unresolved`. Resolved tables keep their exact previous output
   (no `grid` key), so saved extraction IDs are unchanged. Malformed HTML still
-  fails the document. dots.mocr `length` loops on blank (often rotated) form
-  tables remain unresolved: `docs/milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md`.
+  fails the document. See `docs/milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md`.
+- Opt-in `rotation_retry: true` (`ocr-provider/1`) passes `--rotation-retry` to the
+  OCR-Lab client and adds `rotation_retry` to runtime.json only when on. A page
+  whose primary hit `length` may use the first upright turned attempt (cw90 then
+  ccw90, at most two); the normalizer re-derives every region (category, text,
+  `bbox` mapped back, `rotated_bbox`, `page_rotation`) from that retained attempt
+  and checks earlier attempts were rejected. Page `orientation_retry`, uncertainty
+  `page_orientation_retry`. Rotated pages that finish without a loop are not retried.
 - `ocr_runtime.py` validates the entire PDF permission/input before staging.
   Configure the external lab path through `ocr-provider/1`; fresh execution
   requires an already-healthy service and uses UUID-isolated outputs. Saved

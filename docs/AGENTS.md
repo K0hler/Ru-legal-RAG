@@ -357,7 +357,9 @@
 - `milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md` records the batch-5 OCR
   failures: two were impossible table grids (now degraded per table, both acts
   pass), the third (Minfin 141n) is a blank rotated form looping on empty rows.
-  A rotated retry completed 3/3 pages but is a probe, not an implemented fallback.
+  The opt-in rotation retry (OCR-Lab client + normalizer re-derivation) completes
+  it (3 pages turned cw90); 0/12 forced turns of upright pages were accepted.
+  Rotated pages read without a loop and upright looping blanks remain open.
 
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native

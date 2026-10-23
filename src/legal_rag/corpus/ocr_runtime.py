@@ -82,6 +82,9 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
         picture_overrides["failure_policy"] = policy
         if policy == "retain_unresolved":
             picture_overrides["recover_repetitions"] = True
+    rotation_retry = config.get("rotation_retry", False)
+    if type(rotation_retry) is not bool:
+        raise ValueError("OCR rotation retry must be true or false")
     if picture_overrides:
         picture = _read(lab / "config/dotsmocr_picture_ocr.json")
         snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, **picture_overrides})
@@ -97,6 +100,8 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
     image = subprocess.run(["docker", "inspect", "--format", "{{.Image}}", "ocr-lab-dotsmocr"],
                            capture_output=True, text=True, check=True, timeout=30).stdout.strip()
     fingerprint["image_id"] = image
+    if rotation_retry:
+        fingerprint["rotation_retry"] = True  # Absent when off, so earlier runtime fingerprints stay equal.
     (receipt_dir / "runtime.json").write_bytes(json_bytes(fingerprint))
     staged = lab / "input" / ("legal-rag-" + digest + ".pdf")
     _store({staged: payload}, root=lab)
@@ -105,7 +110,7 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
     command = ["docker", "compose", "--project-directory", str(lab), "exec", "-T", "dotsmocr",
                "python3", f"/data/results/legal-rag-runtime/{profile_id}/scripts/new_ocr_pdf.py", "--engine", "dotsmocr",
                "/data/input/" + staged.name, "--output", "/data/results/legal-rag/" + name,
-               "--workers", str(workers)]
+               "--workers", str(workers)] + (["--rotation-retry"] if rotation_retry else [])
     with (receipt_dir / "runtime.log").open("wb") as log:
         try:
             completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
