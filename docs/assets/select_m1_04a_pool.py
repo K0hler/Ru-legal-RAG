@@ -9,7 +9,8 @@ metadata only, codes, pages 3..200, a long-document share filled first, document
 already used in development/reserved/batch 1 excluded). `batch-03` takes every census
 code up to 2 (code quota = min(2, frozen code candidates)), excludes batches 1-2 with
 their refill picks and every failed acquisition, and samples 120 days that no earlier
-batch sampled. A newly frozen selection gets a write-once `selection-provenance.json`
+batch sampled. `batch-04` has no code quota (11 acts, at least 4 long) and excludes
+batches 1-3 the same way. A newly frozen selection gets a write-once `selection-provenance.json`
 (exact command, `min_days`, feed-cache hash, code commit).
 
 Future selection schema /3 uses the opt-in pool adapter. A positive code quota
@@ -63,6 +64,14 @@ BATCH3_QUOTAS = {
     "government_resolution": 2,
     "government_order": 1,
     "ministry_order": 2,
+}
+# Batch 4: no code quota (the census has only KAS, already in development).
+BATCH4_QUOTAS = {
+    "federal_law": 3,
+    "presidential_decree": 1,
+    "government_resolution": 2,
+    "government_order": 2,
+    "ministry_order": 3,
 }
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
@@ -737,6 +746,9 @@ PROFILES = {
     "batch-03": {"quotas": BATCH3_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True, "codes_from_census": True,
                  "prior_batches": ("batch-01", "batch-02")},
+    "batch-04": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03")},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"

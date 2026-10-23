@@ -895,6 +895,19 @@ def test_batch_03_profile_matches_plan():
     assert "prior_batches" not in P.PROFILES["batch-02"] and P.BATCH2_QUOTAS["federal_law"] == 3
 
 
+def test_batch_04_profile_matches_plan():
+    profile = P.PROFILES["batch-04"]
+    assert profile["quotas"] == P.BATCH4_QUOTAS == {"federal_law": 3, "presidential_decree": 1,
+                                                    "government_resolution": 2, "government_order": 2,
+                                                    "ministry_order": 3}
+    assert "code" not in profile["quotas"] and not profile.get("codes_from_census")
+    assert profile["pages_range"] == (3, 200) and profile["long_min"] == 4
+    assert profile["prior_batches"] == ("batch-01", "batch-02", "batch-03")
+    assert not profile["require_single_edition"] and profile["exclude_used"]
+    # Batch 3 keeps its frozen profile.
+    assert P.PROFILES["batch-03"]["prior_batches"] == ("batch-01", "batch-02")
+
+
 def test_sample_days_excludes_earlier_days_and_keeps_old_order():
     from datetime import date
 

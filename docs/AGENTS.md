@@ -134,6 +134,8 @@
   `freeze` also hashes the gold `freeze-addendum.json` (if present) into `files`; `run`
   re-checks it and its listed files. Pool selection provenance now checks `src/legal_rag/sources`
   too and records `PYTHONPATH=src <interpreter> docs/assets/select_m1_04a_pool.py ...`.
+- Selection profile `batch-04` (`BATCH4_QUOTAS`): no code quota (no `--code-candidates`), FZ 3, decree 1,
+  PP 2, RP 2, ministry 3, pages 3..200, at least 4 acts of 20+ pages; excludes batches 1-3 (refills, failures, days).
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen
