@@ -1356,3 +1356,18 @@ def test_roman_number_inside_a_sentence_opens_no_section():
     pages[1] += [("Text", "Согласование по разделу V. Порядок проводится органами власти в установленные сроки")]
     got = owners(S.build(extraction(pages)))
     assert got["2.13"] == "S/IV/8"
+
+@pytest.mark.parametrize("text", [
+    "V. Согласование проекта осуществляется органами власти в течение десяти рабочих дней;",
+    LONG_V + ", указанными в пункте 3,",  # long: a short line ending «,» is already a heading (heading_like)
+    "V. Согласование проекта осуществляется органами власти в установленные сроки.",
+    LONG_V + " и " + LONG_V[3:] + " и " + LONG_V[3:],
+], ids=["semicolon", "comma", "dot", "too-long"])
+def test_text_roman_that_reads_like_a_running_sentence_opens_no_section(text):
+    """Guard of the cycle 5 B3 rule: after sections I–IV a Text «V. …» that ends like a sentence or a list item
+    («.», «;» as ``heading_like``, or «,») or is longer than ``ROMAN_TEXT_MAX`` stays with the open point."""
+    assert len(LONG_V) <= S.ROMAN_TEXT_MAX < len(LONG_V + " и " + LONG_V[3:] + " и " + LONG_V[3:])
+    pages = sections_up_to(4)
+    pages[1] += [("Text", text), ("Text", "Перечень органов определяется Правилами.")]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.13"] == got["2.14"] == "S/IV/8"

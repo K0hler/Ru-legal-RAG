@@ -177,6 +177,8 @@
   the scope and the last is V-1; no gap, no first «I.», nothing mid-sentence. Regression `…-cycle5-b3`:
   11754/11805 no_section and strict, minnauki-697 73/73, batch 5 2268/2268, `cross_scope_v2` 0, no drops. Over the
   56 documents `table_row` fires only in rp-1099 (22) and pp-931 (6), `roman_sequence` once; `restart` never.
+  Guard (B4 step 0): the rule also needs <= `ROMAN_TEXT_MAX` (1000) characters and no final «.;:!?,» (the real
+  heading is 590 characters, so a 200/500 cap would drop it); regression `…-cycle5-b4-guard` equals `…-cycle5-b3`.
 - Cycle 5 B2 (prototype): a footnote's mark is also found as HTML `<sup>N</sup>` (tables print it so); the owner
   stays the latest preceding body paragraph with the mark, a footnote without one stays unowned. Cause of the
   batch-5 transfers: the second list's marks were `<sup>`, so «¹» matched the first list. Regression

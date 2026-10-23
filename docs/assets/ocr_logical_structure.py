@@ -354,13 +354,20 @@ def parse_marker(text: str, category: str) -> Marker:
 
 
 ROMAN_START = re.compile(rf"^([{ROMAN_CHARS}]+)\.\s+[А-ЯЁA-Z]")
+# Guard of next_roman_section: a section heading OCR gave a body category may be long (590 characters in
+# development: a heading listing who approves what) but stays one unterminated phrase.
+ROMAN_TEXT_MAX = 1000
 
 
 def next_roman_section(text: str, romans: set[int]) -> int | None:
     """Review Focus 3: a section heading that OCR gave a body category and that is too long or otherwise
     does not look like a heading («V. Согласование проекта …», category Text, 590 characters). «V.» at
     the start of the paragraph, followed by a capitalised word, opens section V only when sections I to
-    V-1 are already open in the same scope; a Roman number inside a sentence never matches."""
+    V-1 are already open in the same scope; a Roman number inside a sentence never matches. Guard: at most
+    ``ROMAN_TEXT_MAX`` characters and not ending like a sentence or a list item («.», «;», «:», «!», «?», «,»;
+    the endings ``heading_like`` rejects, plus the comma), so a numbered «V. …» of running text stays text."""
+    if len(text) > ROMAN_TEXT_MAX or strip_sup(text).rstrip(" »\")").endswith(tuple(TERMINAL + ",")):
+        return None
     m = ROMAN_START.match(text)
     value = roman_value(m.group(1)) if m else None
     if value is None or value < 2 or not all(v in romans for v in range(1, value)) or max(romans) != value - 1:

@@ -72,6 +72,7 @@
   footnotes; a footnote whose mark is absent (other `<sup>` number, bare digit) stays unowned.
   Cycle 5 B3: a 590-character Text «V. …» after Section-header sections I–IV opens `S/V` with its points;
   negatives: only I or I–III before it (parametrised), a Roman number inside a sentence.
+  Guard: a Text «V. …» ending «;»/«,»/«.» or longer than `ROMAN_TEXT_MAX` stays with the open point.
   Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,
