@@ -172,6 +172,13 @@
   frozen `20261023-batch-05-gold-freeze`, rp-1099 = stitched `.gold.txt`). Baseline of frozen v3.1
   `…/20261023-dev-regression-cycle5-baseline/`: 11623/11805 no_section (strict 11556), `cross_scope_v2` 3; old 45
   9479 with rows/errors equal to `…-v3-1`; batch 5 2144/2268 (rp-1099 853/972, rp-3721 90/94 cross 3, minnauki 72/73).
+- Cycle 5 B1 (prototype, VERSION unchanged until B4): `table_rows` — in an annex scope (`…/AN<n>`) that opens with
+  a table (no marker before its first table), a roman/«N.»/«N.M»/paren/letter marker between its first and last
+  table is a table row (marker `none`, evidence `table_row`); named units, markers after the last table, an annex
+  whose first marker precedes the table and approved texts `S` are unchanged. Regression `…-cycle5-b1` (failed,
+  kept: rp-2728 −1, its batch-4 gold gives the row «1.» of the table-shaped approved text `S/1`); narrowed to annex
+  scopes `…-cycle5-b1-r2`: 11747/11805 no_section (strict 11737), rp-1099 970/972 (+117), pp-931 +7 (`S/AN6`
+  rows), batch 5 2261/2268, `cross_scope_v2` 3, no drops, no other error changed.
 - Cycle 4 A2: `run_m1_04a_dev_regression.py` covers 45 documents (+ batch 4 `BATCH_4` on its frozen gold, families
   by slug prefix), single annex and attached ordinal on. Baseline of frozen v2
   `data/m1/m1-04a/experiments/20261023-dev-regression-cycle4-baseline/`: 8614/9537 no_section (strict 8603),

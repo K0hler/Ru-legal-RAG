@@ -1204,3 +1204,68 @@ def test_file_code_in_a_page_footer_belongs_to_the_scope_root(text, owner):
     got = owners(result)
     assert got["2.6"] == owner
     assert got["3.0"] == "S/ст2" and conts(result)["3.0"] is True   # joins the article text, not the footer
+
+
+def program_with_table_annex(*annex):
+    """An order approving a programme whose annex 1 is the table of measures given by ``annex``."""
+    return [[("Text", "1. Утвердить прилагаемую Программу."), ("Text", "Председатель Правительства", 1100)],
+            [("Text", "УТВЕРЖДЕНА\nраспоряжением Правительства", 1000), ("Title", "ПРОГРАММА развития"),
+             ("Text", "1. Программа определяет цели."), ("Text", "2. Мероприятия приведены в приложении № 1.")],
+            [("Section-header", "ПРИЛОЖЕНИЕ № 1\nк Программе развития отрасли", 900),
+             ("Section-header", "ПЕРЕЧЕНЬ мероприятий Программы"), ("Text", "(млрд. рублей)"), *annex]]
+
+
+MEASURES = ("Table", "<table><thead><tr><th>Наименование мероприятия</th><th>Исполнитель</th></tr></thead></table>")
+
+
+def test_rubrics_and_row_numbers_inside_a_table_annex_are_annex_text():
+    """Cycle 5 B1 (owner decision 23.10.2026, convention v2 §6): in an annex that opens with a table, the
+    rubrics «I. Подпрограмма …» and row numbers «1.», «1.1» that OCR cut out of the table (Section-header,
+    List-item or Text regions between table parts), with their continuation rows, are text of the annex,
+    not sections and points. A row number inside a Table region was never a marker."""
+    pages = program_with_table_annex(
+        MEASURES, ("Section-header", 'I. Подпрограмма "Развитие сырьевой базы"'),
+        ("List-item", "1. Геолого-разведочные работы - всего"), ("Text", "Минприроды России 23,7 3,5 7,2"),
+        ("Text", "1.1. Поисковые работы"), MEASURES,
+        ("Section-header", 'II. Подпрограмма "Развитие производственного потенциала"'),
+        ("Table", "<table><tr><td>4. Создание новых центров угледобычи</td><td>частные инвесторы</td></tr></table>"),
+        ("Text", "5. Строительство обогатительных фабрик"), ("Text", "частные инвесторы 1,3 0,35"), MEASURES)
+    result = S.build(extraction(pages))
+    got = owners(result)
+    for index in range(0, 14):
+        assert got[f"3.{index}"] == "S/AN1", index
+    rows = [p for p in result["paragraphs"] if any("table_row" in e for e in p["evidence"])]
+    assert [p["text_preview"][:3] for p in rows] == ["I. ", "1. ", "1.1", "II.", "5. "]
+    assert all(p["marker"] is None and p["kind"] == "text" for p in rows)
+
+
+def test_points_around_a_table_keep_their_numbering():
+    """Negative controls: points of ordinary text before and after a table still open points: «2.» after a
+    table continues the numbering, in the approved text and in an annex whose first marker precedes the
+    table; a marker after the last table of a table annex is a point as before."""
+    pages = regulation(("Text", "1. Показатели приведены в таблице:"), TABLE, ("Text", "2. Второй пункт."),
+                       TABLE, ("Text", "3. Третий пункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == "S/I/1" and got["2.4"] == "S/I/2" and got["2.6"] == "S/I/3"
+    pages = program_with_table_annex(("Text", "1. Показатели приведены в таблице:"), MEASURES,
+                                     ("Text", "2. Второй пункт."), MEASURES)
+    got = owners(S.build(extraction(pages)))
+    assert got["3.3"] == "S/AN1/1" and got["3.5"] == "S/AN1/2" and got["3.6"] == "S/AN1/2"
+    pages = program_with_table_annex(MEASURES, ("Text", "1. Средства уточняются ежегодно."))
+    result = S.build(extraction(pages))
+    assert owners(result)["3.4"] == "S/AN1/1"
+    assert not any("table_row" in e for p in result["paragraphs"] for e in p["evidence"])
+
+
+def test_approved_text_opening_with_a_table_keeps_its_row_numbers():
+    """B1 narrowing: the decision covers table annexes (`…/AN<n>`). An approved text that is itself a table
+    (an address distribution of subsidies under «УТВЕРЖДЕНО») keeps the previous reading: its batch-4 gold
+    gives the row «1.» its own owner (`S/1`)."""
+    pages = [[("Text", "1. Утвердить прилагаемое распределение."), ("Text", "Председатель Правительства", 1100)],
+             [("Text", "УТВЕРЖДЕНО\nраспоряжением Правительства", 1000), ("Section-header", "РАСПРЕДЕЛЕНИЕ"),
+              MEASURES, ("Text", 'Подпрограмма "Создание условий"'), ("List-item", "1. Реконструкция маршрута"),
+              ("Text", "мощность - 4,68 км; 2319900 83700"), MEASURES]]
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["2.4"] == "S/1" and got["2.5"] == "S/1"
+    assert not any("table_row" in e for p in result["paragraphs"] for e in p["evidence"])

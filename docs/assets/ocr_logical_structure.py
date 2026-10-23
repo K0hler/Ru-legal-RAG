@@ -803,6 +803,30 @@ def between_tables(items: list[Paragraph]) -> set[int]:
             if p.kind == "text" and 0 < k < len(seq) - 1 and seq[k - 1].kind == "table" and seq[k + 1].kind == "table"}
 
 
+TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens the annex; text of the annex"}
+ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
+
+
+def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
+    """Ids of marked body paragraphs that are rows of a table annex (owner decision 23.10.2026,
+    convention v2 §6). When an annex scope (`…/AN<n>`) opens with a table (no marked paragraph before
+    its first table), OCR often cuts the table's rubrics («I. Подпрограмма …») and numbered rows
+    («1.», «14.», «1.1») out of it as Section-header, List-item or Text regions between the table
+    parts. Such a marker between the first and the last table of the annex opens no section or point:
+    it is text of the annex. Named units («Раздел», «Глава», «Статья», «§») keep their meaning. An
+    annex whose first marker precedes its first table keeps ordinary numbering, markers after the last
+    table are unchanged, and an approved text that is itself a table (`S`) keeps the previous reading."""
+    if not ANNEX_SCOPE.search(scope_path):
+        return set()
+    seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
+    tables = [k for k, p in enumerate(seq) if p.kind == "table"]
+    if not tables or any(p.marker.kind not in {"none", "dash"} for p in seq[:tables[0]] if p.kind != "table"):
+        return set()
+    return {id(p) for p in seq[tables[0] + 1:tables[-1]]
+            if p.kind in {"text", "heading"} and p.marker.kind not in {"none", "dash"}
+            and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")}
+
+
 def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
@@ -916,6 +940,12 @@ def build(extraction: dict) -> dict:
                 list_prev = None
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
+        rows = table_rows(scope_path, items)
+        for p in body:
+            if id(p) in rows:
+                p.marker = Marker("none")
+                p.kind = "text"
+                p.evidence.append(dict(TABLE_ROW_EVIDENCE))
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))

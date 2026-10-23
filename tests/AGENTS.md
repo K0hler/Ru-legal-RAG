@@ -64,6 +64,10 @@
   default only after batch-04, rescore/regression opt-in/opt-out and the classifier's renamed reading.
   Cycle 4 A2: the regression set has 45 documents (batch 4 on `.gold.txt`, families by prefix).
   Cycle 5 A1: 56 documents (batch 5 on `.gold.txt`, rp-1099 the stitched file).
+  Cycle 5 B1 (`test_ocr_logical_structure.py`): rubrics «I. Подпрограмма …» and rows «1.», «1.1» between the
+  parts of a table that opens an annex are annex text (evidence `table_row`); negatives: «2.» after a table in
+  ordinary text or in an annex whose first point precedes the table, a point after the last table, and an
+  approved text `S` that is a table keep their points.
   Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,
