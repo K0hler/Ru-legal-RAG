@@ -167,6 +167,11 @@
   differed at HEAD by one reworded label). Dev regression defaults it on (`--no-attached-ordinal`). Development
   rescore `20261023-batch-04-rescore-cycle4`: v2 1599/2465 (pp-1688 48, pp-813 183), v1 1566, `cross_scope_v2` 0;
   the 64.1% ledger entry is unchanged (batch-4 report §11).
+- Cycle 5 A1 (owner decision 23.10.2026 on batch 5, convention v2 §6): rubrics «I. Подпрограмма …» and row numbers
+  inside table annexes are annex text (batch-5 gold already so). Dev regression covers 56 documents (+ `BATCH_5` on
+  frozen `20261023-batch-05-gold-freeze`, rp-1099 = stitched `.gold.txt`). Baseline of frozen v3.1
+  `…/20261023-dev-regression-cycle5-baseline/`: 11623/11805 no_section (strict 11556), `cross_scope_v2` 3; old 45
+  9479 with rows/errors equal to `…-v3-1`; batch 5 2144/2268 (rp-1099 853/972, rp-3721 90/94 cross 3, minnauki 72/73).
 - Cycle 4 A2: `run_m1_04a_dev_regression.py` covers 45 documents (+ batch 4 `BATCH_4` on its frozen gold, families
   by slug prefix), single annex and attached ordinal on. Baseline of frozen v2
   `data/m1/m1-04a/experiments/20261023-dev-regression-cycle4-baseline/`: 8614/9537 no_section (strict 8603),

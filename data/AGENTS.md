@@ -108,6 +108,9 @@
   `20261022-prototype-v2-freeze/` (prototype copy, `code-v2.sha256` with sha256 and git blob ids, `freeze.json`).
   Cycle 4: `20261023-dev-regression-<tag>/` over 45 documents; `-cycle4-baseline` = frozen v2 (`summary.json`
   5a273ed6…, `baseline-comparison.json` against `20261022-dev-regression-v2`: no drops, batch 4 not in baseline).
+  Cycle 5: over 56 documents; `20261023-dev-regression-cycle5-baseline/` = frozen v3.1 (`summary.json` a290a161…,
+  no comparison file; old 45 rows and errors checked equal to `20261023-dev-regression-v3-1`). Track B runs
+  `-cycle5-b<n>[-r<k>]` with `--baseline` it; failed runs are kept.
 
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written
