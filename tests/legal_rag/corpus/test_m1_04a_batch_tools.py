@@ -575,3 +575,28 @@ def test_ocr_summary_records_failed_act_from_its_run_record(tmp_path):
                          {"replays": {}}, ocr_root=tmp_path)
     assert record["acts"]["act"] == {"status": "failed", "ocr_run": "abc", "source_asset_sha256": "f" * 64,
                                      "error": "OCR exited 1"}
+
+
+def test_ocr_summary_table_stats_are_opt_in(tmp_path):
+    S = load_script("summarize_m1_04a_ocr")
+    run = tmp_path / "act" / "run-01"
+    (run / "logical-text").mkdir(parents=True)
+    (run / "logical-text" / "lt.json").write_text(json.dumps({"logical_text_id": "lt"}), encoding="utf-8")
+    table = {"category": "Table", "table": {"rows": 1}}
+    broken = {"category": "Table", "table": {"rows": 2, "grid": "unresolved", "grid_error": "x"}}
+    extraction = {"coverage": {"source_pages": 3, "all_source_pages": True}, "uncertainties": [],
+                  "unsupported_regions": [], "pages": [
+                      {"page": 1, "regions": [table, {"category": "Text"}]},
+                      {"page": 2, "regions": [broken, broken], "orientation_retry": {"accepted": "cw90"}},
+                      {"page": 3, "regions": [{"category": "Text"}]}]}
+    path = tmp_path / "extraction.json"
+    path.write_text(json.dumps(extraction), encoding="utf-8")
+    raw = {"health_wait_seconds": 1.0, "acts": {"act": {"status": "complete", "seconds": 2.0, "extraction_id": "e",
+                                                        "extraction": str(path)}}}
+    replay = {"replays": {"act": {"replay_extraction_id": "e", "replay_match": True}}}
+    plain = S.summarize(raw, replay, ocr_root=tmp_path)
+    assert not {"regions", "tables", "tables_grid_unresolved", "orientation_retry_pages"} & set(plain["acts"]["act"])
+    act = S.summarize(raw, replay, ocr_root=tmp_path, table_stats=True)["acts"]["act"]
+    assert act["regions"] == 5 and act["tables"] == 3
+    assert act["tables_grid_unresolved"] == 2 and act["tables_grid_unresolved_pages"] == [2]
+    assert act["orientation_retry_pages"] == [2]
