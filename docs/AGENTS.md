@@ -173,6 +173,11 @@
   (sha e88cbc9a…): 9479/9537 no_section and strict, batch 4 2464/2465, `cross_scope_v2` 0, no drops; changed only
   Mintrans 107/136 (strict 476/478) and rp-2023 (28/28). Known limitation: rp-2728 region 3.1, one OCR table
   region mixing a repeated header, the end of item 1, item 2 and «Итого» (gold `S`, annotator doubt), goes to `S/1`.
+- Cycle 4 B3: prototype v3 `ocr-logical-structure/3-experiment` (sha256 556b4d62… LF, blob 68f7167f; behaviour of
+  a72ce90) frozen in `data/m1/m1-04a/experiments/20261023-prototype-v3-freeze/`; regression
+  `20261023-dev-regression-v3` 9479/9537 no_section and strict (v2 8614/8603), `cross_scope_v2` 0, no document
+  below v2; rows and errors equal `…-cycle4-b2`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V3_2026-10-23.md`
+  (development, not progress; batch 5 is the measure).
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen
