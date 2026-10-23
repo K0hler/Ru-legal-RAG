@@ -44,6 +44,12 @@
   `soft_fallbacks` 0; feed cache `feed-cache-b5.json` 0ebdaedd…, command in `selection-provenance.json`, code e4a82d0).
   Without `one_per_issuer_day` FZ 334+335/2019 (same day) would both be picked; 395-FZ/2023 replaced 335.
   Ukaz 669/2016 is an appointment decree (judges): personal names stay out of docs. RP 3721-r has an empty feed name.
+  Acquired 23.10 (pool/2, 11/11 `new` then `unchanged`, no refill; RP 3721-r passed despite its empty feed name;
+  catalog `pool/batch-05/index.json`, batches 1-4 indexes unchanged). OCR `ocr/<slug>/run-01` (10 acts, 476 pages,
+  2922 regions, all replays equal; rp-1099-2014 holds 45%), summary `experiments/20261023-batch-05-ocr/summary.json` (3efdfd3b…).
+  prikaz-minfinansov-141-2023 (54 p.) failed OCR: dots.mocr hit the token limit (`length`) on pages 25, 30, 42;
+  its `run-01` holds only the failure record (native output kept in OCR-Lab `results/legal-rag/0cc7ac41…`).
+  The run script skips an existing `run-01`, so any retry or refill of that slot is a separate decision.
 
 - Check-pool batch 4 first pass: `m1/m1-04a/experiments/20261023-batch-04-first-pass/` (`freeze.json` /3 f5dd824a…,
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
