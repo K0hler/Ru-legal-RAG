@@ -50,6 +50,14 @@
   prikaz-minfinansov-141-2023 (54 p.) failed OCR: dots.mocr hit the token limit (`length`) on pages 25, 30, 42;
   its `run-01` holds only the failure record (native output kept in OCR-Lab `results/legal-rag/0cc7ac41…`).
   The run script skips an existing `run-01`, so any retry or refill of that slot is a separate decision.
+  Refill (controller ruling: OCR failure = acquisition failure): hand-written `failures/<eo>-ocr-run-01.json`
+  (`stage: ocr`, reason `ocr_failed: ...`) + `refill` (plain rule; every pick also met the soft preferences).
+  `selection-refill-01..03`: minselskogo-235-2016 (47 p.) and fst-155-2015 (9 p.) failed extraction on the
+  project table check (`span exceeds its rows` / `overlapping cells`; dots.mocr completed all pages), attempt 3
+  prikaz-minnauki-697-2023 (12 p., 85 regions) passed: `experiments/20261023-batch-05-ocr-refill-0{1,2,3}/`.
+  Measured set = the 10 acts of `20261023-batch-05-ocr` + minnauki-697 (488 p., 3007 regions, rp-1099 43.8%);
+  pass these 11 slugs explicitly to annotation/gold/first pass. The three failed acts keep PDFs, inputs and
+  failed `run-01` as evidence. `index.json` now lists 14 originals; `index-superseded-{11,12,13}-acts.json` kept.
 
 - Check-pool batch 4 first pass: `m1/m1-04a/experiments/20261023-batch-04-first-pass/` (`freeze.json` /3 f5dd824a…,
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
