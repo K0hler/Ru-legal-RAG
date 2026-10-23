@@ -26,6 +26,11 @@
 
 - Check-pool batch 2: `m1/m1-04a/documents/pool/batch-02/selection.json` (frozen, quotas code 1→0 / federal_law 3→4 recorded as `quota_change`); its `--min-days 120`, exact command, feed-cache hash and the meaning of `attempt-01-partial-unfilled.json` are in the write-once sidecar `selection-provenance.json`.
 
+- Check-pool batch 4: `m1/m1-04a/documents/pool/batch-04/selection.json` (frozen, sha256 bf4bde02…,
+  seed 20261024, 120 days not sampled by batches 1-3, pool/2, no code quota, 11 acts, 5 long; feed cache
+  `feed-cache-b4.json` and command in `selection-provenance.json`). Ukaz 481/2016 is an award decree:
+  personal names stay out of docs.
+
 - Check-pool batch 3 first pass: `m1/m1-04a/experiments/20261022-batch-03-first-pass/`
   (`freeze.json` /3, v1 + `code-final`, `git_head` 17d4de9; it hashes the gold
   freeze `20261022-batch-03-gold-freeze/freeze.json` but not its
