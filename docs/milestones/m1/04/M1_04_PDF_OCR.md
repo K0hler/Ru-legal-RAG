@@ -17,6 +17,9 @@ the compatible OCR-Lab client change in [the retained patch](../../../assets/ocr
 already applied to the local lab used for qualification. On another checkout,
 check/apply it from the lab root with
 `git apply --unidiff-zero --ignore-space-change <patch>`.
+The optional `rotation_retry: true` setting needs the client change in
+[the rotation patch](../../../assets/ocr_lab_rotation_retry.patch), applied the
+same way; see [dense tables and rotated pages](M1_04_DENSE_TABLES_2026-10-23.md).
 Use `strict` to retain the laboratory's original failure behavior. An incomplete
 Picture response is never accepted as text: the selected policy preserves its
 native response and an explicit unresolved-region finding.

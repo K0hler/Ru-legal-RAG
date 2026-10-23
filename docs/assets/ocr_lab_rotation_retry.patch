@@ -1,0 +1,127 @@
+--- a/scripts/new_ocr_pdf.py
++++ b/scripts/new_ocr_pdf.py
+@@ -21,6 +21,11 @@ SETTINGS = {'image_dpi': 200, 'max_pixels': 4014080, 'max_tokens': 24000,
+ DOTS_SAMPLING = {'temperature': 0.0, 'top_p': 1.0, 'seed': 1}
+ # Engines whose page/document JSON keep only derived layout; raw responses go to native/.
+ NATIVE_SIDECAR = {'dotsmocr': 'dotsmocr-layout/2'}
++# Opt-in (--rotation-retry): a dots.mocr page that hits the token limit is retried at most
++# twice, turned clockwise then counter-clockwise; landscape forms printed sideways loop on rows.
++ROTATIONS = {'cw90': -90, 'ccw90': 90}
++# Text-bearing regions are wider than tall when upright; Page-header/footer are often one digit.
++UPRIGHT_TEXT = {'Text', 'Title', 'Section-header', 'List-item', 'Footnote', 'Caption'}
+ 
+ 
+ def write_json(path, value):
+@@ -209,11 +214,61 @@ def recognize_picture_text(native, image):
+                 break
+ 
+ 
++def sideways_text(cells):
++    """True unless there is text and every text-bearing region is shorter than three widths."""
++    text = [cell['bbox'] for cell in cells if cell['category'] in UPRIGHT_TEXT]
++    return not text or any(b[3] - b[1] >= 3 * (b[2] - b[0]) for b in text)
++
++
++def unrotate_bbox(bbox, rotation, size):
++    """Map a bbox from the turned image back to the original (width, height) page image."""
++    left, top, right, bottom = bbox
++    width, height = size
++    if rotation == 'cw90':
++        return [top, height - right, bottom, height - left]
++    return [width - bottom, left, width - top, right]
++
++
++def retry_rotated(native, image, recognize):
++    retry = native['orientation_retry'] = {'trigger': 'length', 'attempts': [], 'selected': None}
++    for rotation, angle in ROTATIONS.items():
++        turned = image.rotate(angle, expand=True)
++        attempt = {'rotation': rotation, 'image_size': list(turned.size), 'native': recognize(turned)}
++        retry['attempts'].append(attempt)
++        choice = attempt['native']['choices'][0]
++        if choice['finish_reason'] != 'stop' or attempt['native'].get('local_stop_reason'):
++            continue
++        try:
++            cells = json.loads(choice['message']['content'] or '')
++        except json.JSONDecodeError:
++            continue
++        if (not isinstance(cells, list) or any(not isinstance(cell, dict) or 'bbox' not in cell
++                                               or 'category' not in cell for cell in cells)
++                or sideways_text(cells)):
++            continue
++        retry['selected'] = len(retry['attempts']) - 1
++        recognize_picture_text(attempt['native'], turned)
++        return True
++    return False
++
++
+ def decode_native(engine, native):
+     if engine == 'nemotron':
+         return {'markdown': '\n\n'.join(item['text'] for item in native),
+                 'coordinate_space': 'native normalized image coordinates; upper/lower retained verbatim'}
+     choice = native['choices'][0]
++    retry = native.get('orientation_retry') or {}
++    if engine == 'dotsmocr' and choice['finish_reason'] == 'length' and retry.get('selected') is not None:
++        # The truncated primary stays as evidence; the layout comes from the accepted turned page.
++        attempt = retry['attempts'][retry['selected']]
++        decoded = decode_native(engine, attempt['native'])
++        size = attempt['image_size'][::-1]
++        decoded['layout'] = [{**cell, 'bbox': unrotate_bbox(cell['bbox'], attempt['rotation'], size),
++                              'rotated_bbox': cell['bbox'], 'page_rotation': attempt['rotation']}
++                             for cell in decoded['layout']]
++        decoded['coordinate_space'] = ('native model image pixels of the sent image; bboxes mapped back '
++                                       'from the rotated retry recorded in rotated_bbox')
++        return decoded
+     text = choice['message']['content'] or ''
+     if not text.strip() or choice['finish_reason'] != 'stop' or native.get('local_stop_reason'):
+         reason = native.get('local_stop_reason') or choice['finish_reason']
+@@ -274,10 +329,12 @@ def render_page(page):
+     return image.resize((width, height), Image.Resampling.LANCZOS)
+ 
+ 
+-def parse_pdf(engine, pdf, output, selection=None, workers=None):
++def parse_pdf(engine, pdf, output, selection=None, workers=None, rotation_retry=False):
+     workers = workers if workers is not None else (16 if engine == 'dotsmocr' else 1)
+     if not 1 <= workers <= 16 or (engine != 'dotsmocr' and workers != 1):
+         raise ValueError('Only dots.mocr supports 1 to 16 workers; other engines require 1')
++    if rotation_retry and engine != 'dotsmocr':
++        raise ValueError('Rotation retry is implemented only for dots.mocr')
+     sidecar = engine in NATIVE_SIDECAR
+     output.mkdir(parents=True, exist_ok=False)
+     (output / 'pages').mkdir()
+@@ -293,6 +350,8 @@ def parse_pdf(engine, pdf, output, selection=None, workers=None):
+         manifest['config']['sampling'] = DOTS_SAMPLING
+         manifest['picture_ocr_config'] = json.loads(
+             (LAB / 'config/dotsmocr_picture_ocr.json').read_text(encoding='utf-8'))
++        if rotation_retry:
++            manifest['config']['rotation_retry'] = {'trigger': 'length', 'rotations': list(ROTATIONS)}
+     if sidecar:
+         manifest['export'] = {'format': NATIVE_SIDECAR[engine], 'native': 'native/page_NNNN.json',
+                               'markdown': 'document.md'}
+@@ -319,7 +378,11 @@ def parse_pdf(engine, pdf, output, selection=None, workers=None):
+             write_json(raw_path, raw)
+             if engine == 'dotsmocr':
+                 try:
+-                    recognize_picture_text(raw['native'], image)
++                    if (rotation_retry and raw['native']['choices'][0]['finish_reason'] == 'length'
++                            and retry_rotated(raw['native'], image, recognize)):
++                        pass  # Picture OCR already ran on the accepted turned page.
++                    else:
++                        recognize_picture_text(raw['native'], image)
+                 finally:
+                     write_json(raw_path, raw)
+             page.update(decode_native(engine, raw['native']))
+@@ -444,6 +507,8 @@ if __name__ == '__main__':
+     parser.add_argument('--workers', type=int, choices=range(1, 17),
+                         help='Concurrent pages: dots.mocr defaults to 16; other engines require 1')
+     parser.add_argument('--output', type=Path, help='New output directory; previous results are never overwritten')
++    parser.add_argument('--rotation-retry', action='store_true',
++                        help='dots.mocr: retry a token-limited page turned 90 degrees (at most twice)')
+     args = parser.parse_args()
+     if args.check:
+         check_runtime(args.engine)
+@@ -454,4 +519,4 @@ if __name__ == '__main__':
+         if pdf.parent != Path('/data/input') or pdf.suffix.lower() != '.pdf' or not pdf.is_file():
+             parser.error('PDF must be a file inside /data/input')
+         output = args.output or Path('/data/results') / args.engine / pdf.stem / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+-        parse_pdf(args.engine, pdf, output, args.pages, args.workers)
++        parse_pdf(args.engine, pdf, output, args.pages, args.workers, args.rotation_retry)
