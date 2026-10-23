@@ -34,6 +34,10 @@
   OCR `ocr/<slug>/run-01` (264 pages, all replays equal), summary
   `experiments/20261023-batch-04-ocr/summary.json`; `summary.raw.failed-attempt1-slug-argument.json`
   is a no-OCR attempt (slugs passed as one string via `-File`): pass `-Slugs` as an array via `-Command`.
+  Gold (convention v2, 11 acts, 2465 regions, no parts, no `exceptions.json`) frozen in
+  `experiments/20261023-batch-04-gold-freeze/` (`freeze.json` f1ac8818…; its `annotation_convention`
+  v1 is the script constant, `freeze-addendum.json` records v2, `--single-annex` default, doubts and
+  the 107/136 blind-pair check). No format fixes were needed.
 
 - Check-pool batch 3 first pass: `m1/m1-04a/experiments/20261022-batch-03-first-pass/`
   (`freeze.json` /3, v1 + `code-final`, `git_head` 17d4de9; it hashes the gold
