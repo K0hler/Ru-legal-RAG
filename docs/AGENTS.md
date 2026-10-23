@@ -153,6 +153,11 @@
   differed at HEAD by one reworded label). Dev regression defaults it on (`--no-attached-ordinal`). Development
   rescore `20261023-batch-04-rescore-cycle4`: v2 1599/2465 (pp-1688 48, pp-813 183), v1 1566, `cross_scope_v2` 0;
   the 64.1% ledger entry is unchanged (batch-4 report §11).
+- Cycle 4 A2: `run_m1_04a_dev_regression.py` covers 45 documents (+ batch 4 `BATCH_4` on its frozen gold, families
+  by slug prefix), single annex and attached ordinal on. Baseline of frozen v2
+  `data/m1/m1-04a/experiments/20261023-dev-regression-cycle4-baseline/`: 8614/9537 no_section (strict 8603),
+  `cross_scope_v2` 0; old 34 rows and errors identical to `20261022-dev-regression-v2` (7015/7072), batch 4
+  1599/2465 = the A1 rescore. Track B gates against this summary with `--baseline`.
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

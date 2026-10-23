@@ -181,15 +181,19 @@ def test_dev_regression_baseline_comparison_flags_drops(tmp_path, monkeypatch):
     assert stop.value.code == 1
 
 
-def test_dev_regression_34_documents_families_and_cross_scope_v2(tmp_path):
+def test_dev_regression_45_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
-    assert len(docs) == 34 and len({d["name"] for d in docs}) == 34
+    assert len(docs) == 45 and len({d["name"] for d in docs}) == 45
     sizes = {}
     for d in docs:
         sizes[d["group"]] = sizes.get(d["group"], 0) + 1
-    assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9}
+    assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9, "batch-4": 11}
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
-    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-1", "batch-3"))
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-1", "batch-3", "batch-4"))
+    # Batch 4 is scored on its frozen gold; families come from the slug prefix.
+    assert [D.family(d["name"]) for d in docs if d["group"] == "batch-4"] == [
+        "законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
+        "распоряжения", "распоряжения", "указы"]
     assert {D.family(d["name"]) for d in docs} == set(D.FAMILIES)
     assert D.family("code-21-2015") == "кодексы" and D.family("holdout2-a0ee4eb3704e") == "санитарные правила"
     # Single annex (AN == AN1) and a cross-scope transfer (annex region put into the body) on authored gold.
