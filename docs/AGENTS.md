@@ -321,7 +321,7 @@
   experiments. M1-06 consumes its engine for full SanPiN coverage; M1-05 still
   needs only M1-04 extraction. Preserve the accepted native official-tree route
   and M1-04's bounded seal/page-75 quality scope. Adding the task is not its
-  implementation or acquisition. Keep the 17-slice plan and G13 synchronized.
+  implementation or acquisition. Keep the slice plan (18 slices since M1-04B) and G13 synchronized.
 
 - Keep only this instruction file and `README.md` at the documentation root.
   Use `overview/` for product/architecture/roadmap, `policies/` for admission
@@ -371,7 +371,10 @@
   a minimal dots.mocr runtime inside Legal RAG (own image without the TeleOCR base,
   one service, dots.mocr-only client, verified weights) with an unchanged output
   contract and qualification against the OCR-Lab runtime. Only Task 0 (the patch)
-  is done; owner questions (weights location, folder, M1 plan inclusion, order) are open.
+  is done. Owner decisions 23.10.2026: weights inside the project
+  (`data/ocr/dotsmocr/model/`, ignored, hash-verified), code in `ocr/dotsmocr/`,
+  M1-04B is a slice of the M1 plan (gates unchanged, G04 evidence), start only
+  after M1-04A is complete; until then new OCR keeps the OCR-Lab runtime.
 
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
@@ -470,8 +473,8 @@ Scope: every file under `docs/`.
   after the historical target, including ones published earlier. A later
   snapshot needs evidence-backed reconstruction before historical admission;
   the owner's choice of dates is not legal approval or complete history.
-- Follow `milestones/m1/M1_IMPLEMENTATION_PLAN.md` for the current 17-slice decomposition
-  (M1-01–M1-15 plus M1-03A/M1-04A) and 13 milestone gates. The owner approved the
+- Follow `milestones/m1/M1_IMPLEMENTATION_PLAN.md` for the current 18-slice decomposition
+  (M1-01–M1-15 plus M1-03A/M1-04A/M1-04B; M1-04B added 23.10.2026) and 13 milestone gates. The owner approved the
   parser-transfer requirement on 13.10.2026. M1-03A native engineering now
   passes all four original HTML inputs (59-FZ, Housing Code, No. 354, No. 491)
   and two non-pilot acts per declared family/format. Keep `original-four-v8`

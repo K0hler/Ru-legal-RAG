@@ -75,7 +75,7 @@ development failures, experiments and superseded approaches.
 - [Initial qualification](milestones/m1/04/M1_04_QUALIFICATION_2026-10-16.md) — historical failures before the agreed exceptions.
 - [Region probes](milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md) — bounded diagnostic experiments.
 - [Dense tables and rotated pages](milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md) — batch-5 OCR failures, per-table grid degradation and the opt-in rotation retry.
-- [M1-04B plan](plans/2026-10-23-m1-04b-ocr-runtime.md) — planned: own minimal dots.mocr runtime in Legal RAG instead of the OCR-Lab test bench; only the safety patch (Task 0) is done.
+- [M1-04B plan](plans/2026-10-23-m1-04b-ocr-runtime.md) — planned slice of the M1 plan, starts after M1-04A is complete: own minimal dots.mocr runtime in `ocr/dotsmocr/` with weights in ignored `data/ocr/dotsmocr/model/`, instead of the OCR-Lab test bench; only the safety patch (Task 0) is done.
 
 ### M1-04A: universal OCR structure parser
 
