@@ -74,6 +74,11 @@
   profile `batch-06`, seed 20261026, 120 days 2011-2025 not sampled by batches 1-5, pool/2, 11 acts, 6 long,
   `soft_fallbacks` 0; feed cache `feed-cache-b6.json` 745d009d…, command in `selection-provenance.json`, code 916f323).
   Ukaz 1711/2012 sets a commission's membership: personal names stay out of docs. RP 2390-r and 356-r have empty feed names.
+  Acquired 23.10 (pool/2, 11/11 `new` then `unchanged`, no refill; first run stopped at the 5th act, FNS «ЕД-7-20/957@»,
+  with no slug rule; after the fix (`prikaz-fns-957-2020`) acts 5-11 `new`; catalog `pool/batch-06/index.json`, batches 1-5 indexes unchanged).
+  OCR with the rotation retry (`ocr.rotation-retry.local.json` ec2ba2ee…, OCR-Lab client 6beed388…) `ocr/<slug>/run-01`:
+  11/11 complete, 337 pages, 2482 regions, 140 tables, 0 `grid: "unresolved"`, 0 rotation retries, all replays equal;
+  pp-887-2023 holds 31%. Summary `experiments/20261023-batch-06-ocr/summary.json` (32e77daa…, `--table-stats`). No refill.
 
 - Check-pool batch 5 first pass: `m1/m1-04a/experiments/20261023-batch-05-first-pass/` (`freeze.json` /3 3da171ed…,
   v3-1 + v2 frozen copies, `git_head` b0aa2f7, both batch-5 equivalences). Run once (12:20 UTC); never re-run.
