@@ -26,7 +26,7 @@ Reads `selection.json` (verified against `selection.sha256`) and any write-once
    (text + structure hashes) and `official-tree.json` from `import_official_tree`
    (`legal-ast/2`). An import refusal is recorded in the receipt, never patched.
 
-Slug: `<kind>-<number digits>-<year>`, kind `fz|ukaz|pp|rp|prikaz`. Orders add the main
+Slug: `<kind>-<number digits>-<year>` (no leading digit: the serial after the last «/»), kind `fz|ukaz|pp|rp|prikaz`. Orders add the main
 signatory authority from the publication card: "Министерство X ..." -> `min` + X; any
 other authority -> initials of its significant words (without "Российской Федерации" and
 short prepositions/conjunctions). "Российской Федерации" is removed wherever it stands;
@@ -129,7 +129,9 @@ def authority_short(name):
 
 
 def slug(act, authority=None):
-    digits = re.match(r"\d+", act["number"].strip())
+    number = act["number"].strip()
+    # Leading digits; a letter-prefixed registry number («ЕД-7-20/957@», FNS) uses the serial after the last «/».
+    digits = re.match(r"\d+", number) or re.match(r"\d+", number.rpartition("/")[2] if "/" in number else "")
     if digits is None:
         raise ValueError(f"act number has no leading digits: {act['number']!r}")
     prefix = KIND_PREFIX[act["act_type"]]

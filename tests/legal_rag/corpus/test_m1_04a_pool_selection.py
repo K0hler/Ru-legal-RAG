@@ -290,6 +290,13 @@ def test_pool_slug_rule():
     assert A.slug(order, "Федеральная налоговая служба") == "prikaz-fns-173-2021"
     with pytest.raises(ValueError):
         A.slug(order)
+    # FNS registry numbers carry a letter prefix: the serial after the last «/» names the act.
+    fns = dict(order, number="ЕД-7-20/957@", date="2020-12-25")
+    assert A.slug(fns, "Федеральная налоговая служба") == "prikaz-fns-957-2020"
+    assert A.slug(dict(order, number="155-э/18", date="2015-06-09"), "Федеральная налоговая служба") \
+        == "prikaz-fns-155-2015"
+    with pytest.raises(ValueError):
+        A.slug(dict(order, number="ЕД-/@"), "Федеральная налоговая служба")
 
 
 class FakeActual:
