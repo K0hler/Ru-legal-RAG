@@ -74,6 +74,8 @@ development failures, experiments and superseded approaches.
 - [Accepted engineering scope and recovery](milestones/m1/04/M1_04_ACCEPTANCE_2026-10-16.md) — current acceptance with explicit owner exceptions.
 - [Initial qualification](milestones/m1/04/M1_04_QUALIFICATION_2026-10-16.md) — historical failures before the agreed exceptions.
 - [Region probes](milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md) — bounded diagnostic experiments.
+- [Dense tables and rotated pages](milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md) — batch-5 OCR failures, per-table grid degradation and the opt-in rotation retry.
+- [M1-04B plan](plans/2026-10-23-m1-04b-ocr-runtime.md) — planned: own minimal dots.mocr runtime in Legal RAG instead of the OCR-Lab test bench; only the safety patch (Task 0) is done.
 
 ### M1-04A: universal OCR structure parser
 
@@ -131,6 +133,7 @@ development failures, experiments and superseded approaches.
 - [Official JSON transfer](plans/2026-10-16-official-json-transfer.md)
 - [Official JSON normalization](plans/2026-10-16-official-normalization.md)
 - [Local dots.mocr integration](plans/2026-10-16-m1-04-dotsmocr.md)
+- [Own dots.mocr runtime, M1-04B](plans/2026-10-23-m1-04b-ocr-runtime.md)
 - [Universal OCR structure parser, M1-04A](plans/2026-10-17-m1-04a-ocr-structure.md)
 
 Diagram sources and rendered assets remain together in [assets/](assets/);

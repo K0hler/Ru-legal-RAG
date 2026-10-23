@@ -364,6 +364,14 @@
   rotation retry; `assets/run_m1_04a_ocr.ps1` defaults `-OcrConfig` to
   `data/m1/ocr.rotation-retry.local.json` and records it (with sha256) in the
   raw summary. Batches 1-5 stay as frozen, without it.
+- `assets/ocr_lab_rotation_retry.patch` retains the OCR-Lab client change for the
+  rotation retry (before `42ddf34a…`, after `6beed388…`, compared without `\r`;
+  OCR-Lab has no git). Apply like the picture patch, with `--ignore-space-change`.
+- `plans/2026-10-23-m1-04b-ocr-runtime.md` (owner request 23.10.2026) plans M1-04B:
+  a minimal dots.mocr runtime inside Legal RAG (own image without the TeleOCR base,
+  one service, dots.mocr-only client, verified weights) with an unchanged output
+  contract and qualification against the OCR-Lab runtime. Only Task 0 (the patch)
+  is done; owner questions (weights location, folder, M1 plan inclusion, order) are open.
 
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
