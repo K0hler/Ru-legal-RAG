@@ -30,6 +30,10 @@
   seed 20261024, 120 days not sampled by batches 1-3, pool/2, no code quota, 11 acts, 5 long; feed cache
   `feed-cache-b4.json` and command in `selection-provenance.json`). Ukaz 481/2016 is an award decree:
   personal names stay out of docs.
+  Acquired 23.10 (pool/2, 11/11 `new` then `unchanged`, no refill; target date = run date as batch 3);
+  OCR `ocr/<slug>/run-01` (264 pages, all replays equal), summary
+  `experiments/20261023-batch-04-ocr/summary.json`; `summary.raw.failed-attempt1-slug-argument.json`
+  is a no-OCR attempt (slugs passed as one string via `-File`): pass `-Slugs` as an array via `-Command`.
 
 - Check-pool batch 3 first pass: `m1/m1-04a/experiments/20261022-batch-03-first-pass/`
   (`freeze.json` /3, v1 + `code-final`, `git_head` 17d4de9; it hashes the gold
