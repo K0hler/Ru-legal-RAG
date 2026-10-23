@@ -136,6 +136,13 @@
   too and records `PYTHONPATH=src <interpreter> docs/assets/select_m1_04a_pool.py ...`.
 - Selection profile `batch-04` (`BATCH4_QUOTAS`): no code quota (no `--code-candidates`), FZ 3, decree 1,
   PP 2, RP 2, ministry 3, pages 3..200, at least 4 acts of 20+ pages; excludes batches 1-3 (refills, failures, days).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_4_2026-10-23.md` is the batch-4 first pass, the first measure of frozen v2
+  (+ v1, `/7`), not G13/Task 3: 1579/1546/35 of 2465. Two near-identical Mintrans estimate-table orders (954 regions)
+  hold 864 of 886 v2 errors; always quote the without-them figure (1489/1511, 98.5%) and the diversity caveat.
+  `cross_scope_v2` 20 = second attached document named `A/AN` vs gold `S2` (naming, owner decision open), not text
+  moved. One new class; the new-class counter starts at batch 4 and is 0. The classifier gained batch-4 rules
+  (second attached document, restarted «01.» lists, line between tables at the root, footer code); batch 1-3 class
+  files reproduce byte for byte. Batch 4 is now development.
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

@@ -50,6 +50,9 @@
   `test_ocr_logical_structure.py` covers per-document annex counting, one vs
   two annexes in all variants, and `cross_scope_v2` transfers (annex↔body,
   between annexes) that the old `first_scope` misses.
+  `test_batch4_error_classes_from_evidence_only` pins the batch-4 classifier rules (second attached document
+  `A/AN` vs `S2`, restarted «01.» lists, line between tables at the root, footer code) and that `S/II/8/б` stays
+  a closing error.
   `test_dev_regression_baseline_comparison_flags_drops` covers `--baseline`: per-document drops
   (no_section/strict down, `cross_scope_v2` up, region count changed, missing) and CLI exit 1.
 

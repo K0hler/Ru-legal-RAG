@@ -36,6 +36,13 @@ attached document ``S/AN`` vs gold ``S/AN1``, annex of an attached document not 
 unnumbered subheading inside a section given to a point, closing paragraph of a point
 left in its last subpoint, and a form-field caption «(…)» left at the annex root.
 
+Batch 4 adds evidence rules (batch-1/2/3 class files reproduce byte for byte): a second
+attached document named ``S<k>`` in gold but ``A/AN`` by the prototype (new class); a numbered
+work list «01.», «02.»… restarted under every table and nested under the previous one (sections
+ignored; protocol class «Перезапуск нумерации»); a line between tables given to the document
+root instead of its section (table owner); a page-footer code without Cyrillic words given to a
+point (page mark).
+
 A rescore directory (no ``freeze.json``) takes the batch from the run it was
 rescored from. ``--gold-suffix gold-v2`` reads ``agent-<slug>.gold-v2.txt`` (gold
 derived under annotation convention v2) for the attached-document count and must
@@ -89,7 +96,16 @@ ATTACHED_ANNEX = ("Неизвестная форма области: «Прил�
                   "приложение приложенного документа")
 SUBHEADING = "Ненумерованный подзаголовок внутри раздела отнесён к пункту"
 CLOSING = "Не закрыт последний подпункт: следующий абзац пункта (вывод, заключительная фраза) отнесён к подпункту"
+SECOND_ATTACHED = ("Второй приложенный документ («ПРИЛОЖЕНИЕ к постановлению» после утверждённого текста): "
+                   "в эталоне `S<k>`, у прототипа `A/AN` (равенство `S` = `A/AN` задано только для одного "
+                   "приложенного документа)")
+LIST_RESTART = ("Перезапуск нумерации: перечень «01.», «02.»… (состав работ под каждой таблицей) прочитан как "
+                "пункты, и каждый следующий перечень с «01.» вложен в предыдущий")
+TABLE_LINE_ROOT = ("Владелец таблицы: строка между таблицами («Стоимостные показатели») отнесена к корню "
+                   "документа, а не к разделу")
 ROMAN = re.compile(r"^[IVXLC]+$")
+PADDED = re.compile(r"^0\d+$")
+SECTION_SEGMENT = re.compile(r"^(разд\d+|[IVXLC]+)$")
 MARKER_START = re.compile(r"^(\d+(\.\d+)*[.)]|[а-я]\))")
 OTHER = "Не классифицировано"
 CONFUSABLE = {"6": "б", "3": "з", "0": "о"}
@@ -157,6 +173,13 @@ def _drops_subitem(gold: str, predicted: str) -> tuple[bool, bool]:
     return False, False
 
 
+def _restarted_list(gold: str, predicted: str) -> bool:
+    """Batch 4: predicted is gold (sections ignored) plus a chain that holds a zero-padded number («01.»)."""
+    g = [x for x in gold.split("/") if not SECTION_SEGMENT.match(x)]
+    p = [x for x in predicted.split("/") if not SECTION_SEGMENT.match(x)]
+    return len(p) > len(g) and p[:len(g)] == g and any(PADDED.match(x) for x in p[len(g):])
+
+
 def classify_evidence(error: dict, category: str, text: str, single_annex: bool) -> tuple[str, list[str]]:
     """Batch 2+: reviewer's reading as rules over paths, OCR category and text (no act names).
 
@@ -180,6 +203,9 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
     if (re.match(r"^A/AN\d+(/|$)", gold) and not single_annex
             and re.match(r"^A(/(?!AN)[^/]+)*$", predicted)):
         return LAW_ANNEX, []
+    second = re.match(r"^S\d+(/.*)?$", gold)
+    if second and re.match(r"^A/AN\d*(/|$)", predicted) and re.sub(r"^A/AN\d*", "", predicted) == (second.group(1) or ""):
+        return SECOND_ATTACHED, []
     secondary: list[str] = []
     primary = None
     g = _canon(gold) if single_annex else gold
@@ -199,6 +225,8 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         cause = DOTTED
     elif p.startswith(g + "/") and text.startswith("(") and re.search(r"подпис|фамилия|должност", text):
         cause = SIGNATURE
+    elif p.startswith(g + "/") and category in MARK_CATEGORIES and not CYRILLIC_WORD.search(text):
+        cause = PAGE_MARK  # batch 4: a typographic file code «200716A9.doc» in a page footer
     elif p.startswith(g + "/") and re.match(r"^S(\d*|/AN\d+)$", g):
         cause = SCHEME_LIST
     elif p.startswith(g + "/") and g in {"A", "S"}:
@@ -211,10 +239,17 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         cause = SUBHEADING
     elif g.startswith(p + "/") and text.startswith("("):
         cause = CAPTION_ROOT  # caption of a form field, e.g. «(серия, номер, дата выдачи)»
+    elif _restarted_list(g, p):
+        cause = LIST_RESTART
+        if any(s.startswith("разд") for s in g_seg) and not any(s.startswith("разд") for s in p_seg):
+            secondary.append(SECTION_MARKER)
     elif _drops_subitem(g, p)[0]:
         cause = CLOSING
         if _drops_subitem(g, p)[1]:
             secondary.append(DOTTED)
+    elif (g.startswith(p + "/") and all(SECTION_SEGMENT.match(x) for x in g[len(p) + 1:].split("/"))
+          and not MARKER_START.match(text)):
+        cause = TABLE_LINE_ROOT
     else:
         cause = OTHER
     if primary is None:

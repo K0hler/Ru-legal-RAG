@@ -266,6 +266,24 @@ def test_batch3_error_classes_from_evidence_only():
     assert cls("S/II", "S/II/9", text="9. Государственная услуга")[0] != C.SUBHEADING
 
 
+def test_batch4_error_classes_from_evidence_only():
+    def cls(gold, predicted, category="Text", text="Текст", single=False):
+        return C.classify_evidence({"gold": gold, "predicted": predicted}, category, text, single)
+
+    assert cls("S2", "A/AN", "Section-header", "ПРИЛОЖЕНИЕ") == (C.SECOND_ATTACHED, [])
+    assert cls("S2/3", "A/AN/3", text="3. Постановление") == (C.SECOND_ATTACHED, [])
+    assert cls("S2/3", "A/AN/4", text="3. Постановление")[0] != C.SECOND_ATTACHED
+    # A restarted «01.» work list nests under the previous one; the first list is not a closing paragraph.
+    assert cls("S/разд1", "S/разд1/01", text="01. Планировка") == (C.LIST_RESTART, [])
+    assert cls("S/разд1", "S/разд1/04/06/01", "List-item", "01. Прием грунта") == (C.LIST_RESTART, [])
+    assert cls("S/разд1", "S/04/06", text="Измеритель") == (C.LIST_RESTART, [C.SECTION_MARKER])
+    assert cls("S/II/8", "S/II/8/б", text="По решению руководителя") == (C.CLOSING, [])
+    assert cls("S/разд2", "S", text="Стоимостные показатели") == (C.TABLE_LINE_ROOT, [])
+    assert cls("S/разд2", "S", text="9. Пункт")[0] != C.TABLE_LINE_ROOT
+    assert cls("S", "S/ст2", "Page-footer", "200716A9.doc") == (C.PAGE_MARK, [])
+    assert cls("S", "S/1", "Table", "Наименование мероприятия") == (C.SCHEME_LIST, [])
+
+
 def test_rescore_scoring_single_annex_is_opt_in():
     ev = load_script("evaluate_ocr_owner_gold")
     gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}

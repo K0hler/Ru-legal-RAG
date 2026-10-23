@@ -1019,7 +1019,10 @@ def test_main_records_exact_command(monkeypatch):
                     '--to 2025-12-31 --seed 20261023 --output "a b/selection.json"']
 
 
-def test_catalog_lists_batch_04_without_status_before_measurement():
+def test_catalog_records_batch_04_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
     assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04")
-    assert "batch-04" not in catalog.POOL_STATUS  # status is written only after the first pass
+    history = catalog.POOL_STATUS["batch-04"]  # written only after the first pass
+    assert [h["status"] for h in history] == ["measured", "development"]
+    assert history[0]["evidence"] == "experiments/20261023-batch-04-first-pass"
+    assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_4_2026-10-23.md"
