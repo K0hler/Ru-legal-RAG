@@ -11,6 +11,8 @@ param(
         "prikaz-minobrazovaniya-901-2015", "prikaz-mintsifrovogo-173-2021",
         "rp-1378-2018", "ukaz-204-2016"),
     [int]$HealthTimeoutSeconds = 600,
+    # Owner decision 23.10.2026: batches after batch 5 use the opt-in rotation retry.
+    [string]$OcrConfig = "data/m1/ocr.rotation-retry.local.json",
     [switch]$ReplayOnly   # skip Docker/extraction; only replay saved results
 )
 $ErrorActionPreference = "Stop"
@@ -21,6 +23,11 @@ $experimentDir = "$base/experiments/$Experiment"
 New-Item -ItemType Directory -Force -Path $experimentDir | Out-Null
 
 $summary = [ordered]@{ acts = [ordered]@{} }
+if (-not $ReplayOnly) {
+    if (-not (Test-Path $OcrConfig)) { throw "OCR config $OcrConfig not found" }
+    $summary.ocr_config = $OcrConfig
+    $summary.ocr_config_sha256 = (Get-FileHash -Algorithm SHA256 $OcrConfig).Hash.ToLower()
+}
 function Save-Json($value, $path) {
     [IO.File]::WriteAllText((Join-Path (Get-Location) $path), ($value | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding($false)))
 }
@@ -54,7 +61,7 @@ try {
         $run = "$base/ocr/$slug/run-01"
         if (Test-Path $run) { Write-Host "skip $slug (run-01 exists)"; continue }
         $watch = [Diagnostics.Stopwatch]::StartNew()
-        $out = & $python -m legal_rag.corpus extract --input $inputJson --ocr-config data/m1/ocr.local.json --output-dir $run
+        $out = & $python -m legal_rag.corpus extract --input $inputJson --ocr-config $OcrConfig --output-dir $run
         if ($LASTEXITCODE) { $summary.acts[$slug] = @{ status = "failed" }; Write-Host "FAILED $slug"; continue }
         $seconds = [math]::Round($watch.Elapsed.TotalSeconds, 1)
         $result = ($out | Select-Object -Last 1) | ConvertFrom-Json

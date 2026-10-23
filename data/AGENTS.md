@@ -62,6 +62,8 @@
   (`summary.json`; 235 and 155 complete, 141n still `length`; `rotation-probe-minfinansov-141/`).
   141n with the opt-in rotation retry (`m1/ocr.rotation-retry.local.json`): `experiments/20261023-rotation-retry-ocr/`
   (complete, pages 25/30/42 cw90, replay equal; `upright-forced-retry-probe/` 0/12 accepted).
+  Owner decision 23.10.2026: batches after 5 use `m1/ocr.rotation-retry.local.json` (`ocr.local.json` +
+  `rotation_retry: true`; keep both files in step), the default of `run_m1_04a_ocr.ps1 -OcrConfig`.
   Gold (v2 incl. §5-§6, 7 Codex jobs, 11 acts, 2268 regions, 78 `+`, no `exceptions.json`, no format fixes) frozen in
   `experiments/20261023-batch-05-gold-freeze/` (`freeze.json` 9c90fde3…; `freeze-addendum.json` 5a532f8b… records v2,
   `single_annex` + `attached_ordinal` defaults, doubts, findings, refill history and hashes the rp-1099 parts).

@@ -360,6 +360,10 @@
   The opt-in rotation retry (OCR-Lab client + normalizer re-derivation) completes
   it (3 pages turned cw90); 0/12 forced turns of upright pages were accepted.
   Rotated pages read without a loop and upright looping blanks remain open.
+  Owner decision 23.10.2026: M1-04A batches after batch 5 run OCR with the
+  rotation retry; `assets/run_m1_04a_ocr.ps1` defaults `-OcrConfig` to
+  `data/m1/ocr.rotation-retry.local.json` and records it (with sha256) in the
+  raw summary. Batches 1-5 stay as frozen, without it.
 
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
