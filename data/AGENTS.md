@@ -70,6 +70,11 @@
   rp-1099-2014 = 2 page-range parts in `gold/rp-1099-2014/chunks/` stitched unchanged (seam `S/III/6` consistent);
   65.1-65.2 carry the first pool alternatives `S/III|S/III/7` (evaluator accepts `|`).
 
+- Check-pool batch 6: `m1/m1-04a/documents/pool/batch-06/selection.json` (frozen 23.10, sha256 5d4f598a…,
+  profile `batch-06`, seed 20261026, 120 days 2011-2025 not sampled by batches 1-5, pool/2, 11 acts, 6 long,
+  `soft_fallbacks` 0; feed cache `feed-cache-b6.json` 745d009d…, command in `selection-provenance.json`, code 916f323).
+  Ukaz 1711/2012 sets a commission's membership: personal names stay out of docs. RP 2390-r and 356-r have empty feed names.
+
 - Check-pool batch 5 first pass: `m1/m1-04a/experiments/20261023-batch-05-first-pass/` (`freeze.json` /3 3da171ed…,
   v3-1 + v2 frozen copies, `git_head` b0aa2f7, both batch-5 equivalences). Run once (12:20 UTC); never re-run.
   `error-classes-{v3-1,v2}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261025) has ukaz-669 name rows that
