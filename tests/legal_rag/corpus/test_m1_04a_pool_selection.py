@@ -1179,7 +1179,7 @@ def test_feed_cards_carry_issuer_and_publication_day():
 
 def test_catalog_records_batch_05_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05")
+    assert "batch-05" in catalog.POOL_BATCHES
     history = catalog.POOL_STATUS["batch-05"]  # written only after the first pass
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261023-batch-05-first-pass"
@@ -1223,3 +1223,9 @@ def test_frozen_batch_05_selection_reproduces_from_its_feed_cache():
     assert result["soft_fallbacks"] == frozen["soft_fallbacks"]
     for row, frozen_row in zip(result["selected"], frozen["selected"]):
         assert {k: frozen_row[k] for k in row} == row
+
+
+def test_catalog_lists_batch_06_without_status_before_measurement():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06")
+    assert "batch-06" not in catalog.POOL_STATUS  # status is written only after the first pass
