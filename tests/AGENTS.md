@@ -63,6 +63,8 @@
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,
   «1.» after «1.».
+  Cycle 4 B2: a right-aligned line between two tables follows the unit (not a signature; one before text still is);
+  a footer file code («….doc», «….DOCX») goes to the scope root and opens no continuation, other footer text unchanged.
 
 - `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
   lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested

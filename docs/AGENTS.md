@@ -166,6 +166,13 @@
   (sha f091e9d3…): 9478/9537 no_section (strict 9467), Mintrans 107 47 -> 476/476, 136 43 -> 478/478, batch 4
   2463/2465, `cross_scope_v2` 0, no drops, only those two documents changed. `…-b1` has the same scores (restart
   evidence was then also written without an earlier «N.»). The restart rule changes no owner in the 45 documents.
+- Cycle 4 B2 (prototype): a text paragraph whose neighbouring body items (pictures skipped) are both tables is
+  never a position-only signature or requisite-block opener, so «Стоимостные показатели» between tables follows the
+  current unit; a page header/footer that is a file name («200716A9.doc», `PAGE_MARK`) and not running noise is a
+  page mark of the scope root and opens no continuation. Regression `20261023-dev-regression-cycle4-b2`
+  (sha e88cbc9a…): 9479/9537 no_section and strict, batch 4 2464/2465, `cross_scope_v2` 0, no drops; changed only
+  Mintrans 107/136 (strict 476/478) and rp-2023 (28/28). Known limitation: rp-2728 region 3.1, one OCR table
+  region mixing a repeated header, the end of item 1, item 2 and «Итого» (gold `S`, annotator doubt), goes to `S/1`.
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

@@ -1161,3 +1161,32 @@ def test_restart_needs_a_break_and_leaves_subpoints_nested():
     pages = regulation(("Text", "1. Первый."), TABLE, ("Text", "1. Снова первый."))
     result = S.build(extraction(pages))
     assert not any("restart" in e for p in result["paragraphs"] for e in p["evidence"])
+
+
+def test_right_aligned_line_between_tables_is_not_a_signature():
+    """A short right-aligned line between two tables («Стоимостные показатели») labels the table part and
+    follows the current unit; the same line after the last table or before text is still a signature."""
+    pages = estimate_norms(("Text", "Состав работ:"), ("Text", "01. Планировка."), TABLE,
+                           ("Text", "Стоимостные показатели", 1100), TABLE,
+                           ("Text", "Норма расхода ресурсов", 1100), ("Picture", ""), TABLE)
+    got = owners(S.build(extraction(pages)))
+    assert got["2.8"] == "S/разд1" and got["2.9"] == "S/разд1"
+    assert got["2.10"] == "S/разд1" and got["2.12"] == "S/разд1"     # a picture in between does not count
+    pages = regulation(("Text", "1. Первый пункт."), TABLE, ("Text", "Подпись", 1100), ("Text", "2. Второй пункт."))
+    assert owners(S.build(extraction(pages)))["2.4"] == "S"
+
+
+@pytest.mark.parametrize("text, owner", [("200716A9.doc", "S"), ("Proekt_2020.DOCX", "S"),
+                                         ("Подкомиссия собирается ежегодно", "S/ст2")])
+def test_file_code_in_a_page_footer_belongs_to_the_scope_root(text, owner):
+    """A file code printed once or twice in a footer is a page mark of the scope root, not text of the
+    article it follows, and opens no continuation; other footer text is unchanged."""
+    pages = [[("Text", "1. Подписать Протокол."), ("Text", "Председатель Правительства", 1100)],
+             [("Page-header", "Проект", 1200), ("Section-header", "ПРОТОКОЛ"), ("Section-header", "Статья 1"),
+              ("Text", "Стороны сотрудничают."), ("Section-header", "Статья 2"), ("Text", "Подкомиссия проводит"),
+              ("Page-footer", text)],
+             [("Text", "заседания поочередно."), ("Section-header", "Статья 3"), ("Text", "Протокол вступает в силу.")]]
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["2.6"] == owner
+    assert got["3.0"] == "S/ст2" and conts(result)["3.0"] is True   # joins the article text, not the footer

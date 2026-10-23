@@ -394,6 +394,17 @@ SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Зам�
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
 
 
+PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
+PAGE_MARK_EVIDENCE = {"page_mark": "file name printed in a page header/footer"}
+BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
+
+
+def page_mark(region: Region) -> bool:
+    """A service file code printed in a page header/footer («200716A9.doc»), not repeated often
+    enough to be running noise: a mark of the page, never text of the unit it happens to follow."""
+    return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text))
+
+
 def barcode_like(text: str) -> bool:
     """A printed barcode number: one run of 12-14 digits or EAN-13 grouping «2 100039 06204 3»."""
     return bool(re.fullmatch(r"\d{12,14}|\d\s\d{6}\s\d{5}\s\d", text))
@@ -477,11 +488,15 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 continue
         p = Paragraph("body", [r])
         paragraphs.append(p)
+        if page_mark(r):
+            # a file code in the footer belongs to the scope root and never opens a continuation
+            p.evidence.append(dict(PAGE_MARK_EVIDENCE))
+            continue
         body_here = [x for x in page_content if x.category != "Footnote" and footnote_number(x.text) is None]
         if barcode_like(r.text) and body_here and body_here[-1] is r:
             # a barcode as the last body line of its page is a page requisite, not open text:
             # the next page continues the paragraph before it
-            p.evidence.append({"barcode": "last body line on its page"})
+            p.evidence.append(dict(BARCODE_EVIDENCE))
             continue
         open_body = p
     return paragraphs
@@ -770,6 +785,15 @@ def mark_restarts(items: list[Paragraph]) -> None:
             last = p.marker.value
 
 
+def between_tables(items: list[Paragraph]) -> set[int]:
+    """Ids of text paragraphs whose neighbouring body items on both sides are tables: a short line
+    there («Стоимостные показатели», «Норма расхода ресурсов») labels the table part, so its right
+    position is no signature evidence."""
+    seq = [p for p in items if p.flow == "body" and p.kind != "picture"]
+    return {id(p) for k, p in enumerate(seq)
+            if p.kind == "text" and 0 < k < len(seq) - 1 and seq[k - 1].kind == "table" and seq[k + 1].kind == "table"}
+
+
 def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
@@ -887,6 +911,7 @@ def build(extraction: dict) -> dict:
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
+        framed = between_tables(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and
         # everything from there to the end of the scope belongs to the scope root. Unmarked
@@ -894,7 +919,8 @@ def build(extraction: dict) -> dict:
         last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
         block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
                       and not body[k].text[0].islower()
-                      and (requisite_like(body[k].text) or signature_like(body[k].first))), None)
+                      and (requisite_like(body[k].text)
+                           or (signature_like(body[k].first) and id(body[k]) not in framed))), None)
         in_block = False
         for p, stack in zip(body, stacks):
             in_block = in_block or p is block
@@ -902,8 +928,8 @@ def build(extraction: dict) -> dict:
                 p.kind = "requisite"
                 p.owner = scope_path
                 p.evidence.append({"requisite_block": "after the last numbered or named element"})
-            elif p.marker.kind == "none" and (signature_like(p.first) or {"barcode": "last body line on its page"}
-                                              in p.evidence):
+            elif p.marker.kind == "none" and ((signature_like(p.first) and id(p) not in framed)
+                                              or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence):
                 p.kind = "signature"
                 p.owner = scope_path
             else:
