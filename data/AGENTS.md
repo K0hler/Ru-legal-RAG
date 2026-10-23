@@ -58,6 +58,8 @@
   Measured set = the 10 acts of `20261023-batch-05-ocr` + minnauki-697 (488 p., 3007 regions, rp-1099 43.8%);
   pass these 11 slugs explicitly to annotation/gold/first pass. The three failed acts keep PDFs, inputs and
   failed `run-01` as evidence. `index.json` now lists 14 originals; `index-superseded-{11,12,13}-acts.json` kept.
+  Re-run after the per-table grid fix (not part of the measured set): `experiments/20261023-dense-table-ocr/`
+  (`summary.json`; 235 and 155 complete, 141n still `length`; `rotation-probe-minfinansov-141/`).
   Gold (v2 incl. §5-§6, 7 Codex jobs, 11 acts, 2268 regions, 78 `+`, no `exceptions.json`, no format fixes) frozen in
   `experiments/20261023-batch-05-gold-freeze/` (`freeze.json` 9c90fde3…; `freeze-addendum.json` 5a532f8b… records v2,
   `single_annex` + `attached_ordinal` defaults, doubts, findings, refill history and hashes the rp-1099 parts).

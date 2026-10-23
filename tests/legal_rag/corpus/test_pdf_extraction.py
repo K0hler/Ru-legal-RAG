@@ -117,6 +117,39 @@ class PdfExtractionTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     pdf.normalize_dotsmocr(document, run, DIGEST)
 
+    def test_impossible_table_grid_degrades_only_that_table(self):
+        # Observed in batch 5: a rowspan continuing onto the next page, and a rowspan crossed by a colspan row.
+        for name, html, error in (
+                ("span_past_rows", '<table><tr><th>Вид</th><th>Рыба</th></tr>'
+                 '<tr><td rowspan="3">Прудовая</td><td>Карп</td></tr><tr><td>Сазан</td></tr></table>',
+                 "OCR table span exceeds its rows"),
+                ("overlap", '<table><tr><td>1</td><td rowspan="2">9</td></tr>'
+                 '<tr><td colspan="2">в том числе</td></tr></table>',
+                 "overlapping OCR table cells")):
+            with self.subTest(name=name):
+                document, run = saved_result()
+                document["pages"][1]["layout"][0]["text"] = html
+                extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+                table = extraction["pages"][1]["regions"][0]["table"]
+                self.assertEqual((table["grid"], table["grid_error"]), ("unresolved", error))
+                self.assertFalse(table["rectangular"])
+                self.assertIsNone(table["columns"])
+                self.assertTrue(all(cell["column"] is None for cell in table["cells"]))
+                self.assertEqual([c["row"] for c in table["cells"]][:2], [0, 0])
+                self.assertIn("table_grid_unresolved", extraction["uncertainties"])
+                block = next(b for b in extraction["blocks"] if b["table_cells"])
+                self.assertEqual(block["original_text"], html)
+                for cell in table["cells"]:
+                    self.assertIn(cell["text"], block["text"])
+                tree = pdf.pdf_tree(extraction, "Неустановленный акт", "original")
+                self.assertTrue(tree["accounting"]["exactly_once"])
+
+    def test_resolved_table_output_is_unchanged_by_grid_degradation(self):
+        document, run = saved_result()
+        table = pdf.normalize_dotsmocr(document, run, DIGEST)["pages"][1]["regions"][0]["table"]
+        self.assertNotIn("grid", table)
+        self.assertEqual(table["columns"], 3)
+
     def test_partial_selection_is_explicit_and_unknown_categories_survive(self):
         document, run = saved_result()
         document["pages"] = document["pages"][:1]

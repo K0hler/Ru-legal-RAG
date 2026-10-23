@@ -126,6 +126,8 @@
   Docker or downloads. Check merged and empty cells, physical-page coverage,
   OCR-string spans, model/source binding, native truncation and one-time token
   accounting through the shared grammar. Unknown categories remain source data.
+  Impossible table grids (batch-5 span-past-rows and overlap shapes) degrade one
+  table with null columns and kept cell text; a resolved table has no `grid` key.
 - `corpus/test_ocr_runtime.py` checks CLI saved import, subprocess argument
   construction, permission-before-write, immutable replay, fresh-runtime
   provenance replay and index/extraction/native corruption. Keep external OCR

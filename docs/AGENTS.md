@@ -354,6 +354,11 @@
   The added 91-cell engineering control is a known-page development check,
   not new heldout evidence or human legal qualification.
 
+- `milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md` records the batch-5 OCR
+  failures: two were impossible table grids (now degraded per table, both acts
+  pass), the third (Minfin 141n) is a blank rotated form looping on empty rows.
+  A rotated retry completed 3/3 pages but is a probe, not an implemented fallback.
+
 - On 16 October 2026 the owner replaced M1-04's unimplemented Docling/RapidOCR
   baseline with the existing local dots.mocr OCR-Lab pipeline. Preserve native
   outputs and normalize through an engine adapter; physical document trees and

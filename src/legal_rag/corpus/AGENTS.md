@@ -49,6 +49,13 @@
   Grammar `block_id` is the source-order integer; retain the opaque hash as
   `source_block_id`, because existing grammar ordering/slicing uses numeric IDs.
   OCR offsets never identify byte positions in the original PDF.
+- A well-formed OCR table whose spans cannot form a grid (span past the last
+  row, overlapping cells) degrades only that table: all cells/text/rows stay,
+  `column`/`columns` are null, `grid: unresolved` + `grid_error`, uncertainty
+  `table_grid_unresolved`. Resolved tables keep their exact previous output
+  (no `grid` key), so saved extraction IDs are unchanged. Malformed HTML still
+  fails the document. dots.mocr `length` loops on blank (often rotated) form
+  tables remain unresolved: `docs/milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md`.
 - `ocr_runtime.py` validates the entire PDF permission/input before staging.
   Configure the external lab path through `ocr-provider/1`; fresh execution
   requires an already-healthy service and uses UUID-isolated outputs. Saved

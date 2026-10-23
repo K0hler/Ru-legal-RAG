@@ -11,6 +11,10 @@ CATEGORIES = {"Title", "Section-header", "Text", "List-item", "Table", "Picture"
               "Footnote", "Page-header", "Page-footer", "Caption", "Formula"}
 
 
+class _GridError(ValueError):
+    """The cell spans cannot form one grid; the HTML itself is well formed."""
+
+
 class _Table(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -66,6 +70,20 @@ class _Table(HTMLParser):
         self.close()
         if not self.closed or self.inside or self.cell is not None or not self.rows:
             raise ValueError("incomplete OCR table")
+        try:
+            return self._grid()
+        except _GridError as error:
+            # Well-formed HTML with an impossible grid: keep every source cell and its text,
+            # but claim no column positions instead of failing the whole document.
+            cells = [{"row": row, "column": None, "rowspan": source["rowspan"],
+                      "colspan": source["colspan"], "header": source["header"],
+                      "text": "".join(source["parts"]), "bbox": None}
+                     for row, source_cells in enumerate(self.rows) for source in source_cells]
+            return {"rows": len(self.rows), "columns": None, "cells": cells, "rectangular": False,
+                    "grid": "unresolved", "grid_error": str(error),
+                    "outside_cell_text": self.outside, "text": "\n".join(self.events)}
+
+    def _grid(self):
         occupied, cells = set(), []
         for row, source_cells in enumerate(self.rows):
             column = 0
@@ -73,11 +91,11 @@ class _Table(HTMLParser):
                 while (row, column) in occupied:
                     column += 1
                 if row + source["rowspan"] > len(self.rows):
-                    raise ValueError("OCR table span exceeds its rows")
+                    raise _GridError("OCR table span exceeds its rows")
                 footprint = {(r, c) for r in range(row, row + source["rowspan"])
                              for c in range(column, column + source["colspan"])}
                 if occupied & footprint:
-                    raise ValueError("overlapping OCR table cells")
+                    raise _GridError("overlapping OCR table cells")
                 occupied.update(footprint)
                 cells.append({"row": row, "column": column, "rowspan": source["rowspan"],
                               "colspan": source["colspan"], "header": source["header"],
@@ -165,6 +183,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                 region["table"] = _Table().topology(text)
                 if not region["table"]["rectangular"]:
                     uncertainties.add("nonrectangular_table")
+                if region["table"].get("grid") == "unresolved":
+                    uncertainties.add("table_grid_unresolved")
                 pieces = [region["table"]["text"]]
                 if region["table"]["outside_cell_text"]:
                     uncertainties.add("table_text_outside_cells")
