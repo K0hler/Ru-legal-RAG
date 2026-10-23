@@ -58,6 +58,11 @@
   Measured set = the 10 acts of `20261023-batch-05-ocr` + minnauki-697 (488 p., 3007 regions, rp-1099 43.8%);
   pass these 11 slugs explicitly to annotation/gold/first pass. The three failed acts keep PDFs, inputs and
   failed `run-01` as evidence. `index.json` now lists 14 originals; `index-superseded-{11,12,13}-acts.json` kept.
+  Gold (v2 incl. §5-§6, 7 Codex jobs, 11 acts, 2268 regions, 78 `+`, no `exceptions.json`, no format fixes) frozen in
+  `experiments/20261023-batch-05-gold-freeze/` (`freeze.json` 9c90fde3…; `freeze-addendum.json` 5a532f8b… records v2,
+  `single_annex` + `attached_ordinal` defaults, doubts, findings, refill history and hashes the rp-1099 parts).
+  rp-1099-2014 = 2 page-range parts in `gold/rp-1099-2014/chunks/` stitched unchanged (seam `S/III/6` consistent);
+  65.1-65.2 carry the first pool alternatives `S/III|S/III/7` (evaluator accepts `|`).
 
 - Check-pool batch 4 first pass: `m1/m1-04a/experiments/20261023-batch-04-first-pass/` (`freeze.json` /3 f5dd824a…,
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
