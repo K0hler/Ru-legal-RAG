@@ -13,7 +13,7 @@ batch sampled. `batch-04` has no code quota (11 acts, at least 4 long) and exclu
 batches 1-3 the same way. `batch-05` keeps the batch-04 quotas, excludes batches 1-4 and adds
 soft preferences (acts of 5+ pages; one act per type, issuer and publication day): every pass
 runs with them first, then without them for open quotas (long share first), and `soft_fallbacks` records each
-pick that misses one. A newly frozen selection gets a write-once `selection-provenance.json`
+pick that misses one. `batch-06` repeats `batch-05` and excludes batches 1-5. A newly frozen selection gets a write-once `selection-provenance.json`
 (exact command, `min_days`, feed-cache hash, code commit).
 
 Future selection schema /3 uses the opt-in pool adapter. A positive code quota
@@ -832,6 +832,11 @@ PROFILES = {
     "batch-05": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Batch 6: batch-05 settings unchanged, excluding batches 1-5.
+    "batch-06": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days

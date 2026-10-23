@@ -12,6 +12,7 @@
   `--previous` reuse without repeated requests, and write-once outputs.
   Batch-05 soft preferences: short act only to fill a quota, one act per type/issuer/day unless needed, long share
   kept, defaults off leave results identical; the batch-04 reproduction test skips without local data.
+  Batch-06 profile = batch-05 + prior batch 05; frozen batch-05 selection reproduces from its feed cache (skips without data).
 
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open
