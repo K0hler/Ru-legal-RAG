@@ -109,6 +109,7 @@ development failures, experiments and superseded approaches.
 
 ## Research and historical context
 
+- [Legal AI: verified facts and project takeaways](research/ZAKON_LEGAL_AI_TAKEAWAYS_2026-10-23.md) — Russian brief on the 13 October Zakon.ru article, the checked court determination and Supreme Court concept; facts, project implications and hypotheses kept separate.
 - [Research map](research/RESEARCH.md)
 - [Legal RAG literature review, 2026](research/legal_rag_2026_literature_review_ru.md)
 - [ARLC 2026 analysis](research/ARLC_2026_LEGAL_RAG_ANALYSIS.md)

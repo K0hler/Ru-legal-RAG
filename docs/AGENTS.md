@@ -1,5 +1,10 @@
 # Documentation instructions
 
+- `research/ZAKON_LEGAL_AI_TAKEAWAYS_2026-10-23.md` retains the Zakon.ru
+  article takeaways and two primary texts read on 22 October 2026. Keep verified
+  facts, project implications and proposed tests separate; the note grants no
+  corpus admission, implemented capability or milestone-scope change.
+
 - M1-04A source-pool fixes are recorded in
   `milestones/m1/04a/M1_04A_BUG_SOURCE_ACQUISITION_2026-10-22.md` ("Результат").
   Future selection schema /3 uses `publication-pravo-pool/2`, retains per-item
