@@ -172,6 +172,11 @@
   frozen `20261023-batch-05-gold-freeze`, rp-1099 = stitched `.gold.txt`). Baseline of frozen v3.1
   `…/20261023-dev-regression-cycle5-baseline/`: 11623/11805 no_section (strict 11556), `cross_scope_v2` 3; old 45
   9479 with rows/errors equal to `…-v3-1`; batch 5 2144/2268 (rp-1099 853/972, rp-3721 90/94 cross 3, minnauki 72/73).
+- Cycle 5 B4: prototype v4 `ocr-logical-structure/4-experiment` (sha256 52c20ab5… CRLF working copy, LF 12f1ee45…,
+  blob 6df9f547) frozen in `data/m1/m1-04a/experiments/20261023-prototype-v4-freeze/`; regression
+  `20261023-dev-regression-v4` vs the cycle-5 baseline (v3.1): 11754/11805 no_section and strict (v3.1 11623/11556),
+  `cross_scope_v2` 3 -> 0, exit 0; rows/errors equal `…-cycle5-b3`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V4_2026-10-23.md`
+  (development, batch 5 included; batch 6 is the measure).
 - Cycle 5 B3 (prototype): `next_roman_section` — an unmarked body paragraph «V. Капитализированное …» (OCR Text,
   too long for `heading_like`) opens section V (evidence `roman_sequence`) only when sections I..V-1 are open in
   the scope and the last is V-1; no gap, no first «I.», nothing mid-sentence. Regression `…-cycle5-b3`:
