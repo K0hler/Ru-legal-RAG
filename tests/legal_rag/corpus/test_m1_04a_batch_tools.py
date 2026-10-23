@@ -163,6 +163,8 @@ def test_dev_regression_baseline_comparison_flags_drops(tmp_path, monkeypatch):
                                              .read_text(encoding="utf-8"))["rows"]}
     assert rows["one"]["below_baseline"] == ["no_section", "strict"]
     assert rows["two"]["delta"]["strict"] == 1 and rows["two"]["below_baseline"] == []
+    assert comparison["baseline"] == str(base.resolve())  # outside the repository: absolute
+
     # cross_scope_v2 rising, a changed region count and a missing document are drops too.
     summary = json.loads(base.read_text(encoding="utf-8"))
     raised = json.loads(json.dumps(summary))
@@ -179,6 +181,12 @@ def test_dev_regression_baseline_comparison_flags_drops(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as stop:
         D.main(["--prototype", str(worse), "--output", str(tmp_path / "cli"), "--baseline", str(base)])
     assert stop.value.code == 1
+
+
+def test_dev_regression_records_repo_relative_paths():
+    inside = D.ROOT / "docs" / "assets" / "ocr_logical_structure.py"
+    assert D.recorded_path(inside) == "docs/assets/ocr_logical_structure.py"
+    assert D.recorded_path(D.ROOT / "data" / "x" / ".." / "summary.json") == "data/summary.json"
 
 
 def test_dev_regression_45_documents_families_and_cross_scope_v2(tmp_path):
@@ -496,6 +504,12 @@ def test_classifier_reads_ordinal_paths_and_transfers():
     assert read == {"gold": "S2/3", "predicted": "S2/3/а"}
     assert C.classify_evidence(read, "Text", "По решению", False) == (C.CLOSING, [])
     assert C.read_paths(ev, {"gold": "S2/3", "predicted": None}, frozenset(), heads)["predicted"] is None
+    # Heads are keyed by canonical paths: a raw act annex is made canonical before renaming.
+    one = ({"S": "S"}, {"S": "S"})
+    assert C.read_paths(ev, {"gold": "S/2", "predicted": "A/AN1/2/а"}, frozenset(), one, 1) == {
+        "gold": "S/2", "predicted": "S/2/а"}
+    assert C.read_paths(ev, {"gold": "S/AN/2", "predicted": "S/AN1/3"}, frozenset({"S"}), one, 2) == {
+        "gold": "S/AN1/2", "predicted": "S/AN1/3"}
     # Without heads the reading is the cycle-3 one (single annex only).
     assert C.read_paths(ev, {"gold": "S/AN1/2", "predicted": "S/AN/2"}, frozenset({"S"}), None) == {
         "gold": "S/AN1/2", "predicted": "S/AN1/2"}

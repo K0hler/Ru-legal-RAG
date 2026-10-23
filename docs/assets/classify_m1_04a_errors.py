@@ -264,16 +264,21 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
     return primary, [cause]
 
 
-def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dict] | None) -> dict:
-    """The error as the evidence rules read it: single annex numbered, ordinal heads renamed."""
+def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dict] | None,
+               attached: int | None = None) -> dict:
+    """The error as the evidence rules read it: single annex numbered, ordinal heads renamed.
+
+    The heads are keyed by canonical paths (``attached_ordinal_heads``), so under heads each path
+    is first made canonical (``A/AN1`` -> ``S`` with one attached document) and then renamed."""
     if not single and heads is None:
         return error
     gold, predicted = error["gold"], error["predicted"]
-    if single:
+    if heads is not None:
+        gold = evaluator.rename_head(evaluator.canonical(gold, attached, single), heads[0])
+        predicted = evaluator.rename_head(evaluator.canonical(predicted, attached, single), heads[1])
+    else:
         gold = evaluator.number_single_annex(gold, single)
         predicted = None if predicted is None else evaluator.number_single_annex(predicted, single)
-    if heads is not None:
-        gold, predicted = evaluator.rename_head(gold, heads[0]), evaluator.rename_head(predicted, heads[1])
     return {**error, "gold": gold, "predicted": predicted}
 
 
@@ -344,7 +349,7 @@ def main(argv=None) -> None:
                 primary, secondary = classify(slug, error, requisite_kind(category, text))
                 extra = {}
             else:
-                read = read_paths(evaluator, error, single, heads)
+                read = read_paths(evaluator, error, single, heads, attached)
                 primary, secondary = classify_evidence(read, category, text, attached == 1)
                 g = evaluator.canonical(error["gold"], attached)
                 p = evaluator.canonical(error["predicted"], attached)

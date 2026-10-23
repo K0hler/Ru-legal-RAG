@@ -1132,6 +1132,20 @@ def test_ten_after_a_non_list_line_stays_a_point():
     assert got["2.3"] == "S/I/10" and got["2.5"] == "S/I/10" and got["2.7"] == "S/I/11"
 
 
+def test_next_point_after_a_short_zero_padded_list_stays_a_point():
+    """v3.1: only a digit rollover («10.» after «09.») continues a zero-padded list; «5.» after a list
+    «01.»…«04.» inside point «4.» is the next point, not a list line."""
+    points = [("Text", f"{n}. Пункт {n}.") for n in range(1, 5)]
+    listed = [("Text", f"{n:02d}. Операция {n}.") for n in range(1, 5)]
+    pages = regulation(*points, *listed, ("Text", "5. Пункт"), ("Text", "6. Пункт шестой."))
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"2.{k}"] for k in range(6, 10)] == ["S/I/4"] * 4
+    assert got["2.10"] == "S/I/5" and got["2.11"] == "S/I/6"
+    assert S.continues_list((".", 10), (".", 9, False)) and S.continues_list((".", 11), (".", 10, True))
+    assert S.continues_list((".", 100), (".", 99, False))
+    assert not S.continues_list((".", 5), (".", 4, False)) and not S.continues_list((")", 10), (".", 9, False))
+
+
 @pytest.mark.parametrize("separator", [TABLE, ("Section-header", "Порядок расчета")])
 def test_restarted_numbering_takes_the_level_of_the_last_point(separator):
     """Review Focus 4: «1.» after «N.» (N > 1) of the same scope, with a table or an unmarked heading

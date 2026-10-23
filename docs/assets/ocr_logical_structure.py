@@ -31,7 +31,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-VERSION = "ocr-logical-structure/3-experiment"
+VERSION = "ocr-logical-structure/3.1-experiment"
 
 SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUP_DIGIT = {c: str(i) for i, c in enumerate(SUP)}
@@ -312,6 +312,15 @@ def list_number(text: str) -> tuple[str, int] | None:
     """(delimiter, value) of a «N.» / «N)» marker, for following a zero-padded list past «09.»."""
     m = LIST_NUMBER.match(text)
     return (m.group(2), int(m.group(1))) if m else None
+
+
+def continues_list(number: tuple[str, int] | None, prev: tuple[str, int, bool] | None) -> bool:
+    """«N+1» right after a list line continues the zero-padded list only past a digit rollover
+    («10.» after «09.», «100.» after «099.») or once the list has rolled over («11.» after «10.»):
+    «5.» after «04.» is the next legal point, since the list would have printed «05.»."""
+    if number is None or prev is None or number != (prev[0], prev[1] + 1):
+        return False
+    return prev[2] or len(str(number[1])) > len(str(prev[1]))
 
 
 def parse_marker(text: str, category: str) -> Marker:
@@ -891,19 +900,18 @@ def build(extraction: dict) -> dict:
 
     for scope_path, items in scopes:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
-        list_prev = None  # (delimiter, value) when the previous body paragraph is a list line
+        list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
             number = list_number(p.text)
             if p.marker.kind == "none" and leading_zero_list(p.text):
                 p.evidence.append({"list_line": "leading-zero marker, stays in the current unit"})
-                list_prev = number
-            elif (p.marker.kind in {"int", "paren"} and list_prev is not None and number is not None
-                  and number == (list_prev[0], list_prev[1] + 1)):
+                list_prev = None if number is None else (*number, False)
+            elif p.marker.kind in {"int", "paren"} and continues_list(number, list_prev):
                 # «10.» right after «09.»: the zero-padded list goes on past two digits
                 p.marker = Marker("none")
                 p.evidence.append({"list_line": "continues the leading-zero list of the previous paragraph"})
-                list_prev = number
+                list_prev = (*number, True)
             else:
                 list_prev = None
             if p.marker.kind in UNIT_RANK:

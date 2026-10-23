@@ -178,6 +178,14 @@
   `20261023-dev-regression-v3` 9479/9537 no_section and strict (v2 8614/8603), `cross_scope_v2` 0, no document
   below v2; rows and errors equal `…-cycle4-b2`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V3_2026-10-23.md`
   (development, not progress; batch 5 is the measure).
+- Cycle 4 final-review fix: prototype v3.1 `ocr-logical-structure/3.1-experiment` (sha256 0093599a… CRLF working
+  copy, LF 1794a748…, blob 71f11a73) frozen in `data/m1/m1-04a/experiments/20261023-prototype-v3-1-freeze/`; the v3
+  freeze stays as history (never measured on a new batch). «N+1.» after a leading-zero list line continues it only
+  past a digit rollover (`continues_list`: «10.» after «09.») or once rolled over; «5.» after «01.»…«04.» is a point.
+  The classifier makes paths canonical before ordinal renaming (`read_paths(..., attached)`); batch 1-4 class files
+  still reproduce. The dev regression records repo-relative prototype/baseline paths (`recorded_path`). Regression
+  `20261023-dev-regression-v3-1` vs v3: 9479/9537, rows and errors identical, exit 0. Batch 5 measures v3.1
+  (report `M1_04A_PROTOTYPE_V3_2026-10-23.md` §8).
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

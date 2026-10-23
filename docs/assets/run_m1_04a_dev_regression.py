@@ -97,6 +97,15 @@ def region_categories(extraction: dict) -> dict[str, str]:
     return {f'{p["page"]}.{i}': r["category"] for p in extraction["pages"] for i, r in enumerate(p["regions"])}
 
 
+def recorded_path(path: Path) -> str:
+    """A path as the summary records it: repo-relative with ``/`` inside the repository, else absolute."""
+    path = Path(path).resolve()
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def compare_to_baseline(summary: dict, baseline: dict) -> dict:
     """Per-document comparison of ``summary`` with ``baseline`` on ``COMPARED``; lists the drops."""
     current = {r["name"]: r for r in summary["rows"]}
@@ -166,7 +175,7 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
                 g[m] += r[m]
     total = {"documents": len(rows), **{m: sum(r[m] for r in rows) for m in keys}}
     summary = {"schema_version": "m1-04a-dev-regression/1", "convention": CONVENTION,
-               "prototype": str(prototype_path), "prototype_sha256": hashlib.sha256(prototype_path.read_bytes()).hexdigest(),
+               "prototype": recorded_path(prototype_path), "prototype_sha256": hashlib.sha256(prototype_path.read_bytes()).hexdigest(),
                "parser_version": versions.pop() if len(versions) == 1 else sorted(map(str, versions)),
                "single_annex_equivalence": True, "rows": rows, "groups": groups, "families": families,
                "total": total}
@@ -175,7 +184,7 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
     outputs = [("summary.json", summary), ("errors.json", errors)]
     if base is not None:
         comparison = compare_to_baseline(summary, base)
-        comparison["baseline"] = str(Path(baseline).resolve())
+        comparison["baseline"] = recorded_path(baseline)
         summary["baseline_comparison"] = {"baseline": comparison["baseline"],
                                           "below_baseline": comparison["below_baseline"]}
         outputs.append(("baseline-comparison.json", comparison))
