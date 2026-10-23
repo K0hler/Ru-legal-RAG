@@ -1021,7 +1021,7 @@ def test_main_records_exact_command(monkeypatch):
 
 def test_catalog_records_batch_04_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04")
+    assert "batch-04" in catalog.POOL_BATCHES
     history = catalog.POOL_STATUS["batch-04"]  # written only after the first pass
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261023-batch-04-first-pass"
@@ -1152,3 +1152,9 @@ def test_feed_cards_carry_issuer_and_publication_day():
     assert [c["issuer"] for c in cards] == [
         "guid-mintrans", "name:Приказ Министерства транспорта Российской Федерации"]
     assert {c["publication_date"] for c in cards} == {"2015-03-10"}
+
+
+def test_catalog_lists_batch_05_without_status_before_measurement():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05")
+    assert "batch-05" not in catalog.POOL_STATUS  # status is written only after the first pass
