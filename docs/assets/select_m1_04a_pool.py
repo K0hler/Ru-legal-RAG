@@ -10,7 +10,10 @@ already used in development/reserved/batch 1 excluded). `batch-03` takes every c
 code up to 2 (code quota = min(2, frozen code candidates)), excludes batches 1-2 with
 their refill picks and every failed acquisition, and samples 120 days that no earlier
 batch sampled. `batch-04` has no code quota (11 acts, at least 4 long) and excludes
-batches 1-3 the same way. A newly frozen selection gets a write-once `selection-provenance.json`
+batches 1-3 the same way. `batch-05` keeps the batch-04 quotas, excludes batches 1-4 and adds
+soft preferences (acts of 5+ pages; one act per type, issuer and publication day): every pass
+runs with them first, then without them for open quotas (long share first), and `soft_fallbacks` records each
+pick that misses one. A newly frozen selection gets a write-once `selection-provenance.json`
 (exact command, `min_days`, feed-cache hash, code commit).
 
 Future selection schema /3 uses the opt-in pool adapter. A positive code quota
@@ -244,10 +247,56 @@ class QuotaCounter:
         return (True, False) if self.long_min else (False,)
 
 
+SOFT_MISSES = ("issuer_day_repeat", "pages_below_preferred")
+ISSUER_FIELDS = ("issuer", "publication_date")
+
+
+class SoftPreferences:
+    """Batch-05 soft preferences (owner wish 23.10.2026, plan Review Focus 1-2).
+
+    Every pass runs first with the preferences, then once more without them for the
+    quotas still open; a pick that misses a preference is recorded as a soft fallback.
+    ``preferred_pages_min``: prefer acts with at least that many pages.
+    ``one_per_issuer_day``: prefer at most one act per (type, issuer, publication day);
+    a card without issuer or publication day is never treated as a repeat."""
+
+    def __init__(self, preferred_pages_min=None, one_per_issuer_day=False):
+        self.pages_min, self.per_issuer_day = preferred_pages_min, one_per_issuer_day
+        self.active = bool(preferred_pages_min or one_per_issuer_day)
+        self.keys = set()
+
+    def key(self, row):
+        if not self.per_issuer_day or not row.get("issuer") or not row.get("publication_date"):
+            return None
+        return row["act_type"], row["issuer"], row["publication_date"]
+
+    def misses(self, row):
+        out = []
+        key = self.key(row)
+        if key is not None and key in self.keys:
+            out.append("issuer_day_repeat")
+        if self.pages_min and row["pages"] < self.pages_min:
+            out.append("pages_below_preferred")
+        return out
+
+    def take(self, row):
+        key = self.key(row)
+        if key is not None:
+            self.keys.add(key)
+
+    def passes(self, phases):
+        """(soft, long_phase) passes: each phase runs with the preferences, then without them.
+        The long share stays a hard requirement: its relaxed pass runs before the short-phase
+        passes, which could otherwise fill the quotas with short acts."""
+        return [(soft, phase) for phase in phases for soft in ((True, False) if self.active else (False,))]
+
+
 def select_pool(candidates, quotas, seed, *, require_single_edition=True, already_used=frozenset(),
-                pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None):
+                pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
+                preferred_pages_min=None, one_per_issuer_day=False):
     """Seeded selection. With long_min, a first pass fills the share of acts with at
-    least long_pages pages, then a second pass fills the remaining quotas."""
+    least long_pages pages, then a second pass fills the remaining quotas. Soft
+    preferences (off by default) run those passes first with, then without them."""
     rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
     reasons = {}
     for row in rows:
@@ -256,14 +305,23 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
             reason = official_reason(row)
         reasons[row["eo_number"]] = reason
     counter, taken, selected = QuotaCounter(quotas, long_min, long_pages), set(), []
-    for long_phase in counter.phases():
+    soft, fallbacks = SoftPreferences(preferred_pages_min, one_per_issuer_day), []
+    fields = METADATA_FIELDS + ISSUER_FIELDS if soft.active else METADATA_FIELDS
+    for soft_pass, long_phase in soft.passes(counter.phases()):
         for row in rows:
             eo = row["eo_number"]
             if eo in taken or reasons[eo] is not None or not counter.wants(row, long_phase):
                 continue
+            misses = soft.misses(row)
+            if soft_pass and misses:
+                continue
             counter.take(row)
+            soft.take(row)
             taken.add(eo)
-            selected.append({key: row[key] for key in METADATA_FIELDS if key in row})
+            selected.append({key: row[key] for key in fields if key in row})
+            if misses:
+                fallbacks.append({"eo_number": eo, "act_type": row["act_type"], "pages": row["pages"],
+                                  "misses": misses})
     rejected = [{"eo_number": row["eo_number"], "reason": reasons[row["eo_number"]] or "quota_full"}
                 for row in rows if row["eo_number"] not in taken]
     result = {"schema_version": SCHEMA, "seed": seed, "quotas": dict(quotas),
@@ -272,6 +330,12 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
               "long_selected": counter.long, "selected": selected, "rejected": rejected}
     if code_pages_max:
         result["code_pages_max"] = code_pages_max
+    if soft.active:
+        result.update({
+            "preferred_pages_min": preferred_pages_min, "one_per_issuer_day": one_per_issuer_day,
+            "soft_fallbacks": fallbacks,
+            "soft_fallback_counts": {m: sum(m in f["misses"] for f in fallbacks) for m in SOFT_MISSES},
+        })
     return result
 
 
@@ -405,6 +469,15 @@ def lookup_official(actual, ips, number, iso):
             "detail": "ambiguous_official_identity" if docs else "not_found"}
 
 
+def feed_issuer(item):
+    """Issuing body of a feed item: its `signatoryAuthorityId` (portal GUID); when absent,
+    `name:` + the complexName text before « от dd.mm.yyyy» (type and issuer)."""
+    authority = item.get("signatoryAuthorityId")
+    if isinstance(authority, str) and authority.strip():
+        return authority.strip()
+    return "name:" + re.split(r" от \d\d\.\d\d\.\d{4}", _norm(item.get("complexName", "")), maxsplit=1)[0]
+
+
 def feed_candidates(publication, day, diagnostics=None):
     """Feed-only cards for one publication day (all pages), quota-relevant types only."""
     cards, page, total = [], 1, 1
@@ -423,6 +496,8 @@ def feed_candidates(publication, day, diagnostics=None):
                 "eo_number": item["eoNumber"], "act_type": kind,
                 "date": item["documentDate"][:10], "number": item["number"].strip(),
                 "title": _norm(item["name"]), "pages": item["pagesCount"],
+                "issuer": feed_issuer(item),
+                "publication_date": str(item.get("publishDateShort") or day.isoformat())[:10],
             })
         page += 1
     return cards
@@ -718,23 +793,26 @@ def lookup(actual, ips, row):
 
 
 def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
-           pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None):
+           pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
+           preferred_pages_min=None, one_per_issuer_day=False):
     """Single-edition profile: look up candidates in selection order until the quotas are
     filled. Counters are incremental (one pass per phase), mirroring select_pool."""
     rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
     counter, taken = QuotaCounter(quotas, long_min, long_pages), set()
-    for long_phase in counter.phases():
+    soft = SoftPreferences(preferred_pages_min, one_per_issuer_day)
+    for soft_pass, long_phase in soft.passes(counter.phases()):
         for row in rows:
             if counter.full():
                 return
             eo = row["eo_number"]
             if (eo in taken or cheap_reason(row, already_used, pages_range, code_pages_max) is not None
-                    or not counter.wants(row, long_phase)):
+                    or not counter.wants(row, long_phase) or (soft_pass and soft.misses(row))):
                 continue
             if eo not in enriched:
                 enriched[eo] = dict(row, **lookup(actual, ips, row))
             if official_reason(enriched[eo]) is None:
                 counter.take(row)
+                soft.take(row)
                 taken.add(eo)
 
 
@@ -749,6 +827,12 @@ PROFILES = {
     "batch-04": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03")},
+    # Batch 5: batch-04 quotas plus soft preferences (acts of 5+ pages; one act per type,
+    # issuer and publication day), each relaxed only when a quota cannot be filled otherwise.
+    "batch-05": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
@@ -858,6 +942,8 @@ def run(args):
     code_pages_max = CODE_PAGES_MAX if quotas.get("code", 0) else None
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
                "long_min": long_min, "long_pages": LONG_PAGES, "code_pages_max": code_pages_max}
+    soft_options = {key: profile[key] for key in ("preferred_pages_min", "one_per_issuer_day") if key in profile}
+    options.update(soft_options)
     code_rows, code_reference = [], None
     if quotas.get("code", 0):
         if not args.code_candidates:
@@ -900,7 +986,7 @@ def run(args):
             Path(args.feed_cache).write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
         if strict:
             enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES,
-                   code_pages_max)
+                   code_pages_max, **soft_options)
             rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
                                               and cheap_reason(r, used, pages_range, code_pages_max) is not None]
         else:
@@ -950,6 +1036,9 @@ def run(args):
                                  "code = standalone code title, independent of the portal type; "
                                  "targeted code candidates frozen separately before selection",
     })
+    if soft_options.get("one_per_issuer_day"):
+        result["issuer_source"] = ("feed item signatoryAuthorityId (portal GUID); when absent, 'name:' + "
+                                   "complexName text before the date; publication day = feed publishDateShort")
     payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     if not result["quotas_filled"]:
         # An incomplete batch is not frozen: the selection pair stays unwritten.

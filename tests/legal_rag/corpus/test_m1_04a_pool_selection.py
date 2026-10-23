@@ -1026,3 +1026,129 @@ def test_catalog_records_batch_04_measured_then_development():
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261023-batch-04-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_4_2026-10-23.md"
+
+
+SOFT = {"require_single_edition": False, "pages_range": (3, 200), "preferred_pages_min": 5,
+        "one_per_issuer_day": True}
+
+
+def test_batch_05_profile_matches_plan():
+    profile = P.PROFILES["batch-05"]
+    assert profile["quotas"] == P.BATCH4_QUOTAS and "code" not in profile["quotas"]
+    assert profile["pages_range"] == (3, 200) and profile["long_min"] == 4
+    assert profile["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04")
+    assert profile["preferred_pages_min"] == 5 and profile["one_per_issuer_day"] is True
+    assert not profile["require_single_edition"] and profile["exclude_used"]
+    # Earlier profiles carry no soft preferences.
+    for name in ("batch-01", "batch-02", "batch-03", "batch-04"):
+        assert "preferred_pages_min" not in P.PROFILES[name] and "one_per_issuer_day" not in P.PROFILES[name]
+
+
+def test_short_act_not_taken_while_preferred_candidates_suffice():
+    rows = [card(n, pages=3 + n % 2, issuer=f"i{n}", publication_date="2020-01-02") for n in range(1, 9)]
+    rows += [card(n, pages=5 + n, issuer=f"i{n}", publication_date="2020-01-02") for n in range(9, 12)]
+    for seed in range(1, 6):
+        result = P.select_pool(rows, {"federal_law": 3}, seed, **SOFT)
+        assert sorted(ids(result)) == [f"{n:016d}" for n in (9, 10, 11)], seed
+        assert result["soft_fallbacks"] == [] and result["preferred_pages_min"] == 5
+        assert result["soft_fallback_counts"] == {"issuer_day_repeat": 0, "pages_below_preferred": 0}
+
+
+def test_short_act_taken_only_to_fill_quota_and_recorded():
+    rows = [card(1, pages=4, issuer="a", publication_date="2020-01-02"),
+            card(2, pages=3, issuer="b", publication_date="2020-01-02"),
+            card(3, pages=12, issuer="c", publication_date="2020-01-02")]
+    result = P.select_pool(rows, {"federal_law": 2}, 7, **SOFT)
+    assert ids(result)[0] == f"{3:016d}" and len(ids(result)) == 2
+    short = ids(result)[1]
+    expected_first = min((f"{1:016d}", f"{2:016d}"), key=lambda eo: P.order_key(7, eo))
+    assert short == expected_first  # seeded order among the fallbacks
+    assert result["soft_fallbacks"] == [{"eo_number": short, "act_type": "federal_law",
+                                         "pages": 4 if short.endswith("1") else 3,
+                                         "misses": ["pages_below_preferred"]}]
+    assert result["soft_fallback_counts"]["pages_below_preferred"] == 1
+    assert result["selected"][0]["issuer"] == "c" and result["selected"][0]["publication_date"] == "2020-01-02"
+
+
+def test_one_act_per_type_issuer_and_day_unless_quota_needs_more():
+    twins = [card(1, pages=40, issuer="mintrans", publication_date="2015-03-10"),
+             card(2, pages=40, issuer="mintrans", publication_date="2015-03-10")]
+    other = card(3, pages=8, issuer="minselhoz", publication_date="2015-03-10")
+    same_issuer_other_day = card(4, pages=8, issuer="mintrans", publication_date="2015-03-11")
+    other_type = card(5, "ministry_order", pages=8, issuer="mintrans", publication_date="2015-03-10")
+    for seed in range(1, 6):
+        result = P.select_pool(twins + [other], {"federal_law": 2}, seed, **SOFT)
+        chosen = set(ids(result))
+        assert len(chosen & {f"{1:016d}", f"{2:016d}"}) == 1 and f"{3:016d}" in chosen, seed
+        assert result["soft_fallbacks"] == []
+        result = P.select_pool(twins + [same_issuer_other_day], {"federal_law": 2}, seed, **SOFT)
+        assert f"{4:016d}" in ids(result) and result["soft_fallbacks"] == []
+        result = P.select_pool(twins + [other_type], {"federal_law": 1, "ministry_order": 1}, seed, **SOFT)
+        assert f"{5:016d}" in ids(result) and result["soft_fallbacks"] == []
+        # Only the twins: the second one fills the quota and is recorded.
+        result = P.select_pool(twins, {"federal_law": 2}, seed, **SOFT)
+        assert len(ids(result)) == 2
+        assert [f["misses"] for f in result["soft_fallbacks"]] == [["issuer_day_repeat"]]
+        assert result["soft_fallback_counts"] == {"issuer_day_repeat": 1, "pages_below_preferred": 0}
+
+
+def test_soft_preferences_keep_long_share_first():
+    rows = [card(n, pages=8, issuer=f"s{n}", publication_date="2020-01-02") for n in range(1, 20)]
+    rows += [card(30, pages=30, issuer="x", publication_date="2020-01-02"),
+             card(31, pages=30, issuer="x", publication_date="2020-01-02")]
+    result = P.select_pool(rows, {"federal_law": 3}, 3, long_min=2, long_pages=20, **SOFT)
+    assert result["long_selected"] == 2  # the twin is taken in the fallback long pass
+    assert [f["misses"] for f in result["soft_fallbacks"]] == [["issuer_day_repeat"]]
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3, 20261024])
+def test_soft_preferences_off_leave_selection_unchanged(seed):
+    rows = [card(n, ["federal_law", "ministry_order"][n % 2], pages=3 + (n * 7) % 40,
+                 issuer="same", publication_date="2020-01-02") for n in range(1, 60)]
+    kwargs = {"require_single_edition": False, "pages_range": (3, 200), "long_min": 2, "long_pages": 20}
+    quotas = {"federal_law": 2, "ministry_order": 3}
+    plain = P.select_pool(rows, quotas, seed, **kwargs)
+    explicit = P.select_pool(rows, quotas, seed, preferred_pages_min=None, one_per_issuer_day=False, **kwargs)
+    assert plain == explicit
+    assert not {"soft_fallbacks", "preferred_pages_min", "one_per_issuer_day"} & set(plain)
+    assert all("issuer" not in row for row in plain["selected"])
+
+
+def test_frozen_batch_04_selection_reproduces_from_its_feed_cache():
+    import json
+
+    batch = Path(__file__).resolve().parents[3] / "data/m1/m1-04a/documents/pool/batch-04"
+    if not (batch / "feed-cache-b4.json").exists():
+        pytest.skip("local batch-04 data not present")
+    raw = (batch / "selection.json").read_bytes()
+    assert P.hashlib.sha256(raw).hexdigest().startswith("bf4bde02")
+    frozen = json.loads(raw)
+    cache = json.loads((batch / "feed-cache-b4.json").read_text(encoding="utf-8"))
+    profile = P.PROFILES["batch-04"]
+    result = P.select_pool(list(P.pool_from_cache(cache, frozen["days_sampled"]).values()), profile["quotas"],
+                           frozen["seed"], require_single_edition=False, already_used=set(frozen["already_used"]),
+                           pages_range=profile["pages_range"], long_min=profile["long_min"])
+    assert ids(result) == [row["eo_number"] for row in frozen["selected"]]
+    assert result["rejected"] == frozen["rejected"] and result["long_selected"] == frozen["long_selected"]
+    for row, frozen_row in zip(result["selected"], frozen["selected"]):
+        assert {k: frozen_row[k] for k in row} == row
+
+
+def test_feed_cards_carry_issuer_and_publication_day():
+    from datetime import date
+
+    class Publication:
+        def fetch_feed(self, day, page):
+            base = {"documentDate": "2015-03-03T00:00:00", "pagesCount": 9,
+                    "publishDateShort": "2015-03-10T00:00:00", "name": "Об акте"}
+            prefix = "Приказ Министерства транспорта Российской Федерации от 03.03.2015 № "
+            return {"events": [
+                dict(base, eoNumber="1" * 16, number="107", complexName=prefix + "107",
+                     signatoryAuthorityId="guid-mintrans"),
+                dict(base, eoNumber="2" * 16, number="108", complexName=prefix + "108"),
+            ], "pages_total": 1, "raw_bytes": b"x", "source_url": "http://source", "rejected_items": []}
+
+    cards = P.feed_candidates(Publication(), date(2015, 3, 10))
+    assert [c["issuer"] for c in cards] == [
+        "guid-mintrans", "name:Приказ Министерства транспорта Российской Федерации"]
+    assert {c["publication_date"] for c in cards} == {"2015-03-10"}
