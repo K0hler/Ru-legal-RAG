@@ -151,6 +151,12 @@
   moved. One new class; the new-class counter starts at batch 4 and is 0. The classifier gained batch-4 rules
   (second attached document, restarted «01.» lists, line between tables at the root, footer code); batch 1-3 class
   files reproduce byte for byte. Batch 4 is now development.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_5_2026-10-23.md`: batch-5 first pass of frozen v3.1 (+ v2): both 2144/2268,
+  identical owners; quote the without-rp-1099 figure (1291/1296) and the OCR-failure selection bias. v3.1 rules
+  never fired (check evidence `restart`/`list_line`/`page_mark` in outputs). `cross_scope_v2` 3, one new class;
+  counter still 0. Classifier batch-5 rules (`_batch5_cause`, only where earlier rules give no class): section
+  heading as OCR Text, footnote given by its mark to another annex; batch 1-4 class files reproduce byte for byte.
+  `build_m1_04a_catalog.py` `POOL_STATUS` has batch-05 (development).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

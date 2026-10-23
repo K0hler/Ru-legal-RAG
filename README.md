@@ -83,7 +83,9 @@ The planned [M1-04A OCR structure parser](docs/plans/2026-10-17-m1-04a-ocr-struc
 adds legal hierarchy reconstruction and independent experiments on additional official acts.
 Its development prototype v3.1 (v3 plus a final-review fix) is frozen and reported in
 [M1_04A_PROTOTYPE_V3_2026-10-23.md](docs/milestones/m1/04a/M1_04A_PROTOTYPE_V3_2026-10-23.md);
-development-document scores are not progress, pool batch 5 is the next real measure.
+development-document scores are not progress. Its first measure, pool batch 5
+([M1_04A_POOL_BATCH_5_2026-10-23.md](docs/milestones/m1/04a/M1_04A_POOL_BATCH_5_2026-10-23.md)):
+2144/2268 (94.5%; 99.6% without the coal Program rp-1099), same owners as v2.
 
 ```powershell
 $env:PYTHONPATH = "src"

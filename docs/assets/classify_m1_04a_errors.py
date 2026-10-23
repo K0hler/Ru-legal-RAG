@@ -43,6 +43,13 @@ ignored; protocol class «Перезапуск нумерации»); a line bet
 root instead of its section (table owner); a page-footer code without Cyrillic words given to a
 point (page mark).
 
+Batch 5 adds two rules that fire only where the earlier rules found no class (batch-1..4 class
+files reproduce byte for byte): a roman section heading «V. …» that OCR gave as plain ``Text``
+opens nothing, so the heading and the points after it stay in the previous section (the heading
+region itself, and errors whose paths differ only by the roman section; new class); a footnote
+(``Footnote`` region or a line starting with a superscript mark) given by its mark to another
+document or annex that uses the same marks (footnote owner).
+
 A rescore directory (no ``freeze.json``) takes the batch from the run it was
 rescored from. ``--gold-suffix gold-v2`` reads ``agent-<slug>.gold-v2.txt`` (gold
 derived under annotation convention v2) for the attached-document count and must
@@ -110,7 +117,14 @@ LIST_RESTART = ("Перезапуск нумерации: перечень «01.
                 "пункты, и каждый следующий перечень с «01.» вложен в предыдущий")
 TABLE_LINE_ROOT = ("Владелец таблицы: строка между таблицами («Стоимостные показатели») отнесена к корню "
                    "документа, а не к разделу")
+SECTION_AS_TEXT = ("Заголовок раздела «V. …» распознан OCR как обычный текст (Text) и не открыл раздел: "
+                   "заголовок и пункты после него остались в прежнем разделе")
+FOOTNOTE_OTHER_SCOPE = ("Владелец сноски: сноска отдана по знаку («¹», «²») другому приложению или документу "
+                        "с теми же знаками")
 ROMAN = re.compile(r"^[IVXLC]+$")
+ROMAN_HEADING = re.compile(r"^#*\s*[IVXLC]+\.\s+\S")
+SUPERSCRIPT_MARK = re.compile(r"^[¹²³⁴⁵⁶⁷⁸⁹⁰*]")
+SCOPE_HEAD = re.compile(r"^(A|S\d*)(/AN\d*)?(?=/|$)")
 PADDED = re.compile(r"^0\d+$")
 SECTION_SEGMENT = re.compile(r"^(разд\d+|[IVXLC]+)$")
 MARKER_START = re.compile(r"^(\d+(\.\d+)*[.)]|[а-я]\))")
@@ -187,6 +201,26 @@ def _restarted_list(gold: str, predicted: str) -> bool:
     return len(p) > len(g) and p[:len(g)] == g and any(PADDED.match(x) for x in p[len(g):])
 
 
+def _only_section_differs(gold: str, predicted: str) -> bool:
+    """Same depth, every differing segment a roman section number (``S/V/20`` vs ``S/IV/20``)."""
+    g, p = gold.split("/"), predicted.split("/")
+    pairs = [(x, y) for x, y in zip(g, p) if x != y]
+    return len(g) == len(p) and bool(pairs) and all(ROMAN.match(x) and ROMAN.match(y) for x, y in pairs)
+
+
+def _batch5_cause(gold: str, predicted: str, category: str, text: str) -> str:
+    """Batch 5: classes for errors no earlier rule explains (earlier class files are unchanged)."""
+    if category != "Section-header" and ROMAN.match(gold.split("/")[-1]) and ROMAN_HEADING.match(text):
+        return SECTION_AS_TEXT
+    if _only_section_differs(gold, predicted):
+        return SECTION_AS_TEXT
+    g, p = SCOPE_HEAD.match(gold), SCOPE_HEAD.match(predicted)
+    if ((category == "Footnote" or SUPERSCRIPT_MARK.match(text)) and g and p
+            and g.group(0) != p.group(0) and gold == g.group(0)):
+        return FOOTNOTE_OTHER_SCOPE
+    return OTHER
+
+
 def classify_evidence(error: dict, category: str, text: str, single_annex: bool) -> tuple[str, list[str]]:
     """Batch 2+: reviewer's reading as rules over paths, OCR category and text (no act names).
 
@@ -258,7 +292,7 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
           and not MARKER_START.match(text)):
         cause = TABLE_LINE_ROOT
     else:
-        cause = OTHER
+        cause = _batch5_cause(g, p, category, text)
     if primary is None:
         return cause, secondary
     return primary, [cause]

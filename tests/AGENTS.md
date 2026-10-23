@@ -55,6 +55,8 @@
   `test_batch4_error_classes_from_evidence_only` pins the batch-4 classifier rules (second attached document
   `A/AN` vs `S2`, restarted «01.» lists, line between tables at the root, footer code) and that `S/II/8/б` stays
   a closing error.
+  `test_batch5_error_classes_from_evidence_only` pins the batch-5 rules (roman heading as OCR Text, footnote to
+  another annex by its mark) and that earlier classes keep priority.
   `test_dev_regression_baseline_comparison_flags_drops` covers `--baseline`: per-document drops
   (no_section/strict down, `cross_scope_v2` up, region count changed, missing) and CLI exit 1.
   Cycle 4 A1: `attached_ordinal` tests (both files) pin ordinal heads by first appearance, `S, S2` == `S, A/AN`,

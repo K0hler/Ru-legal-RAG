@@ -64,6 +64,11 @@
   rp-1099-2014 = 2 page-range parts in `gold/rp-1099-2014/chunks/` stitched unchanged (seam `S/III/6` consistent);
   65.1-65.2 carry the first pool alternatives `S/III|S/III/7` (evaluator accepts `|`).
 
+- Check-pool batch 5 first pass: `m1/m1-04a/experiments/20261023-batch-05-first-pass/` (`freeze.json` /3 3da171ed…,
+  v3-1 + v2 frozen copies, `git_head` b0aa2f7, both batch-5 equivalences). Run once (12:20 UTC); never re-run.
+  `error-classes-{v3-1,v2}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261025) has ukaz-669 name rows that
+  stay out of docs. `pool/batch-05/status.json` records measured -> development.
+
 - Check-pool batch 4 first pass: `m1/m1-04a/experiments/20261023-batch-04-first-pass/` (`freeze.json` /3 f5dd824a…,
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
   re-run. `error-classes-{v2,v1}.json` carry `cross_scope_v2`; `sample-30.json` has three ukaz-481 name rows that

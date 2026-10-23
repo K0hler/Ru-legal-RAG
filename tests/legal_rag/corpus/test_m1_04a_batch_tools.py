@@ -296,6 +296,26 @@ def test_batch4_error_classes_from_evidence_only():
     assert cls("S", "S/1", "Table", "Наименование мероприятия") == (C.SCHEME_LIST, [])
 
 
+def test_batch5_error_classes_from_evidence_only():
+    def cls(gold, predicted, category="Text", text="Текст", single=False):
+        return C.classify_evidence({"gold": gold, "predicted": predicted}, category, text, single)
+
+    # A roman section heading that OCR gave as plain Text opens nothing: the heading and the points
+    # after it stay in the previous section.
+    assert cls("S/V", "S/IV/19", "Text", "V. Согласование проекта") == (C.SECTION_AS_TEXT, [])
+    assert cls("S/V/22/а", "S/IV/22/а", text="а) отраслевых документов") == (C.SECTION_AS_TEXT, [])
+    assert cls("S/V", "S/IV/19", "Section-header", "V. Согласование")[0] != C.SECTION_AS_TEXT
+    assert cls("S/V/20", "S/IV/21", text="20. Перечень")[0] != C.SECTION_AS_TEXT
+    # A footnote given by its mark to another annex that uses the same marks.
+    assert cls("S2", "S", "Footnote", "¹ Идентификация материала") == (C.FOOTNOTE_OTHER_SCOPE, [])
+    assert cls("S2", "S", "Text", "² Буквенное обозначение") == (C.FOOTNOTE_OTHER_SCOPE, [])
+    assert cls("S2", "S", "Text", "Буквенное обозначение")[0] != C.FOOTNOTE_OTHER_SCOPE
+    assert cls("S2/3", "S2", "Footnote", "¹ Сноска")[0] != C.FOOTNOTE_OTHER_SCOPE
+    # Earlier classes keep priority.
+    assert cls("A/AN1", None, "Footnote") == (C.FOOTNOTE, [])
+    assert cls("S/AN1", "S/AN1/III/11", "Text", "441,8") == (C.SCHEME_LIST, [])
+
+
 def test_rescore_scoring_single_annex_is_opt_in():
     ev = load_script("evaluate_ocr_owner_gold")
     gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}

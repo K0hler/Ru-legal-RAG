@@ -1177,7 +1177,10 @@ def test_feed_cards_carry_issuer_and_publication_day():
     assert {c["publication_date"] for c in cards} == {"2015-03-10"}
 
 
-def test_catalog_lists_batch_05_without_status_before_measurement():
+def test_catalog_records_batch_05_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
     assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05")
-    assert "batch-05" not in catalog.POOL_STATUS  # status is written only after the first pass
+    history = catalog.POOL_STATUS["batch-05"]  # written only after the first pass
+    assert [h["status"] for h in history] == ["measured", "development"]
+    assert history[0]["evidence"] == "experiments/20261023-batch-05-first-pass"
+    assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_5_2026-10-23.md"
