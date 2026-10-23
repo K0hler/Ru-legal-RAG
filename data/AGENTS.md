@@ -79,6 +79,11 @@
   OCR with the rotation retry (`ocr.rotation-retry.local.json` ec2ba2ee…, OCR-Lab client 6beed388…) `ocr/<slug>/run-01`:
   11/11 complete, 337 pages, 2482 regions, 140 tables, 0 `grid: "unresolved"`, 0 rotation retries, all replays equal;
   pp-887-2023 holds 31%. Summary `experiments/20261023-batch-06-ocr/summary.json` (32e77daa…, `--table-stats`). No refill.
+  Gold (v2 incl. §5-§6, 7 Codex jobs, 11 acts, 1925 regions, 117 `+`, no parts, no `exceptions.json`, no format fixes) frozen in
+  `experiments/20261023-batch-06-gold-freeze/` (`freeze.json` 9d9f6ec2…; `freeze-addendum.json` e205d88b… records v2,
+  `single_annex` + `attached_ordinal` defaults, doubts and the blindness limitation: every job read Codex memory about
+  earlier annotation jobs before its job file; no sign of influence in the notes). minek-37 27.1-28.2 carry
+  `S/AN5|S/AN5/5.2`; its flat `S/AN5/5.N` are not §5 exceptions (annex 5 has no point «5.»).
 
 - Check-pool batch 5 first pass: `m1/m1-04a/experiments/20261023-batch-05-first-pass/` (`freeze.json` /3 3da171ed…,
   v3-1 + v2 frozen copies, `git_head` b0aa2f7, both batch-5 equivalences). Run once (12:20 UTC); never re-run.
