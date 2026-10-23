@@ -1136,12 +1136,15 @@ def refill_files(batch_dir):
     return out
 
 
-def failure_reasons(failures_dir):
-    """eo -> reason from the failure files `<eo>-<run>.json` (run report errors or recorded reason)."""
+def failure_reasons(failures_dir, stage=None):
+    """eo -> reason from the failure files `<eo>-<run>.json` (run report errors or recorded reason);
+    with `stage`, only records of that stage (e.g. `ocr`: `<eo>-ocr-<run>.json`)."""
     reasons = {}
     for path in sorted(Path(failures_dir).glob("*.json")):
         eo = path.name[:16]
         record = json.loads(path.read_text(encoding="utf-8"))
+        if stage is not None and record.get("stage") != stage:
+            continue
         if "reason" in record and isinstance(record["reason"], str):
             reasons.setdefault(eo, record["reason"])
             continue
@@ -1154,7 +1157,8 @@ def failure_reasons(failures_dir):
 
 
 def refill_round(batch_dir, feed_cache, expected_sha=None):
-    """Next refill record: acts with a failure file and no receipt that were not replaced yet."""
+    """Next refill record: acts not replaced yet with a failure file and no receipt, or with an OCR
+    failure record (`stage: ocr`) despite a receipt."""
     batch_dir = Path(batch_dir)
     sel_path = batch_dir / "selection.json"
     digest = hashlib.sha256(sel_path.read_bytes()).hexdigest()
@@ -1178,10 +1182,20 @@ def refill_round(batch_dir, feed_cache, expected_sha=None):
         acts += record["selected"]
         attempts.update({i["replacement"]["eo_number"]: i["attempt"] for i in record["replaced"]})
     replaced = {i["failed_eo_number"] for r in prior for i in r["replaced"]}
+    # A slot fails when its act has a failure record and no receipt (acquisition), or when the
+    # acquired act has an OCR failure record (stage `ocr`, written by hand after the OCR run).
     reasons = failure_reasons(batch_dir / "failures")
-    failed = {a["eo_number"]: reasons[a["eo_number"]] for a in acts
-              if a["eo_number"] in reasons and a["eo_number"] not in replaced
-              and not (batch_dir / "receipts" / f"{a['eo_number']}.json").exists()}
+    ocr_reasons = failure_reasons(batch_dir / "failures", stage="ocr")
+    failed = {}
+    for act in acts:
+        eo = act["eo_number"]
+        if eo in replaced:
+            continue
+        if (batch_dir / "receipts" / f"{eo}.json").exists():
+            if eo in ocr_reasons:
+                failed[eo] = ocr_reasons[eo]
+        elif eo in reasons:
+            failed[eo] = reasons[eo]
     if not failed:
         raise ValueError("no failed slot to refill")
     view = dict(selection, selected=[a for a in acts if a["eo_number"] not in replaced])

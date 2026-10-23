@@ -697,6 +697,29 @@ def test_refill_round_write_once_and_chain(tmp_path):
         A.frozen_selection(batch)
 
 
+def test_refill_round_replaces_acquired_act_whose_ocr_failed(tmp_path):
+    import json
+
+    batch, base, rows = refill_fixture(tmp_path)
+    acquired = base["selected"][1]["eo_number"]
+    (batch / "receipts").mkdir()
+    (batch / "receipts" / f"{acquired}.json").write_text("{}", encoding="utf-8")
+    (batch / "failures").mkdir()
+    # an acquisition failure record of an act that has a receipt is not a failed slot
+    (batch / "failures" / f"{acquired}-run1.json").write_text(
+        json.dumps({"stage": "pdf_acquisition", "reason": "transient", "runs": []}), encoding="utf-8")
+    with pytest.raises(ValueError, match="no failed slot"):
+        P.refill_round(batch, tmp_path / "feed.json")
+    (batch / "failures" / f"{acquired}-ocr-run-01.json").write_text(
+        json.dumps({"stage": "ocr", "status": "failed", "reason": "ocr_failed: token limit, pages 25, 30, 42"}),
+        encoding="utf-8")
+    result = P.refill_round(batch, tmp_path / "feed.json")
+    (item,) = result["replaced"]
+    assert item["failed_eo_number"] == acquired
+    assert item["failed_reason"] == "ocr_failed: token limit, pages 25, 30, 42"
+    assert item["replacement"]["act_type"] == base["selected"][1]["act_type"]
+
+
 def test_code_page_ceiling_applies_to_codes_only():
     rows = [{"eo_number": "c1", "act_type": "code", "pages": 480, "title": "Кодекс административного судопроизводства Российской Федерации",
              "number": "21-ФЗ", "date": "2015-03-08"},

@@ -142,6 +142,8 @@
   relaxed picks. Off by default: batch-04 reproduces from its feed cache (test). New feed cards carry `issuer` and
   `publication_date`. `refill` does not apply the preferences. The batch directory must exist before the run
   (the feed cache is written into it).
+- `refill` also replaces an acquired act (receipt present) whose `failures/<eo>-ocr-<run>.json` has
+  `stage: ocr` (written by hand after a failed OCR run; reason `ocr_failed: ...`); first used for batch-05 141н.
 - `milestones/m1/04a/M1_04A_POOL_BATCH_4_2026-10-23.md` is the batch-4 first pass, the first measure of frozen v2
   (+ v1, `/7`), not G13/Task 3: 1579/1546/35 of 2465. Two near-identical Mintrans estimate-table orders (954 regions)
   hold 864 of 886 v2 errors; always quote the without-them figure (1489/1511, 98.5%) and the diversity caveat.
