@@ -536,3 +536,15 @@ def test_dev_regression_attached_ordinal_on_by_default(tmp_path, monkeypatch):
     D.main(["--prototype", str(proto), "--output", str(tmp_path / "cli-off"), "--no-attached-ordinal"])
     cli = json.loads((tmp_path / "cli-off" / "summary.json").read_text(encoding="utf-8"))
     assert "attached_ordinal_equivalence" not in cli
+
+
+def test_ocr_summary_records_failed_act_from_its_run_record(tmp_path):
+    S = load_script("summarize_m1_04a_ocr")
+    run = tmp_path / "act" / "run-01" / "ocr-runs" / "abc"
+    run.mkdir(parents=True)
+    (run / "run.json").write_text(json.dumps({"status": "failed", "source_asset_sha256": "f" * 64,
+                                              "error": "OCR exited 1"}), encoding="utf-8")
+    record = S.summarize({"health_wait_seconds": 1.0, "acts": {"act": {"status": "failed"}}},
+                         {"replays": {}}, ocr_root=tmp_path)
+    assert record["acts"]["act"] == {"status": "failed", "ocr_run": "abc", "source_asset_sha256": "f" * 64,
+                                     "error": "OCR exited 1"}

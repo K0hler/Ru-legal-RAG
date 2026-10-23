@@ -4,7 +4,8 @@ Reproduces ``experiments/20261021-batch-01-ocr/summary.json`` from the raw outpu
 of ``run_m1_04a_ocr.ps1`` and the saved run folders: timings and extraction ids
 from the extraction pass (``summary.raw-first-pass.json`` for batch 1), replay ids
 from the replay pass, and page coverage, uncertainties and unsupported regions
-from each extraction. ``logical_text_id`` keeps batch 1's recorded form
+from each extraction (an act whose OCR failed keeps only the failure record of its
+``run-01/ocr-runs/<id>/run.json``). ``logical_text_id`` keeps batch 1's recorded form
 ``logical-text\\<id>`` (a Windows relative path without ``.json``).
 
     python docs/assets/summarize_m1_04a_ocr.py --experiment data/m1/m1-04a/experiments/20261021-batch-01-ocr \
@@ -25,6 +26,12 @@ OCR = ROOT / "data" / "m1" / "m1-04a" / "ocr"
 def summarize(extraction_raw: dict, replay_raw: dict, ocr_root: Path = OCR) -> dict:
     acts = {}
     for slug, act in extraction_raw["acts"].items():
+        if act.get("status") == "failed":  # no extraction: copy the run's own failure record
+            (run,) = sorted((ocr_root / slug / "run-01" / "ocr-runs").glob("*/run.json"))
+            failure = json.loads(run.read_text(encoding="utf-8"))
+            acts[slug] = {"status": "failed", "ocr_run": run.parent.name,
+                          "source_asset_sha256": failure["source_asset_sha256"], "error": failure["error"]}
+            continue
         ext = json.loads((ROOT / act["extraction"]).read_text(encoding="utf-8"))
         (lt,) = sorted((ocr_root / slug / "run-01" / "logical-text").glob("*.json"))
         logical_text_id = json.loads(lt.read_text(encoding="utf-8"))["logical_text_id"]
