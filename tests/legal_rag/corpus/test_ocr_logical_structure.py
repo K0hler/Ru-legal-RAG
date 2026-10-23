@@ -297,6 +297,77 @@ def test_scope_v2_catches_transfers_between_body_and_annexes():
     assert EVAL.first_scope("S/AN1/3") == EVAL.first_scope("S/3") == "S"
 
 
+# ---- cycle 4 / A1: ordinal equivalence of attached documents (owner decision 23.10.2026)
+
+
+def test_ordinal_heads_by_first_appearance_and_renaming():
+    assert EVAL.ordinal_heads(["A", "S/1", "A/AN/2", "S/3", "A/AN1/1"]) == {"S": "S", "A/AN": "S2", "A/AN1": "S3"}
+    assert EVAL.ordinal_heads(["A/AN2/1", "S2", "S/AN1/4", None, "A/5"]) == {"A/AN2": "S", "S2": "S2", "S": "S3"}
+    heads = {"A/AN": "S2", "S": "S"}
+    assert EVAL.rename_head("A/AN/II/3", heads) == "S2/II/3"
+    assert EVAL.rename_head("A/AN", heads) == "S2"
+    assert EVAL.rename_head("S/AN1/5", heads) == "S/AN1/5"           # S/AN<n>: the tail keeps its name
+    assert EVAL.rename_head("A/ст2", heads) == "A/ст2" and EVAL.rename_head(None, heads) is None
+    assert EVAL.rename_head("S/AN1/5", {"S": "S2"}) == "S2/AN1/5"    # renamed head, annex tail kept
+
+
+def test_attached_ordinal_second_document_named_as_annex_matches():
+    # Gold S, S2; the prototype names the second attached document A/AN: equal only with the flag.
+    gold = gold_lines("A/1", "S", "S/1", "S2", "S2/1", "S2/2")
+    predicted = {"1.0": "A/1", "1.1": "S", "1.2": "S/1", "1.3": "A/AN", "1.4": "A/AN/1", "1.5": "A/AN/2"}
+    plain = EVAL.evaluate(gold, predicted, single_annex=True)
+    assert plain["strict"]["correct"] == 3 and "attached_ordinal" not in plain
+    got = EVAL.evaluate(gold, predicted, single_annex=True, attached_ordinal=True)
+    for name in ("strict", "no_section", "numbers"):
+        assert got[name]["correct"] == 6
+    assert got["errors"] == []
+    assert got["attached_ordinal"] == {"gold": {"S": "S", "S2": "S2"}, "predicted": {"S": "S", "A/AN": "S2"}}
+    # The same with A/AN<n> and when the gold itself calls the second document A/AN2.
+    numbered = {k: v.replace("A/AN", "A/AN1") for k, v in predicted.items()}
+    assert EVAL.evaluate(gold, numbered, attached_ordinal=True)["strict"]["correct"] == 6
+    gold_an = gold_lines("A/1", "S", "S/1", "A/AN2", "A/AN2/1", "A/AN2/2")
+    assert EVAL.evaluate(gold_an, {**predicted, "1.3": "S2", "1.4": "S2/1", "1.5": "S2/2"},
+                         attached_ordinal=True)["strict"]["correct"] == 6
+
+
+def test_attached_ordinal_merged_or_moved_documents_stay_errors_and_transfers():
+    gold = gold_lines("S", "S/1", "S2", "S2/1")
+    merged = {"1.0": "S", "1.1": "S/1", "1.2": "S", "1.3": "S/2"}        # second document merged into the first
+    got = EVAL.evaluate(gold, merged, attached_ordinal=True)
+    assert got["strict"]["correct"] == 2 and [e["region"] for e in got["errors"]] == ["1.2", "1.3"]
+    heads = (got["attached_ordinal"]["gold"], got["attached_ordinal"]["predicted"])
+    assert all(EVAL.cross_scope_v2(e["gold"], e["predicted"], got["attached_count"], heads=heads)
+               for e in got["errors"])
+    # Text moved from the second document back into the first stays a transfer.
+    moved = {"1.0": "S", "1.1": "S/1", "1.2": "A/AN", "1.3": "S/1"}
+    got = EVAL.evaluate(gold, moved, attached_ordinal=True)
+    assert [e["region"] for e in got["errors"]] == ["1.3"]
+    heads = (got["attached_ordinal"]["gold"], got["attached_ordinal"]["predicted"])
+    (error,) = got["errors"]
+    assert EVAL.cross_scope_v2(error["gold"], error["predicted"], got["attached_count"], heads=heads)
+    assert not EVAL.cross_scope_v2("S2/1", "A/AN/1", 2, heads=({"S2": "S2"}, {"A/AN": "S2"}))
+
+
+def test_attached_ordinal_leaves_annexes_of_attached_documents_and_single_document_alone():
+    # S/AN1 is an annex of the attached document, not an attached document of its own.
+    gold = gold_lines("S/1", "S/AN1", "S/AN1/1", "S2/1")
+    predicted = {"1.0": "S/1", "1.1": "S/AN1", "1.2": "S/AN1/1", "1.3": "A/AN/1"}
+    got = EVAL.evaluate(gold, predicted, attached_ordinal=True)
+    assert got["strict"]["correct"] == 4 and got["attached_ordinal"]["gold"] == {"S": "S", "S2": "S2"}
+    wrong = {**predicted, "1.1": "A/AN", "1.2": "A/AN/1", "1.3": "S2/1"}   # annex of S read as a document
+    assert EVAL.evaluate(gold, wrong, attached_ordinal=True)["strict"]["correct"] == 1
+    # One attached document: S == A/AN == A/AN1 as before, with and without the flag.
+    one = gold_lines("A/1", "S/1", "S/2")
+    for p in ({"1.0": "A/1", "1.1": "A/AN/1", "1.2": "A/AN/2"}, {"1.0": "A/1", "1.1": "A/AN1/1", "1.2": "S/2"}):
+        assert EVAL.evaluate(one, p)["strict"]["correct"] == 3
+        assert EVAL.evaluate(one, p, attached_ordinal=True)["strict"]["correct"] == 3
+    # The act's own text is never renamed, and documents seen in the same order score as before.
+    same = gold_lines("A/1", "S/1", "S2/1")
+    p = {"1.0": "A/1", "1.1": "S/1", "1.2": "S2/2"}
+    assert (EVAL.evaluate(same, p, attached_ordinal=True)["strict"]
+            == EVAL.evaluate(same, p)["strict"])
+
+
 LAW = [
     [("Title", "РОССИЙСКАЯ ФЕДЕРАЦИЯ\nФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Text", "Об упразднении некоторых судов"),
      ("Text", "Принят Государственной Думой"),

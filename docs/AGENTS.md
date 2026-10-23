@@ -143,6 +143,16 @@
   moved. One new class; the new-class counter starts at batch 4 and is 0. The classifier gained batch-4 rules
   (second attached document, restarted «01.» lists, line between tables at the root, footer code); batch 1-3 class
   files reproduce byte for byte. Batch 4 is now development.
+- Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
+  (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
+  `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
+  order, separately for gold (primary owners, then alternatives) and prediction; the tail (`S/AN<n>/...`) is kept.
+  The eval result records the heads (`attached_ordinal`); the classifier reads them for its evidence rules and
+  `cross_scope_v2`. `freeze` records `attached_ordinal_equivalence` for batches after batch-04 (override
+  `--[no-]attached-ordinal`); batches 1-4 reproduce byte for byte without it (batch-2 first-pass class files already
+  differed at HEAD by one reworded label). Dev regression defaults it on (`--no-attached-ordinal`). Development
+  rescore `20261023-batch-04-rescore-cycle4`: v2 1599/2465 (pp-1688 48, pp-813 183), v1 1566, `cross_scope_v2` 0;
+  the 64.1% ledger entry is unchanged (batch-4 report §11).
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

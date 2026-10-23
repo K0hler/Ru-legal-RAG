@@ -4,10 +4,13 @@ Scoring is convention v1 (Picture and running-noise regions are not scored) with
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
 22.10.2026): ``single_annex=True`` (``<doc>/AN`` == ``<doc>/AN1`` for a document with exactly
 one annex) and ``cross_scope_v2`` (an owner in another document or annex than gold) is counted
-per document. The summary also has a per-family breakdown (``FAMILIES``). The prototype is loaded
-from an explicit file so that a snapshot can be compared with ``code-final``.
+per document. The summary also has a per-family breakdown (``FAMILIES``). Cycle 4 (owner
+decision 23.10.2026, convention v2 §6): ``attached_ordinal=True`` by default (attached documents
+and act annexes compared by order of appearance; ``--no-attached-ordinal`` turns it off).
+The prototype is loaded from an explicit file so that a snapshot can be compared with ``code-final``.
 
     python docs/assets/run_m1_04a_dev_regression.py --prototype FILE --output NEW_DIR [--baseline SUMMARY]
+        [--no-attached-ordinal]
 
 Writes ``summary.json`` and ``errors.json`` into a new directory; an existing one is refused.
 With ``--baseline`` (an earlier ``summary.json``) it also writes ``baseline-comparison.json``:
@@ -119,7 +122,7 @@ def compare_to_baseline(summary: dict, baseline: dict) -> dict:
 
 
 def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict] | None = None,
-                       baseline: Path | None = None) -> dict:
+                       baseline: Path | None = None, attached_ordinal: bool = True) -> dict:
     prototype_path, output = Path(prototype_path).resolve(), Path(output)
     if output.exists():
         raise FileExistsError(f"output exists: {output}")
@@ -135,9 +138,12 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
         built = prototype.build(ext)
         versions.add(built.get("parser_version"))
         owners, cont = evaluator.from_logical(built)
-        result = evaluator.evaluate(gold, owners, cont, single_annex=True)
+        result = evaluator.evaluate(gold, owners, cont, single_annex=True, attached_ordinal=attached_ordinal)
         attached, single = result["attached_count"], frozenset(result["single_annex_documents"])
-        cross_v2 = sum(evaluator.cross_scope_v2(e["gold"], e["predicted"], attached, single)
+        heads = None
+        if attached_ordinal:
+            heads = (result["attached_ordinal"]["gold"], result["attached_ordinal"]["predicted"])
+        cross_v2 = sum(evaluator.cross_scope_v2(e["gold"], e["predicted"], attached, single, heads=heads)
                        for e in result["errors"])
         categories = region_categories(ext)
         row = {"name": doc["name"], "group": doc["group"], "family": doc.get("family") or family(doc["name"]),
@@ -160,6 +166,8 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
                "parser_version": versions.pop() if len(versions) == 1 else sorted(map(str, versions)),
                "single_annex_equivalence": True, "rows": rows, "groups": groups, "families": families,
                "total": total}
+    if attached_ordinal:
+        summary["attached_ordinal_equivalence"] = True
     outputs = [("summary.json", summary), ("errors.json", errors)]
     if base is not None:
         comparison = compare_to_baseline(summary, base)
@@ -179,8 +187,11 @@ def main(argv=None) -> None:
     parser.add_argument("--prototype", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--baseline", type=Path, help="earlier summary.json; exit 1 if any document is below it")
+    parser.add_argument("--attached-ordinal", action=argparse.BooleanOptionalAction, default=True,
+                        help="attached documents and act annexes compared by order of appearance (default on)")
     args = parser.parse_args(argv)
-    summary = run_dev_regression(args.prototype, args.output, baseline=args.baseline)
+    summary = run_dev_regression(args.prototype, args.output, baseline=args.baseline,
+                                 attached_ordinal=args.attached_ordinal)
     print(json.dumps({"parser_version": summary["parser_version"], "groups": summary["groups"], "families": summary["families"],
                       "total": summary["total"], "baseline_comparison": summary.get("baseline_comparison")},
                      ensure_ascii=False))

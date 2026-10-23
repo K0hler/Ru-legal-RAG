@@ -43,6 +43,8 @@
   v2 + v1, `git_head` 51e6648, `single_annex_equivalence` true, gold addendum hashed). Run once (05:24 UTC); never
   re-run. `error-classes-{v2,v1}.json` carry `cross_scope_v2`; `sample-30.json` has three ukaz-481 name rows that
   stay out of docs (the sample doc redacts them). `pool/batch-04/status.json` records measured -> development.
+  Cycle 4: `20261023-batch-04-rescore-cycle4/` rescores the saved outputs with `--attached-ordinal` (+ single annex;
+  `summary.json` ab0abb2d…, `error-classes-{v2,v1,current}.json`); development only, never replaces the first pass.
 
 - Check-pool batch 3 first pass: `m1/m1-04a/experiments/20261022-batch-03-first-pass/`
   (`freeze.json` /3, v1 + `code-final`, `git_head` 17d4de9; it hashes the gold

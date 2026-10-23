@@ -59,6 +59,13 @@ records ``cross_scope_v2`` per error and in total: the evaluator's ``scope_v2``
 between gold and the given owner. The old ``cross_scope`` is computed as before.
 Without either, outputs are unchanged.
 
+Cycle 4 (23.10.2026). A rescore or run with ``attached_ordinal_equivalence`` in its summary
+(``--attached-ordinal``, convention v2 §6) is classified with the ordinal names its
+evaluator recorded (``attached_ordinal`` in ``eval/<system>-<slug>.json``): the error's gold
+and predicted top-level scopes (``S``, ``S<k>``, ``A/AN``, ``A/AN<n>``) are renamed before the
+evidence rules, and ``cross_scope_v2`` compares the renamed paths. Such a run always records
+``cross_scope_v2``. Without it, outputs are unchanged.
+
     python docs/assets/classify_m1_04a_errors.py --run <first-pass dir> --output <new json> [--system prototype-v1]
         [--gold-suffix gold-v2] [--cross-scope-v2]
 """
@@ -257,6 +264,25 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
     return primary, [cause]
 
 
+def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dict] | None) -> dict:
+    """The error as the evidence rules read it: single annex numbered, ordinal heads renamed."""
+    if not single and heads is None:
+        return error
+    gold, predicted = error["gold"], error["predicted"]
+    if single:
+        gold = evaluator.number_single_annex(gold, single)
+        predicted = None if predicted is None else evaluator.number_single_annex(predicted, single)
+    if heads is not None:
+        gold, predicted = evaluator.rename_head(gold, heads[0]), evaluator.rename_head(predicted, heads[1])
+    return {**error, "gold": gold, "predicted": predicted}
+
+
+def cross_scope(evaluator, error: dict, attached: int, single: frozenset,
+                heads: tuple[dict, dict] | None = None) -> bool:
+    """``cross_scope_v2`` of one error (with the run's ordinal heads, if any)."""
+    return evaluator.cross_scope_v2(error["gold"], error["predicted"], attached, single, heads=heads)
+
+
 def regions(slug: str) -> dict[str, tuple[str, str]]:
     (path,) = [p for p in (M / "ocr" / slug / "run-01" / "extractions").glob("*.json")
                if not p.name.startswith("index-")]
@@ -275,7 +301,7 @@ def main(argv=None) -> None:
     parser.add_argument("--system", default="prototype", help="eval prefix, e.g. prototype-v1 (batch 2+)")
     parser.add_argument("--gold-suffix", default="gold", help="gold file agent-<slug>.<suffix>.txt, e.g. gold-v2")
     parser.add_argument("--cross-scope-v2", action="store_true",
-                        help="also record cross_scope_v2 (implied by a --single-annex rescore)")
+                        help="also record cross_scope_v2 (implied by a --single-annex or --attached-ordinal run)")
     args = parser.parse_args(argv)
     run = Path(args.run)
     summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
@@ -286,7 +312,8 @@ def main(argv=None) -> None:
         freeze = ROOT / summary["rescored_from"] / "freeze.json"
     batch = json.loads(freeze.read_text(encoding="utf-8")).get("batch", "batch-01") if freeze.exists() else "batch-01"
     single_annex = summary.get("single_annex_equivalence", False)
-    scope_v2 = single_annex or args.cross_scope_v2 or batch not in ("batch-01", "batch-02", "batch-03")
+    ordinal = summary.get("attached_ordinal_equivalence", False)
+    scope_v2 = single_annex or ordinal or args.cross_scope_v2 or batch not in ("batch-01", "batch-02", "batch-03")
     evaluator = None
     if batch != "batch-01":
         import importlib.util
@@ -299,7 +326,11 @@ def main(argv=None) -> None:
     for row in summary["rows"]:
         slug = row["slug"]
         info = regions(slug)
-        errors = json.loads((run / "eval" / f"{args.system}-{slug}.json").read_text(encoding="utf-8"))["errors"]
+        result = json.loads((run / "eval" / f"{args.system}-{slug}.json").read_text(encoding="utf-8"))
+        errors = result["errors"]
+        heads = None
+        if ordinal:
+            heads = (result["attached_ordinal"]["gold"], result["attached_ordinal"]["predicted"])
         attached, single = None, frozenset()
         if evaluator is not None:
             gold_path = M / "gold" / slug / f"agent-{slug}.{args.gold_suffix}.txt"
@@ -313,18 +344,13 @@ def main(argv=None) -> None:
                 primary, secondary = classify(slug, error, requisite_kind(category, text))
                 extra = {}
             else:
-                read = error
-                if single:
-                    read = {**error, "gold": evaluator.number_single_annex(error["gold"], single),
-                            "predicted": None if error["predicted"] is None
-                            else evaluator.number_single_annex(error["predicted"], single)}
+                read = read_paths(evaluator, error, single, heads)
                 primary, secondary = classify_evidence(read, category, text, attached == 1)
                 g = evaluator.canonical(error["gold"], attached)
                 p = evaluator.canonical(error["predicted"], attached)
                 extra = {"cross_scope": p is not None and evaluator.first_scope(g) != evaluator.first_scope(p)}
                 if scope_v2:
-                    extra["cross_scope_v2"] = evaluator.cross_scope_v2(error["gold"], error["predicted"],
-                                                                       attached, single)
+                    extra["cross_scope_v2"] = cross_scope(evaluator, error, attached, single, heads)
             rows.append({"slug": slug, **error, "category": category, "class": primary, "secondary": secondary,
                          **extra})
             counts.setdefault(primary, {}).setdefault(slug, 0)
@@ -339,6 +365,8 @@ def main(argv=None) -> None:
             record["cross_scope_v2"] = sum(1 for r in rows if r["cross_scope_v2"])
         if single_annex:
             record["single_annex_equivalence"] = True
+        if ordinal:
+            record["attached_ordinal_equivalence"] = True
         if args.gold_suffix != "gold":
             record["gold"] = f"agent-<slug>.{args.gold_suffix}.txt"
     with open(args.output, "x", encoding="utf-8") as handle:

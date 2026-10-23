@@ -380,6 +380,7 @@ def test_freeze_hashes_and_run_checks_the_gold_addendum(monkeypatch, tmp_path):
 
 class _FakeEvaluator:
     calls = []
+    ordinal_calls = []
 
     @staticmethod
     def load_gold(path):
@@ -390,8 +391,9 @@ class _FakeEvaluator:
         return {"1.1": "S"}, {}
 
     @classmethod
-    def evaluate(cls, g, owners, cont=None, single_annex=False):
+    def evaluate(cls, g, owners, cont=None, single_annex=False, attached_ordinal=False):
         cls.calls.append(single_annex)
+        cls.ordinal_calls.append(attached_ordinal)
         return {k: {"correct": 1} for k in R.METRICS} | {"errors": []}
 
 
@@ -441,3 +443,78 @@ def test_synthetic_batch_4_run_scores_with_single_annex_and_batch_3_does_not(mon
 def test_classifier_cross_scope_v2_defaults_on_for_new_batches():
     src = (ASSETS / "classify_m1_04a_errors.py").read_text(encoding="utf-8")
     assert 'batch not in ("batch-01", "batch-02", "batch-03")' in src
+
+
+# ---- cycle 4 / A1: ordinal equivalence of attached documents (owner decision 23.10.2026)
+
+
+def test_attached_ordinal_is_default_only_after_batch_4():
+    assert [R.default_attached_ordinal(b) for b in ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05")] == [
+        False, False, False, False, True]
+
+
+def test_freeze_records_attached_ordinal_for_batch_5_but_not_batch_4(monkeypatch, tmp_path):
+    freeze, _ = _stub_freeze_world(monkeypatch, tmp_path)
+    R.do_freeze(tmp_path / "run4", "batch-04", ["a"], freeze, "v1")
+    R.do_freeze(tmp_path / "run5", "batch-05", ["a"], freeze, "v1")
+    R.do_freeze(tmp_path / "run5x", "batch-05", ["a"], freeze, "v1", attached_ordinal=False)
+    R.do_freeze(tmp_path / "run4x", "batch-04", ["a"], freeze, "v1", attached_ordinal=True)
+    rec = {n: json.loads((tmp_path / n / "freeze.json").read_text(encoding="utf-8"))
+           for n in ("run4", "run5", "run5x", "run4x")}
+    assert "attached_ordinal_equivalence" not in rec["run4"] and "attached_ordinal_equivalence" not in rec["run5x"]
+    assert rec["run5"]["attached_ordinal_equivalence"] is True and rec["run4x"]["attached_ordinal_equivalence"] is True
+    assert rec["run5"]["single_annex_equivalence"] is True and rec["run4"]["single_annex_equivalence"] is True
+
+
+def test_synthetic_batch_5_run_scores_with_attached_ordinal_and_batch_4_does_not(monkeypatch, tmp_path):
+    summary5, _ = _run_with(monkeypatch, tmp_path, "batch-05")
+    ordinal5 = list(_FakeEvaluator.ordinal_calls)
+    assert summary5["attached_ordinal_equivalence"] is True and ordinal5[-2:] == [True, True]
+    summary4, _ = _run_with(monkeypatch, tmp_path, "batch-04")
+    assert "attached_ordinal_equivalence" not in summary4 and _FakeEvaluator.ordinal_calls[-2:] == [False, False]
+
+
+def test_rescore_scoring_attached_ordinal_is_opt_in():
+    ev = load_script("evaluate_ocr_owner_gold")
+    gold = {"1.1": {"owners": ["S/1"], "continuation": False}, "1.2": {"owners": ["S2/1"], "continuation": False}}
+    owners = {"1.1": "S/1", "1.2": "A/AN/1"}
+    res, row = R.score(ev, gold, owners, single_annex=True)
+    assert row["strict"] == 1 and "attached_ordinal" not in res
+    res, row = R.score(ev, gold, owners, single_annex=True, attached_ordinal=True)
+    assert row["strict"] == 2 and res["attached_ordinal"]["predicted"] == {"S": "S", "A/AN": "S2"}
+
+
+def test_classifier_reads_ordinal_paths_and_transfers():
+    ev = load_script("evaluate_ocr_owner_gold")
+    heads = ({"S": "S", "S2": "S2"}, {"S": "S", "A/AN": "S2"})
+    # A remaining error inside the second document is read under the renamed head.
+    read = C.read_paths(ev, {"gold": "S2/3", "predicted": "A/AN/3/а"}, frozenset(), heads)
+    assert read == {"gold": "S2/3", "predicted": "S2/3/а"}
+    assert C.classify_evidence(read, "Text", "По решению", False) == (C.CLOSING, [])
+    assert C.read_paths(ev, {"gold": "S2/3", "predicted": None}, frozenset(), heads)["predicted"] is None
+    # Without heads the reading is the cycle-3 one (single annex only).
+    assert C.read_paths(ev, {"gold": "S/AN1/2", "predicted": "S/AN/2"}, frozenset({"S"}), None) == {
+        "gold": "S/AN1/2", "predicted": "S/AN1/2"}
+    # A merged second document is a transfer under the same heads.
+    assert C.cross_scope(ev, {"gold": "S2/1", "predicted": "S/1"}, 2, frozenset(), ({"S": "S", "S2": "S2"}, {"S": "S"}))
+    assert not C.cross_scope(ev, {"gold": "S2/1", "predicted": "A/AN/2"}, 2, frozenset(), heads)
+
+
+def test_dev_regression_attached_ordinal_on_by_default(tmp_path, monkeypatch):
+    ext = tmp_path / "a.extraction.json"
+    ext.write_text(json.dumps(extraction()), encoding="utf-8")
+    gold = tmp_path / "a.gold.txt"
+    gold.write_text("1.1 S\n1.2 S/1\n2.1 S2/2\n", encoding="utf-8")
+    proto = tmp_path / "p.py"
+    proto.write_text(FAKE_PROTOTYPE.replace('"2.1": "S/2"', '"2.1": "A/AN/2"'), encoding="utf-8")
+    doc = {"name": "pp-authored", "group": "authored", "extraction": ext, "gold": gold}
+    on = D.run_dev_regression(proto, tmp_path / "on", documents=[doc])
+    assert on["attached_ordinal_equivalence"] is True and on["total"]["strict"] == 3
+    assert on["total"]["cross_scope_v2"] == 0
+    off = D.run_dev_regression(proto, tmp_path / "off", documents=[doc], attached_ordinal=False)
+    assert "attached_ordinal_equivalence" not in off and off["total"]["strict"] == 2
+    assert off["total"]["cross_scope_v2"] == 1
+    monkeypatch.setattr(D, "development_documents", lambda: [doc])
+    D.main(["--prototype", str(proto), "--output", str(tmp_path / "cli-off"), "--no-attached-ordinal"])
+    cli = json.loads((tmp_path / "cli-off" / "summary.json").read_text(encoding="utf-8"))
+    assert "attached_ordinal_equivalence" not in cli

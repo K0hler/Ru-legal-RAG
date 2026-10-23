@@ -55,6 +55,9 @@
   a closing error.
   `test_dev_regression_baseline_comparison_flags_drops` covers `--baseline`: per-document drops
   (no_section/strict down, `cross_scope_v2` up, region count changed, missing) and CLI exit 1.
+  Cycle 4 A1: `attached_ordinal` tests (both files) pin ordinal heads by first appearance, `S, S2` == `S, A/AN`,
+  merged/moved second document = error + `cross_scope_v2`, `S/AN<n>` untouched, one document as before; freeze
+  default only after batch-04, rescore/regression opt-in/opt-out and the classifier's renamed reading.
 
 - `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
   lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested

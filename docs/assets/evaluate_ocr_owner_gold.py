@@ -14,6 +14,15 @@ those of ``owner-path/2`` as before.
 ``S<k>/AN<n>``); an error whose gold and predicted ``scope_v2`` differ is a
 scope transfer (``cross_scope_v2`` in the error classes; ``first_scope`` and the
 old ``cross_scope`` are unchanged).
+Opt-in ``--attached-ordinal`` (owner decision 23.10.2026, convention v2 §6): attached
+documents and annexes to the act are one kind, so they are compared by order of
+appearance. In each document every top-level scope other than ``A`` (``S``, ``S<k>``,
+``A/AN``, ``A/AN<n>``, after the equivalences above) is renamed ``S``, ``S2``, ``S3``...
+by its first appearance in region order (gold: primary owners first, then
+alternatives), separately for the gold and for the prediction; the tail of a path
+(``S/AN<n>/...``, an annex of an attached document) is kept under the renamed head.
+A merged or moved document stays an error and a ``cross_scope_v2`` transfer.
+Without the flag scores are unchanged.
 Metrics:
   owner_accuracy      share of gold regions whose predicted owner path matches;
   continuation P/R    regions predicted as a continuation of the previous
@@ -129,19 +138,77 @@ def scope_v2(path):
     return parts[0]
 
 
-def cross_scope_v2(gold_path, predicted_path, attached, single=frozenset()):
-    """An owner was given, in another document or annex than gold (``scope_v2``)."""
+def head_length(path):
+    """Segments of the top-level non-``A`` scope of a path: 1 for ``S``/``S<k>``, 2 for
+    ``A/AN``/``A/AN<n>``, 0 otherwise (the act's own text)."""
+    parts = path.split("/")
+    if parts[0] == "A" and len(parts) > 1 and ANNEX_SEG.match(parts[1]):
+        return 2
+    return 1 if ATTACHED_SCOPE.match(parts[0]) else 0
+
+
+def ordinal_heads(paths):
+    """{top-level scope: ordinal name} by first appearance: ``S``, ``S2``, ``S3``..."""
+    heads = {}
+    for path in paths:
+        if path is None or not head_length(path):
+            continue
+        head = "/".join(path.split("/")[:head_length(path)])
+        if head not in heads:
+            heads[head] = "S" if not heads else f"S{len(heads) + 1}"
+    return heads
+
+
+def rename_head(path, heads):
+    """Replace the top-level scope of ``path`` by its ordinal name; the tail is kept."""
+    if path is None or not heads or not head_length(path):
+        return path
+    parts = path.split("/")
+    n = head_length(path)
+    head = "/".join(parts[:n])
+    return "/".join([heads.get(head, head), *parts[n:]])
+
+
+def region_order(keys):
+    """Region keys ``<page>.<index>`` in page/index order (other keys keep their order, last)."""
+    def key(k):
+        try:
+            return (0, tuple(int(x) for x in k.split(".")))
+        except ValueError:
+            return (1, ())
+    return sorted(keys, key=key)
+
+
+def attached_ordinal_heads(gold, predicted, attached, single=frozenset()):
+    """(gold heads, predicted heads) over the gold regions in region order, on canonical paths."""
+    order = region_order(gold)
+    gold_paths = [canonical(gold[k]["owners"][0], attached, single) for k in order]
+    gold_paths += [canonical(o, attached, single) for k in order for o in gold[k]["owners"][1:]]
+    predicted_paths = [canonical(norm(predicted.get(k)), attached, single) for k in order]
+    return ordinal_heads(gold_paths), ordinal_heads(predicted_paths)
+
+
+def _compared(gold_path, predicted_path, attached, single, heads):
+    g, p = canonical(gold_path, attached, single), canonical(predicted_path, attached, single)
+    if heads is not None:
+        g, p = rename_head(g, heads[0]), rename_head(p, heads[1])
+    return g, p
+
+
+def cross_scope_v2(gold_path, predicted_path, attached, single=frozenset(), heads=None):
+    """An owner was given, in another document or annex than gold (``scope_v2``).
+    ``heads`` = (gold, predicted) ordinal heads under ``--attached-ordinal``."""
     if predicted_path is None:
         return False
-    return scope_v2(canonical(gold_path, attached, single)) != scope_v2(canonical(predicted_path, attached, single))
+    g, p = _compared(gold_path, predicted_path, attached, single, heads)
+    return scope_v2(g) != scope_v2(p)
 
 
-def equivalent(gold_path, predicted_path, attached_count, name="strict", single=frozenset()):
+def equivalent(gold_path, predicted_path, attached_count, name="strict", single=frozenset(), heads=None):
     if gold_path is None or predicted_path is None:
         return gold_path is predicted_path
-    return variant(canonical(gold_path, attached_count, single), name) == variant(
-        canonical(predicted_path, attached_count, single), name
-    )
+    g, p = _compared(gold_path, predicted_path, attached_count, single, heads)
+    return variant(g, name) == variant(p, name)
 
 
 def variant(path, name):
@@ -157,7 +224,7 @@ def variant(path, name):
     return "/".join(parts)
 
 
-def evaluate(gold, predicted, continuation=None, attached=None, single_annex=False):
+def evaluate(gold, predicted, continuation=None, attached=None, single_annex=False, attached_ordinal=False):
     if attached is None:
         attached = attached_count(gold)
     result = {"regions": len(gold), "attached_count": attached}
@@ -165,11 +232,15 @@ def evaluate(gold, predicted, continuation=None, attached=None, single_annex=Fal
     if single_annex:
         single = single_annex_documents(gold)
         result["single_annex_documents"] = sorted(single)
+    heads = None
+    if attached_ordinal:
+        heads = attached_ordinal_heads(gold, predicted, attached, single)
+        result["attached_ordinal"] = {"gold": heads[0], "predicted": heads[1]}
     for name in ("strict", "no_section", "numbers"):
         ok, rows = 0, []
         for key, g in gold.items():
             p = norm(predicted.get(key))
-            hit = any(equivalent(o, p, attached, name, single) for o in g["owners"])
+            hit = any(equivalent(o, p, attached, name, single, heads) for o in g["owners"])
             ok += hit
             rows.append({"region": key, "gold": g["owners"][0], "predicted": p, "ok": hit})
         result[name] = {"correct": ok, "accuracy": round(ok / len(gold), 4)}
@@ -196,6 +267,9 @@ def main(argv=None):
     parser.add_argument("--output")
     parser.add_argument("--single-annex", action="store_true",
                         help="<doc>/AN == <doc>/AN1 when the document has exactly one annex (owner decision 22.10.2026)")
+    parser.add_argument("--attached-ordinal", action="store_true",
+                        help="attached documents and act annexes compared by order of appearance "
+                             "(owner decision 23.10.2026)")
     args = parser.parse_args(argv)
     with open(args.run, encoding="utf-8") as handle:
         run = json.load(handle)
@@ -203,7 +277,8 @@ def main(argv=None):
         owners, cont = from_logical(run)
     else:
         owners, cont = run.get("owners", run), run.get("continuation")
-    result = evaluate(load_gold(args.gold), owners, cont, single_annex=args.single_annex)
+    result = evaluate(load_gold(args.gold), owners, cont, single_annex=args.single_annex,
+                      attached_ordinal=args.attached_ordinal)
     text = json.dumps(result, ensure_ascii=False, indent=1)
     if args.output:
         with open(args.output, "x", encoding="utf-8") as handle:
