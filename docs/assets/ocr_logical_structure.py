@@ -353,6 +353,21 @@ def parse_marker(text: str, category: str) -> Marker:
     return Marker("none")
 
 
+ROMAN_START = re.compile(rf"^([{ROMAN_CHARS}]+)\.\s+[А-ЯЁA-Z]")
+
+
+def next_roman_section(text: str, romans: set[int]) -> int | None:
+    """Review Focus 3: a section heading that OCR gave a body category and that is too long or otherwise
+    does not look like a heading («V. Согласование проекта …», category Text, 590 characters). «V.» at
+    the start of the paragraph, followed by a capitalised word, opens section V only when sections I to
+    V-1 are already open in the same scope; a Roman number inside a sentence never matches."""
+    m = ROMAN_START.match(text)
+    value = roman_value(m.group(1)) if m else None
+    if value is None or value < 2 or not all(v in romans for v in range(1, value)) or max(romans) != value - 1:
+        return None
+    return value
+
+
 def heading_like(text: str, category: str) -> bool:
     return category in {"Section-header", "Title"} or (len(text) < 250 and not text.rstrip().endswith((".", ";", ":")))
 
@@ -925,8 +940,15 @@ def build(extraction: dict) -> dict:
     for scope_path, items in scopes:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
         list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
+        romans: set[int] = set()  # Roman sections seen in the scope
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
+            roman = next_roman_section(p.text, romans) if p.marker.kind == "none" and romans else None
+            if roman is not None:
+                p.marker = Marker("roman", roman, to_roman(roman))
+                p.evidence.append({"roman_sequence": "«N.» after sections I to N-1 of the scope opens section N"})
+            if p.marker.kind == "roman":
+                romans.add(p.marker.value)
             number = list_number(p.text)
             if p.marker.kind == "none" and leading_zero_list(p.text):
                 p.evidence.append({"list_line": "leading-zero marker, stays in the current unit"})

@@ -172,6 +172,11 @@
   frozen `20261023-batch-05-gold-freeze`, rp-1099 = stitched `.gold.txt`). Baseline of frozen v3.1
   `…/20261023-dev-regression-cycle5-baseline/`: 11623/11805 no_section (strict 11556), `cross_scope_v2` 3; old 45
   9479 with rows/errors equal to `…-v3-1`; batch 5 2144/2268 (rp-1099 853/972, rp-3721 90/94 cross 3, minnauki 72/73).
+- Cycle 5 B3 (prototype): `next_roman_section` — an unmarked body paragraph «V. Капитализированное …» (OCR Text,
+  too long for `heading_like`) opens section V (evidence `roman_sequence`) only when sections I..V-1 are open in
+  the scope and the last is V-1; no gap, no first «I.», nothing mid-sentence. Regression `…-cycle5-b3`:
+  11754/11805 no_section and strict, minnauki-697 73/73, batch 5 2268/2268, `cross_scope_v2` 0, no drops. Over the
+  56 documents `table_row` fires only in rp-1099 (22) and pp-931 (6), `roman_sequence` once; `restart` never.
 - Cycle 5 B2 (prototype): a footnote's mark is also found as HTML `<sup>N</sup>` (tables print it so); the owner
   stays the latest preceding body paragraph with the mark, a footnote without one stays unowned. Cause of the
   batch-5 transfers: the second list's marks were `<sup>`, so «¹» matched the first list. Regression

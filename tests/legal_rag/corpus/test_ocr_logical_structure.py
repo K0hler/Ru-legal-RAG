@@ -1305,3 +1305,54 @@ def test_footnote_without_a_found_mark_stays_unowned():
     assert owners(result)["3.3"] is None
     note = next(p for p in result["paragraphs"] if p["flow"] == "footnote" and p["text_preview"].startswith("⁴"))
     assert {"footnote_owner": "unresolved", "candidates": 0} in note["evidence"]
+
+
+LONG_V = ("V. Согласование проекта объема контрольных цифр приема для обучения по программам бакалавриата, программам "
+          "специалитета и программам магистратуры федеральными органами исполнительной власти, осуществляющими функции "
+          "по выработке государственной политики и нормативно-правовому регулированию в установленных сферах "
+          "деятельности, и иными организациями, осуществляющими деятельность в соответствующей сфере")
+
+
+def sections_up_to(last):
+    """Points under Section-header sections «I.» … ``last``, two points each."""
+    body, n = [], 0
+    for value in range(2, last + 1):
+        body.append(("Section-header", f"{S.to_roman(value)}. Раздел {value}"))
+        for _ in range(2):
+            n += 1
+            body.append(("Text", f"{n + 2}. Пункт {n + 2}."))
+    return regulation(("Text", "1. Первый пункт."), ("Text", "2. Второй пункт."), *body)
+
+
+def test_section_heading_read_by_ocr_as_text_opens_the_next_section():
+    """Cycle 5 B3 (Review Focus 3): «V. …» that OCR gave the category Text (and that is too long to look like
+    a heading) opens section V when sections I–IV already exist in the same scope."""
+    assert len(LONG_V) > 250 and S.parse_marker(LONG_V, "Text").kind == "none"
+    pages = sections_up_to(4)
+    pages[1] += [("Text", LONG_V), ("Text", "9. Перечень органов определяется Правилами."), ("Text", "а) первое;")]
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["2.12"] == "S/IV/8"
+    assert got["2.13"] == "S/V" and got["2.14"] == "S/V/9" and got["2.15"] == "S/V/9/а"
+    heading = next(p for p in result["paragraphs"] if p["text_preview"].startswith("V. "))
+    assert heading["marker"] == ["roman", "V"] and heading["kind"] == "heading"
+    assert any("roman_sequence" in e for e in heading["evidence"])
+
+
+@pytest.mark.parametrize("last", [1, 3])
+def test_text_roman_without_the_previous_sections_opens_nothing(last):
+    """Negative controls: «V.» of category Text without sections up to IV before it (only I, or I–III) is not a
+    section heading; it stays with the open point."""
+    pages = sections_up_to(last)
+    pages[1] += [("Text", LONG_V), ("Text", "Перечень органов определяется Правилами.")]
+    got = owners(S.build(extraction(pages)))
+    point = 2 * (last - 1) + 2
+    assert got[f"2.{len(pages[1]) - 2}"] == got[f"2.{len(pages[1]) - 1}"]
+    assert got[f"2.{len(pages[1]) - 2}"].endswith(f"/{point}")
+
+
+def test_roman_number_inside_a_sentence_opens_no_section():
+    pages = sections_up_to(4)
+    pages[1] += [("Text", "Согласование по разделу V. Порядок проводится органами власти в установленные сроки")]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.13"] == "S/IV/8"
