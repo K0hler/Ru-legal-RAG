@@ -1017,3 +1017,9 @@ def test_main_records_exact_command(monkeypatch):
     assert P.main(argv) == 0
     assert seen == ['PYTHONPATH=src ' + subprocess.list2cmdline([sys.executable]) + ' docs/assets/select_m1_04a_pool.py --profile batch-03 --from 2011-01-01 '
                     '--to 2025-12-31 --seed 20261023 --output "a b/selection.json"']
+
+
+def test_catalog_lists_batch_04_without_status_before_measurement():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04")
+    assert "batch-04" not in catalog.POOL_STATUS  # status is written only after the first pass

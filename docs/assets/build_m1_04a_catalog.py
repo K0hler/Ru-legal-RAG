@@ -32,7 +32,7 @@ SINGLE = [
 SANPIN = M1 / "inputs" / "m1-04" / "sanpin-original-amendments.json"
 # Check-pool batches: `<batch>/<slug>/input.json` written by acquire_m1_04a_pool.py. Their
 # rows go to the batch's own index so the frozen `documents/index.json` stays unchanged.
-POOL_BATCHES = ("batch-01", "batch-02", "batch-03")
+POOL_BATCHES = ("batch-01", "batch-02", "batch-03", "batch-04")
 # Protocol life cycle of a pool batch: measured once on frozen code, then it joins
 # development. Recorded in `<batch>/status.json` (write-once) because the indexes are frozen.
 POOL_STATUS = {
