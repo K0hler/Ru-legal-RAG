@@ -59,6 +59,10 @@
   merged/moved second document = error + `cross_scope_v2`, `S/AN<n>` untouched, one document as before; freeze
   default only after batch-04, rescore/regression opt-in/opt-out and the classifier's renamed reading.
   Cycle 4 A2: the regression set has 45 documents (batch 4 on `.gold.txt`, families by prefix).
+  Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
+  tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
+  restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,
+  «1.» after «1.».
 
 - `corpus/test_m1_04a_gold_v2.py` checks the v1 -> v2 gold derivation on authored
   lines: annex map `S<k>` -> `S/AN<n>` (alternatives and `+` kept), «N.M» nested

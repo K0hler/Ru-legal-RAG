@@ -158,6 +158,14 @@
   `data/m1/m1-04a/experiments/20261023-dev-regression-cycle4-baseline/`: 8614/9537 no_section (strict 8603),
   `cross_scope_v2` 0; old 34 rows and errors identical to `20261022-dev-regression-v2` (7015/7072), batch 4
   1599/2465 = the A1 rescore. Track B gates against this summary with `--baseline`.
+- Cycle 4 B1 (prototype, VERSION unchanged until B3): a marker with a leading zero («01.», «02)», «001.») is a
+  list line (marker `none`, evidence `list_line`) and stays in the current unit; «N+1.» right after such a line
+  («10.» after «09.») continues it. «1.» after «N.» (N > 1) of the same scope with a table or an unmarked
+  Section-header/Title between them gets `restart` and may take the level of «N.» (cost 1.0 instead of the 10.0
+  unexplained nesting); «1)», «а)», «N.M» unchanged. Regression `20261023-dev-regression-cycle4-b1-r2`
+  (sha f091e9d3…): 9478/9537 no_section (strict 9467), Mintrans 107 47 -> 476/476, 136 43 -> 478/478, batch 4
+  2463/2465, `cross_scope_v2` 0, no drops, only those two documents changed. `…-b1` has the same scores (restart
+  evidence was then also written without an earlier «N.»). The restart rule changes no owner in the 45 documents.
 - `assets/run_m1_04a_dev_regression.py` now covers all 34 development documents (old 8, batch 1, batch 2 on
   `gold-v2`, batch 3), scores with `single_annex=True`, counts `cross_scope_v2` per document and has a per-family
   breakdown (family = slug prefix; `holdout2-*` and `sanpin-*`/`sp-*` are sanitary rules). Cycle-3 baseline of frozen

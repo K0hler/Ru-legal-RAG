@@ -255,6 +255,9 @@ class Marker:
     kind: str = "none"
     value: object = None
     label: str = ""
+    # «1.» after a table or an unmarked heading that follows an «N.» of the same scope: the
+    # numbering may start again (RESTART_COST) instead of nesting into the last point
+    restart: bool = False
 
 
 # Named law units, recognised only at the start of a paragraph. Hierarchy:
@@ -294,6 +297,23 @@ def named_unit(text: str, category: str) -> Marker | None:
     return None
 
 
+LIST_NUMBER = re.compile(r"^(\d{1,3})([.)])\s+\S")
+
+
+def leading_zero_list(text: str) -> bool:
+    """A marker with a leading zero («01.», «02)», «001.»), as in «Состав работ: 01. …, 02. …» under
+    an estimate table, numbers a list line: legal points are never printed that way. It opens no
+    unit and the line stays in the current one."""
+    m = LIST_NUMBER.match(text)
+    return bool(m) and len(m.group(1)) > 1 and m.group(1).startswith("0")
+
+
+def list_number(text: str) -> tuple[str, int] | None:
+    """(delimiter, value) of a «N.» / «N)» marker, for following a zero-padded list past «09.»."""
+    m = LIST_NUMBER.match(text)
+    return (m.group(2), int(m.group(1))) if m else None
+
+
 def parse_marker(text: str, category: str) -> Marker:
     named = named_unit(text, category)
     if named is not None:
@@ -308,6 +328,8 @@ def parse_marker(text: str, category: str) -> Marker:
         return Marker("decimal", parts, ".".join(map(str, parts)))
     if re.match(r"^\d{1,2}\.\s?\d{1,2}\.\s?\d{4}\b", text):
         return Marker("none")  # a date such as "12. 02. 2026", not point 12
+    if leading_zero_list(text):
+        return Marker("none")  # «01. …», «02) …»: a list line of the current unit, not a point
     m = re.match(r"^(\d{1,3})\.\s+\S", text)
     if m:
         return Marker("int", int(m.group(1)), m.group(1))
@@ -475,6 +497,7 @@ def next_letter_ok(prev: int, new: int) -> bool:
 SUBPOINT_KINDS = {"paren", "letter"}  # «1)» / «а)» subpoints
 POINT_KINDS = {"int", "decimal"}  # «N.» / «N.M» points
 ABANDON_ARTICLE = 0.5  # a point that leaves an open article without a new heading
+RESTART_COST = 1.0  # «1.» restarting a numbering at the level of «N.» (below the unexplained-nesting 10.0)
 
 
 def label_under(marker: Marker, parent: tuple | None, article_parts: bool = True) -> str:
@@ -528,6 +551,9 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
                     elif 1 < gap <= 3:
                         yield stack[:keep] + (item,), 2.0 + gap
+                    elif marker.restart and marker.kind == "int" and marker.value == 1 and sibling[1] > 1:
+                        # numbering started again after a table/heading: the level of «N.», not inside it
+                        yield stack[:keep] + (item,), RESTART_COST + 0.01 * (depth - keep)
                 elif marker.kind == "decimal":
                     a, b = sibling[1], marker.value
                     if len(a) == len(b) and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
@@ -724,6 +750,26 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             p.evidence.append({"subpoint_closed": "capitalised paragraph after the last subpoint -> the point"})
 
 
+def mark_restarts(items: list[Paragraph]) -> None:
+    """Restarted numbering: an «1.» whose previous «N.» paragraph in the scope is separated from it
+    by a table or an unmarked heading (OCR Section-header/Title) may restart the numbering at the
+    level of that «N.» (the solver checks N > 1 at that level). Without such a break, or for «1)»/
+    «а)» subpoints and «1.1», nothing changes."""
+    broken = False
+    last = None  # value of the previous «N.» in the scope
+    for p in items:
+        if p.flow != "body":
+            continue
+        if p.kind == "table" or (p.kind == "text" and p.marker.kind == "none" and heading_evidence(p)):
+            broken = True
+        elif p.kind == "text" and p.marker.kind == "int":
+            if p.marker.value == 1 and broken and last is not None and last > 1:
+                p.marker.restart = True
+                p.evidence.append({"restart": "«1.» after a table or heading; may take the level of the last «N.»"})
+            broken = False
+            last = p.marker.value
+
+
 def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
@@ -821,10 +867,24 @@ def build(extraction: dict) -> dict:
 
     for scope_path, items in scopes:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
+        list_prev = None  # (delimiter, value) when the previous body paragraph is a list line
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
+            number = list_number(p.text)
+            if p.marker.kind == "none" and leading_zero_list(p.text):
+                p.evidence.append({"list_line": "leading-zero marker, stays in the current unit"})
+                list_prev = number
+            elif (p.marker.kind in {"int", "paren"} and list_prev is not None and number is not None
+                  and number == (list_prev[0], list_prev[1] + 1)):
+                # «10.» right after «09.»: the zero-padded list goes on past two digits
+                p.marker = Marker("none")
+                p.evidence.append({"list_line": "continues the leading-zero list of the previous paragraph"})
+                list_prev = number
+            else:
+                list_prev = None
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
+        mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         # The requisite block: after the last numbered or named element of the scope, the

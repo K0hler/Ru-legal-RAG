@@ -1076,3 +1076,88 @@ def test_known_limitations_are_pinned():
                        ("Text", "б) сведения о документе."), ("Text", "Российской Федерации гражданам выдается справка."),
                        ("Text", "2. Следующий пункт."))
     assert owners(S.build(extraction(pages)))["2.5"] == "S/I/1"
+
+
+TABLE = ("Table", "<table><tr><td>Шифр</td><td>Затраты</td></tr></table>")
+
+
+def estimate_norms(*body):
+    """An order approving estimate norms: general points, then «РАЗДЕЛ 1.» with tables."""
+    return [[("Text", "1. Утвердить прилагаемые нормативы."), ("Text", "Министр", 1200)],
+            [("Text", "УТВЕРЖДЕНЫ\nприказом Министерства", 1000), ("Section-header", "Сметные нормативы"),
+             ("Text", "1. Нормативы применяются при ремонте."), ("Text", "2. Нормативы определены в ценах 2014 г."),
+             ("Section-header", "РАЗДЕЛ 1. Ремонт земляного полотна"), *body]]
+
+
+@pytest.mark.parametrize("text", ["01. Планировка грунта.", "02) Разборка конструкций.", "001. Прием грунта."])
+def test_leading_zero_marker_is_a_list_line(text):
+    assert S.parse_marker(text, "List-item").kind == "none"
+    assert S.leading_zero_list(text)
+
+
+@pytest.mark.parametrize("text, kind", [("1. Пункт.", "int"), ("10. Пункт.", "int"), ("2) подпункт;", "paren"),
+                                        ("1.1 Подпункт.", "decimal")])
+def test_ordinary_markers_are_unchanged(text, kind):
+    assert S.parse_marker(text, "Text").kind == kind and not S.leading_zero_list(text)
+
+
+def test_leading_zero_lists_under_tables_stay_in_the_section():
+    """Review Focus 3 (owner decision 23.10.2026: no table node): «Состав работ: 01., 02.» under each
+    table is text of the enclosing unit; a later list does not nest into the previous one, and «10.»
+    right after «09.» continues the zero-padded list."""
+    pages = estimate_norms(
+        ("Section-header", "Таблица 01-01-001"), ("Text", "Устройство подстилающего слоя"),
+        ("Text", "Состав работ:"), ("Text", "01. Планировка земляного полотна."),
+        ("Text", "02. Распределение песка."), ("Text", "Измеритель: 100 м³"), TABLE,
+        ("Section-header", "Таблица 01-01-002"), ("Text", "Состав работ:"),
+        *[("List-item", f"{n:02d}. Операция {n}.") for n in range(1, 13)], TABLE,
+        ("Text", "Стоимостные показатели"))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == "S/1" and got["2.3"] == "S/2" and got["2.4"] == "S/разд1"
+    for key in ["2.5", "2.6", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12", "2.13"]:
+        assert got[key] == "S/разд1", key
+    for index in range(14, 26):            # 01. … 09., then 10. 11. 12.
+        assert got[f"2.{index}"] == "S/разд1", index
+    assert got["2.26"] == "S/разд1"        # the table after the list
+    # ordinary numbering still works in the same document: «3.» after «2.» before the section
+    pages[1].insert(4, ("Text", "3. Нормативы отражают среднеотраслевой уровень."))
+    assert owners(S.build(extraction(pages)))["2.4"] == "S/3"
+
+
+def test_ten_after_a_non_list_line_stays_a_point():
+    pages = regulation(("Text", "9. Девятый пункт."), ("Text", "10. Десятый пункт."),
+                       ("Text", "Состав работ:"), ("Text", "01. Планировка."), ("Text", "Измеритель: 1 м³"),
+                       ("Text", "11. Одиннадцатый пункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/I/10" and got["2.5"] == "S/I/10" and got["2.7"] == "S/I/11"
+
+
+@pytest.mark.parametrize("separator", [TABLE, ("Section-header", "Порядок расчета")])
+def test_restarted_numbering_takes_the_level_of_the_last_point(separator):
+    """Review Focus 4: «1.» after «N.» (N > 1) of the same scope, with a table or an unmarked heading
+    between them, restarts at the level of «N.» instead of nesting into it."""
+    pages = estimate_norms(("Text", "5. Затраты учтены в таблицах."), ("Text", "6. Показатели приведены ниже."),
+                           separator, ("Text", "1. Первый показатель."), ("Text", "2. Второй показатель."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.5"] == "S/разд1/5" and got["2.6"] == "S/разд1/6"
+    assert got["2.8"] == "S/разд1/1" and got["2.9"] == "S/разд1/2"
+    pages = regulation(("Text", "1. Первый."), ("Text", "2. Второй."), ("Text", "3. Третий."), separator,
+                       ("Text", "1. Снова первый."), ("Text", "2. Снова второй."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.6"] == "S/I/1" and got["2.7"] == "S/I/2"
+
+
+def test_restart_needs_a_break_and_leaves_subpoints_nested():
+    """Negative controls: without a table or heading «1.» after «3.» keeps the old reading; real «1)»
+    subpoints and «3.1» after a table stay inside the point; «1.» after «1.» is not a restart."""
+    pages = regulation(("Text", "1. Первый."), ("Text", "2. Второй."), ("Text", "3. Третий:"),
+                       ("Text", "1. вложенный."))
+    assert owners(S.build(extraction(pages)))["2.5"] == "S/I/3/1"
+    pages = regulation(("Text", "1. Первый."), ("Text", "2. Показатели:"), TABLE, ("Text", "1) первый;"),
+                       ("Text", "2) второй."), ("Text", "3. Третий:"), TABLE, ("Text", "3.1. Подпункт."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.5"] == "S/I/2/1" and got["2.6"] == "S/I/2/2"
+    assert got["2.9"] == "S/I/3/3.1"
+    pages = regulation(("Text", "1. Первый."), TABLE, ("Text", "1. Снова первый."))
+    result = S.build(extraction(pages))
+    assert not any("restart" in e for p in result["paragraphs"] for e in p["evidence"])
