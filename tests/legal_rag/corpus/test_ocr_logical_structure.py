@@ -1352,10 +1352,18 @@ def test_text_roman_without_the_previous_sections_opens_nothing(last):
 
 
 def test_roman_number_inside_a_sentence_opens_no_section():
+    """«V.» after the start of a paragraph, or at the start of a paragraph that continues an unterminated sentence
+    of the previous one («… в соответствии с разделом» / «V. Порядка …», a region cut by OCR), opens nothing."""
     pages = sections_up_to(4)
     pages[1] += [("Text", "Согласование по разделу V. Порядок проводится органами власти в установленные сроки")]
     got = owners(S.build(extraction(pages)))
     assert got["2.13"] == "S/IV/8"
+    pages = sections_up_to(4)
+    pages[1] += [("Text", "Согласование проводится органами власти в сроки, установленные в соответствии с разделом"),
+                 ("Text", LONG_V)]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.13"] == got["2.14"] == "S/IV/8"
+
 
 @pytest.mark.parametrize("text", [
     "V. Согласование проекта осуществляется органами власти в течение десяти рабочих дней;",
@@ -1484,3 +1492,25 @@ def test_text_of_the_last_point_that_starts_like_a_signer_stays_in_the_point():
                  "Подписи и реквизиты Сторон приводятся в конце Соглашения."):
         got = owners(S.build(extraction(order_with_agreement(("Text", line)))))
         assert got["2.6"] == "S/ст4/2", line
+
+
+LONG_III = ("III. Объем финансирования мероприятий подпрограмм за счет средств федерального бюджета и внебюджетных "
+            "источников уточняется ежегодно при формировании проекта федерального бюджета на очередной финансовый год "
+            "и плановый период с учетом результатов реализации мероприятий предыдущего года и прогноза")
+
+
+def test_rubrics_of_a_table_annex_do_not_count_as_roman_sections():
+    """Cycle 6 B4 (Review Focus 4, v4 §4.7): the rubrics «I.», «II.» between the tables of a table annex are annex
+    text, so they are not sections I and II: a long Text «III. …» after the last table opens no section III and
+    stays annex text. A long Text «II. …» between the tables (v4 promoted it, then demoted it to a row, leaving a
+    stale `roman_sequence`) is plain annex text without that evidence."""
+    assert len(LONG_III) > 250 and S.parse_marker(LONG_III, "Text").kind == "none"
+    pages = program_with_table_annex(MEASURES, ("Section-header", 'I. Подпрограмма "Развитие сырьевой базы"'), MEASURES,
+                                     ("Text", "II." + LONG_III[4:]), MEASURES, ("Text", LONG_III))
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert [got[f"3.{k}"] for k in range(3, 9)] == ["S/AN1"] * 6
+    evidence = [p["evidence"] for p in result["paragraphs"]]
+    assert not any("roman_sequence" in e for ev in evidence for e in ev)
+    rows = [p for p in result["paragraphs"] if any("table_row" in e for e in p["evidence"])]
+    assert [p["text_preview"][:3] for p in rows] == ["I. "]

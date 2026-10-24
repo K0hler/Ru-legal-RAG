@@ -185,6 +185,11 @@
   «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон», any case) and the signature place «От <Capitalised>»
   (beside «За …»), still short and unterminated, so the requisite block opens there. Regression `…-cycle6-b3`:
   13663/13730, rp-356 84/84, batch 6 1909/1925, no drops, no other document changed.
+- Cycle 6 B4 (prototype; v4 §4.7 and cycle-5 final-review minors): `roman_sequence()` runs after `table_rows`
+  demotion, so demoted rubrics do not count and no row keeps a stale `roman_sequence`; an unmarked «V. …» right
+  after an unterminated text paragraph (no table/heading between) continues its sentence and opens nothing; the
+  «inside a sentence» test now has that failing case. Regression `…-cycle6-b4` equals `…-cycle6-b3` (13663/13730),
+  evidence counts unchanged (`roman_sequence` 1, `table_row` 39), no drops.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

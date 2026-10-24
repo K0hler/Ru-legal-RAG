@@ -83,6 +83,8 @@
   same mark; a mark only on an earlier page keeps that point; one mark twice on the page -> common owner.
   Cycle 6 B3: «Подписи и реквизиты Сторон», «От Правительства …», signer and initials after an agreement's last
   point -> `S`, the act's signer -> `A`; negatives: terminated «Председатель …»/«От …»/«Подписи …» sentences.
+  Cycle 6 B4: table-annex rubrics «I.» are not roman sections (long Text «III. …» after the last table, «II. …»
+  between tables: no section, no `roman_sequence`); «V. …» after an unterminated paragraph opens nothing.
   Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,

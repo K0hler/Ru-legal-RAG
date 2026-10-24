@@ -375,6 +375,32 @@ def next_roman_section(text: str, romans: set[int]) -> int | None:
     return value
 
 
+ROMAN_SEQUENCE_EVIDENCE = {"roman_sequence": "«N.» after sections I to N-1 of the scope opens section N"}
+
+
+def roman_sequence(items: list[Paragraph], rows: set[int]) -> None:
+    """Applies ``next_roman_section`` in reading order after the table rows of the scope are known (cycle 6,
+    v4 §4.7): rubrics «I.», «II.» demoted to table rows are no sections of the sequence, and a row is never
+    promoted. An unmarked «V. …» that follows an unterminated text paragraph (no table or heading between)
+    continues that sentence («… в соответствии с разделом» / «V. Порядка …») and opens nothing."""
+    romans: set[int] = set()  # Roman sections seen in the scope
+    previous = None  # the previous body item (pictures skipped)
+    for p in items:
+        if p.flow != "body" or p.kind == "picture":
+            continue
+        if p.kind in {"text", "heading"} and id(p) not in rows:
+            open_sentence = previous is not None and previous.kind == "text" and not terminated(previous.text)
+            if p.marker.kind == "none" and romans and not open_sentence:
+                roman = next_roman_section(p.text, romans)
+                if roman is not None:
+                    p.marker = Marker("roman", roman, to_roman(roman))
+                    p.kind = "heading"
+                    p.evidence.append(dict(ROMAN_SEQUENCE_EVIDENCE))
+            if p.marker.kind == "roman":
+                romans.add(p.marker.value)
+        previous = p
+
+
 def heading_like(text: str, category: str) -> bool:
     return category in {"Section-header", "Title"} or (len(text) < 250 and not text.rstrip().endswith((".", ";", ":")))
 
@@ -970,15 +996,8 @@ def build(extraction: dict) -> dict:
     for scope_path, items in scopes:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
         list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
-        romans: set[int] = set()  # Roman sections seen in the scope
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
-            roman = next_roman_section(p.text, romans) if p.marker.kind == "none" and romans else None
-            if roman is not None:
-                p.marker = Marker("roman", roman, to_roman(roman))
-                p.evidence.append({"roman_sequence": "«N.» after sections I to N-1 of the scope opens section N"})
-            if p.marker.kind == "roman":
-                romans.add(p.marker.value)
             number = list_number(p.text)
             if p.marker.kind == "none" and leading_zero_list(p.text):
                 p.evidence.append({"list_line": "leading-zero marker, stays in the current unit"})
@@ -998,6 +1017,7 @@ def build(extraction: dict) -> dict:
                 p.marker = Marker("none")
                 p.kind = "text"
                 p.evidence.append(dict(TABLE_ROW_EVIDENCE))
+        roman_sequence(items, rows)
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
