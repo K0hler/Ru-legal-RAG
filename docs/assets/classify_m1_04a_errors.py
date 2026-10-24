@@ -105,6 +105,9 @@ CAPTION_ROOT = ("Владелец таблицы: подпись таблицы 
                 "отнесена к корню приложения")
 PAGE_CONTINUATION = "Продолжение пункта на новой странице отнесено к родителю"
 SCHEME_LIST = "Нумерованный перечень в описании схемы прочитан как пункты (в эталоне — не пункты)"
+# Batch 7: the numbered lines are points in gold too; the unnumbered text after the last one is not.
+POINT_TAIL = ("Ненумерованный текст после последней нумерованной строки (подпись, таблицы, перечень) отнесён к ней; "
+              "в эталоне строки — пункты, а этот текст — корень документа или приложения")
 QUOTE = "Цитата поправки: нумерация цитируемой новой редакции (поправки) открыла части изменяющей статьи"
 OCR_MARKER = "Ошибка OCR в маркере пункта («б)» вместо «6)»)"
 FOOTNOTE = "Владелец сноски: сноска осталась без владельца"
@@ -285,7 +288,8 @@ def _batch7_cause(gold: str, predicted: str) -> str:
     return OTHER
 
 
-def classify_evidence(error: dict, category: str, text: str, single_annex: bool) -> tuple[str, list[str]]:
+def classify_evidence(error: dict, category: str, text: str, single_annex: bool,
+                      fill_in_points: frozenset = frozenset()) -> tuple[str, list[str]]:
     """Batch 2+: reviewer's reading as rules over paths, OCR category and text (no act names).
 
     Batch-3 forms (rules apply only where the batch-2 rules found no class; batch-2 class files
@@ -338,7 +342,8 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
     elif _batch6_before_scheme_list(g, p, category, text):
         cause = _batch6_before_scheme_list(g, p, category, text)
     elif p.startswith(g + "/") and re.match(r"^S(\d*|/AN\d+)$", g):
-        cause = SCHEME_LIST
+        blanks = {_canon(o) if single_annex else o for o in fill_in_points}
+        cause = POINT_TAIL if p in blanks else SCHEME_LIST  # batch 7: gold point that is a fill-in line «2. ___»
     elif p.startswith(g + "/") and g in {"A", "S"}:
         cause = requisite_kind(category, text)
     elif g.startswith(p + "/") and (category == "Caption" or re.match(r"^(Таблица|Рисунок|Масштаб|Условные обозначения)\b", text)):
@@ -383,6 +388,19 @@ def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dic
         gold = evaluator.number_single_annex(gold, single)
         predicted = None if predicted is None else evaluator.number_single_annex(predicted, single)
     return {**error, "gold": gold, "predicted": predicted}
+
+
+FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}$")
+
+
+def gold_fill_in_points(evaluator, gold_map: dict, info: dict, single: frozenset,
+                        heads: tuple[dict, dict] | None, attached: int | None) -> frozenset:
+    """Gold points (as the rules read them) whose every region is a numbered fill-in line «2. ___» (batch 7)."""
+    texts: dict[str, list[str]] = {}
+    for key, g in gold_map.items():
+        path = read_paths(evaluator, {"gold": g["owners"][0], "predicted": None}, single, heads, attached)["gold"]
+        texts.setdefault(path, []).append(" ".join(info.get(key, ("", ""))[1].split()))
+    return frozenset(p for p, ts in texts.items() if all(FILL_IN.match(t) for t in ts))
 
 
 def cross_scope(evaluator, error: dict, attached: int, single: frozenset,
@@ -446,6 +464,7 @@ def main(argv=None) -> None:
             attached = evaluator.attached_count(gold_map)
             if single_annex:
                 single = evaluator.single_annex_documents(gold_map)
+            fill_in = gold_fill_in_points(evaluator, gold_map, info, single, heads, attached)
         for error in errors:
             category, text = info[error["region"]]
             if evaluator is None:
@@ -454,7 +473,7 @@ def main(argv=None) -> None:
             else:
                 read = read_paths(evaluator, error, single, heads, attached)
                 primary, secondary = classify_evidence({**read, "raw_predicted": error["predicted"]},
-                                                       category, text, attached == 1)
+                                                       category, text, attached == 1, fill_in)
                 g = evaluator.canonical(error["gold"], attached)
                 p = evaluator.canonical(error["predicted"], attached)
                 extra = {"cross_scope": p is not None and evaluator.first_scope(g) != evaluator.first_scope(p)}

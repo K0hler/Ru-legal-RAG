@@ -388,6 +388,20 @@ def test_batch7_error_classes_from_evidence_only():
     assert cls("A/ст13/6", "A/ст13/5/б") == (C.OCR_MARKER, [])
 
 
+def test_cycle7_point_tail_label_only_after_a_gold_fill_in_point():
+    """Cycle 7 B2: text after the last fill-in line «2. ___» that gold keeps as a point gets its own label;
+    without such a gold point (batches 1-6: a numbered list that gold does not read as points, or points with
+    text) the scheme-list label is unchanged."""
+    blank = frozenset({"S/AN1/2"})
+    assert C.classify_evidence({"gold": "S/AN1", "predicted": "S/AN1/2"}, "Caption", "Координаты", False,
+                               blank) == (C.POINT_TAIL, [])
+    assert C.classify_evidence({"gold": "S/AN1", "predicted": "S/AN1/2"}, "Caption", "Координаты", False) == (
+        C.SCHEME_LIST, [])
+    assert C.classify_evidence({"gold": "S/AN1", "predicted": "S/AN1/3"}, "Text", "Текст", False, blank) == (
+        C.SCHEME_LIST, [])
+    assert C.FILL_IN.match("2. __________") and not C.FILL_IN.match("2. Координаты: ____")
+
+
 def test_rescore_scoring_single_annex_is_opt_in():
     ev = load_script("evaluate_ocr_owner_gold")
     gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}

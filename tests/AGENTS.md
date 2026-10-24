@@ -84,6 +84,9 @@
   Cycle 7 B1: Rules attached as «Приложение № 1 к приказу» keep their annexes «Приложение № N к Правилам …»
   (`A/AN1/AN<n>`, = gold `S/AN<n>` under the ordinal), «№ 2 к приказу» opens `A/AN2`; negatives: act annexes in
   sequence, document annexes «к СП …» opened in the act body, a bare «Приложение № 3».
+  Cycle 7 B2: after form fill-in lines «1. ___», «2. ___» the caption, tables, scheme line, stamp and «Приложения:»
+  list go to the form (`S/AN1`); negative: a numbered line with text keeps them. `test_m1_04a_batch_tools.py`
+  pins `POINT_TAIL` only for a gold fill-in point, `SCHEME_LIST` otherwise.
   Cycle 6 B1: «5.3» after «5.1» and an unnumbered block is a sibling under «5.» (flat at an annex root without
   «5.»); negatives: «5.1.1» in «5.1», unbroken «5.1, 5.2, 5.3».
   Cycle 6 B2: a footnote goes to the last mark before it, not to a point continued on the next page with the

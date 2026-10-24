@@ -212,6 +212,14 @@
   Правилам …») opens `A/AN<k>/AN<n>` (evidence `nested_annex`) until the next act annex or approval caption.
   Regression `…-cycle7-b1`: 15118/15207, minenergetiki-90 240 -> 301, batch 7 1455/1477, `cross_scope_v2` 62 -> 0,
   no drops, no other document's errors changed. Left: 29.16 «Подписи членов рабочей комиссии:» in a form (`S/AN2`).
+- Cycle 7 B2 (prototype): a numbered fill-in line of a form (`FILL_IN`: «2. __________», «3) …….») stays a point but
+  holds no text: unmarked paragraphs continuing it and the tables/captions after it go to its parent (evidence
+  `fill_in_line`), up to the next marker; a numbered line with text is unchanged (only one such case in the 78
+  documents). Regression `…-cycle7-b2`: 15129/15207, fsetan-461 173 -> 184 (+9 tail, +2 signature lines), batch 7
+  1466/1477, no drops, no other document changed. Classifier label `POINT_TAIL` replaces `SCHEME_LIST` only when the
+  predicted point is a gold point whose every region is a fill-in line (`gold_fill_in_points`); batch 1-6 class
+  files reproduce (23 equal to HEAD's output); batch-7 class files regenerated in
+  `data/m1/m1-04a/experiments/20261024-batch-07-classes-cycle7/` (9 labels changed in each of v5/v4).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -484,6 +484,15 @@ def requisite_like(text: str) -> bool:
     return bool(SIGNER.match(text)) and len(text) < 120 and not terminated(text)
 
 
+# A numbered fill-in line of a form: the marker and only a blank («2. __________», «3) .......»).
+FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}$")
+FILL_IN_EVIDENCE = {"fill_in_line": "after a numbered fill-in line of a form: its parent (the line holds no text)"}
+
+
+def fill_in_line(text: str) -> bool:
+    return bool(FILL_IN.match(text.strip()))
+
+
 # --------------------------------------------------------------------------- pass 2
 
 
@@ -1043,8 +1052,14 @@ def build(extraction: dict) -> dict:
                       and (requisite_like(body[k].text)
                            or (signature_like(body[k].first) and id(body[k]) not in framed))), None)
         in_block = False
+        blank = None  # (stack, parent path) of the last marked paragraph when it is a fill-in line «2. ___»
+        fill_parent: dict[int, str] = {}
         for p, stack in zip(body, stacks):
             in_block = in_block or p is block
+            if p.marker.kind not in {"none", "dash"}:
+                blank = (stack, path_of(scope_path, stack[:-1])) if fill_in_line(p.text) else None
+                if blank is not None:
+                    fill_parent[id(p)] = blank[1]
             if in_block:
                 p.kind = "requisite"
                 p.owner = scope_path
@@ -1053,15 +1068,18 @@ def build(extraction: dict) -> dict:
                                               or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence):
                 p.kind = "signature"
                 p.owner = scope_path
+            elif p.marker.kind == "none" and blank is not None and stack == blank[0]:
+                p.owner = blank[1]  # a fill-in line holds no text: what follows it belongs to its parent
+                p.evidence.append(dict(FILL_IN_EVIDENCE))
             else:
                 p.owner = path_of(scope_path, stack)
         # headings/titles before the first marker belong to the scope root (stack empty);
         # tables, captions, pictures follow the current owner; inside the requisite block
-        # they belong to the scope root
+        # they belong to the scope root; after a fill-in line they follow its parent
         current = scope_path
         for p in items:
             if p.flow == "body" and p.kind in {"text", "heading", "requisite"}:
-                current = p.owner
+                current = fill_parent.get(id(p), p.owner)
             elif p.kind == "signature":
                 continue
             elif p.flow == "body":

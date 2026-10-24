@@ -163,6 +163,8 @@
   no comparison file; old 56 rows and errors equal to `20261023-dev-regression-v4`). Track B runs `-cycle6-b<n>[-r<k>]`.
   Cycle 7: over 78 documents; `20261024-dev-regression-cycle7-baseline/` = frozen v5 (`summary.json` 20f70825…,
   no comparison file; old 67 rows and errors equal to `20261024-dev-regression-v5`). Track B runs `-cycle7-b<n>[-r<k>]`.
+  `20261024-batch-07-classes-cycle7/error-classes-{v5,v4}.json`: batch-7 first-pass classes re-run after the
+  cycle-7 B2 label (`POINT_TAIL`); the first-pass folder's own class files stay as written.
 
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written

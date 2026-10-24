@@ -850,6 +850,47 @@ def test_act_annexes_and_document_annexes_without_an_order_annex_are_unchanged()
     assert got["3.0"] == "A/AN1/AN1" and got["5.0"] == "A/AN3" and got["5.2"] == "A/AN3/1"
 
 
+COORDINATES = ("Table", "<table><tr><th>Номера точек</th><th>X</th></tr><tr><td>1</td><td></td></tr></table>")
+
+
+def form_with_numbered_lines(*lines):
+    """Requirements with a form annex: a sentence, numbered lines ``lines``, then a caption, tables, a scheme line,
+    a stamp and a list of the form's plans on the next page."""
+    return [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемые Требования."), ("Text", "Руководитель", 1200)],
+            [("Text", "УТВЕРЖДЕНЫ\nприказом Федеральной службы", 1000), ("Title", "ТРЕБОВАНИЯ"),
+             ("Text", "1. Требования устанавливают форму акта.")],
+            [("Text", "Приложение № 1\nк Требованиям к содержанию проекта", 1000), ("Text", "(форма)"),
+             ("Section-header", "ГОРНООТВОДНЫЙ АКТ"),
+             ("Text", "Пользователь недр несет ответственность за соблюдение требований:"), *lines,
+             ("Caption", "Координаты угловых точек горного отвода"), COORDINATES,
+             ("Text", "План (схема) границ горного отвода:"), COORDINATES, ("Text", "М.П.")],
+            [("Text", "Приложения:"), ("Text", "План горного отвода, масштаб: ____________"),
+             ("Text", "Разрезы (профили), масштаб: ____________")]]
+
+
+def test_text_after_numbered_fill_in_lines_of_a_form_belongs_to_the_form():
+    """Cycle 7 B2 (Review Focus 2, batch-7 gold): the blank lines «1. ___», «2. ___» of a form are its points, but
+    they hold no text, so the caption, tables, scheme line, stamp and the list «Приложения: …» after them belong to
+    the form itself, not to the last blank line."""
+    got = owners(S.build(extraction(form_with_numbered_lines(("Text", "1. __________"), ("Text", "2. __________")))))
+    assert got["3.0"] == got["3.3"] == "S/AN1"
+    assert got["3.4"] == "S/AN1/1" and got["3.5"] == "S/AN1/2"
+    assert [got[f"3.{k}"] for k in range(6, 11)] == ["S/AN1"] * 5
+    assert [got[f"4.{k}"] for k in range(3)] == ["S/AN1"] * 3
+    assert S.fill_in_line("2. __________") and S.fill_in_line("3) ....... ") and S.fill_in_line("4. _____ ______")
+    assert not S.fill_in_line("2. Координаты: ______") and not S.fill_in_line("__________")
+
+
+def test_text_after_a_numbered_point_with_its_own_text_stays_in_the_point():
+    """Negative controls: a numbered line with text keeps the caption, tables and lines after it; a blank line followed
+    by a point with text does not move that point's tables."""
+    pages = form_with_numbered_lines(("Text", "1. __________"), ("Text", "2. Координаты определяются в системе МСК."))
+    got = owners(S.build(extraction(pages)))
+    assert got["3.4"] == "S/AN1/1" and got["3.5"] == "S/AN1/2"
+    assert [got[f"3.{k}"] for k in range(6, 11)] == ["S/AN1/2"] * 5
+    assert [got[f"4.{k}"] for k in range(3)] == ["S/AN1/2"] * 3
+
+
 def test_annex_reference_inside_a_sentence_opens_no_annex():
     pages = [[("Text", "1. Утвердить Порядок."), ("Text", "2. Контроль оставляю за собой.")],
              [("Text", "УТВЕРЖДЕН\nприказом Федеральной службы", 1000), ("Section-header", "I. Общие положения"),
