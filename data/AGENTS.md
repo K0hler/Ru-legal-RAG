@@ -96,6 +96,11 @@
   `git apply -R --check` passes) `ocr/<slug>/run-01`: 11/11 complete, 178 pages, 1703 regions, 19 tables,
   0 `grid: "unresolved"`, 0 rotation retries, all replays equal; prikaz-minenergetiki-90-2019 holds 19%.
   Summary `experiments/20261024-batch-07-ocr/summary.json` (54204f10…, `--table-stats`). No refill.
+  Gold (v2 incl. §5-§6, 6 Codex jobs run with `codex exec -c features.memories=false`, 11 acts, 1477 regions, 96 `+`,
+  no parts, no `exceptions.json`, no format fixes) frozen in `experiments/20261024-batch-07-gold-freeze/`
+  (`freeze.json` d8c5abbc…; `freeze-addendum.json` b5e636ef… records v2, `single_annex` + `attached_ordinal` defaults,
+  doubts and strict blindness: all 11 notes say «Память Codex: не загружалась», job logs show no memory reads).
+  prikaz-minenergetiki-90-2019 30.8-31.8 (12 regions) carry `S/AN3|S/AN3/I` or `|S/AN3/II` (form headings outside the grid).
 
 - Check-pool batch 6 first pass: `m1/m1-04a/experiments/20261024-batch-06-first-pass/` (`freeze.json` /3 fe1d356b…,
   v4 + v3-1 frozen copies, `git_head` 78f4ac0, both equivalences). Run once (23.10 19:00 UTC); never re-run.
