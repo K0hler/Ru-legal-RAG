@@ -1411,3 +1411,36 @@ def test_dotted_subpoints_and_unbroken_sequences_are_unchanged():
     got = owners(S.build(extraction(pages)))
     assert [got[f"2.{k}"] for k in range(7, 12)] == ["S/5/5.1", "S/5/5.1/5.1.1", "S/5/5.1/5.1.2", "S/5/5.2",
                                                      "S/5/5.3"]
+
+
+def test_footnote_goes_to_the_point_of_its_last_mark_before_it_not_to_a_later_page():
+    """Cycle 6 B2 (Review Focus 2): point 2 continues on the next page and carries the mark «¹» there. The
+    footnote «¹» printed under page 2 belongs to point 1, whose mark is the last one before it; the text of
+    point 2 on page 3 comes after that footnote. The footnote under page 3 belongs to point 2."""
+    pages = costing(("Text", "5. Индексы применяются с оговоркой¹."),
+                    ("Text", "6. При определении прогнозных цен используются индексы"),
+                    ("Footnote", "¹ Сноска к пункту 5."))
+    pages.append([("Text", "по видам деятельности, указанным в оговорке¹."), ("Text", "7. Седьмой пункт."),
+                  ("Footnote", "¹ Сноска к пункту 6.")])
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["2.6"] == "S/5" and got["2.7"] == got["3.0"] == "S/6"
+    assert got["2.8"] == "S/5" and got["3.2"] == "S/6"
+
+
+def test_footnote_whose_mark_is_only_on_an_earlier_page_keeps_it():
+    """Negative control: a footnote whose mark occurs only on an earlier page still goes to that point."""
+    pages = costing(("Text", "5. Индексы применяются с оговоркой¹."), ("Text", "6. Шестой пункт."))
+    pages.append([("Text", "7. Седьмой пункт."), ("Footnote", "¹ Сноска к пункту 5.")])
+    assert owners(S.build(extraction(pages)))["3.1"] == "S/5"
+
+
+@pytest.mark.parametrize("intro, owner", [("5. Индексы применяются к ценам¹:", "S/5"),
+                                          ("5. Индексы применяются к ценам:", "S/5/1")])
+def test_mark_repeated_on_the_footnote_page_gives_the_common_owner(intro, owner):
+    """Cycle 6 B2: the same mark printed twice on the footnote's page, in point 5 and in its subpoint 1), refers
+    to one footnote: it belongs to their common owner, point 5. With the mark only in the subpoint the footnote
+    stays with the subpoint."""
+    pages = costing(("Text", intro), ("Text", "1) на сырье по регулируемым ценам¹;"), ("Text", "2) на изделия."),
+                    ("Footnote", "¹ Перечень регулируемых цен утвержден Правительством."))
+    assert owners(S.build(extraction(pages)))["2.9"] == owner

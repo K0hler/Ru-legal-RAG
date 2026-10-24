@@ -175,6 +175,12 @@
   «5.1», «5.2» not printed) is a sibling (parent by prefix, cost 2 + gap) instead of the unexplained nesting into
   «5.1». Regression `…-cycle6-b1`: 13658/13730, minekonomicheskogo-37 210 -> 270, batch 6 1904/1925, no drops,
   no other document changed.
+- Cycle 6 B2 (prototype): footnote marks are searched per region and only before the footnote (a paragraph
+  joined across a page break no longer owns an earlier page's footnote; `candidates` now counts regions). One
+  mark on several regions of the footnote's page in one scope -> their common owner (evidence
+  `footnote_owner_common`; fires twice, minekonomicheskogo-37 12.10/25.4, as its gold notes). Regression
+  `…-cycle6-b2` (last-mark only, 13659) and `…-cycle6-b2-r2`: 13661/13730, minekonomicheskogo-37 273, batch 6
+  1907/1925, no drops, no other document changed. Footnotes whose mark OCR lost (35.4/35.5/36.4) stay wrong.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

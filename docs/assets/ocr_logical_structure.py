@@ -853,6 +853,17 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
             and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")}
 
 
+def common_owner(owners: list[str]) -> str:
+    """The longest common path prefix of owners in one scope («S/6» of «S/6» and «S/6/1»)."""
+    parts = [o.split("/") for o in owners]
+    common = []
+    for level in zip(*parts):
+        if len(set(level)) > 1:
+            break
+        common.append(level[0])
+    return "/".join(common)
+
+
 def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
@@ -1022,11 +1033,16 @@ def build(extraction: dict) -> dict:
 
     # footnotes: owner = latest preceding body paragraph carrying the same superscript marker; a table
     # may print the mark as HTML «<sup>1</sup>» instead of «¹» (Review Focus 2: two lists numbering
-    # their footnotes from «¹» each keep their own footnotes)
-    body_seen = []
+    # their footnotes from «¹» each keep their own footnotes). Cycle 6 (Review Focus 2): the mark is looked up
+    # region by region and only before the footnote: a paragraph continued on a later page carries marks of
+    # that page's footnotes, which do not make it the owner of an earlier footnote. The same mark printed
+    # more than once on the footnote's page (a point and its subpoint) refers to one footnote: it belongs to
+    # their common owner when they are in one scope.
+    scope_of = {id(q): scope_path for scope_path, items in scopes for q in items}
+    body_seen = []  # (region, paragraph) of body text seen so far
     for p in paragraphs:
         if p.flow == "body":
-            body_seen.append(p)
+            body_seen.extend((r, p) for r in p.regions)
             continue
         number = p.footnote
         if number is None:
@@ -1035,8 +1051,13 @@ def build(extraction: dict) -> dict:
             continue
         token = "".join(SUP[int(d)] for d in str(number))
         mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
-        hits = [q for q in body_seen if mark.search(q.text)]
-        p.owner = hits[-1].owner if hits else None
+        hits = sorted(((r, q) for r, q in body_seen if r.order < p.first.order and mark.search(r.text)),
+                      key=lambda hit: hit[0].order)
+        p.owner = hits[-1][1].owner if hits else None
+        page_hits = [q for r, q in hits if r.page == p.first.page]
+        if len({q.owner for q in page_hits}) > 1 and len({scope_of.get(id(q)) for q in page_hits}) == 1                 and all(q.owner for q in page_hits):
+            p.owner = common_owner([q.owner for q in page_hits])
+            p.evidence.append({"footnote_owner_common": "mark repeated on the footnote's page"})
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})
 
     region_owner = {}
