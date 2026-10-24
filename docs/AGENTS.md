@@ -167,6 +167,10 @@
   `list_line`/`roman_sequence` never. Classifier batch-6 rules (`_batch6_before_scheme_list`, `_batch6_cause`): dotted
   gap, footnote to another point, subpoint closed early, signature heading of an attached document; batch 1-5 class
   files unchanged (21 files equal before/after). `POOL_STATUS` has batch-06 (development).
+- Cycle 6 A1: dev regression covers 67 documents (+ `BATCH_6` on frozen `20261023-batch-06-gold-freeze`). Baseline
+  of frozen v4 `…/20261024-dev-regression-cycle6-baseline/`: 13598/13730 no_section and strict, `cross_scope_v2` 0;
+  old 56 11754 with rows/errors equal to `…-v4`; batch 6 1844/1925 (minekonomicheskogo-37 210/288, rp-356 82/84,
+  pp-887 571/572). Track B gates with `--baseline` it.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

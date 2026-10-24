@@ -137,6 +137,8 @@
   Cycle 5: over 56 documents; `20261023-dev-regression-cycle5-baseline/` = frozen v3.1 (`summary.json` a290a161…,
   no comparison file; old 45 rows and errors checked equal to `20261023-dev-regression-v3-1`). Track B runs
   `-cycle5-b<n>[-r<k>]` with `--baseline` it; failed runs are kept.
+  Cycle 6: over 67 documents; `20261024-dev-regression-cycle6-baseline/` = frozen v4 (`summary.json` b22d8af9…,
+  no comparison file; old 56 rows and errors equal to `20261023-dev-regression-v4`). Track B runs `-cycle6-b<n>[-r<k>]`.
 
 - `m1/experiments/m1-04a-20261017-logical-v1/` retains the logical-paragraph
   experiment: copied extractions, hand-made owner gold with freeze hashes written

@@ -67,6 +67,7 @@
   default only after batch-04, rescore/regression opt-in/opt-out and the classifier's renamed reading.
   Cycle 4 A2: the regression set has 45 documents (batch 4 on `.gold.txt`, families by prefix).
   Cycle 5 A1: 56 documents (batch 5 on `.gold.txt`, rp-1099 the stitched file).
+  Cycle 6 A1: 67 documents (batch 6 on `.gold.txt`).
   Cycle 5 B1 (`test_ocr_logical_structure.py`): rubrics «I. Подпрограмма …» and rows «1.», «1.1» between the
   parts of a table that opens an annex are annex text (evidence `table_row`); negatives: «2.» after a table in
   ordinary text or in an annex whose first point precedes the table, a point after the last table, and an

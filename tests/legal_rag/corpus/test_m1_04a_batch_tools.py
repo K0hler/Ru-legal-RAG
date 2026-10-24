@@ -189,16 +189,17 @@ def test_dev_regression_records_repo_relative_paths():
     assert D.recorded_path(D.ROOT / "data" / "x" / ".." / "summary.json") == "data/summary.json"
 
 
-def test_dev_regression_56_documents_families_and_cross_scope_v2(tmp_path):
+def test_dev_regression_67_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
-    assert len(docs) == 56 and len({d["name"] for d in docs}) == 56
+    assert len(docs) == 67 and len({d["name"] for d in docs}) == 67
     sizes = {}
     for d in docs:
         sizes[d["group"]] = sizes.get(d["group"], 0) + 1
-    assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9, "batch-4": 11, "batch-5": 11}
+    assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9, "batch-4": 11, "batch-5": 11,
+                     "batch-6": 11}
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs
-               if d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5"))
+               if d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6"))
     # Batch 4 is scored on its frozen gold; families come from the slug prefix.
     assert [D.family(d["name"]) for d in docs if d["group"] == "batch-4"] == [
         "законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
@@ -207,6 +208,10 @@ def test_dev_regression_56_documents_families_and_cross_scope_v2(tmp_path):
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-5") == sorted(
         ["распоряжения", "приказы", "законы", "указы", "законы", "законы", "распоряжения", "приказы", "приказы",
          "постановления", "постановления"])
+    # Batch 6 is scored on its frozen gold (no page-range parts).
+    assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-6") == sorted(
+        ["постановления", "законы", "приказы", "законы", "законы", "распоряжения", "распоряжения", "приказы",
+         "приказы", "постановления", "указы"])
     rp = next(d["gold"] for d in docs if d["name"] == "rp-1099-2014")
     assert (rp.parent.name, rp.name) == ("rp-1099-2014", "agent-rp-1099-2014.gold.txt")
     assert {D.family(d["name"]) for d in docs} == set(D.FAMILIES)
