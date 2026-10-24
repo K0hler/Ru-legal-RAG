@@ -850,6 +850,20 @@ def test_act_annexes_and_document_annexes_without_an_order_annex_are_unchanged()
     assert got["3.0"] == "A/AN1/AN1" and got["5.0"] == "A/AN3" and got["5.2"] == "A/AN3/1"
 
 
+
+def test_act_annex_inside_an_approved_text_does_not_take_the_approved_text_annexes():
+    """Cycle 7 final review: after «УТВЕРЖДЕН … ПОРЯДОК» an act annex (a form «Приложение № 1 к приказу») does not
+    make the next «Приложение № 1 к Порядку …» its annex: that one is an annex of the approved text (`S/AN1`, as
+    v5); only an act annex opened before any approved text nests the document annexes after it."""
+    pages = ordered_porydok(("Text", "2. Второй пункт."))
+    pages.append([("Page-header", ORDER_CAPTION.format(n=1), 1000), ("Text", "(форма)"), ("Text", "Заявление")])
+    pages.append([("Page-header", "Приложение № 1\nк Порядку проведения проверки", 1000),
+                  ("Text", "1. Позиция приложения.")])
+    got = owners(S.build(extraction(pages)))
+    assert got["3.0"] == "A/AN1"
+    assert got["4.0"] == "S/AN1" and got["4.1"] == "S/AN1/1"
+
+
 COORDINATES = ("Table", "<table><tr><th>Номера точек</th><th>X</th></tr><tr><td>1</td><td></td></tr></table>")
 
 
@@ -917,6 +931,20 @@ def test_asterisk_footnote_without_its_mark_on_the_page_stays_unowned():
     pages[2][-1:] = [GEO_TABLE]
     pages[3].append(("Footnote", "*- с точностью до 10 см;"))
     assert owners(S.build(extraction(pages)))["4.3"] is None
+
+
+
+def test_markdown_emphasis_is_not_an_asterisk_footnote_mark():
+    """Cycle 7 final review: OCR markdown emphasis («*курсив*», «**Примечание**») is not an asterisk mark: an italic
+    body line owns no «* …» footnote, and a bold «**Примечание**» footnote stays unowned."""
+    pages = form_with_numbered_lines(("Text", "1. __________"))
+    pages[2][-1:] = [("Text", "*Заполняется заявителем*"), ("Footnote", "* с точностью до 10 см;")]
+    assert owners(S.build(extraction(pages)))["3.10"] is None
+    pages = form_with_numbered_lines(("Text", "1. __________"))
+    pages[2][-1:] = [GEO_TABLE, ("Footnote", "**Примечание**: координаты приводятся в МСК.")]
+    assert owners(S.build(extraction(pages)))["3.10"] is None
+    assert S.strip_emphasis("*Заполняется* заявителем**") == "Заполняется заявителем**"
+    assert S.strip_emphasis("Северная широта *") == "Северная широта *"
 
 
 def form_with_signatures(last):

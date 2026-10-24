@@ -92,6 +92,8 @@
   root; negatives: a terminated sentence about signatures, a long colon line.
   Cycle 7 B4: «От Сторон …» (with or without a dot) stays in the last point, «От Правительства …» still opens the
   block; dotted-gap limit: «5.5» after «5.1» nests in «5.1», «5.4» is a sibling.
+  v6.1: inside «УТВЕРЖДЕН … ПОРЯДОК» a form «к приказу» does not nest «Приложение № 1 к Порядку …» (`S/AN1`);
+  markdown emphasis («*…*» body line, «**Примечание**» footnote) is no asterisk mark.
   Cycle 6 B1: «5.3» after «5.1» and an unnumbered block is a sibling under «5.» (flat at an annex root without
   «5.»); negatives: «5.1.1» in «5.1», unbroken «5.1, 5.2, 5.3».
   Cycle 6 B2: a footnote goes to the last mark before it, not to a point continued on the next page with the

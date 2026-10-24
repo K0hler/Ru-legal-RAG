@@ -236,6 +236,14 @@
   `20261024-dev-regression-v6` vs the cycle-7 baseline (v5): 15137/15207 no_section and strict (v5 15057),
   `cross_scope_v2` 0, exit 0; rows/errors equal `…-cycle7-b4`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V6_2026-10-24.md`
   (development, batch 7 included; batch 8 is the measure).
+- Cycle 7 final-review fix: prototype v6.1 `ocr-logical-structure/6.1-experiment` (sha256 e8d2784c… CRLF working
+  copy, LF 6d3bd31a…, blob 8dc4f5c5) frozen in `data/m1/m1-04a/experiments/20261024-prototype-v6-1-freeze/`; the v6
+  freeze stays as history (never measured on a new batch). An act annex nests later document annexes only when it was
+  opened while no approved text was open (inside «УТВЕРЖДЕН … ПОРЯДОК» a form «к приказу» leaves «Приложение № 1 к
+  Порядку …» as `S/AN1`); balanced markdown emphasis (`strip_emphasis`) is removed from footnote and body text before
+  asterisk-mark matching. The classifier's `FILL_IN` copy must equal the prototype's. `FORM_SIGNATURE_HEADING` also
+  accepts «Подписи сторон:» (unchanged). Regression `20261024-dev-regression-v6-1` vs v6: 15137/15207, rows and
+  errors identical, exit 0. Batch 8 measures v6.1 (report `M1_04A_PROTOTYPE_V6_2026-10-24.md` §8).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

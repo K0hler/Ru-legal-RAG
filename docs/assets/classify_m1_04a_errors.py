@@ -390,6 +390,7 @@ def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dic
     return {**error, "gold": gold, "predicted": predicted}
 
 
+# Must equal ocr_logical_structure.FILL_IN (copied: the classifier does not import the prototype).
 FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}$")
 
 

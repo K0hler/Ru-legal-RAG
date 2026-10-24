@@ -31,7 +31,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-VERSION = "ocr-logical-structure/6-experiment"
+VERSION = "ocr-logical-structure/6.1-experiment"
 
 SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUP_DIGIT = {c: str(i) for i, c in enumerate(SUP)}
@@ -488,6 +488,13 @@ def requisite_like(text: str) -> bool:
 
 # A footnote marked by asterisks instead of a number: «*- с точностью до 10 см;», «** …».
 ASTERISK_NOTE = re.compile(r"^(\*{1,3})(?!\*)\s*[-–—]?\s*\S")
+# OCR markdown emphasis («*курсив*», «**Примечание**»): a balanced pair inside one line and one table cell.
+EMPHASIS = re.compile(r"(?<!\*)(\*{1,3})(?=[^\s*])([^*\n<>]+?)(?<=\S)\1(?!\*)")
+
+
+def strip_emphasis(text: str) -> str:
+    """Text without balanced markdown emphasis pairs, so they are not read as asterisk footnote marks."""
+    return EMPHASIS.sub(r"\2", text)
 
 
 # A numbered fill-in line of a form: the marker and only a blank («2. __________», «3) .......»).
@@ -1013,7 +1020,9 @@ def build(extraction: dict) -> dict:
             if nested:
                 p.evidence.append({"nested_annex": "annex of the attached document printed as an act annex"})
             else:
-                act_annex_document = scope if base == "A" and to_act else None
+                # only an act annex opened before any approved text: inside «УТВЕРЖДЕН … ПОРЯДОК» an act annex
+                # (a form «к приказу») leaves «Приложение № 1 к Порядку …» to the approved text (`S/AN1`)
+                act_annex_document = scope if base == "A" and to_act and not approved_opened else None
             scopes.append((scope, [p]))
             scope_captions = {text}
             continue
@@ -1108,7 +1117,7 @@ def build(extraction: dict) -> dict:
             body_seen.extend((r, p) for r in p.regions)
             continue
         number = p.footnote
-        stars = ASTERISK_NOTE.match(p.text)
+        stars = ASTERISK_NOTE.match(strip_emphasis(p.text))
         if number is None and stars is None:
             p.owner = None
             p.evidence.append({"footnote_owner": "unnumbered"})
@@ -1119,7 +1128,8 @@ def build(extraction: dict) -> dict:
         else:
             token = "".join(SUP[int(d)] for d in str(number))
             mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
-        hits = sorted(((r, q) for r, q in body_seen if r.order < p.first.order and mark.search(r.text)
+        hits = sorted(((r, q) for r, q in body_seen if r.order < p.first.order
+                       and mark.search(r.text if number is not None else strip_emphasis(r.text))
                        and (number is not None or r.page == p.first.page)), key=lambda hit: hit[0].order)
         p.owner = hits[-1][1].owner if hits else None
         page_hits = [q for r, q in hits if r.page == p.first.page]
