@@ -85,6 +85,13 @@
   earlier annotation jobs before its job file; no sign of influence in the notes). minek-37 27.1-28.2 carry
   `S/AN5|S/AN5/5.2`; its flat `S/AN5/5.N` are not §5 exceptions (annex 5 has no point «5.»).
 
+- Check-pool batch 7: `m1/m1-04a/documents/pool/batch-07/selection.json` (frozen 24.10, sha256 4e7736e4…,
+  profile `batch-07`, seed 20261027, 120 days 2011-2025 not sampled by batches 1-6, pool/2, 11 acts, 5 long,
+  `soft_fallbacks` 1: 411-FZ/2016 (3 p., same issuer-day as 410-FZ); feed cache `feed-cache-b7.json` 2b619823…,
+  command in `selection-provenance.json`, code 144760e). Its `scripts_dirty: true` is the uncommitted
+  `build_m1_04a_catalog.py` `POOL_BATCHES` edit; selection code and `src/legal_rag/sources` equal 144760e.
+  Ukaz 410/2021 is an appointment decree (judges): personal names stay out of docs.
+
 - Check-pool batch 6 first pass: `m1/m1-04a/experiments/20261024-batch-06-first-pass/` (`freeze.json` /3 fe1d356b…,
   v4 + v3-1 frozen copies, `git_head` 78f4ac0, both equivalences). Run once (23.10 19:00 UTC); never re-run.
   `error-classes-{v4,v3-1}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261026, no ukaz-1711 rows) stays
