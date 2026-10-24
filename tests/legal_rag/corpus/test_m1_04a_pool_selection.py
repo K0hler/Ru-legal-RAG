@@ -1239,3 +1239,43 @@ def test_catalog_records_batch_06_measured_then_development():
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261024-batch-06-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_6_2026-10-24.md"
+
+
+def test_batch_07_profile_repeats_batch_06_with_prior_batches_01_to_06():
+    b6, b7 = P.PROFILES["batch-06"], P.PROFILES["batch-07"]
+    assert {k: v for k, v in b7.items() if k != "prior_batches"} == {
+        k: v for k, v in b6.items() if k != "prior_batches"}
+    assert b7["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06")
+    assert b7["quotas"] == P.BATCH4_QUOTAS and b7["long_min"] == 4 and b7["pages_range"] == (3, 200)
+    assert b7["preferred_pages_min"] == 5 and b7["one_per_issuer_day"] is True
+
+
+def test_profiles_01_to_06_unchanged_by_batch_07():
+    assert P.PROFILES["batch-06"]["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05")
+    assert P.PROFILES["batch-05"]["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04")
+    assert P.PROFILES["batch-04"]["prior_batches"] == ("batch-01", "batch-02", "batch-03")
+    assert P.PROFILES["batch-03"]["prior_batches"] == ("batch-01", "batch-02")
+    assert "prior_batches" not in P.PROFILES["batch-02"] and "prior_batches" not in P.PROFILES["batch-01"]
+
+
+def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
+    import json
+
+    batch = Path(__file__).resolve().parents[3] / "data/m1/m1-04a/documents/pool/batch-06"
+    if not (batch / "feed-cache-b6.json").exists():
+        pytest.skip("local batch-06 data not present")
+    raw = (batch / "selection.json").read_bytes()
+    assert P.hashlib.sha256(raw).hexdigest().startswith("5d4f598a")
+    frozen = json.loads(raw)
+    cache = json.loads((batch / "feed-cache-b6.json").read_text(encoding="utf-8"))
+    profile = P.PROFILES["batch-06"]
+    result = P.select_pool(list(P.pool_from_cache(cache, frozen["days_sampled"]).values()), profile["quotas"],
+                           frozen["seed"], require_single_edition=False, already_used=set(frozen["already_used"]),
+                           pages_range=profile["pages_range"], long_min=profile["long_min"],
+                           preferred_pages_min=profile["preferred_pages_min"],
+                           one_per_issuer_day=profile["one_per_issuer_day"])
+    assert ids(result) == [row["eo_number"] for row in frozen["selected"]]
+    assert result["rejected"] == frozen["rejected"] and result["long_selected"] == frozen["long_selected"]
+    assert result["soft_fallbacks"] == frozen["soft_fallbacks"]
+    for row, frozen_row in zip(result["selected"], frozen["selected"]):
+        assert {k: frozen_row[k] for k in row} == row
