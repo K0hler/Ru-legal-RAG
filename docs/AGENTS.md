@@ -231,6 +231,11 @@
   after «5.1» stays nested, «5.4» is a sibling). Regression `…-cycle7-b4` equals `…-cycle7-b3-r2` (errors identical,
   15137/15207, batch 7 1471/1477), no drops. Left in batch 7 (6): OCR «з)» as «3)» (2, fz-15), page-footer codes
   (pp-1327 2 «291004 A5.doc» with a space, minobrazovaniya-1126 1), table caption «Таблица» at the root (1126 7.3).
+- Cycle 7 B5: prototype v6 `ocr-logical-structure/6-experiment` (sha256 f4deaf54… CRLF working copy, LF b747de3c…,
+  blob 3847f9a1) frozen in `data/m1/m1-04a/experiments/20261024-prototype-v6-freeze/`; regression
+  `20261024-dev-regression-v6` vs the cycle-7 baseline (v5): 15137/15207 no_section and strict (v5 15057),
+  `cross_scope_v2` 0, exit 0; rows/errors equal `…-cycle7-b4`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V6_2026-10-24.md`
+  (development, batch 7 included; batch 8 is the measure).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
