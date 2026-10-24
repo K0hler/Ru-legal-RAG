@@ -190,6 +190,11 @@
   after an unterminated text paragraph (no table/heading between) continues its sentence and opens nothing; the
   «inside a sentence» test now has that failing case. Regression `…-cycle6-b4` equals `…-cycle6-b3` (13663/13730),
   evidence counts unchanged (`roman_sequence` 1, `table_row` 39), no drops.
+- Cycle 6 B5: prototype v5 `ocr-logical-structure/5-experiment` (sha256 6c590866… CRLF working copy, LF a7a8b659…,
+  blob 1de3f652) frozen in `data/m1/m1-04a/experiments/20261024-prototype-v5-freeze/`; regression
+  `20261024-dev-regression-v5` vs the cycle-6 baseline (v4): 13663/13730 no_section and strict (v4 13598), exit 0;
+  rows/errors equal `…-cycle6-b4`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V5_2026-10-24.md` (development,
+  batch 6 included; batch 7 is the measure).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
