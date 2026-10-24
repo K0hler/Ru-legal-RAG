@@ -91,6 +91,11 @@
   command in `selection-provenance.json`, code 144760e). Its `scripts_dirty: true` is the uncommitted
   `build_m1_04a_catalog.py` `POOL_BATCHES` edit; selection code and `src/legal_rag/sources` equal 144760e.
   Ukaz 410/2021 is an appointment decree (judges): personal names stay out of docs.
+  Acquired 24.10 (pool/2, 11/11 `new` then `unchanged`, no refill; catalog `pool/batch-07/index.json`, batches 1-6
+  indexes unchanged). OCR with the rotation retry (`ocr.rotation-retry.local.json` ec2ba2ee…, OCR-Lab client 6beed388…,
+  `git apply -R --check` passes) `ocr/<slug>/run-01`: 11/11 complete, 178 pages, 1703 regions, 19 tables,
+  0 `grid: "unresolved"`, 0 rotation retries, all replays equal; prikaz-minenergetiki-90-2019 holds 19%.
+  Summary `experiments/20261024-batch-07-ocr/summary.json` (54204f10…, `--table-stats`). No refill.
 
 - Check-pool batch 6 first pass: `m1/m1-04a/experiments/20261024-batch-06-first-pass/` (`freeze.json` /3 fe1d356b…,
   v4 + v3-1 frozen copies, `git_head` 78f4ac0, both equivalences). Run once (23.10 19:00 UTC); never re-run.

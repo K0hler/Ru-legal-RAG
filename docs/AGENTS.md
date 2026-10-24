@@ -144,6 +144,8 @@
   (the feed cache is written into it).
 - Selection profile `batch-06`: batch-05 settings unchanged, `prior_batches` 01-05 (test pins it and profiles 01-05).
   Profile `batch-07`: batch-06 settings, `prior_batches` 01-06 (test pins it and profiles 01-06).
+  `run_m1_04a_ocr.ps1 -Slugs` needs a real array: use `powershell -Command "& './docs/assets/run_m1_04a_ocr.ps1'
+  -Slugs @('a','b')"`; with `-File`, `a,b` arrives as one string.
   Pool slug: a number without leading digits (FNS «ЕД-7-20/957@») uses the serial after the last «/».
   `summarize_m1_04a_ocr.py --table-stats` (batch 6 on) adds regions, tables, `grid: "unresolved"` tables and
   rotation-retry pages per act; batch 1-5 summaries reproduce without it.
