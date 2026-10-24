@@ -203,6 +203,10 @@
   `20261024-dev-regression-v5` vs the cycle-6 baseline (v4): 13663/13730 no_section and strict (v4 13598), exit 0;
   rows/errors equal `…-cycle6-b4`. Report `milestones/m1/04a/M1_04A_PROTOTYPE_V5_2026-10-24.md` (development,
   batch 6 included; batch 7 is the measure).
+- Cycle 7 A1: dev regression covers 78 documents (+ `BATCH_7` on frozen `20261024-batch-07-gold-freeze`). Baseline
+  of frozen v5 `…/20261024-dev-regression-cycle7-baseline/`: 15057/15207 no_section and strict, `cross_scope_v2` 62;
+  old 67 13663 with rows/errors equal to `…-v5`; batch 7 1394/1477 (minenergetiki-90 240/302, fsetan-461 173/188).
+  Track B gates with `--baseline` it.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

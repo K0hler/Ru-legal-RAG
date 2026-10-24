@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 67 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 78 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -21,7 +21,9 @@ Documents: the 8 earlier development documents (``logical-v1/inputs`` + ``gold``
 check-pool batch 1, the 9 + 9 of batches 2 (gold-v2) and 3 (gold as frozen) and the 11 of
 batch 4 (gold as frozen in ``20261023-batch-04-gold-freeze``, cycle 4) and the 11 of batch 5 (gold as
 frozen in ``20261023-batch-05-gold-freeze``, rp-1099 stitched from its two page-range parts, cycle 5) and
-the 11 of batch 6 (gold as frozen in ``20261023-batch-06-gold-freeze``, cycle 6); all are development since their first pass. Only gold keys are scored, so a gold that covers a
+the 11 of batch 6 (gold as frozen in ``20261023-batch-06-gold-freeze``, cycle 6) and the 11 of batch 7
+(gold as frozen in ``20261024-batch-07-gold-freeze``, cycle 7); all are development since their first
+pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
@@ -55,6 +57,9 @@ BATCH_5 = ("rp-1099-2014", "prikaz-fsnson-1112-2022", "fz-364-2021", "ukaz-669-2
 BATCH_6 = ("pp-887-2023", "fz-67-2012", "prikaz-minekonomicheskogo-37-2015", "fz-384-2019", "fz-367-2019",
            "rp-2390-2020", "rp-356-2022", "prikaz-minprosveshcheniya-211-2023", "prikaz-fns-957-2020", "pp-1438-2019",
            "ukaz-1711-2012")
+BATCH_7 = ("prikaz-minenergetiki-90-2019", "fz-15-2013", "fz-410-2016", "fz-411-2016", "pp-1327-2019", "pp-1782-2025",
+           "prikaz-fsetan-461-2017", "prikaz-minobrazovaniya-1126-2017", "rp-2299-2017", "rp-915-2019",
+           "ukaz-410-2021")
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -94,7 +99,8 @@ def development_documents() -> list[dict]:
              "gold": OLD / "gold" / f"{n}.gold.txt"} for n in OLD_NAMES]
     for group, slugs, suffix in (("batch-1", BATCH_1, "gold"), ("batch-2", BATCH_2, "gold-v2"),
                                  ("batch-3", BATCH_3, "gold"), ("batch-4", BATCH_4, "gold"),
-                                 ("batch-5", BATCH_5, "gold"), ("batch-6", BATCH_6, "gold")):
+                                 ("batch-5", BATCH_5, "gold"), ("batch-6", BATCH_6, "gold"),
+                                 ("batch-7", BATCH_7, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})
