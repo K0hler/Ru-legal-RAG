@@ -181,6 +181,10 @@
   `footnote_owner_common`; fires twice, minekonomicheskogo-37 12.10/25.4, as its gold notes). Regression
   `…-cycle6-b2` (last-mark only, 13659) and `…-cycle6-b2-r2`: 13661/13730, minekonomicheskogo-37 273, batch 6
   1907/1925, no drops, no other document changed. Footnotes whose mark OCR lost (35.4/35.5/36.4) stay wrong.
+- Cycle 6 B3 (prototype): `requisite_like` also accepts an agreement signature heading (`SIGNATURE_HEADING`:
+  «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон», any case) and the signature place «От <Capitalised>»
+  (beside «За …»), still short and unterminated, so the requisite block opens there. Regression `…-cycle6-b3`:
+  13663/13730, rp-356 84/84, batch 6 1909/1925, no drops, no other document changed.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

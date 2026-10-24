@@ -418,10 +418,15 @@ REQUISITE_LINES = (
     re.compile(r"^Совершено\s+в\b"),  # closing formula of an agreement
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )
-# signer title or agreement signature place («За Правительство ...»): a short unterminated line
+# signer title or agreement signature place («За Правительство ...», «От Правительства ...»): a short
+# unterminated line
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
                     r"|Временно исполняющий обязанности|Главный государственный санитарный врач)\b"
-                    r"|За\s+[А-ЯЁ][а-яё]+)")
+                    r"|(?:За|От)\s+[А-ЯЁ][а-яё]+)")
+# the heading of an agreement's signature block: «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон»
+SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты)"
+                               r"(?:,?\s+(?:и\s+)?(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты))*"
+                               r"\s+сторон$", re.IGNORECASE)
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
 
 
@@ -444,8 +449,11 @@ def barcode_like(text: str) -> bool:
 def requisite_like(text: str) -> bool:
     """A requisite line of a signature block: signer title (optionally with initials and
     surname), initials and surname, «Москва, Кремль»/«Москва», date, number, registration
-    mark, agreement closing formula and signature places, barcode. Text-only."""
+    mark, agreement closing formula, signature heading («Подписи и реквизиты Сторон») and signature
+    places («За …», «От …»), barcode. Text-only."""
     if barcode_like(text) or any(p.match(text) for p in REQUISITE_LINES) or re.fullmatch(INITIALS, text):
+        return True
+    if SIGNATURE_HEADING.match(text):
         return True
     return bool(SIGNER.match(text)) and len(text) < 120 and not terminated(text)
 

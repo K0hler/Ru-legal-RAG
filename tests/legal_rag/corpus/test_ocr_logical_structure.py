@@ -1444,3 +1444,43 @@ def test_mark_repeated_on_the_footnote_page_gives_the_common_owner(intro, owner)
     pages = costing(("Text", intro), ("Text", "1) на сырье по регулируемым ценам¹;"), ("Text", "2) на изделия."),
                     ("Footnote", "¹ Перечень регулируемых цен утвержден Правительством."))
     assert owners(S.build(extraction(pages)))["2.9"] == owner
+
+
+def order_with_agreement(*signatures):
+    """An order approving a draft agreement whose last article ends with ``signatures``."""
+    return [[("Title", "РАСПОРЯЖЕНИЕ"), ("Text", "1. Одобрить проект Соглашения."),
+             ("Text", "2. Заместителю Председателя Правительства подписать Соглашение."),
+             ("Text", "Председатель Правительства\nРоссийской Федерации"), ("Text", "И.Иванов", 1220)],
+            [("Page-header", "Проект", 1320), ("Section-header", "СОГЛАШЕНИЕ"),
+             ("Section-header", "Статья 4"), ("Section-header", "Прочие условия"),
+             ("Text", "1. Соглашение вступает в силу со дня его подписания."),
+             ("Text", "2. Соглашение составлено в двух экземплярах."), *signatures]]
+
+
+def test_signature_heading_and_signature_places_after_the_last_point_belong_to_the_agreement():
+    """Cycle 6 B3 (Review Focus 3): after the last point of an attached agreement the signature block — the heading
+    «Подписи и реквизиты Сторон», a signature place «От Правительства …», a signer title and initials with a
+    surname — belongs to the agreement itself, not to its last point; the act's own signer belongs to the act."""
+    pages = order_with_agreement(("Section-header", "Подписи и реквизиты Сторон"),
+                                 ("Text", "От Правительства\nРоссийской Федерации", 300),
+                                 ("Text", "Заместитель Председателя\nПравительства Российской\nФедерации", 280),
+                                 ("Text", "____________ И.И.Петров\nМ.П.", 190),
+                                 ("Text", "От Государственной корпорации", 870), ("Text", "Генеральный директор", 930))
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/1" and got["1.2"] == "A/2" and got["1.3"] == got["1.4"] == "A"
+    assert got["2.5"] == "S/ст4/2"
+    assert [got[f"2.{k}"] for k in range(6, 12)] == ["S"] * 6
+    for text in ("Подписи и реквизиты Сторон", "Адреса и реквизиты сторон", "Реквизиты и подписи Сторон",
+                 "От Правительства Российской Федерации", "От Государственной корпорации"):
+        assert S.requisite_like(text), text
+
+
+def test_text_of_the_last_point_that_starts_like_a_signer_stays_in_the_point():
+    """Negative controls: an ordinary sentence of the last point that begins with «Председатель» or «От», or that
+    mentions the parties' requisites, stays in the point."""
+    for line in ("Председатель комиссии утверждает состав рабочей группы.",
+                 "От имени Сторон Соглашение подписывают уполномоченные лица.",
+                 "От Сторон требуется уведомлять друг друга об изменении реквизитов.",
+                 "Подписи и реквизиты Сторон приводятся в конце Соглашения."):
+        got = owners(S.build(extraction(order_with_agreement(("Text", line)))))
+        assert got["2.6"] == "S/ст4/2", line

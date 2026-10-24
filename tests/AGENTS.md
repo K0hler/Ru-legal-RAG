@@ -81,6 +81,8 @@
   «5.»); negatives: «5.1.1» in «5.1», unbroken «5.1, 5.2, 5.3».
   Cycle 6 B2: a footnote goes to the last mark before it, not to a point continued on the next page with the
   same mark; a mark only on an earlier page keeps that point; one mark twice on the page -> common owner.
+  Cycle 6 B3: «Подписи и реквизиты Сторон», «От Правительства …», signer and initials after an agreement's last
+  point -> `S`, the act's signer -> `A`; negatives: terminated «Председатель …»/«От …»/«Подписи …» sentences.
   Cycle 4 B1: leading-zero markers («01.», «02)», «001.») are list lines; «Состав работ: 01. …» lists under
   tables stay in «РАЗДЕЛ 1.», «10.» after «09.» continues the list, «10.» after other text stays a point;
   restarted «1.» after a table/heading takes the level of «N.»; negatives: no break, «1)» and «3.1.» after a table,
