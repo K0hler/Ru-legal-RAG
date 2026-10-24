@@ -919,6 +919,9 @@ def build(extraction: dict) -> dict:
     approved_count = 0
     approved_scope = "S"
     scope_captions: set[str] = set()  # caption texts of the current scope
+    # An attached document printed as an act annex («Приложение № 1 к приказу»): its own annexes
+    # («Приложение № 1 к Правилам …») open under it, `A/AN<n>/AN<m>`, until the next act annex.
+    act_annex_document = None
     act_kind = None  # the act's own kind: a header line, else the first approval caption
     page_first: dict[int, Paragraph] = {}  # the first body text paragraph of each page
     for q in paragraphs:
@@ -951,6 +954,7 @@ def build(extraction: dict) -> dict:
                 approved_opened = True
                 scope = "S" if approved_count == 1 else f"S{approved_count}"
                 approved_scope = scope
+                act_annex_document = None
                 scopes.append((scope, []))
                 scope_captions = set()
                 if pending_annex_caption is not None:
@@ -979,6 +983,9 @@ def build(extraction: dict) -> dict:
             reference = m.group("ref") or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
             to_act = annex_to_act(reference, act_kind)
             base = approved_scope if approved_opened and not to_act else "A"
+            nested = act_annex_document is not None and not to_act and bool(DOCUMENT_REFERENT.match(reference))
+            if nested:
+                base = act_annex_document
             if running and f"{base}/{label}" == scopes[-1][0]:
                 p.kind = "text"  # the current annex's caption repeated in a header: no new scope
                 scopes[-1][1].append(p)
@@ -988,6 +995,10 @@ def build(extraction: dict) -> dict:
                                "act_kind": act_kind,
                                "rule": "reference to the act (its own kind or «настоящему») -> act; "
                                        "otherwise the current approved text"})
+            if nested:
+                p.evidence.append({"nested_annex": "annex of the attached document printed as an act annex"})
+            else:
+                act_annex_document = scope if base == "A" and to_act else None
             scopes.append((scope, [p]))
             scope_captions = {text}
             continue

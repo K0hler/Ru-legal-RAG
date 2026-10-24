@@ -207,6 +207,11 @@
   of frozen v5 `…/20261024-dev-regression-cycle7-baseline/`: 15057/15207 no_section and strict, `cross_scope_v2` 62;
   old 67 13663 with rows/errors equal to `…-v5`; batch 7 1394/1477 (minenergetiki-90 240/302, fsetan-461 173/188).
   Track B gates with `--baseline` it.
+- Cycle 7 B1 (prototype, VERSION unchanged until B5): an act annex opened by a reference to the act («Приложение № 1
+  к приказу») is an attached document; a later caption with a capitalised document referent («Приложение № N к
+  Правилам …») opens `A/AN<k>/AN<n>` (evidence `nested_annex`) until the next act annex or approval caption.
+  Regression `…-cycle7-b1`: 15118/15207, minenergetiki-90 240 -> 301, batch 7 1455/1477, `cross_scope_v2` 62 -> 0,
+  no drops, no other document's errors changed. Left: 29.16 «Подписи членов рабочей комиссии:» in a form (`S/AN2`).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

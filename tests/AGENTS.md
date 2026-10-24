@@ -81,6 +81,9 @@
   Cycle 5 B3: a 590-character Text «V. …» after Section-header sections I–IV opens `S/V` with its points;
   negatives: only I or I–III before it (parametrised), a Roman number inside a sentence.
   Guard: a Text «V. …» ending «;»/«,»/«.» or longer than `ROMAN_TEXT_MAX` stays with the open point.
+  Cycle 7 B1: Rules attached as «Приложение № 1 к приказу» keep their annexes «Приложение № N к Правилам …»
+  (`A/AN1/AN<n>`, = gold `S/AN<n>` under the ordinal), «№ 2 к приказу» opens `A/AN2`; negatives: act annexes in
+  sequence, document annexes «к СП …» opened in the act body, a bare «Приложение № 3».
   Cycle 6 B1: «5.3» after «5.1» and an unnumbered block is a sibling under «5.» (flat at an annex root without
   «5.»); negatives: «5.1.1» in «5.1», unbroken «5.1, 5.2, 5.3».
   Cycle 6 B2: a footnote goes to the last mark before it, not to a point continued on the next page with the

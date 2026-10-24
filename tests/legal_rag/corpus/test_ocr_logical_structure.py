@@ -791,6 +791,65 @@ def test_annex_caption_to_attached_document_opens_its_annex():
     assert got["4.0"] == "A/AN2" and got["4.1"] == "A/AN2/1"
 
 
+ORDER_CAPTION = "Приложение № {n}\nк приказу Министерства\nот 11 февраля 2019 г. № 90"
+RULES_CAPTION = "Приложение № {n}\nк Правилам проведения испытаний\nгенерирующего оборудования"
+
+
+def order_with_rules_annexes():
+    """An order approving Rules («Приложение № 1 к приказу») with their own annexes («Приложение № 1-2 к
+    Правилам …») and a second attached document («Приложение № 2 к приказу»)."""
+    return [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемые Правила и изменения."),
+             ("Text", "2. Настоящий приказ вступает в силу."), ("Text", "Министр", 1200)],
+            [("Page-header", ORDER_CAPTION.format(n=1), 1000), ("Section-header", "ПРАВИЛА проведения испытаний"),
+             ("Section-header", "I. Общие положения"), ("Text", "1. Правила устанавливают порядок."),
+             ("Text", "2. Термины приведены в приложении № 1 к настоящим Правилам.")],
+            [("Page-header", RULES_CAPTION.format(n=1), 1000), ("Section-header", "Термины и определения"),
+             ("Text", "1. Испытание - проверка оборудования.")],
+            [("Text", RULES_CAPTION.format(n=2), 1000), ("Text", "Форма"), ("Text", "Акт испытаний"),
+             ("Text", "Подписи членов комиссии:")],
+            [("Page-header", ORDER_CAPTION.format(n=2), 1000), ("Section-header", "ИЗМЕНЕНИЯ"),
+             ("Text", "1. Пункт 5 изложить в новой редакции.")]]
+
+
+def test_annexes_of_rules_attached_as_an_order_annex_belong_to_the_rules():
+    """Cycle 7 B1 (Review Focus 1): Rules attached as «Приложение № 1 к приказу» have their own annexes «Приложение
+    № N к Правилам …» (`<rules>/AN<n>`), not act annexes with the same numbers; «Приложение № 2 к приказу» after
+    them opens the next attached document as before."""
+    result = S.build(extraction(order_with_rules_annexes()))
+    got = owners(result)
+    assert got["2.0"] == got["2.1"] == "A/AN1" and got["2.3"] == "A/AN1/I/1" and got["2.4"] == "A/AN1/I/2"
+    assert got["3.0"] == got["3.1"] == "A/AN1/AN1" and got["3.2"] == "A/AN1/AN1/1"
+    assert [got[f"4.{k}"] for k in range(4)] == ["A/AN1/AN2"] * 4
+    assert got["5.0"] == got["5.1"] == "A/AN2" and got["5.2"] == "A/AN2/1"
+    # gold names the Rules `S` and the changes `S2`: under the attached ordinal both match, no transfer
+    gold = {"2.0": "S", "2.3": "S/I/1", "3.0": "S/AN1", "3.2": "S/AN1/1", "4.0": "S/AN2", "4.3": "S/AN2",
+            "5.0": "S2", "5.2": "S2/1", "1.1": "A/1"}
+    gold = {k: {"owners": [v], "continuation": False} for k, v in gold.items()}
+    res = EVAL.evaluate(gold, got, None, single_annex=True, attached_ordinal=True)
+    assert res["strict"]["correct"] == len(gold)
+
+
+def test_act_annexes_and_document_annexes_without_an_order_annex_are_unchanged():
+    """Negative controls: annexes «к приказу» stay act annexes in sequence; a document annex opened directly in the
+    act («Приложение № 1 к СП …», no «к приказу» annex before it) does not make the next one nested; a bare
+    «Приложение № 3» after a Rules annex is an act annex as before."""
+    pages = order_with_rules_annexes()
+    pages[2][0] = ("Page-header", ORDER_CAPTION.format(n=2), 1000)
+    pages[3][0] = ("Text", ORDER_CAPTION.format(n=3), 1000)
+    pages[4][0] = ("Page-header", ORDER_CAPTION.format(n=4), 1000)
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"{n}.0"] for n in range(2, 6)] == ["A/AN1", "A/AN2", "A/AN3", "A/AN4"]
+    pages = [[("Text", "1. Правила применяются.")]]
+    pages += [[("Page-header", f"Приложение № {n} к СП 2.1.3684-21", 1000), ("Text", "1. Первый пункт.")]
+              for n in range(1, 4)]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"{n}.0"] for n in range(2, 5)] == ["A/AN1", "A/AN2", "A/AN3"]
+    pages = order_with_rules_annexes()
+    pages[4][0] = ("Page-header", "Приложение № 3", 1000)
+    got = owners(S.build(extraction(pages)))
+    assert got["3.0"] == "A/AN1/AN1" and got["5.0"] == "A/AN3" and got["5.2"] == "A/AN3/1"
+
+
 def test_annex_reference_inside_a_sentence_opens_no_annex():
     pages = [[("Text", "1. Утвердить Порядок."), ("Text", "2. Контроль оставляю за собой.")],
              [("Text", "УТВЕРЖДЕН\nприказом Федеральной службы", 1000), ("Section-header", "I. Общие положения"),
