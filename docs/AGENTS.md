@@ -220,6 +220,12 @@
   predicted point is a gold point whose every region is a fill-in line (`gold_fill_in_points`); batch 1-6 class
   files reproduce (23 equal to HEAD's output); batch-7 class files regenerated in
   `data/m1/m1-04a/experiments/20261024-batch-07-classes-cycle7/` (9 labels changed in each of v5/v4).
+- Cycle 7 B3 (prototype): an asterisk footnote («*- …», «** …», `ASTERISK_NOTE`) is owned like a numbered one by the
+  latest earlier body region with the same run of asterisks (not inside a longer run), searched only on the
+  footnote's page; a form signature heading «Подписи <1-5 lowercase words>:» (`FORM_SIGNATURE_HEADING`) is
+  `requisite_like`, so after the last point it opens the requisite block. Regressions `…-cycle7-b3` (footnotes only:
+  15136) and `…-cycle7-b3-r2`: 15137/15207, fsetan-461 188/188, minenergetiki-90 302/302, fz-433 +2, rp-1431 +1
+  (both old asterisk footnotes), batch 7 1471/1477, no drops.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

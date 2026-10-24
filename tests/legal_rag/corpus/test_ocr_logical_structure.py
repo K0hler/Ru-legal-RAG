@@ -891,6 +891,61 @@ def test_text_after_a_numbered_point_with_its_own_text_stays_in_the_point():
     assert [got[f"4.{k}"] for k in range(3)] == ["S/AN1/2"] * 3
 
 
+GEO_TABLE = ("Table", "<table><tr><th>Номера точек</th><th>Северная широта *</th><th>Восточная долгота**</th></tr>"
+                      "<tr><td>1</td><td></td><td></td></tr></table>")
+
+
+def test_asterisk_footnotes_belong_to_the_marked_table_on_their_page():
+    """Cycle 7 B3 (Review Focus 3): footnotes «*- …», «**- …» under a table whose header prints «*», «**» belong to
+    that table's owner (the form), not to nobody."""
+    pages = form_with_numbered_lines(("Text", "1. __________"))
+    pages[2][-1:] = [GEO_TABLE, ("Footnote", "*- с точностью до 10 см;"),
+                     ("Footnote", "**- с точностью до 2-х знаков после запятой.")]
+    got = owners(S.build(extraction(pages)))
+    assert got["3.9"] == got["3.10"] == got["3.11"] == "S/AN1"
+    assert S.ASTERISK_NOTE.match("*- с точностью") and S.ASTERISK_NOTE.match("** Сноска")
+    assert not S.ASTERISK_NOTE.match("****") and not S.ASTERISK_NOTE.match("*")
+
+
+def test_asterisk_footnote_without_its_mark_on_the_page_stays_unowned():
+    """Negative controls: «*» only inside «**», or a mark only on an earlier page, owns no footnote «* …»."""
+    pages = form_with_numbered_lines(("Text", "1. __________"))
+    pages[2][-1:] = [("Table", "<table><tr><th>Восточная долгота**</th></tr></table>"),
+                     ("Footnote", "* с точностью до 10 см;")]
+    assert owners(S.build(extraction(pages)))["3.10"] is None
+    pages = form_with_numbered_lines(("Text", "1. __________"))
+    pages[2][-1:] = [GEO_TABLE]
+    pages[3].append(("Footnote", "*- с точностью до 10 см;"))
+    assert owners(S.build(extraction(pages)))["4.3"] is None
+
+
+def form_with_signatures(last):
+    return [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемые Правила."), ("Text", "Министр", 1200)],
+            [("Text", "УТВЕРЖДЕНЫ\nприказом Министерства", 1000), ("Title", "ПРАВИЛА"),
+             ("Text", "1. Правила устанавливают форму акта.")],
+            [("Text", "Приложение № 1\nк Правилам проведения испытаний", 1000), ("Text", "ФОРМА"),
+             ("Section-header", "Акт о результатах опробования"), ("Text", "1. Основание назначения комиссии:"),
+             ("Text", "2. Решение рабочей комиссии:"), ("Text", "Генерирующее оборудование"),
+             ("Text", "успешно прошло комплексное опробование"), ("Text", last)]]
+
+
+def test_signature_heading_of_a_form_after_its_last_point_belongs_to_the_form():
+    """Cycle 7 B3 (Review Focus 3): «Подписи членов рабочей комиссии:» after the last point of a form opens its
+    signature block (form root), as the agreement heading «Подписи и реквизиты Сторон» does."""
+    got = owners(S.build(extraction(form_with_signatures("Подписи членов рабочей комиссии:"))))
+    assert got["3.4"] == "S/AN1/2" and got["3.6"] == "S/AN1/2" and got["3.7"] == "S/AN1"
+    assert S.requisite_like("Подписи членов комиссии:") and S.requisite_like("Подпись руководителя:")
+
+
+def test_sentence_about_signatures_in_the_last_point_stays_in_the_point():
+    """Negative controls: a sentence about signatures, or a long colon line, stays in the last point."""
+    for line in ("Подписи членов комиссии ставятся на каждом листе акта.",
+                 "Подписи членов комиссии, а также их должности и фамилии, приводятся в акте в следующем порядке:"):
+        got = owners(S.build(extraction(form_with_signatures(line))))
+        assert got["3.7"] == "S/AN1/2", line
+        assert not S.requisite_like(line), line
+
+
 def test_annex_reference_inside_a_sentence_opens_no_annex():
     pages = [[("Text", "1. Утвердить Порядок."), ("Text", "2. Контроль оставляю за собой.")],
              [("Text", "УТВЕРЖДЕН\nприказом Федеральной службы", 1000), ("Section-header", "I. Общие положения"),

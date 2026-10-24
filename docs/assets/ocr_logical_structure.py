@@ -454,6 +454,8 @@ SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|
                                r"(?:,?\s+(?:и\s+)?(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты))*"
                                r"\s+сторон$", re.IGNORECASE)
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
+# the signature heading of a form: «Подписи членов рабочей комиссии:», «Подпись руководителя:» (a few words, a colon)
+FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:$")
 
 
 PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
@@ -479,9 +481,13 @@ def requisite_like(text: str) -> bool:
     places («За …», «От …»), barcode. Text-only."""
     if barcode_like(text) or any(p.match(text) for p in REQUISITE_LINES) or re.fullmatch(INITIALS, text):
         return True
-    if SIGNATURE_HEADING.match(text):
+    if SIGNATURE_HEADING.match(text) or FORM_SIGNATURE_HEADING.match(text):
         return True
     return bool(SIGNER.match(text)) and len(text) < 120 and not terminated(text)
+
+
+# A footnote marked by asterisks instead of a number: «*- с точностью до 10 см;», «** …».
+ASTERISK_NOTE = re.compile(r"^(\*{1,3})(?!\*)\s*[-–—]?\s*\S")
 
 
 # A numbered fill-in line of a form: the marker and only a blank («2. __________», «3) .......»).
@@ -1102,14 +1108,19 @@ def build(extraction: dict) -> dict:
             body_seen.extend((r, p) for r in p.regions)
             continue
         number = p.footnote
-        if number is None:
+        stars = ASTERISK_NOTE.match(p.text)
+        if number is None and stars is None:
             p.owner = None
             p.evidence.append({"footnote_owner": "unnumbered"})
             continue
-        token = "".join(SUP[int(d)] for d in str(number))
-        mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
-        hits = sorted(((r, q) for r, q in body_seen if r.order < p.first.order and mark.search(r.text)),
-                      key=lambda hit: hit[0].order)
+        if number is None:
+            # «*- с точностью до 10 см», «** …»: the same run of asterisks, only on the footnote's page
+            mark = re.compile(rf"(?<!\*){re.escape(stars.group(1))}(?!\*)")
+        else:
+            token = "".join(SUP[int(d)] for d in str(number))
+            mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
+        hits = sorted(((r, q) for r, q in body_seen if r.order < p.first.order and mark.search(r.text)
+                       and (number is not None or r.page == p.first.page)), key=lambda hit: hit[0].order)
         p.owner = hits[-1][1].owner if hits else None
         page_hits = [q for r, q in hits if r.page == p.first.page]
         if len({q.owner for q in page_hits}) > 1 and len({scope_of.get(id(q)) for q in page_hits}) == 1                 and all(q.owner for q in page_hits):
