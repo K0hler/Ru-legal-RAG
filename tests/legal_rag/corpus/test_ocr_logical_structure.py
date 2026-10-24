@@ -1565,6 +1565,16 @@ def test_dotted_number_after_a_skipped_number_is_a_sibling_not_a_subpoint():
     assert [got[f"3.{k}"] for k in (4, 5, 6, 7)] == ["S/AN5/5.3", "S/AN5/5.4", "S/AN5/5.5", "S/AN5/5.6"]
 
 
+def test_dotted_gap_over_the_limit_stays_nested():
+    """Cycle 7 B4 (v5 review): the sibling reading covers a gap of 2-3 numbers only; «5.5» after «5.1» (three numbers
+    missing) keeps the earlier unexplained nesting into «5.1», while «5.4» after «5.1» is still a sibling."""
+    for number, expected in ((5, "S/5/5.1/5.5"), (4, "S/5/5.4")):
+        pages = costing(("Text", "5. Затраты группируются по статьям калькуляции:"),
+                        ("Text", "5.1. Статьи калькуляции."), *GAP_BLOCK, ("Text", f"5.{number}. Статья затрат."))
+        got = owners(S.build(extraction(pages)))
+        assert got["2.7"] == "S/5/5.1" and got["2.10"] == expected, number
+
+
 def test_dotted_subpoints_and_unbroken_sequences_are_unchanged():
     """Negative controls: a real subpoint «5.1.1» still nests in «5.1», and an unbroken «5.1, 5.2, 5.3» keeps its
     siblings under «5.»."""
@@ -1647,6 +1657,18 @@ def test_text_of_the_last_point_that_starts_like_a_signer_stays_in_the_point():
                  "Подписи и реквизиты Сторон приводятся в конце Соглашения."):
         got = owners(S.build(extraction(order_with_agreement(("Text", line)))))
         assert got["2.6"] == "S/ст4/2", line
+
+
+def test_unterminated_from_the_parties_line_stays_in_the_point():
+    """Cycle 7 B4 (v5 review): «От Сторон …» without a final dot names both parties, not one signature place, so it
+    opens no signature block; «От Правительства …» still does."""
+    for line in ("От Сторон требуется уведомлять друг друга об изменении реквизитов",
+                 "От Сторон", "от Сторон Соглашения"):
+        got = owners(S.build(extraction(order_with_agreement(("Text", line)))))
+        assert got["2.6"] == "S/ст4/2", line
+        assert not S.requisite_like(line), line
+    got = owners(S.build(extraction(order_with_agreement(("Text", "От Правительства Российской Федерации", 300)))))
+    assert got["2.6"] == "S"
 
 
 LONG_III = ("III. Объем финансирования мероприятий подпрограмм за счет средств федерального бюджета и внебюджетных "

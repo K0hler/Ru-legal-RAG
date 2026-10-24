@@ -445,10 +445,10 @@ REQUISITE_LINES = (
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )
 # signer title or agreement signature place («За Правительство ...», «От Правительства ...»): a short
-# unterminated line
+# unterminated line; «От Сторон» names both parties, not one signature place
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
                     r"|Временно исполняющий обязанности|Главный государственный санитарный врач)\b"
-                    r"|(?:За|От)\s+[А-ЯЁ][а-яё]+)")
+                    r"|(?:За|От)\s+(?!Сторон(?![а-яё]))[А-ЯЁ][а-яё]+)")
 # the heading of an agreement's signature block: «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон»
 SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты)"
                                r"(?:,?\s+(?:и\s+)?(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты))*"
@@ -1123,7 +1123,9 @@ def build(extraction: dict) -> dict:
                        and (number is not None or r.page == p.first.page)), key=lambda hit: hit[0].order)
         p.owner = hits[-1][1].owner if hits else None
         page_hits = [q for r, q in hits if r.page == p.first.page]
-        if len({q.owner for q in page_hits}) > 1 and len({scope_of.get(id(q)) for q in page_hits}) == 1                 and all(q.owner for q in page_hits):
+        if (len({q.owner for q in page_hits}) > 1
+                and len({scope_of.get(id(q)) for q in page_hits}) == 1
+                and all(q.owner for q in page_hits)):
             p.owner = common_owner([q.owner for q in page_hits])
             p.evidence.append({"footnote_owner_common": "mark repeated on the footnote's page"})
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})

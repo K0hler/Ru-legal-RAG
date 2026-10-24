@@ -226,6 +226,11 @@
   `requisite_like`, so after the last point it opens the requisite block. Regressions `…-cycle7-b3` (footnotes only:
   15136) and `…-cycle7-b3-r2`: 15137/15207, fsetan-461 188/188, minenergetiki-90 302/302, fz-433 +2, rp-1431 +1
   (both old asterisk footnotes), batch 7 1471/1477, no drops.
+- Cycle 7 B4 (v5 review minors): `SIGNER` no longer takes «От Сторон…» (both parties, not a signature place) as a
+  signature place; the footnote common-owner condition is split over lines; a test pins the dotted-gap limit («5.5»
+  after «5.1» stays nested, «5.4» is a sibling). Regression `…-cycle7-b4` equals `…-cycle7-b3-r2` (errors identical,
+  15137/15207, batch 7 1471/1477), no drops. Left in batch 7 (6): OCR «з)» as «3)» (2, fz-15), page-footer codes
+  (pp-1327 2 «291004 A5.doc» with a space, minobrazovaniya-1126 1), table caption «Таблица» at the root (1126 7.3).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
