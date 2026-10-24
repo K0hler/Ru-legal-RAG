@@ -1371,3 +1371,43 @@ def test_text_roman_that_reads_like_a_running_sentence_opens_no_section(text):
     pages[1] += [("Text", text), ("Text", "Перечень органов определяется Правилами.")]
     got = owners(S.build(extraction(pages)))
     assert got["2.13"] == got["2.14"] == "S/IV/8"
+
+
+def costing(*body, annex=False):
+    """An order approving a costing procedure; ``body`` follows points «1.»–«4.» (or opens annex № 5)."""
+    pages = [[("Text", "1. Утвердить прилагаемый Порядок."), ("Text", "Министр", 1200)],
+             [("Text", "УТВЕРЖДЕН\nприказом Министерства", 1000), ("Title", "ПОРЯДОК определения цены"),
+              ("Text", "1. Порядок применяется к договорам."), ("Text", "2. Цена определяется по калькуляции."),
+              ("Text", "3. Индексы публикуются ежегодно."), ("Text", "4. Расчет приведен в приложении № 5.")]]
+    if annex:
+        return pages + [[("Section-header", "Приложение № 5\nк Порядку определения цены", 900), *body]]
+    return [pages[0], pages[1] + list(body)]
+
+
+GAP_BLOCK = (("Section-header", "Пусковые расходы"), ("Text", "Расходы учитываются при освоении производства."))
+
+
+def test_dotted_number_after_a_skipped_number_is_a_sibling_not_a_subpoint():
+    """Cycle 6 B1 (Review Focus 1): after «5.1» and an unnumbered block comes «5.3» («5.2» is not printed). The
+    parent of «N.M» is «N.», so «5.3» and the following «5.4»–«5.6» are points of «5.», not subpoints of «5.1»;
+    without a point «5.» in the annex they stay flat at its root."""
+    tail = [("Text", f"5.{m}. Статья затрат {m}.") for m in (3, 4, 5, 6)]
+    pages = costing(("Text", "5. Затраты группируются по статьям калькуляции:"), ("Text", "5.1. Статьи калькуляции."),
+                    *GAP_BLOCK, *tail)
+    got = owners(S.build(extraction(pages)))
+    assert got["2.7"] == "S/5/5.1"
+    assert [got[f"2.{k}"] for k in (10, 11, 12, 13)] == ["S/5/5.3", "S/5/5.4", "S/5/5.5", "S/5/5.6"]
+    got = owners(S.build(extraction(costing(("Text", "5.1. Статьи калькуляции."), *GAP_BLOCK, *tail, annex=True))))
+    assert got["3.1"] == "S/AN5/5.1"
+    assert [got[f"3.{k}"] for k in (4, 5, 6, 7)] == ["S/AN5/5.3", "S/AN5/5.4", "S/AN5/5.5", "S/AN5/5.6"]
+
+
+def test_dotted_subpoints_and_unbroken_sequences_are_unchanged():
+    """Negative controls: a real subpoint «5.1.1» still nests in «5.1», and an unbroken «5.1, 5.2, 5.3» keeps its
+    siblings under «5.»."""
+    pages = costing(("Text", "5. Затраты группируются:"), ("Text", "5.1. Статьи калькуляции."),
+                    ("Text", "5.1.1. Сырье и материалы."), ("Text", "5.1.2. Топливо."), ("Text", "5.2. Пусковые расходы."),
+                    ("Text", "5.3. Затраты на освоение."))
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"2.{k}"] for k in range(7, 12)] == ["S/5/5.1", "S/5/5.1/5.1.1", "S/5/5.1/5.1.2", "S/5/5.2",
+                                                     "S/5/5.3"]

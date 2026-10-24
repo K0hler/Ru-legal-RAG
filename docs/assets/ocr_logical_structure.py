@@ -604,6 +604,10 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                     a, b = sibling[1], marker.value
                     if len(a) == len(b) and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
+                    elif len(a) == len(b) and a[:-1] == b[:-1] and 1 < b[-1] - a[-1] <= 3:
+                        # a skipped number («5.3» after «5.1»): the parent of «N.M» is «N.» by its prefix,
+                        # so «5.3» is a sibling of «5.1», not its subpoint (the gap costs as for «N.»)
+                        yield stack[:keep] + (item,), 2.0 + b[-1] - a[-1]
                     elif len(a) == len(b) and a[:-1] != b[:-1] and b[-1] == 1:
                         yield stack[:keep] + (item,), 1.5  # e.g. 2.4 -> 3.1 under a flat section
             if not (marker.kind == "decimal" and sibling[0] in SUBPOINT_KINDS):
