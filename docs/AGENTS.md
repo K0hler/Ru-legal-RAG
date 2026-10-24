@@ -170,6 +170,11 @@
   `list_line`/`roman_sequence` never. Classifier batch-6 rules (`_batch6_before_scheme_list`, `_batch6_cause`): dotted
   gap, footnote to another point, subpoint closed early, signature heading of an attached document; batch 1-5 class
   files unchanged (21 files equal before/after). `POOL_STATUS` has batch-06 (development).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_7_2026-10-24.md`: batch-7 first pass of frozen v5 (+ v4): both 1394/1477, identical
+  owners; quote the without-prikaz-90 figure (1154/1175). `cross_scope_v2` 62 (Rules' annexes numbered as order annexes),
+  one new class, counter still 0 (owner question). No v3.1/v4/v5 rule fired. Classifier batch-7 rules: act annex with the
+  gold annex's number (`raw_predicted`, before ordinal renaming) and OCR letter «з)» as «3)» (`_batch7_cause`); batch 1-6
+  class files equal before/after (23; the 2 batch-2 first-pass files already differ at HEAD). `POOL_STATUS` has batch-07.
 - Cycle 6 A1: dev regression covers 67 documents (+ `BATCH_6` on frozen `20261023-batch-06-gold-freeze`). Baseline
   of frozen v4 `…/20261024-dev-regression-cycle6-baseline/`: 13598/13730 no_section and strict, `cross_scope_v2` 0;
   old 56 11754 with rows/errors equal to `…-v4`; batch 6 1844/1925 (minekonomicheskogo-37 210/288, rp-356 82/84,

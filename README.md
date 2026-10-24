@@ -93,7 +93,9 @@ Prototype v4 (cycle 5, batch 5 now development) is frozen and reported in
 1844/1925 (95.8%; 99.8% without Minekonomrazvitiya order No. 37), `cross_scope_v2` 0.
 Prototype v5 (cycle 6, batch 6 now development) is frozen and reported in
 [M1_04A_PROTOTYPE_V5_2026-10-24.md](docs/milestones/m1/04a/M1_04A_PROTOTYPE_V5_2026-10-24.md):
-13663/13730 on 67 development documents (v4 13598); not progress, batch 7 is its measure.
+13663/13730 on 67 development documents (v4 13598); not progress. Its first measure, pool batch 7
+([M1_04A_POOL_BATCH_7_2026-10-24.md](docs/milestones/m1/04a/M1_04A_POOL_BATCH_7_2026-10-24.md)):
+1394/1477 (94.4%; 98.2% without Minenergo order No. 90), same owners as v4, `cross_scope_v2` 62.
 
 ```powershell
 $env:PYTHONPATH = "src"

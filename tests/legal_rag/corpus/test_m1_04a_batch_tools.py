@@ -361,6 +361,29 @@ def test_batch6_error_classes_from_evidence_only():
     assert cls("S/AN1", "S/AN1/III/11", "Text", "441,8") == (C.SCHEME_LIST, [])
 
 
+def test_batch7_error_classes_from_evidence_only():
+    def cls(gold, predicted, raw=None, category="Text", text="Текст"):
+        error = {"gold": gold, "predicted": predicted}
+        if raw is not None:
+            error["raw_predicted"] = raw
+        return C.classify_evidence(error, category, text, False)
+
+    # «Приложение № N к Правилам» under Rules that are themselves annex 1 to the order: the prototype numbers
+    # it as annex N to the act. Read under ordinal heads it is the Rules root, another document or a new one.
+    assert cls("S/AN1", "S", "A/AN1") == (C.ANNEX_AS_ACT_ANNEX, [])
+    assert cls("S/AN2/3", "S2/3", "A/AN2/3") == (C.ANNEX_AS_ACT_ANNEX, [])
+    assert cls("S/AN3", "S3/I", "A/AN3/I") == (C.ANNEX_AS_ACT_ANNEX, [])
+    # Another annex number, or no raw path (unit tests of earlier batches), keeps the earlier readings.
+    assert cls("S/AN1", "S", "A/AN2") == (C.ATTACHED_ANNEX, [])
+    assert cls("S/AN1", "S") == (C.ATTACHED_ANNEX, [])
+    assert cls("S/AN1/2", "S/AN/2", "S/AN/2") == (C.UNNUMBERED_ANNEX, [])
+    # A lettered subpoint whose letter OCR read as the look-alike digit: «з)» as «3)».
+    assert cls("A/ст16/ч1/1/з", "A/ст16/ч1/3", text="3) использование") == (C.OCR_MARKER_LETTER, [])
+    assert cls("A/ст16/ч1/1/ж", "A/ст16/ч1/3")[0] == C.OTHER
+    # The digit-for-letter batch-2 reading keeps priority.
+    assert cls("A/ст13/6", "A/ст13/5/б") == (C.OCR_MARKER, [])
+
+
 def test_rescore_scoring_single_annex_is_opt_in():
     ev = load_script("evaluate_ocr_owner_gold")
     gold = {"1.1": {"owners": ["S/AN1/2"], "continuation": False}, "1.2": {"owners": ["S/3"], "continuation": False}}

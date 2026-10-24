@@ -50,6 +50,11 @@ region itself, and errors whose paths differ only by the roman section; new clas
 (``Footnote`` region or a line starting with a superscript mark) given by its mark to another
 document or annex that uses the same marks (footnote owner).
 
+Batch 7 (batch-1..6 class files unchanged): an annex of an attached document (gold ``S<k>/AN<n>``) that the
+prototype gave the act annex with the same number (raw ``A/AN<n>``, passed as ``raw_predicted`` because the
+ordinal heads rename it), new class; and a lettered subpoint whose letter OCR read as the look-alike digit
+(«з)» as «3)»), the letter form of the OCR-marker class, only where no earlier rule found a class.
+
 A rescore directory (no ``freeze.json``) takes the batch from the run it was
 rescored from. ``--gold-suffix gold-v2`` reads ``agent-<slug>.gold-v2.txt`` (gold
 derived under annotation convention v2) for the attached-document count and must
@@ -126,6 +131,9 @@ DOTTED_GAP = ("Пропуск номера в последовательност
 FOOTNOTE_OTHER_POINT = "Владелец сноски: сноска отдана по знаку другому пункту или подпункту того же документа"
 SUBPOINT_CLOSED_EARLY = ("Подпункт закрыт раньше времени: абзац последнего подпункта (с заглавной буквы) отнесён "
                          "к пункту")
+ANNEX_AS_ACT_ANNEX = ("Приложение к приложенному документу, который сам — приложение к акту: «Приложение № N "
+                      "к Правилам» прочитано как приложение № N к акту (`A/AN<n>` вместо `S/AN<n>`)")
+OCR_MARKER_LETTER = "Ошибка OCR в маркере подпункта («3)» вместо «з)»)"
 SIGNATURE_HEADING = re.compile(r"^#*\s*(Подписи и реквизиты|От |За )")
 DOTTED_NUMBER = re.compile(r"^(\d+(?:\.\d+)*)\.(\d+)$")
 ROMAN = re.compile(r"^[IVXLC]+$")
@@ -265,6 +273,15 @@ def _batch6_cause(gold: str, predicted: str, category: str, text: str) -> str:
     if (gold.startswith(predicted + "/") and re.match(r"^(\d+|[а-я])$", gold[len(predicted) + 1:])
             and text[:1].isupper()):
         return SUBPOINT_CLOSED_EARLY
+    return _batch7_cause(gold, predicted)
+
+
+def _batch7_cause(gold: str, predicted: str) -> str:
+    """Batch 7: a lettered subpoint whose letter OCR read as the look-alike digit («з)» as «3)»)."""
+    g, p = gold.split("/"), predicted.split("/")
+    digit = {letter: d for d, letter in CONFUSABLE.items()}.get(g[-1])
+    if digit and p[-1] == digit and p[:-1] == g[:-2]:
+        return OCR_MARKER_LETTER
     return OTHER
 
 
@@ -286,6 +303,9 @@ def classify_evidence(error: dict, category: str, text: str, single_annex: bool)
         return SECTION_MARKER, []
     if re.match(r"^S\d*/AN1(/|$)", gold) and re.sub(r"^(S\d*/AN)1(?=/|$)", r"\1", gold) == predicted:
         return UNNUMBERED_ANNEX, []
+    annex = re.match(r"^S\d*/AN(\d+)(/|$)", gold)
+    if annex and re.match(rf"^A/AN{annex.group(1)}(/|$)", error.get("raw_predicted") or ""):
+        return ANNEX_AS_ACT_ANNEX, []  # batch 7; the error row keeps only the primary gold, so no secondary
     if re.match(r"^S\d*/AN\d+(/|$)", gold) and not any(x.startswith("AN") for x in predicted.split("/")):
         return ATTACHED_ANNEX, []
     if (re.match(r"^A/AN\d+(/|$)", gold) and not single_annex
@@ -433,7 +453,8 @@ def main(argv=None) -> None:
                 extra = {}
             else:
                 read = read_paths(evaluator, error, single, heads, attached)
-                primary, secondary = classify_evidence(read, category, text, attached == 1)
+                primary, secondary = classify_evidence({**read, "raw_predicted": error["predicted"]},
+                                                       category, text, attached == 1)
                 g = evaluator.canonical(error["gold"], attached)
                 p = evaluator.canonical(error["predicted"], attached)
                 extra = {"cross_scope": p is not None and evaluator.first_scope(g) != evaluator.first_scope(p)}

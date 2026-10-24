@@ -102,6 +102,11 @@
   doubts and strict blindness: all 11 notes say «Память Codex: не загружалась», job logs show no memory reads).
   prikaz-minenergetiki-90-2019 30.8-31.8 (12 regions) carry `S/AN3|S/AN3/I` or `|S/AN3/II` (form headings outside the grid).
 
+- Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
+  v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
+  `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a
+  judge's name that stays out of docs. `pool/batch-07/status.json` records measured -> development.
+
 - Check-pool batch 6 first pass: `m1/m1-04a/experiments/20261024-batch-06-first-pass/` (`freeze.json` /3 fe1d356b…,
   v4 + v3-1 frozen copies, `git_head` 78f4ac0, both equivalences). Run once (23.10 19:00 UTC); never re-run.
   `error-classes-{v4,v3-1}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261026, no ukaz-1711 rows) stays
