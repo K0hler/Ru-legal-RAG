@@ -907,7 +907,8 @@ EDITORIAL_NOTE = re.compile(
     r"^\((?:(?P<unit>Статья|Глава|Раздел|Часть|Пункт|Подпункт)\s+(?:\S+\s+)?"
     r"(?:в\s+редакции|утратил|утратила|утратило|исключен|признан)"
     r"|Дополнен(?:ие|а|о|ы)?\s+(?P<added>статьей|главой|разделом|частью|пунктом|подпунктом)"
-    r"|Особенности\s+применения\s+(?P<applied>статьи|главы|раздела|части|пункта|подпункта))")
+    r"|Особенности\s+применения\s+(?P<applied>статьи|главы|раздела|части|пункта|подпункта)"
+    r"|Положения\s+(?P<provisions>статьи|главы|раздела|части|пункта|подпункта)\s)")
 EDITORIAL_NOTE_MAX = 400
 NOTE_UNIT = {"стат": "article", "глав": "chapter", "разд": "section", "част": "part", "пунк": "point",
              "подп": "subpoint"}
@@ -927,20 +928,36 @@ def note_unit_level(stack: tuple, unit: str) -> int | None:
     return None
 
 
-def editorial_note_owners(body: list[Paragraph], stacks: list[tuple]) -> None:
+ARTICLE_POINT_REFERENCE = re.compile(r"\bпункт\w*\s+\d+[^\s]*\s+настоящей\s+статьи")
+ARTICLE_PART_REFERENCE = re.compile(r"\bчаст\w*\s+\d+[^\s]*\s+настоящей\s+статьи")
+
+
+def points_are_article_parts(texts: list[str]) -> bool:
+    """The act calls «N.» inside an article a «пункт» (Budget and Tax Codes: «пункт 3 настоящей статьи»)
+    rather than a «часть» (Labour Code, most laws): its notes «(Дополнение пунктом …)» then name «N.» and
+    «подпункт» names «N)»."""
+    joined = " ".join(texts)
+    return len(ARTICLE_POINT_REFERENCE.findall(joined)) > len(ARTICLE_PART_REFERENCE.findall(joined))
+
+
+def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are_parts: bool = False) -> None:
     """An editorial note that names its unit belongs to the deepest open unit of that kind, not to the
-    last point or subpoint it follows. A note naming no open unit of its kind keeps its owner."""
+    last point or subpoint it follows. A note naming no open unit of its kind keeps its owner. In an act
+    whose «N.» in an article is a «пункт», «пункт» names that part and «подпункт» its «N)»."""
     for k, p in enumerate(body):
         if p.kind != "text" or p.marker.kind != "none" or len(p.text) > EDITORIAL_NOTE_MAX:
             continue
         m = EDITORIAL_NOTE.match(p.text)
         if not m or not strip_sup(p.text).rstrip().endswith(")"):
             continue
-        word = (m.group("unit") or m.group("added") or m.group("applied")).lower()
-        level = note_unit_level(stacks[k], NOTE_UNIT[word[:4]])
+        word = (m.group("unit") or m.group("added") or m.group("applied") or m.group("provisions")).lower()
+        unit = NOTE_UNIT[word[:4]]
+        if points_are_parts and unit in {"point", "subpoint"} and any(e[0] == "article" for e in stacks[k]):
+            unit = "part" if unit == "point" else "point"
+        level = note_unit_level(stacks[k], unit)
         if level is not None and level + 1 < len(stacks[k]):
             stacks[k] = stacks[k][:level + 1]
-            p.evidence.append({"editorial_note": f"names the {NOTE_UNIT[word[:4]]} -> that unit"})
+            p.evidence.append({"editorial_note": f"names the {unit} -> that unit"})
 
 
 # Amending text quotes the new wording over several paragraphs: «… изложить в следующей редакции:» then
@@ -1089,6 +1106,7 @@ def path_of(scope: str, stack: tuple) -> str:
 
 def build(extraction: dict) -> dict:
     regions = load_regions(extraction)
+    points_are_parts = points_are_article_parts([r.text for r in regions])
     paragraphs = logical_paragraphs(regions)
 
     # scopes: approving act until the first approval caption, then approved text,
@@ -1220,7 +1238,7 @@ def build(extraction: dict) -> dict:
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
-        editorial_note_owners(body, stacks)
+        editorial_note_owners(body, stacks, points_are_parts)
         framed = between_tables(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and

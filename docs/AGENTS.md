@@ -274,6 +274,9 @@
   `CAPTION_UPPER_MAX` (600) characters. First run `c8-c7` (ОДОБРЕН only) +16, `c8-c7-r2` +34 in rp-102150462;
   JSON dev 94.7% (macro 95.3%), no drops. pp-102370057's form «УТВЕРЖДЕНА … № 272» is nested by IPS in the
   previous Requirements (`S3/AN2`) while the prototype opens `S4`: source nesting, not a prototype rule.
+- Cycle 8 C8: `points_are_article_parts` reads the act's own vocabulary (more «пункт N настоящей статьи» than
+  «часть N настоящей статьи», e.g. the Budget Code): then a note's «пункт» names the «N.» part and «подпункт»
+  its «N)»; `EDITORIAL_NOTE` also takes «(Положения пункта N …)». JSON dev 95.0% (macro 95.3%, 36 perfect).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

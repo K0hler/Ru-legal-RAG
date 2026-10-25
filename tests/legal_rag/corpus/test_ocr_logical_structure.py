@@ -638,6 +638,22 @@ def test_endorsed_agreement_and_long_uppercase_annex_caption():
     assert owners(S.build(extraction(law)))["1.1"] == "A"
 
 
+def test_note_vocabulary_follows_the_act():
+    """Cycle 8 C8: in an act that cites «пункт 3 настоящей статьи» (Budget Code style) «(Дополнение пунктом
+    …)» and «(Положения пункта 2 …)» name the «N.» part, not the «N)» subpoint; in a «часть» act they name
+    the «N)» point."""
+    article = [("Section-header", "Статья 20. Доходы"), ("Text", "1. Доходы включают:"),
+               ("Text", "1) налоги;"), ("Text", "2) сборы."),
+               ("Text", "(Дополнение пунктом - Федеральный закон от 07.05.2013 № 104-ФЗ)"),
+               ("Text", "(Положения пункта 1 применяются с 2025 года - Федеральный закон от 01.01.2024 № 1-ФЗ)")]
+    budget = [[*article, ("Text", "2. Согласно пункту 1 настоящей статьи и пункту 3 настоящей статьи иное.")]]
+    got = owners(S.build(extraction(budget)))
+    assert got["1.4"] == "A/ст20/ч1" and got["1.5"] == "A/ст20/ч1"
+    labour = [[*article, ("Text", "2. Согласно части 1 настоящей статьи иное.")]]
+    got = owners(S.build(extraction(labour)))
+    assert got["1.4"] == "A/ст20/ч1/2"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
