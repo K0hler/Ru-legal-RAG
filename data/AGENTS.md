@@ -126,7 +126,9 @@
   `20261025-json-baseline-dev-proj3/` (freeze 6df9bb99…; `v6-1` base 79.8%, `c8-{c10,c11,c12}`, c12 96.3%);
   pool `20261025-dev-regression-cycle8-c8-*`, failed attempts `…-c8-c5-attempt1-failed`, `…-c8-c9-attempt1-failed`.
   Projection 4 (owner decisions 25.10.2026): `20261025-json-baseline-dev-proj4/` (freeze 6c8a36a3…; `v6-1`, `c8-c12`, `v7`).
-  Prototype v7 freeze `20261025-prototype-v7-freeze/`, pool regression `20261025-dev-regression-v7`. JSON holdout unopened.
+  Prototype v7 freeze `20261025-prototype-v7-freeze/`, pool regression `20261025-dev-regression-v7`.
+  JSON holdout measured once on 25.10.2026: `20261025-json-holdout-proj4/` (freeze 42f82227…, `run-receipt.json`,
+  `v7`/`v6-1` outputs and results); never re-run; the holdout is now development.
 
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.

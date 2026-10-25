@@ -304,6 +304,12 @@
 - Cycle 8 freeze: prototype v7 `ocr-logical-structure/7-experiment` (sha256 7935988e…, LF working copy = LF form,
   blob eaaadbcd) in `data/m1/m1-04a/experiments/20261025-prototype-v7-freeze/`; regression `20261025-dev-regression-v7`
   15137/15207, errors equal to v6.1. Development result; the measure is the JSON holdout (31 acts) and pool batch 8.
+- First measure of v7 (report `milestones/m1/04a/M1_04A_JSON_HOLDOUT_V7_2026-10-25.md`): JSON holdout, projection 4,
+  gold frozen before the run (`20261025-json-holdout-proj4/freeze.json` 42f82227…, `run-receipt.json` written first),
+  one run each: v7 94.5% regions / 94.2% per document (21/31 perfect), v6.1 84.8% / 91.3% (18/31). One act below
+  v6.1: fz-602263702 383 -> 280 (C5 guard closed a quoted article at its own «6)» after the introducing «5)»).
+  New classes: KoAP article notes «Примечание.», quoted new articles; IPS calls «1.» inside a concept section a
+  «раздел» (convention question). The holdout is now development. `m1_04a_json_baseline.py --split holdout`.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

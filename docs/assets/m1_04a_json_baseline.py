@@ -335,10 +335,10 @@ def pseudo_extraction(slug, regions):
             "pages": pages, "blocks": blocks, "text_nodes": text_nodes}
 
 
-def phase_project(out: Path, projection: int = 1):
+def phase_project(out: Path, projection: int = 1, part: str = "dev"):
     split = json.loads((CORPUS / "split.json").read_text(encoding="utf-8"))
     files, stats = {}, {}
-    for slug in split["dev"]:
+    for slug in split[part]:
         doc = CORPUS / "docs" / slug
         html = (doc / "document.html").read_text(encoding="utf-8")
         nodes = json.loads((doc / "document_content.json").read_text(encoding="utf-8"))["data"]
@@ -385,6 +385,7 @@ def phase_project(out: Path, projection: int = 1):
         print(slug, stats[slug], flush=True)
     write_once(out / "freeze.json", {"schema_version": "m1-04a-json-baseline-freeze/1", "projection": projection,
                                      "split_sha256": sha((CORPUS / "split.json").read_bytes()),
+                                     **({"split_part": part} if part != "dev" else {}),
                                      "script_sha256": sha(Path(__file__).read_bytes()), "files": files,
                                      "stats": stats})
 
@@ -439,12 +440,14 @@ def main(argv=None):
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
                              "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
                              "-> its document, own approval caption -> separate document)")
+    parser.add_argument("--split", choices=("dev", "holdout"), default="dev",
+                        help="corpus part to project; holdout only for a frozen prototype, once")
     parser.add_argument("--prototype")
     parser.add_argument("--prototype-sha256")
     args = parser.parse_args(argv)
     out = Path(args.out)
     if args.phase == "project":
-        phase_project(out, args.projection)
+        phase_project(out, args.projection, args.split)
     else:
         phase_run(out, args.label, Path(args.prototype), args.prototype_sha256)
 
