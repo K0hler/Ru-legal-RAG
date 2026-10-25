@@ -58,15 +58,20 @@ def write_once(path: Path, value) -> None:
         handle.write(data)
 
 
+SUP_MINUS = "⁻"
+
+
 def sup_text(digits: str) -> str:
-    return "".join(SUP[int(c)] for c in digits)
+    """Digits (and, projection 3, hyphens of a compound index «1-1») as Unicode superscripts."""
+    return "".join(SUP_MINUS if c in "-–" else SUP[int(c)] for c in digits)
 
 
 def norm_sup(path: str | None) -> str | None:
-    """Unicode superscripts -> ^k so prototype and gold spell inserted numbers alike."""
+    """Unicode superscripts -> ^k (a compound «¹⁻¹» -> ^1-1) so prototype and gold spell inserted numbers alike."""
     if path is None:
         return None
-    return re.sub(rf"([{SUP}]+)", lambda m: "^" + "".join(str(SUP.index(c)) for c in m.group(1)), path)
+    return re.sub(rf"([{SUP}][{SUP}{SUP_MINUS}]*)",
+                  lambda m: "^" + "".join("-" if c == SUP_MINUS else str(SUP.index(c)) for c in m.group(1)), path)
 
 
 def roman_value(text: str) -> int:
@@ -85,14 +90,18 @@ def flat_text(element) -> str:
     return "\n".join(line for line in lines if line)
 
 
-def html_regions(html: str):
-    """Regions in document order: each id'd <p> outside tables, each table with id'd rows."""
+def html_regions(html: str, compound_sup: bool = False):
+    """Regions in document order: each id'd <p> outside tables, each table with id'd rows. With
+    ``compound_sup`` (projection 3) a compound index «1-1» (Budget Code «Статья 115¹⁻¹») is kept as
+    superscripts too; projections 1-2 flattened it to «1151-1»."""
     soup = BeautifulSoup(html, "html.parser")
     # Superscripts are <sup> or spans whose class has vertical-align:super in the document CSS (W9, WB).
     super_classes = set(re.findall(r"\.(\w+)\s*\{[^}]*vertical-align:\s*super", html))
     marks = soup.find_all("sup") + [e for e in soup.find_all("span") if super_classes & set(e.get("class") or [])]
     for s in marks:
-        s.replace_with(sup_text(s.get_text()) if s.get_text().isdigit() else s.get_text())
+        mark = s.get_text()
+        index = mark.isdigit() or (compound_sup and re.fullmatch(r"\d+(?:[-–]\d+)+", mark) is not None)
+        s.replace_with(sup_text(mark) if index else mark)
     for br in soup.find_all("br"):
         br.replace_with("\n")
     regions, seen_tables = [], set()
@@ -162,7 +171,8 @@ def node_paths(nodes, order, first_text, projection=1):
             child_annexes[parent] += 1
             seg = f"AN{m.group(1) if m else child_annexes[parent]}"
         elif unit == "статья":
-            m = re.match(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:\.\d+)*)(?:<sup>(\d+)</sup>)?", cap)
+            index = r"\d+(?:-\d+)*" if projection >= 3 else r"\d+"  # projection 3: «115<sup>1-1</sup>»
+            m = re.match(rf"^(?:Статья|СТАТЬЯ)\s+(\d+(?:\.\d+)*)(?:<sup>({index})</sup>)?", cap)
             seg = f"ст{m.group(1)}" + (f"^{m.group(2)}" if m.group(2) else "") if m else None
         elif unit == "глава":
             m = re.match(r"^(?:Глава|ГЛАВА)\s+(\d+|[IVXLC]+)(?:<sup>(\d+)</sup>)?", cap)
@@ -258,7 +268,7 @@ def phase_project(out: Path, projection: int = 1):
         html = (doc / "document.html").read_text(encoding="utf-8")
         nodes = json.loads((doc / "document_content.json").read_text(encoding="utf-8"))["data"]
         order = paragraph_order(html)
-        regions = html_regions(html)
+        regions = html_regions(html, compound_sup=projection >= 3)
         first_text = {pid: r["text"] for r in regions for pid in r["ids"][:1]}
         owners = paragraph_owners(nodes, order, first_text, projection)
         header = "# convention: projected IPS tree (m1_04a_json_baseline.py)"
@@ -333,9 +343,10 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2), default=2,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3), default=3,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
-                             "also accept the previous printed sibling")
+                             "also accept the previous printed sibling; 3: 2 + compound superscript indices "
+                             "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold")
     parser.add_argument("--prototype")
     parser.add_argument("--prototype-sha256")
     args = parser.parse_args(argv)

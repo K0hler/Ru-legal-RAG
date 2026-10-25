@@ -674,6 +674,15 @@ def test_quoted_term_at_line_end_does_not_close_the_quotation():
     assert owners(S.build(extraction(pages)))["1.4"] == "A/ст13/7"
 
 
+def test_compound_inserted_article_number():
+    """Cycle 8 C10: «Статья 115¹⁻¹» (Budget Code) is an article heading of its own, not text of «Статья 115¹»."""
+    assert S.parse_marker("Статья 115¹⁻¹. Особенности гарантий", "Section-header").label == "ст115¹⁻¹"
+    pages = [[("Section-header", "Статья 115¹. Гарантии"), ("Text", "1. Часть первая."),
+              ("Section-header", "Статья 115¹⁻¹. Особенности"), ("Text", "1. Допускается предоставление.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/ст115¹⁻¹" and got["1.3"] == "A/ст115¹⁻¹/ч1"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),

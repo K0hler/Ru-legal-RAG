@@ -275,7 +275,8 @@ class Marker:
 # Named law units, recognised only at the start of a paragraph. Hierarchy:
 # section (named or Roman) > chapter > paragraph § > article.
 # Uppercase «СТАТЬЯ»/«ГЛАВА» as in codes; chapter numbers may carry OCR Cyrillic Х / Ukrainian І.
-ARTICLE = re.compile(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
+# «Статья 5¹», «Статья 12.1», and a compound inserted number «Статья 115¹⁻¹» (superscript minus).
+ARTICLE = re.compile(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)*)\.?(?=\s|$)")
 # An inserted chapter/section/§ carries a superscript like an article: «Глава 24¹», «Раздел I¹».
 CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
 # «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman

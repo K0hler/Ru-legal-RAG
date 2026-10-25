@@ -281,6 +281,11 @@
   (straight quotes by parity, «»/„“ by surplus), so a quoted term at a line end («… "налоговый агент";») keeps
   it open; an opener must not itself end with a closing quote (a page-joined «7) … «Об …».; with a lost nested
   close dropped fz-119 on the pool: attempt `…cycle8-c8-c9-attempt1-failed`). JSON dev 95.1% (macro 95.5%).
+- Cycle 8 C10: `ARTICLE` accepts a superscript minus («Статья 115¹⁻¹»). The JSON baseline gained projection 3
+  (`m1_04a_json_baseline.py --projection 3`, default): compound superscript spans «1-1» stay superscripts in the
+  pseudo text and gold is `ст115^1-1`; projections 1-2 reproduce byte for byte. Frozen
+  `20261025-json-baseline-dev-proj3` (freeze 6df9bb99…): v6.1 79.8% / 89.4%, working prototype after C10 96.1% /
+  95.6% (36 perfect), no act below v6.1, pool errors equal to v6.1.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
