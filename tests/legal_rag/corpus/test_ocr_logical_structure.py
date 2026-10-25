@@ -700,6 +700,28 @@ def test_editorial_note_at_page_top_and_unit_named_inside():
     assert S.starts_continuation("(далее - Правила) применяются с 2025 года.")
 
 
+def test_code_parts_subsections_and_notes_before_a_closing_sentence():
+    """Cycle 8 C12: «ЧАСТЬ ВТОРАЯ. …» is a code division above sections and closes the previous one's
+    articles; «ПОДРАЗДЕЛ II» sits between a section and its chapters; a note «(Особенности применения …)»
+    between the last list item and a closing sentence does not hide the item's final dot."""
+    assert S.parse_marker("ЧАСТЬ ВТОРАЯ. БЮДЖЕТНАЯ СИСТЕМА", "Section-header").label == "разд2"
+    assert S.parse_marker("часть 2 статьи 5 применяется", "Text").kind == "none"
+    pages = [[("Section-header", "ЧАСТЬ ПЕРВАЯ. ОБЩИЕ ПОЛОЖЕНИЯ"), ("Section-header", "Раздел I. Основы"),
+              ("Section-header", "Статья 1. Предмет"), ("Text", "1. Текст."),
+              ("Section-header", "ЧАСТЬ ВТОРАЯ. ПРОЦЕСС"), ("Section-header", "Раздел II. Производство"),
+              ("Section-header", "ПОДРАЗДЕЛ I. ПРИКАЗНОЕ ПРОИЗВОДСТВО"), ("Section-header", "Глава 11. Приказ"),
+              ("Section-header", "Статья 121. Приказ"), ("Text", "Текст статьи.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.4"] == "A/разд2" and got["1.5"] == "A/разд2/II"
+    assert got["1.6"] == "A/разд2/II/I" and got["1.8"] == "A/разд2/II/I/гл11/ст121"
+    pages = [[("Section-header", "Статья 4. Меры"), ("Text", "Меры применяются при проживании:"),
+              ("Text", "1) в зоне отселения;"), ("Text", "3) в иной зоне."),
+              ("Text", "(Особенности применения части 2 - Федеральный закон от 29.12.2015 № 388-ФЗ)"),
+              ("Text", "Меры поддержки предоставляются при проживании:"), ("Text", "1) в зоне отселения.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.5"] == "A/ст4" and got["1.6"] == "A/ст4/1"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),

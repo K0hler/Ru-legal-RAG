@@ -290,6 +290,10 @@
   «Федеральный закон от …», «Постановление Конституционного Суда …») names its unit by the first unit word inside
   («(Приостановлено … действие части 1 …)»); `starts_continuation` no longer joins such a note to the previous
   paragraph across a page. Projection 3: 96.2%, no drops, pool errors equal to v6.1.
+- Cycle 8 C12: `editorial_only` covers every `editorial_note_unit` note (a «(Особенности применения …)» between the
+  last item and a closing sentence no longer hides the item's dot); named units `code_part` («ЧАСТЬ ВТОРАЯ …»,
+  uppercase ordinal word, rank -1, label `разд<N>`) and `subsection` («ПОДРАЗДЕЛ II», rank 0.5, Roman label).
+  Projection 3: 96.3%, no drops, pool errors equal to v6.1.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

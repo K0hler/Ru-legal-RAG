@@ -283,7 +283,14 @@ CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)[{
 # number may carry OCR Cyrillic Х / Ukrainian І («РАЗДЕЛ ІХ»).
 SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
 PARAGRAPH_SIGN = re.compile(rf"^§\s*(\d+[{SUP}]*)\.?(?=\s|$)")
-UNIT_RANK = {"roman": 0, "section_named": 0, "chapter": 1, "paragraph_sign": 2, "article": 3}
+# A code's top division «ЧАСТЬ ВТОРАЯ. БЮДЖЕТНАЯ СИСТЕМА …» (uppercase ordinal word; «часть 2 статьи» is a
+# reference) and its section subdivision «ПОДРАЗДЕЛ II. ИСКОВОЕ ПРОИЗВОДСТВО».
+CODE_PART_ORDINALS = {"ПЕРВАЯ": 1, "ВТОРАЯ": 2, "ТРЕТЬЯ": 3, "ЧЕТВЕРТАЯ": 4, "ЧЕТВЁРТАЯ": 4, "ПЯТАЯ": 5,
+                      "ШЕСТАЯ": 6, "СЕДЬМАЯ": 7, "ВОСЬМАЯ": 8, "ДЕВЯТАЯ": 9, "ДЕСЯТАЯ": 10}
+CODE_PART = re.compile(rf"^ЧАСТЬ\s+({'|'.join(CODE_PART_ORDINALS)})\.?(?=\s|$)")
+SUBSECTION = re.compile(rf"^(?:ПОДРАЗДЕЛ|Подраздел)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
+UNIT_RANK = {"code_part": -1, "roman": 0, "section_named": 0, "subsection": 0.5, "chapter": 1,
+             "paragraph_sign": 2, "article": 3}
 
 
 def named_unit(text: str, category: str) -> Marker | None:
@@ -292,7 +299,8 @@ def named_unit(text: str, category: str) -> Marker | None:
     применяется ...») is not a heading: after the number comes nothing, a dot and a
     title, or the paragraph must look like a heading."""
     for kind, pattern in (("article", ARTICLE), ("chapter", CHAPTER),
-                          ("section_named", SECTION_NAMED), ("paragraph_sign", PARAGRAPH_SIGN)):
+                          ("section_named", SECTION_NAMED), ("paragraph_sign", PARAGRAPH_SIGN),
+                          ("code_part", CODE_PART), ("subsection", SUBSECTION)):
         m = pattern.match(text)
         if not m:
             continue
@@ -302,6 +310,12 @@ def named_unit(text: str, category: str) -> Marker | None:
         number = m.group(1).rstrip(".")
         if kind == "article":
             return Marker(kind, number, f"ст{number}")
+        if kind == "code_part":
+            value = CODE_PART_ORDINALS[number]
+            return Marker(kind, value, f"разд{value}")
+        if kind == "subsection":
+            value = int(number) if number.isdigit() else roman_value(number)
+            return Marker(kind, value, to_roman(value))
         base, sup = strip_sup(number), number[len(strip_sup(number)):]
         if kind == "paragraph_sign":
             return Marker(kind, int(base), f"§{base}{sup}")
@@ -782,7 +796,8 @@ def provision_final(text: str) -> str:
 
 
 def editorial_only(p: "Paragraph") -> bool:
-    return bool(p.text) and p.marker.kind == "none" and not EDITORIAL_TAIL.sub("", p.text).strip()
+    return bool(p.text) and p.marker.kind == "none" and (
+        not EDITORIAL_TAIL.sub("", p.text).strip() or editorial_note_unit(p.text) is not None)
 
 
 def heading_evidence(p: Paragraph) -> bool:
