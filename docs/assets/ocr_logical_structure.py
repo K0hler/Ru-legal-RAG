@@ -970,6 +970,19 @@ QUOTE_MAX_PARAGRAPHS = 300  # an OCR-lost closing quote must not swallow the res
 FORM_LINE = re.compile(r"_{5,}")
 
 
+def unbalanced_quotes(text: str) -> int:
+    """+1 when the paragraph leaves a quotation open, -1 when it closes one opened before, 0 when its own
+    quote marks pair up (a quoted name or term inside a quotation). Straight quotes pair by parity; «…»
+    and „…“ by count, the sign of the surplus deciding."""
+    straight = text.count('"')
+    angled = text.count("«") + text.count("„") - text.count("»") - text.count("“")
+    if angled:
+        return 1 if angled > 0 else -1
+    if straight % 2:
+        return 1 if QUOTE_OPEN.match(text) else -1
+    return 0
+
+
 def quoted_markers(items: list[Paragraph]) -> None:
     """Paragraphs after the first one of a multi-paragraph amending quotation keep no marker: «48³¹)»,
     «1.», «Статья 5» there are quoted text of the unit that introduces the quotation. The quotation opens
@@ -1000,12 +1013,12 @@ def quoted_markers(items: list[Paragraph]) -> None:
                     p.marker = Marker("none")
                     p.kind = "text"
                     p.evidence.append({"quoted": "inside an amending quotation; text of the introducing unit"})
-                if QUOTE_CLOSE.search(text):
+                if QUOTE_CLOSE.search(text) and unbalanced_quotes(text) < 0:
                     open_from = None
                 previous = p
                 continue
         if (QUOTE_OPEN.match(p.text or "") and previous is not None and final_char(previous.text) == ":"
-                and not QUOTE_CLOSE.search(text)):
+                and unbalanced_quotes(text) > 0 and not QUOTE_CLOSE.search(text)):
             open_from, formish = 0, False
         if p.marker.kind not in {"none", "dash"}:
             last[p.marker.kind] = p.marker.value

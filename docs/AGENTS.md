@@ -277,6 +277,10 @@
 - Cycle 8 C8: `points_are_article_parts` reads the act's own vocabulary (more «пункт N настоящей статьи» than
   «часть N настоящей статьи», e.g. the Budget Code): then a note's «пункт» names the «N.» part and «подпункт»
   its «N)»; `EDITORIAL_NOTE` also takes «(Положения пункта N …)». JSON dev 95.0% (macro 95.3%, 36 perfect).
+- Cycle 8 C9 `unbalanced_quotes`: a quotation opens/closes only on a paragraph whose own quote marks do not pair
+  (straight quotes by parity, «»/„“ by surplus), so a quoted term at a line end («… "налоговый агент";») keeps
+  it open; an opener must not itself end with a closing quote (a page-joined «7) … «Об …».; with a lost nested
+  close dropped fz-119 on the pool: attempt `…cycle8-c8-c9-attempt1-failed`). JSON dev 95.1% (macro 95.5%).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -654,6 +654,26 @@ def test_note_vocabulary_follows_the_act():
     assert got["1.4"] == "A/ст20/ч1/2"
 
 
+def test_quoted_term_at_line_end_does_not_close_the_quotation():
+    """Cycle 8 C9: inside a quoted article a line ending with a quoted term («… "налоговый агент";») pairs its
+    own quotes and does not close the quotation; the closing line has an unpaired quote. A one-paragraph
+    quotation whose nested closing quote OCR lost («… «Об особенностях …».;») opens nothing."""
+    pages = [[("Section-header", "Статья 1"), ("Text", "Внести в Кодекс следующие изменения:"),
+              ("Text", "1) статью 21 изложить в следующей редакции:"),
+              ("Text", "\"Статья 21. Налоговые агенты"),
+              ("Text", "1. Для целей настоящей статьи используется понятие \"налоговый агент\";"),
+              ("Text", "2. Налоговым агентом признается оператор.\";"),
+              ("Text", "2) статью 22 признать утратившей силу.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.3"] == got["1.4"] == got["1.5"] == "A/ст1/1"
+    assert got["1.6"] == "A/ст1/2"
+    pages = [[("Section-header", "Статья 13"), ("Text", "Внести изменения:"),
+              ("Text", "6) статью 39 дополнить подпунктом 7 следующего содержания:"),
+              ("Text", "«7) гражданам в соответствии с Федеральным законом «Об особенностях предоставления».;"),
+              ("Text", "7) пункт 6 статьи 71 дополнить подпунктом 4.")]]
+    assert owners(S.build(extraction(pages)))["1.4"] == "A/ст13/7"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
