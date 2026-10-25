@@ -113,6 +113,11 @@
   holdout bodies. Range ends may be `<tr id="r<N>">`; fetch attempts 01/02 (false rejections) kept as superseded.
   No IPS trees for treaties, KS, osnovy; no ministry orders/SanPiN. Report `M1_04A_JSON_CORPUS_2026-10-25.md`.
 
+- Second-layer baseline (25.10.2026, dev only): `m1/m1-04a/experiments/20261025-json-baseline-dev/` (projection 1,
+  freeze 331012b2…) and `…-dev-proj2/` (projection 2, freeze 1dbbeca9…; «N.» in an article -> `ч<N>`), both from
+  `docs/assets/m1_04a_json_baseline.py`; frozen v5 79.8% regions / 89.4% macro on projection 2. Pseudo extractions
+  keep <br> as line breaks and CSS superscript spans (W9/WB) as «¹»; projection 1 reproduces byte for byte.
+
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
   `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a
