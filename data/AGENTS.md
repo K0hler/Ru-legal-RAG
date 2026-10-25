@@ -115,7 +115,8 @@
 
 - Second-layer baseline (25.10.2026, dev only): `m1/m1-04a/experiments/20261025-json-baseline-dev/` (projection 1,
   freeze 331012b2…) and `…-dev-proj2/` (projection 2, freeze 1dbbeca9…; «N.» in an article -> `ч<N>`), both from
-  `docs/assets/m1_04a_json_baseline.py`; frozen v5 79.8% regions / 89.4% macro on projection 2. Pseudo extractions
+  `docs/assets/m1_04a_json_baseline.py`; frozen v5 79.8% regions / 89.4% macro on projection 2; frozen v6.1 (`v6-1-results.json`) gives identical
+  owners in all 22344 regions (no cycle-7 rule fired), so the second-layer base is v6.1 = v5 there. Pseudo extractions
   keep <br> as line breaks and CSS superscript spans (W9/WB) as «¹»; projection 1 reproduces byte for byte.
 
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
