@@ -119,6 +119,10 @@
   owners in all 22344 regions (no cycle-7 rule fired), so the second-layer base is v6.1 = v5 there. Pseudo extractions
   keep <br> as line breaks and CSS superscript spans (W9/WB) as «¹»; projection 1 reproduces byte for byte.
 
+- Cycle 8 (25.10.2026): JSON corpus runs `20261025-json-baseline-dev-proj2/c8-{c1,c2,c2-r2,c3}-results.json`
+  (`c8-c2` is the attempt that missed «Дополнение»), pool regressions `experiments/20261025-dev-regression-cycle8-
+  {c1,c2,c2-r2,c3}/` against `20261024-dev-regression-v6-1/summary.json` (no drops, errors equal).
+
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
   `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a

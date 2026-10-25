@@ -244,6 +244,15 @@
   asterisk-mark matching. The classifier's `FILL_IN` copy must equal the prototype's. `FORM_SIGNATURE_HEADING` also
   accepts «Подписи сторон:» (unchanged). Regression `20261024-dev-regression-v6-1` vs v6: 15137/15207, rows and
   errors identical, exit 0. Batch 8 measures v6.1 (report `M1_04A_PROTOTYPE_V6_2026-10-24.md` §8).
+- Cycle 8 C1-C3 (prototype, VERSION unchanged; rules from the JSON corpus dev split, report
+  `milestones/m1/04a/M1_04A_CYCLE8_LEVEL_CLOSING_2026-10-25.md`): C1 `CHAPTER`/`SECTION_NAMED`/`PARAGRAPH_SIGN`
+  accept a superscript («Глава 24¹» -> `гл24¹`); C2 `editorial_note_owners` gives a consolidated-edition note
+  («(Статья в редакции …)», «(Дополнение частью …)», «(Особенности применения пункта …)») to the deepest open unit
+  it names (part = «N.» right in an article); C3 `mark_restarts` marks «1)»/«а)» after a capitalised closing
+  sentence (previous item ends «.», outside quotes) as `restart`, the solver lets it take the level of the last item,
+  `continues_level` treats a lower value as a new list. JSON dev 79.8% -> 89.9% (macro 90.3%, 33 perfect), pool
+  15137/15207 with `errors.json` byte-equal to v6.1 after each step; C2 never fires on the pool, C3 fires 37 times
+  without changing owners. First C2 attempt `c8-c2` missed «Дополнение» (kept).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -15,6 +15,10 @@
   Batch-06 profile = batch-05 + prior batch 05; frozen batch-05 selection reproduces from its feed cache (skips without data).
   Batch-07 profile = batch-06 + prior batch 06; frozen batch-06 selection reproduces likewise.
 
+- Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
+  notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation
+  negatives) fail on the frozen v6.1 copy and pass on the working prototype.
+
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open
   approval scope, terminated list abzacy stay separate, decimal/global point

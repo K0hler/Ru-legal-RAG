@@ -264,11 +264,12 @@ class Marker:
 # section (named or Roman) > chapter > paragraph § > article.
 # Uppercase «СТАТЬЯ»/«ГЛАВА» as in codes; chapter numbers may carry OCR Cyrillic Х / Ukrainian І.
 ARTICLE = re.compile(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹]*)*)\.?(?=\s|$)")
-CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
+# An inserted chapter/section/§ carries a superscript like an article: «Глава 24¹», «Раздел I¹».
+CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
 # «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman
 # number may carry OCR Cyrillic Х / Ukrainian І («РАЗДЕЛ ІХ»).
-SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
-PARAGRAPH_SIGN = re.compile(r"^§\s*(\d+)\.?(?=\s|$)")
+SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
+PARAGRAPH_SIGN = re.compile(rf"^§\s*(\d+[{SUP}]*)\.?(?=\s|$)")
 UNIT_RANK = {"roman": 0, "section_named": 0, "chapter": 1, "paragraph_sign": 2, "article": 3}
 
 
@@ -288,12 +289,13 @@ def named_unit(text: str, category: str) -> Marker | None:
         number = m.group(1).rstrip(".")
         if kind == "article":
             return Marker(kind, number, f"ст{number}")
+        base, sup = strip_sup(number), number[len(strip_sup(number)):]
         if kind == "paragraph_sign":
-            return Marker(kind, int(number), f"§{number}")
-        value = int(number) if number.isdigit() else roman_value(number)
+            return Marker(kind, int(base), f"§{base}{sup}")
+        value = int(base) if base.isdigit() else roman_value(base)
         if kind == "chapter":
-            return Marker(kind, value, f"гл{value}")
-        return Marker(kind, value, f"разд{value}" if number.isdigit() else to_roman(value))
+            return Marker(kind, value, f"гл{value}{sup}")
+        return Marker(kind, value, (f"разд{value}" if base.isdigit() else to_roman(value)) + sup)
     return None
 
 
@@ -653,8 +655,10 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
                     elif 1 < gap <= 3:
                         yield stack[:keep] + (item,), 2.0 + gap
-                    elif marker.restart and marker.kind == "int" and marker.value == 1 and sibling[1] > 1:
-                        # numbering started again after a table/heading: the level of «N.», not inside it
+                    elif (marker.restart and marker.kind in {"int", "paren", "letter"} and marker.value == 1
+                          and sibling[1] > 1):
+                        # numbering started again after a table/heading («N.») or after a sentence that
+                        # closed the list («N)»/«а)»): the level of the last item, not inside it
                         yield stack[:keep] + (item,), RESTART_COST + 0.01 * (depth - keep)
                 elif marker.kind == "decimal":
                     a, b = sibling[1], marker.value
@@ -811,8 +815,10 @@ def quote_balance(text: str) -> int:
 
 
 def continues_level(nxt: tuple, stack: tuple, level: int) -> bool:
-    """The next marked paragraph stays in the list at ``level`` of ``stack`` (same parent, same kind)."""
-    return len(nxt) > level and nxt[:level] == stack[:level] and nxt[level][0] == stack[level][0]
+    """The next marked paragraph stays in the list at ``level`` of ``stack`` (same parent, same kind,
+    not a restarted numbering: a lower value there is a new list)."""
+    return (len(nxt) > level and nxt[:level] == stack[:level] and nxt[level][0] == stack[level][0]
+            and not (nxt[level][1] < stack[level][1] and isinstance(nxt[level][1], int)))
 
 
 def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) -> None:
@@ -856,6 +862,48 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             p.evidence.append({"subpoint_closed": "capitalised paragraph after the last subpoint -> the point"})
 
 
+# An editorial note of a consolidated edition names the unit it is about: «(Статья в редакции …)»,
+# «(Часть 2 утратила силу …)», «(Дополнение пунктом - …)», «(Особенности применения статьи 3 - …)».
+EDITORIAL_NOTE = re.compile(
+    r"^\((?:(?P<unit>Статья|Глава|Раздел|Часть|Пункт|Подпункт)\s+(?:\S+\s+)?"
+    r"(?:в\s+редакции|утратил|утратила|утратило|исключен|признан)"
+    r"|Дополнен(?:ие|а|о|ы)?\s+(?P<added>статьей|главой|разделом|частью|пунктом|подпунктом)"
+    r"|Особенности\s+применения\s+(?P<applied>статьи|главы|раздела|части|пункта|подпункта))")
+EDITORIAL_NOTE_MAX = 400
+NOTE_UNIT = {"стат": "article", "глав": "chapter", "разд": "section", "част": "part", "пунк": "point",
+             "подп": "subpoint"}
+
+
+def note_unit_level(stack: tuple, unit: str) -> int | None:
+    """Index of the deepest open entry of the named kind, or None. A part is «N.» right under an
+    article; a point is «N.»/«N.M»/«N)» that is not a part; a subpoint is «а)»/«N)» under a point."""
+    for i in range(len(stack) - 1, -1, -1):
+        kind, parent = stack[i][0], stack[i - 1][0] if i else None
+        part = kind == "int" and parent == "article"
+        if ((unit == "article" and kind == "article") or (unit == "chapter" and kind == "chapter")
+                or (unit == "section" and kind in {"section_named", "roman"}) or (unit == "part" and part)
+                or (unit == "point" and kind in {"int", "decimal", "paren"} and not part)
+                or (unit == "subpoint" and kind in {"letter", "paren"} and parent in {"int", "decimal", "paren"})):
+            return i
+    return None
+
+
+def editorial_note_owners(body: list[Paragraph], stacks: list[tuple]) -> None:
+    """An editorial note that names its unit belongs to the deepest open unit of that kind, not to the
+    last point or subpoint it follows. A note naming no open unit of its kind keeps its owner."""
+    for k, p in enumerate(body):
+        if p.kind != "text" or p.marker.kind != "none" or len(p.text) > EDITORIAL_NOTE_MAX:
+            continue
+        m = EDITORIAL_NOTE.match(p.text)
+        if not m or not strip_sup(p.text).rstrip().endswith(")"):
+            continue
+        word = (m.group("unit") or m.group("added") or m.group("applied")).lower()
+        level = note_unit_level(stacks[k], NOTE_UNIT[word[:4]])
+        if level is not None and level + 1 < len(stacks[k]):
+            stacks[k] = stacks[k][:level + 1]
+            p.evidence.append({"editorial_note": f"names the {NOTE_UNIT[word[:4]]} -> that unit"})
+
+
 def mark_restarts(items: list[Paragraph]) -> None:
     """Restarted numbering: an «1.» whose previous «N.» paragraph in the scope is separated from it
     by a table or an unmarked heading (OCR Section-header/Title) may restart the numbering at the
@@ -863,6 +911,13 @@ def mark_restarts(items: list[Paragraph]) -> None:
     «а)» subpoints and «1.1», nothing changes."""
     broken = False
     last = None  # value of the previous «N.» in the scope
+    # A «1)»/«а)» list closed by a sentence of its own: after the last item ended with «.», an unmarked
+    # paragraph starting with a capital letter (outside a quotation) ends the list, so a later «1)»/«а)»
+    # starts a new list at the level of the old one instead of nesting into its last item.
+    last_sub: dict = {}  # kind -> value of the previous «N)»/«а)» in the scope
+    sub_closed = False
+    previous = None  # previous body text paragraph
+    opened = 0  # quotation balance since the last marked paragraph
     for p in items:
         if p.flow != "body":
             continue
@@ -874,6 +929,22 @@ def mark_restarts(items: list[Paragraph]) -> None:
                 p.evidence.append({"restart": "«1.» after a table or heading; may take the level of the last «N.»"})
             broken = False
             last = p.marker.value
+        if p.kind == "text" and p.marker.kind in SUBPOINT_KINDS:
+            if (p.marker.value == 1 and sub_closed and (last_sub.get(p.marker.kind) or 0) > 1):
+                p.marker.restart = True
+                p.evidence.append({"restart": "list item 1 after a closing sentence; may take the level of the last item"})
+            last_sub[p.marker.kind] = p.marker.value
+        if p.kind == "text" and p.marker.kind not in {"none", "dash"}:
+            sub_closed = False
+            opened = quote_balance(p.text)
+        elif p.kind == "text":
+            inside = opened > 0
+            opened += quote_balance(p.text)
+            if (last_sub and not inside and p.text[:1].isupper() and previous is not None
+                    and final_char(previous.text) == "." and not strip_sup(p.text).rstrip(" .").endswith("»")):
+                sub_closed = True
+        if p.kind == "text":
+            previous = p
 
 
 def between_tables(items: list[Paragraph]) -> set[int]:
@@ -1056,6 +1127,7 @@ def build(extraction: dict) -> dict:
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
+        editorial_note_owners(body, stacks)
         framed = between_tables(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and

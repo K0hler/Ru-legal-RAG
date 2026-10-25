@@ -497,6 +497,74 @@ def test_superscript_and_decimal_article_numbers():
     assert got["1.6"] == "A/ст13" and got["1.7"] == "A/ст13"
 
 
+def test_inserted_chapter_section_and_paragraph_sign_numbers():
+    """Cycle 8 C1: «Глава 24¹», «Раздел I¹», «§ 2¹» are headings like «Статья 5¹»; the inserted chapter
+    closes the previous one, so its articles leave it."""
+    assert S.parse_marker("Глава 24¹. Исполнение судебных актов", "Section-header").label == "гл24¹"
+    assert S.parse_marker("РАЗДЕЛ I¹ ОБЩИЕ", "Section-header").label == "I¹"
+    assert S.parse_marker("§ 2¹. Особенности", "Section-header").label == "§2¹"
+    pages = [[("Section-header", "Глава 24. Порядок"), ("Section-header", "Статья 241"), ("Text", "Текст."),
+              ("Section-header", "Глава 24¹. Исполнение"), ("Section-header", "Статья 242¹"),
+              ("Text", "1. Часть первая."), ("Section-header", "Глава 25. Иное"), ("Section-header", "Статья 243"),
+              ("Text", "Текст.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A/гл24/ст241"
+    assert got["1.3"] == "A/гл24¹" and got["1.4"] == "A/гл24¹/ст242¹" and got["1.5"] == "A/гл24¹/ст242¹/ч1"
+    assert got["1.8"] == "A/гл25/ст243"
+
+
+def test_editorial_note_belongs_to_the_unit_it_names():
+    """Cycle 8 C2: «(Статья в редакции …)», «(Дополнение частью …)», «(Особенности применения статьи …)»
+    after the last part or point go to the named unit; a note naming no open unit, an ordinary
+    parenthesis and «(В редакции …)» without a unit keep their owner."""
+    pages = [[("Section-header", "Статья 5. Порядок"), ("Text", "1. Первая часть."),
+              ("Text", "2. Вторая часть содержит:"), ("Text", "1) первый пункт;"), ("Text", "2) второй пункт."),
+              ("Text", "(Дополнение частью - Федеральный закон от 01.01.2020 № 1-ФЗ)"),
+              ("Text", "(Статья в редакции Федерального закона от 02.02.2021 № 2-ФЗ)"),
+              ("Section-header", "Статья 6. Иное"), ("Text", "1. Часть первая содержит:"),
+              ("Text", "1) пункт первый."),
+              ("Text", "(Особенности применения статьи 6 - Федеральный закон от 03.03.2022 № 3-ФЗ)"),
+              ("Section-header", "Статья 7. Другое"), ("Text", "1. Часть первая содержит:"),
+              ("Text", "1) пункт первый."), ("Text", "(В редакции Федерального закона от 04.04.2023 № 4-ФЗ)"),
+              ("Text", "(Глава в редакции Федерального закона от 05.05.2024 № 5-ФЗ)"),
+              ("Text", "(далее - Правила) применяются с 2025 года.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.5"] == "A/ст5/ч2"            # «Дополнение частью» -> the part, not its point 2)
+    assert got["1.6"] == "A/ст5"               # «Статья в редакции» -> the article
+    assert got["1.10"] == "A/ст6"
+    assert got["1.14"] == "A/ст7/ч1/1"         # no unit named: unchanged
+    assert got["1.15"] == "A/ст7/ч1/1"         # no open chapter: unchanged
+    assert got["1.16"] == "A/ст7/ч1/1"         # not an editorial note
+    assert S.EDITORIAL_NOTE.match("(Дополнение статьей - Федеральный закон от 26.04.2007 № 63-ФЗ)")
+    assert not S.EDITORIAL_NOTE.match("(Пункт 3 настоящих Правил применяется с 2025 года.)")
+
+
+def test_list_closed_by_a_sentence_restarts_at_its_level():
+    """Cycle 8 C3: after «4) ….» an unmarked capitalised sentence closes the list; the next «1)» starts
+    a new list at the level of «4)» (not inside it) and the sentence returns to the article. A list
+    that goes on, a «;» item, a lowercase continuation or a quotation keep the old reading."""
+    pages = [[("Section-header", "Статья 158. Лицензия"), ("Text", "Для получения лицензии нужно:"),
+              ("Text", "1) иметь специалиста;"), ("Text", "2) иметь договор;"), ("Text", "4) иметь учет."),
+              ("Text", "Порядок выдачи лицензии определяется Правительством."),
+              ("Text", "Лицензия может быть отозвана в случаях:"), ("Text", "1) неоднократного нарушения;"),
+              ("Text", "2) причинения ущерба.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.4"] == "A/ст158/4"
+    assert got["1.5"] == "A/ст158" and got["1.6"] == "A/ст158"
+    assert got["1.7"] == "A/ст158/1" and got["1.8"] == "A/ст158/2"
+    pages = [[("Section-header", "Статья 9. Порядок"), ("Text", "Применяются меры:"),
+              ("Text", "1) первая;"), ("Text", "2) вторая;"),
+              ("Text", "Указанные меры применяются совместно;"), ("Text", "3) третья.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.5"] == "A/ст9/3"             # «;» does not close: the list goes on
+    pages = [[("Section-header", "Статья 10. Изменения"), ("Text", "Внести изменения:"),
+              ("Text", "1) пункт 3 изложить в следующей редакции:"),
+              ("Text", "«3. Порядок устанавливается.»;"), ("Text", "2) пункт 4 признать утратившим силу."),
+              ("Text", "«Новая редакция начинается здесь."), ("Text", "1) первый подпункт.»")]]
+    result = S.build(extraction(pages))
+    assert not any("closing sentence" in str(e) for p in result["paragraphs"] for e in p["evidence"])
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
