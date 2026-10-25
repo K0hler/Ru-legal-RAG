@@ -68,6 +68,10 @@ def view(text: str) -> str:
     return re.sub(r"\s+", " ", " ".join(lines)).strip()
 
 
+def sup_value(marks: str) -> int:
+    return int("".join(SUP_DIGIT[c] for c in marks)) if marks else 0
+
+
 def strip_sup(text: str) -> str:
     return re.sub(rf"[{SUP}]+", "", text).rstrip()
 
@@ -258,6 +262,8 @@ class Marker:
     # «1.» after a table or an unmarked heading that follows an «N.» of the same scope: the
     # numbering may start again (RESTART_COST) instead of nesting into the last point
     restart: bool = False
+    # inserted unit «2¹.», «3²)», «е¹)»: value is the base number, sup the superscript index
+    sup: int = 0
 
 
 # Named law units, recognised only at the start of a paragraph. Hierarchy:
@@ -341,15 +347,16 @@ def parse_marker(text: str, category: str) -> Marker:
         return Marker("none")  # a date such as "12. 02. 2026", not point 12
     if leading_zero_list(text):
         return Marker("none")  # «01. …», «02) …»: a list line of the current unit, not a point
-    m = re.match(r"^(\d{1,3})\.\s+\S", text)
+    # An inserted unit carries a superscript after its number: «2¹.», «3²)», «е¹)».
+    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\.\s+\S", text)
     if m:
-        return Marker("int", int(m.group(1)), m.group(1))
-    m = re.match(r"^(\d{1,3})\)\s+\S", text)
+        return Marker("int", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
+    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\)\s+\S", text)
     if m:
-        return Marker("paren", int(m.group(1)), m.group(1))
-    m = re.match(r"^([а-я])\)\s+\S", text)
+        return Marker("paren", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
+    m = re.match(rf"^([а-я])([{SUP}]*)\)\s+\S", text)
     if m and m.group(1) in LETTERS:
-        return Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1))
+        return Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1) + m.group(2), sup=sup_value(m.group(2)))
     if re.match(r"^[-–—]\s+\S", text):
         return Marker("dash")
     return Marker("none")
@@ -651,7 +658,9 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
             if sibling[0] == marker.kind:
                 if marker.kind in {"int", "paren", "letter", "roman"}:
                     gap = marker.value - sibling[1]
-                    if gap == 1:
+                    if gap == 1 or (gap == 0 and marker.sup):
+                        # «2¹» after «2» or «2¹»: an inserted sibling; the stack keeps the base value,
+                        # so «3» follows it as usual
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
                     elif 1 < gap <= 3:
                         yield stack[:keep] + (item,), 2.0 + gap

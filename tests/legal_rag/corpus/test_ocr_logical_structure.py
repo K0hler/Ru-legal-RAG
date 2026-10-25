@@ -565,6 +565,23 @@ def test_list_closed_by_a_sentence_restarts_at_its_level():
     assert not any("closing sentence" in str(e) for p in result["paragraphs"] for e in p["evidence"])
 
 
+def test_inserted_points_and_subpoints_are_siblings():
+    """Cycle 8 C4: «2¹.», «3¹)», «е¹)» are inserted units: siblings after «2.», «3)», «е)», not text of
+    them; «3.» after «2¹.» continues the numbering."""
+    assert S.parse_marker("2¹. Совет Федерации", "Text").label == "2¹"
+    assert S.parse_marker("е²) объекты", "Text").sup == 2
+    pages = [[("Section-header", "Статья 3. Полномочия"), ("Text", "1. Первая часть."), ("Text", "2. Вторая часть."),
+              ("Text", "2¹. Вставленная часть."), ("Text", "2². Ещё одна."), ("Text", "3. Третья часть включает:"),
+              ("Text", "3) третий пункт;"), ("Text", "3¹) вставленный пункт;"), ("Text", "4) четвёртый пункт.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.3"] == "A/ст3/ч2¹" and got["1.4"] == "A/ст3/ч2²" and got["1.5"] == "A/ст3/ч3"
+    assert got["1.7"] == "A/ст3/ч3/3¹" and got["1.8"] == "A/ст3/ч3/4"
+    pages = regulation(("Text", "1. Состав определяется:"), ("Text", "е) земельный участок;"),
+                       ("Text", "е¹) системы учета;"), ("Text", "ж) иное."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/1/е¹" and got["2.5"] == "S/I/1/ж"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),

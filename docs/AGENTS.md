@@ -253,6 +253,9 @@
   `continues_level` treats a lower value as a new list. JSON dev 79.8% -> 89.9% (macro 90.3%, 33 perfect), pool
   15137/15207 with `errors.json` byte-equal to v6.1 after each step; C2 never fires on the pool, C3 fires 37 times
   without changing owners. First C2 attempt `c8-c2` missed «Дополнение» (kept).
+- Cycle 8 C4: «2¹.», «3²)», «е¹)» parse as int/paren/letter markers with `Marker.sup` (value = base number,
+  label keeps the superscript); the solver accepts gap 0 for an inserted sibling. JSON dev 92.7% (macro 91.8%),
+  pool errors equal to v6.1; corpus drops only inside quoted amendments (fz 603161051 -2, 603161055 -1).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
