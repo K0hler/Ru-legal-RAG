@@ -683,6 +683,23 @@ def test_compound_inserted_article_number():
     assert got["1.2"] == "A/ст115¹⁻¹" and got["1.3"] == "A/ст115¹⁻¹/ч1"
 
 
+def test_editorial_note_at_page_top_and_unit_named_inside():
+    """Cycle 8 C11: a note at the top of a page is no continuation of the last point; a note citing an act
+    names its unit inside («… действие части 1 - Федеральный закон …», «… статьи 7 - Постановление
+    Конституционного Суда …»). A parenthesis without a cited act stays a continuation."""
+    pages = [[("Section-header", "Статья 7. Порядок"), ("Text", "1. Порядок включает:"), ("Text", "1) первое;"),
+              ("Text", "2) второе.")],
+             [("Text", "(Статья в редакции Федерального закона от 26.04.2007 № 63-ФЗ)"),
+              ("Text", "(Приостановлено с 1 января 2026 года действие части 1 - Федеральный закон от 01.01.2025 № 1-ФЗ)"),
+              ("Text", "(О несоответствии Конституции Российской Федерации статьи 7 - Постановление Конституционного "
+                       "Суда Российской Федерации от 01.02.2020 № 5-П)")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "A/ст7"
+    assert got["2.1"] == "A/ст7/ч1" and got["2.2"] == "A/ст7"
+    assert not S.starts_continuation("(Статья в редакции Федерального закона от 26.04.2007 № 63-ФЗ)")
+    assert S.starts_continuation("(далее - Правила) применяются с 2025 года.")
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),

@@ -427,7 +427,9 @@ def terminated(text: str) -> bool:
 
 
 def starts_continuation(text: str) -> bool:
-    return bool(text) and (text[0].islower() or text[0] == "(")
+    """A lowercase or «(» start continues the previous paragraph, except a standalone editorial note of a
+    consolidated edition («(Статья в редакции …)» at the top of a page is no continuation)."""
+    return bool(text) and (text[0].islower() or (text[0] == "(" and not editorial_note_unit(text)))
 
 
 def footnote_number(text: str) -> int | None:
@@ -941,17 +943,38 @@ def points_are_article_parts(texts: list[str]) -> bool:
     return len(ARTICLE_POINT_REFERENCE.findall(joined)) > len(ARTICLE_PART_REFERENCE.findall(joined))
 
 
+# Other notes name their unit inside: «(Приостановлено … действие пункта 1 - Федеральный закон …)»,
+# «(До 1 января 2027 года не применяются положения пункта 3 …)», «(О несоответствии Конституции … статьи 242¹
+# - Постановление Конституционного Суда …)». They cite the amending or deciding act.
+NOTE_SOURCE = re.compile(r"(?:Федеральн\w*\s+(?:конституционн\w*\s+)?закон\w*|Постановлени\w+|Распоряжени\w+|"
+                         r"Указ\w*|Решени\w+)\s+(?:от|Правительства|Президента|Конституционного|Совета)")
+NOTE_UNIT_WORD = re.compile(r"\b(стать[яиюей]|глав[аыуе]|раздел[аеу]?|част[ьию]|пункт[аеуом]*|подпункт[аеуом]*)\b",
+                            re.IGNORECASE)
+
+
+def editorial_note_unit(text: str) -> str | None:
+    """The unit word an editorial note names (lowercase), or None for any other paragraph."""
+    if not text.startswith("(") or len(text) > EDITORIAL_NOTE_MAX or not strip_sup(text).rstrip().endswith(")"):
+        return None
+    m = EDITORIAL_NOTE.match(text)
+    if m:
+        return (m.group("unit") or m.group("added") or m.group("applied") or m.group("provisions")).lower()
+    if NOTE_SOURCE.search(text):
+        w = NOTE_UNIT_WORD.search(text)
+        return w.group(1).lower() if w else None
+    return None
+
+
 def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are_parts: bool = False) -> None:
     """An editorial note that names its unit belongs to the deepest open unit of that kind, not to the
     last point or subpoint it follows. A note naming no open unit of its kind keeps its owner. In an act
     whose «N.» in an article is a «пункт», «пункт» names that part and «подпункт» its «N)»."""
     for k, p in enumerate(body):
-        if p.kind != "text" or p.marker.kind != "none" or len(p.text) > EDITORIAL_NOTE_MAX:
+        if p.kind != "text" or p.marker.kind != "none":
             continue
-        m = EDITORIAL_NOTE.match(p.text)
-        if not m or not strip_sup(p.text).rstrip().endswith(")"):
+        word = editorial_note_unit(p.text)
+        if word is None:
             continue
-        word = (m.group("unit") or m.group("added") or m.group("applied") or m.group("provisions")).lower()
         unit = NOTE_UNIT[word[:4]]
         if points_are_parts and unit in {"point", "subpoint"} and any(e[0] == "article" for e in stacks[k]):
             unit = "part" if unit == "point" else "point"

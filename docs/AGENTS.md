@@ -286,6 +286,10 @@
   pseudo text and gold is `ст115^1-1`; projections 1-2 reproduce byte for byte. Frozen
   `20261025-json-baseline-dev-proj3` (freeze 6df9bb99…): v6.1 79.8% / 89.4%, working prototype after C10 96.1% /
   95.6% (36 perfect), no act below v6.1, pool errors equal to v6.1.
+- Cycle 8 C11 `editorial_note_unit`: a parenthesised note (≤ 400 chars) citing an act (`NOTE_SOURCE`:
+  «Федеральный закон от …», «Постановление Конституционного Суда …») names its unit by the first unit word inside
+  («(Приостановлено … действие части 1 …)»); `starts_continuation` no longer joins such a note to the previous
+  paragraph across a page. Projection 3: 96.2%, no drops, pool errors equal to v6.1.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
