@@ -312,8 +312,9 @@
   «раздел» (convention question). The holdout is now development. `m1_04a_json_baseline.py --split holdout`.
 - `milestones/m1/04a/M1_04A_POOL_BATCH_8_2026-10-25.md`: batch-8 first pass of frozen v7 (+ v6.1): both 1365/1710,
   identical owners; quote the without-494/553 figure (910/932) and the FAS gold question (forms without own caption split
-  into separate documents -> 132 ordinal-shift errors). Only C3 fired (5, no owner change). `cross_scope_v2` 320, one new
-  class (approval sheet after the last annex), counter 0. Selection profile `batch-08` (= batch-07, prior 01-07);
+  into separate documents -> 132 ordinal-shift errors). Only C3 fired (5, no owner change). `cross_scope_v2` 320, no new
+  class: the owner (25.10.2026) ruled the approval sheet after the last annex a form of the signature-block class, so the
+  no-new-class counter is 1 of 3. Selection profile `batch-08` (= batch-07, prior 01-07);
   `POOL_STATUS` has batch-08 (development). Codex jobs and logs: `.superpowers/sdd/2026-10-25-m1-04a-pool-batch-8/`.
   Owner decision 25.10.2026 (convention v2 §6.1): a form without its own caption or approval mark inside an annex is
   part of that annex. `assets/derive_m1_04a_gold_forms.py` derives write-once `agent-<slug>.gold-forms.txt` (+ receipt;
