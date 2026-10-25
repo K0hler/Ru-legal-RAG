@@ -107,6 +107,12 @@
   onto OCR regions by word alignment (`freeze-json-gold.json` written before the Codex run) vs one blind Codex job:
   282/282 owners equal. Synthetic, not a pool batch; report `docs/milestones/m1/04a/M1_04A_JSON_CODEX_PILOT_2026-10-24.md`.
 
+- Second-layer corpus v1 (25.10.2026): `m1/m1-04a/json-corpus/20261025-v1/` from
+  `docs/assets/acquire_m1_04a_json_corpus.py` (phases write once). 100 IPS federal acts with structure JSON + HTML,
+  frozen `selection.json` (ec9322a0…) and `split.json` (bea6a9be…, 69 dev / 31 holdout). Never open or tune on
+  holdout bodies. Range ends may be `<tr id="r<N>">`; fetch attempts 01/02 (false rejections) kept as superseded.
+  No IPS trees for treaties, KS, osnovy; no ministry orders/SanPiN. Report `M1_04A_JSON_CORPUS_2026-10-25.md`.
+
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
   `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a
