@@ -315,6 +315,11 @@
   into separate documents -> 132 ordinal-shift errors). Only C3 fired (5, no owner change). `cross_scope_v2` 320, one new
   class (approval sheet after the last annex), counter 0. Selection profile `batch-08` (= batch-07, prior 01-07);
   `POOL_STATUS` has batch-08 (development). Codex jobs and logs: `.superpowers/sdd/2026-10-25-m1-04a-pool-batch-8/`.
+  Owner decision 25.10.2026 (convention v2 §6.1): a form without its own caption or approval mark inside an annex is
+  part of that annex. `assets/derive_m1_04a_gold_forms.py` derives write-once `agent-<slug>.gold-forms.txt` (+ receipt;
+  roots renamed by a hand-written `agent-<slug>.forms-map.json` pinned to the frozen gold, others copied). Development
+  rescore `20261025-batch-08-rescore-forms`: v7 = v6.1 1495/1710 (87.4%), FAS 225/234, `cross_scope_v2` 188; the 79.8%
+  ledger entry is unchanged.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

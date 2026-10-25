@@ -19,6 +19,9 @@
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation
   negatives) fail on the frozen v6.1 copy and pass on the working prototype.
 
+- `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
+  kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
+
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open
   approval scope, terminated list abzacy stay separate, decimal/global point

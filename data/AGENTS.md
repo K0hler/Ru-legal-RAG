@@ -140,6 +140,9 @@
   supersedes `freeze-addendum.attempt1-no-files.json` written before any run). First pass
   `experiments/20261025-batch-08-first-pass/` (freeze 6dc51ce9…, v7 + v6.1, git_head 38a6843), run once 16:06 UTC;
   never re-run. Ukaz 1428/2012 appoints judges: names stay out of docs (sample-30 stays local).
+  §6.1 forms decision: `gold/<slug>/agent-<slug>.gold-forms.{txt,sha256}` for all 11 acts (only FAS changed, map
+  `agent-prikaz-fas-553-2015.forms-map.json` 745f4ce4…); rescore `experiments/20261025-batch-08-rescore-forms/`
+  (summary e565cf7a…); development only.
 
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
