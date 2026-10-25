@@ -1291,8 +1291,14 @@ def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
 
 def test_catalog_records_batch_07_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07")
+    assert catalog.POOL_BATCHES[:7] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07")
     history = catalog.POOL_STATUS["batch-07"]  # written only after the first pass
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261024-batch-07-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_7_2026-10-24.md"
+
+
+def test_catalog_lists_batch_08_without_status_before_its_first_pass():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES[-1] == "batch-08"
+    assert "batch-08" not in catalog.POOL_STATUS  # written only after the first pass
