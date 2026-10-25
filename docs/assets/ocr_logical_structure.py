@@ -135,7 +135,9 @@ def load_regions(extraction: dict) -> list[Region]:
 # --------------------------------------------------------------------------- captions and markers
 
 
-APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]?)\b(?:\s|$)")  # case-sensitive capitalised word
+# Case-sensitive capitalised word. «ОДОБРЕН распоряжением …» (an endorsed agreement) only in capitals: the law
+# requisite «Одобрен Советом Федерации» is no caption.
+APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]?|ОДОБРЕН[АЫО]?)\b(?:\s|$)")
 # The number follows a number sign («№», Latin «N», Cyrillic «Н», OCR Greek «Ν») or a plain space:
 # «Приложение № 2», «Приложение N 2», «Приложение 2». A bare number needs more evidence (annex_caption).
 ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?P<sign>№|N|Н|Ν)?\s*(?P<number>\d+))?(?:\s+(?P<ref>к\s.+))?$")
@@ -153,6 +155,7 @@ PROJECT = re.compile(r"^(?:ПРОЕКТ|Проект)(?:\s+[А-Яа-яЁё-]+)?$
 REPEAT_THRESHOLD = 3  # a header/footer text on this many regions is running text
 CAPTION_MAX = 120  # an annex caption in the body
 CAPTION_BLOCK_MAX = 300  # an approval caption; an annex caption printed as a page header
+CAPTION_UPPER_MAX = 600  # «ПРИЛОЖЕНИЕ № N к <Документ с длинным названием>»
 PROJECT_MAX = 40
 
 
@@ -239,8 +242,11 @@ def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Mat
     if len(text) <= CAPTION_MAX:
         return m
     reference = m.group("ref") or ""
-    if len(text) < CAPTION_BLOCK_MAX and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
-                                          or DOCUMENT_REFERENT.match(reference)):
+    # The capitalised word «ПРИЛОЖЕНИЕ № N к <Документ> …» is a caption even when the document's full name
+    # is long (an agreement title: 373 characters in development); sentences never start with it.
+    limit = CAPTION_UPPER_MAX if text.startswith("ПРИЛОЖЕНИЕ") and m.group("sign") else CAPTION_BLOCK_MAX
+    if len(text) < limit and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
+                              or DOCUMENT_REFERENT.match(reference)):
         return m
     return None
 

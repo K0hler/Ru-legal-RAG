@@ -269,6 +269,11 @@
   JSON dev 94.6%, no drops. Not prototype rules (recorded): IPS leaves forms unstructured (`S2` for the whole
   «ФОРМА паспорта …», 282 regions in pp-102370057: convention question); «Статья 115¹⁻¹» of the Budget Code is
   a measuring-stand artifact (non-digit superscript span flattened to «1151-1», 167 regions).
+- Cycle 8 C7: `APPROVAL` also takes uppercase «ОДОБРЕН(А/Ы/О)» (endorsed agreement; title-case «Одобрен Советом
+  Федерации» stays a law requisite); an uppercase «ПРИЛОЖЕНИЕ № N к <Документ>» caption may be up to
+  `CAPTION_UPPER_MAX` (600) characters. First run `c8-c7` (ОДОБРЕН only) +16, `c8-c7-r2` +34 in rp-102150462;
+  JSON dev 94.7% (macro 95.3%), no drops. pp-102370057's form «УТВЕРЖДЕНА … № 272» is nested by IPS in the
+  previous Requirements (`S3/AN2`) while the prototype opens `S4`: source nesting, not a prototype rule.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

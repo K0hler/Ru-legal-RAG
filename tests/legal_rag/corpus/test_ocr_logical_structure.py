@@ -620,6 +620,24 @@ def test_editorial_tail_does_not_hide_the_final_dot_of_a_list_item():
     assert S.provision_final("Кодекса). (В редакции Федерального закона от 30.06.2006 № 90-ФЗ)") == "."
 
 
+def test_endorsed_agreement_and_long_uppercase_annex_caption():
+    """Cycle 8 C7: «ОДОБРЕН распоряжением …» opens the endorsed agreement like «УТВЕРЖДЕН»; an uppercase
+    «ПРИЛОЖЕНИЕ № 1 к Договору <long title>» (over 300 characters) opens its annex. The law requisite
+    «Одобрен Советом Федерации» stays the act's text."""
+    title = "об уступке прав на получение доходов в натуральной форме " * 6
+    pages = [[("Title", "РАСПОРЯЖЕНИЕ"), ("Text", "1. Одобрить проект договора."), ("Text", "2. Иное."),
+              ("Text", "В.Путин", 1200)],
+             [("Text", "ОДОБРЕН\nраспоряжением Правительства\nРоссийской Федерации", 1000),
+              ("Section-header", "ДОГОВОР " + title), ("Text", "1. Цедент уступает права."),
+              ("Text", f"ПРИЛОЖЕНИЕ № 1\nк Договору {title}", 1000), ("Text", "Отчет цессионария.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "S" and got["2.2"] == "S/1"
+    assert got["2.3"] == "S/AN1" and got["2.4"] == "S/AN1"
+    law = [[("Title", "ФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Text", "Одобрен Советом Федерации 25 ноября 2016 года"),
+            ("Section-header", "Статья 1"), ("Text", "Текст.")]]
+    assert owners(S.build(extraction(law)))["1.1"] == "A"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
