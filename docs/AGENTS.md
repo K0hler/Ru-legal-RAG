@@ -294,6 +294,16 @@
   last item and a closing sentence no longer hides the item's dot); named units `code_part` («ЧАСТЬ ВТОРАЯ …»,
   uppercase ordinal word, rank -1, label `разд<N>`) and `subsection` («ПОДРАЗДЕЛ II», rank 0.5, Roman label).
   Projection 3: 96.3%, no drops, pool errors equal to v6.1.
+- Owner decisions 25.10.2026 (convention v2 §6.1, no pool re-annotation): numbered sections/positions of forms and
+  agreements are points of that document; the abzac after the last list item belongs to the parent (B4); separators
+  mark their document's page; a document with its own approval caption is attached separately. JSON baseline
+  projection 4 (default) applies them: unstructured IPS forms/agreements not scored, parent|item alternative after
+  a final list item (not after an item ending «:»). Frozen `20261025-json-baseline-dev-proj4` (6c8a36a3…, 21908
+  regions): v6.1 81.3% / 91.6%, v7 98.0% / 97.7% (54/69 perfect). My first «58 of 61» for IPS stretching was wrong
+  (it counted amending-quotation content); the real split is 4 inside / 3 parent.
+- Cycle 8 freeze: prototype v7 `ocr-logical-structure/7-experiment` (sha256 7935988e…, LF working copy = LF form,
+  blob eaaadbcd) in `data/m1/m1-04a/experiments/20261025-prototype-v7-freeze/`; regression `20261025-dev-regression-v7`
+  15137/15207, errors equal to v6.1. Development result; the measure is the JSON holdout (31 acts) and pool batch 8.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

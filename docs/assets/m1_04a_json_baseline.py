@@ -155,9 +155,12 @@ def node_paths(nodes, order, first_text, projection=1):
         unit, cap = n.get("unit", ""), n["caption"]
         seg = None
         if unit == "вложение":
+            own_caption = projection >= 4 and re.match(r"^УТВЕРЖДЕН", first_text.get(n["np"], ""))
             if cap.strip().lower() in TRANSPARENT_CAPTIONS:
                 seg = None
-            elif parent == "A":
+            elif parent == "A" or own_caption:
+                # projection 4: a document with its own approval caption is attached to the act even when
+                # IPS nests it in the previous document (convention v2 §6.1)
                 attached += 1
                 n["path"] = "S" if attached == 1 else f"S{attached}"
                 stack.append(n)
@@ -240,6 +243,78 @@ def paragraph_owners(nodes, order, first_text, projection=1):
     return {pid: fill[i] for pid, i in order.items()}
 
 
+# ------------------------------------------------------------------ projection 4 (convention v2 §6.1)
+
+STRUCTURE_UNITS = {"пункт", "подпункт", "раздел", "подраздел", "статья", "глава", "часть", "§"}
+NUMBERED = re.compile(r"^\s*(?:\d{1,3}[¹²³⁴⁵⁶⁷⁸⁹⁰]*[.)]|[IVXLC]+\.|[а-я]\))\s")
+LIST_ITEM = re.compile(r"^\s*(?:\d+|[а-я])[¹²³⁴⁵⁶⁷⁸⁹⁰⁻]*\)\s")
+SCOPE_SEGMENT = re.compile(r"^(?:A|S\d*|AN\d*)$")
+
+
+def tree_children(nodes):
+    stack, kids = [], {n["id"]: [] for n in nodes}
+    for n in nodes:
+        del stack[n["lvl"]:]
+        if stack:
+            kids[stack[-1]["id"]].append(n)
+        stack.append(n)
+    return kids
+
+
+def unstructured_documents(nodes, order, text):
+    """Paragraph ids of attached documents (forms, agreements) that IPS leaves without inner structure
+    although their own text is numbered: IPS gives no evidence there, so they are not scored."""
+    ids = sorted(order, key=order.get)
+    kids, excluded = tree_children(nodes), set()
+    for n in nodes:
+        if n.get("unit") not in ("вложение", "приложение") or n["np"] not in order or n["npe"] not in order:
+            continue
+        if any(c.get("unit") in STRUCTURE_UNITS for c in kids[n["id"]]):
+            continue
+        inner = set()
+        for c in kids[n["id"]]:
+            if c["np"] in order and c["npe"] in order:
+                inner |= set(range(order[c["np"]], order[c["npe"]] + 1))
+        own = [i for i in range(order[n["np"]], order[n["npe"]] + 1) if i not in inner]
+        if sum(bool(NUMBERED.match(text.get(ids[i], ""))) for i in own) >= 2:
+            excluded |= {ids[i] for i in own}
+    return excluded
+
+
+def after_last_item(nodes, order, text, paths):
+    """Paragraphs after the first one of a final «N)»/«а)» list item, from the first capitalised sentence
+    after a full stop: the parent owns them (convention v2 §6.1); IPS stretches the item's range, so the
+    item stays an accepted alternative. Returns pid -> (parent path, item path)."""
+    ids = sorted(order, key=order.get)
+    kids, out = tree_children(nodes), {}
+    for parent in nodes:
+        items = kids[parent["id"]]
+        if not items:
+            continue
+        last = items[-1]
+        path = paths.get(last["id"])
+        if (not path or "/" not in path or last["np"] not in order or last["npe"] not in order
+                or not LIST_ITEM.match(text.get(last["np"], ""))
+                or text.get(last["np"], "").rstrip().endswith(":")):
+            continue  # an item ending «:» introduces its own content (a list or an amending quotation)
+        start, end = order[last["np"]], order[last["npe"]]
+        closed = False
+        for i in range(start + 1, end + 1):
+            t, before = text.get(ids[i], ""), text.get(ids[i - 1], "")
+            if (not closed and t[:1].isupper() and not t.startswith("(") and not LIST_ITEM.match(t)
+                    and re.sub(r"\s*\([^()]*\)\s*$", "", before).rstrip().endswith(".")):
+                closed = True
+            if closed:
+                out[ids[i]] = (path.rsplit("/", 1)[0], path)
+    return out
+
+
+def scope_root(path: str) -> str:
+    parts = path.split("/")
+    keep = max(k for k, s in enumerate(parts) if SCOPE_SEGMENT.match(s))
+    return "/".join(parts[:keep + 1])
+
+
 # ------------------------------------------------------------------ phases
 
 
@@ -271,6 +346,13 @@ def phase_project(out: Path, projection: int = 1):
         regions = html_regions(html, compound_sup=projection >= 3)
         first_text = {pid: r["text"] for r in regions for pid in r["ids"][:1]}
         owners = paragraph_owners(nodes, order, first_text, projection)
+        excluded, trailing = set(), {}
+        if projection >= 4:
+            text = {pid: r["text"] for r in regions for pid in r["ids"]}
+            excluded = unstructured_documents(nodes, order, text)
+            paths, _ = node_paths(nodes, order, first_text, projection)
+            trailing = {pid: pair for pid, pair in after_last_item(nodes, order, text, paths).items()
+                        if pid in owners and owners[pid][0] == pair[1]}
         header = "# convention: projected IPS tree (m1_04a_json_baseline.py)"
         if projection >= 2:
             header += f", projection {projection}"
@@ -283,6 +365,14 @@ def phase_project(out: Path, projection: int = 1):
             else:
                 owner = Counter(owners[pid][0] if pid in owners else last for pid in r["ids"]).most_common(1)[0][0]
                 alt = owners[r["ids"][0]][1] if r["ids"][0] in owners else None
+                if projection >= 4:
+                    if r["ids"][0] in excluded:
+                        last = owner
+                        continue  # inside a form/agreement IPS does not structure: no evidence
+                    if r["ids"][0] in trailing:
+                        owner, alt = trailing[r["ids"][0]]
+                    if re.fullmatch(r"[_\s]+", r["text"]):
+                        owner, alt = scope_root(last), None  # a separator marks its document's page (§2)
                 gold.append(f"{key} {owner}" + (f"|{alt}" if alt and alt != owner else ""))
             last = owner
         extraction = pseudo_extraction(slug, regions)
@@ -343,10 +433,12 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2, 3), default=3,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4), default=4,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
                              "also accept the previous printed sibling; 3: 2 + compound superscript indices "
-                             "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold")
+                             "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
+                             "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
+                             "-> its document, own approval caption -> separate document)")
     parser.add_argument("--prototype")
     parser.add_argument("--prototype-sha256")
     args = parser.parse_args(argv)
