@@ -755,6 +755,27 @@ def final_char(text: str) -> str:
     return t[-1] if t else ""
 
 
+# A consolidated edition appends notes to a provision: «… Кодекса). (В редакции Федерального закона от …)».
+EDITORIAL_TAIL = re.compile(
+    r"\s*\((?:В\s+редакции|Дополнен|Утратил|Утратила|Исключен|Признан|"
+    r"(?:Статья|Глава|Раздел|Часть|Пункт|Подпункт|Абзац)\s+(?:\S+\s+)?(?:в\s+редакции|утратил|утратила|исключен))"
+    r"[^()]*(?:\([^()]*\)[^()]*)*\)\s*$")
+
+
+def provision_final(text: str) -> str:
+    """Final character of a provision's own text, ignoring trailing editorial notes of a consolidated edition."""
+    stripped = text
+    while True:
+        cut = EDITORIAL_TAIL.sub("", stripped)
+        if cut == stripped:
+            return final_char(stripped)
+        stripped = cut
+
+
+def editorial_only(p: "Paragraph") -> bool:
+    return bool(p.text) and p.marker.kind == "none" and not EDITORIAL_TAIL.sub("", p.text).strip()
+
+
 def heading_evidence(p: Paragraph) -> bool:
     return p.first.category in HEADING_CATEGORIES
 
@@ -859,7 +880,10 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             continue
         if inside_quote or strip_sup(p.text).rstrip(" .").endswith("»"):
             continue
-        before, own = final_char(body[k - 1].text), final_char(p.text)
+        j = k - 1  # the previous provision text; a standalone editorial note in between does not count
+        while j > 0 and editorial_only(body[j]):
+            j -= 1
+        before, own = provision_final(body[j].text), provision_final(p.text)
         if not (before == "." or (before == ";" and own == ".")):
             continue
         nxt = next((stacks[j] for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), ())
@@ -1003,9 +1027,9 @@ def mark_restarts(items: list[Paragraph]) -> None:
             inside = opened > 0
             opened += quote_balance(p.text)
             if (last_sub and not inside and p.text[:1].isupper() and previous is not None
-                    and final_char(previous.text) == "." and not strip_sup(p.text).rstrip(" .").endswith("»")):
+                    and provision_final(previous.text) == "." and not strip_sup(p.text).rstrip(" .").endswith("»")):
                 sub_closed = True
-        if p.kind == "text":
+        if p.kind == "text" and not editorial_only(p):
             previous = p
 
 

@@ -264,6 +264,11 @@
   list ends a quotation; after a quoted form/table (lost closing quote) the next number of any outer list does
   (r3 without the form gate: fz-603161051 351 -> 156; r2 without any outer guard: two PP drops). r4: JSON dev
   94.3% (macro 94.9%), no corpus or pool drops, pool errors equal to v6.1.
+- Cycle 8 C6: `provision_final` ignores trailing consolidated-edition notes («…). (В редакции … № 90-ФЗ)»)
+  and `editorial_only` notes are skipped as the previous provision in `close_subpoints` and the C3 closing check.
+  JSON dev 94.6%, no drops. Not prototype rules (recorded): IPS leaves forms unstructured (`S2` for the whole
+  «ФОРМА паспорта …», 282 regions in pp-102370057: convention question); «Статья 115¹⁻¹» of the Budget Code is
+  a measuring-stand artifact (non-digit superscript span flattened to «1151-1», 167 regions).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

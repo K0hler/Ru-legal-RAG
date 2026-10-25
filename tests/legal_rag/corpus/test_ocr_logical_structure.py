@@ -602,6 +602,24 @@ def test_multi_paragraph_amending_quotation_is_text_of_the_introducing_unit():
     assert got["2.6"] == "S/I/2" and got["2.7"] == "S/I/2/а"
 
 
+def test_editorial_tail_does_not_hide_the_final_dot_of_a_list_item():
+    """Cycle 8 C6: «…Кодекса). (В редакции … № 90-ФЗ)» ends with a dot for the list-closing rules, and a
+    standalone note between the last item and the closing sentence is skipped."""
+    pages = [[("Section-header", "Статья 77. Основания"), ("Text", "Основаниями являются:"),
+              ("Text", "1) соглашение сторон;"),
+              ("Text", "2) иные обстоятельства (статья 84 настоящего Кодекса). (В редакции Федерального закона от "
+                       "30.06.2006 № 90-ФЗ)"),
+              ("Text", "(Часть в редакции Федерального закона от 30.06.2006 № 90-ФЗ)"),
+              ("Text", "Трудовой договор может быть прекращен и по другим основаниям."),
+              ("Section-header", "Статья 99. Сверхурочная работа"), ("Text", "Допускается в случаях:"),
+              ("Text", "1) первом;"), ("Text", "3) третьем. (В редакции Федерального закона от 14.07.2022 № 273-ФЗ)"),
+              ("Text", "В других случаях привлечение допускается с согласия работника.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.3"] == "A/ст77/2" and got["1.5"] == "A/ст77"
+    assert got["1.10"] == "A/ст99"
+    assert S.provision_final("Кодекса). (В редакции Федерального закона от 30.06.2006 № 90-ФЗ)") == "."
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
