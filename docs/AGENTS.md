@@ -256,6 +256,14 @@
 - Cycle 8 C4: «2¹.», «3²)», «е¹)» parse as int/paren/letter markers with `Marker.sup` (value = base number,
   label keeps the superscript); the solver accepts gap 0 for an inserted sibling. JSON dev 92.7% (macro 91.8%),
   pool errors equal to v6.1; corpus drops only inside quoted amendments (fz 603161051 -2, 603161055 -1).
+- Cycle 8 C5 `quoted_markers(items)`: a multi-paragraph amending quotation opens with a paragraph starting
+  with a quote mark (`"`, «, „, “; IPS prints straight quotes) right after one ending «:» and not closing
+  itself, and ends at the first paragraph ending with a quote mark; paragraphs after the first lose their
+  markers (`quoted` evidence). «…» balance is not used (OCR merges nested closing quotes: attempt 1 dropped
+  fz-119/prikaz-135 on the pool, kept as `…cycle8-c8-c5-attempt1-failed`). The next number of the introducing
+  list ends a quotation; after a quoted form/table (lost closing quote) the next number of any outer list does
+  (r3 without the form gate: fz-603161051 351 -> 156; r2 without any outer guard: two PP drops). r4: JSON dev
+  94.3% (macro 94.9%), no corpus or pool drops, pool errors equal to v6.1.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

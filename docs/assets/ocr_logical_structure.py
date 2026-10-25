@@ -913,6 +913,59 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple]) -> None:
             p.evidence.append({"editorial_note": f"names the {NOTE_UNIT[word[:4]]} -> that unit"})
 
 
+# Amending text quotes the new wording over several paragraphs: «… изложить в следующей редакции:» then
+# «"5²) …» … «12) …";» (or «…»). Inside such a quotation numbers and headings are quoted text.
+QUOTE_OPEN = re.compile(r"^[«\"„“]")
+QUOTE_CLOSE = re.compile(r"[»\"“”][.;,)]*$")
+QUOTE_MAX_PARAGRAPHS = 300  # an OCR-lost closing quote must not swallow the rest of the document
+
+
+FORM_LINE = re.compile(r"_{5,}")
+
+
+def quoted_markers(items: list[Paragraph]) -> None:
+    """Paragraphs after the first one of a multi-paragraph amending quotation keep no marker: «48³¹)»,
+    «1.», «Статья 5» there are quoted text of the unit that introduces the quotation. The quotation opens
+    with a paragraph that starts with a quote mark right after a paragraph ending with «:» and does not
+    end with a closing quote itself; it ends with the first paragraph ending with a quote mark (optionally
+    followed by «.;,)»). Counting «…» balance is not used: OCR merges or drops nested closing quotes. The
+    next number of the introducing list («д)» after «г)») ends an open quotation; after a quoted form
+    or table (where the closing quote is often lost) so does the next number of any list open before
+    the quotation («2.» after «1.»)."""
+    open_from, last, previous = None, {}, None  # last: marker kind -> value seen outside quotations
+    introducer, formish = None, False
+    for p in items:
+        if p.flow != "body":
+            continue
+        if p.kind != "text":
+            formish = formish or open_from is not None
+            continue
+        text = strip_sup(p.text).rstrip() if p.text else ""
+        if open_from is not None:
+            formish = formish or bool(FORM_LINE.search(p.text or ""))
+            continues = isinstance(last.get(p.marker.kind), int) and p.marker.value == last[p.marker.kind] + 1
+            nxt = continues and (formish or (introducer is not None and p.marker.kind == introducer.kind))
+            if nxt or open_from > QUOTE_MAX_PARAGRAPHS:
+                open_from = None
+            else:
+                open_from += 1
+                if p.marker.kind != "none":
+                    p.marker = Marker("none")
+                    p.kind = "text"
+                    p.evidence.append({"quoted": "inside an amending quotation; text of the introducing unit"})
+                if QUOTE_CLOSE.search(text):
+                    open_from = None
+                previous = p
+                continue
+        if (QUOTE_OPEN.match(p.text or "") and previous is not None and final_char(previous.text) == ":"
+                and not QUOTE_CLOSE.search(text)):
+            open_from, formish = 0, False
+        if p.marker.kind not in {"none", "dash"}:
+            last[p.marker.kind] = p.marker.value
+            introducer = p.marker
+        previous = p
+
+
 def mark_restarts(items: list[Paragraph]) -> None:
     """Restarted numbering: an «1.» whose previous «N.» paragraph in the scope is separated from it
     by a table or an unmarked heading (OCR Section-header/Title) may restart the numbering at the
@@ -1132,6 +1185,7 @@ def build(extraction: dict) -> dict:
                 p.marker = Marker("none")
                 p.kind = "text"
                 p.evidence.append(dict(TABLE_ROW_EVIDENCE))
+        quoted_markers(items)
         roman_sequence(items, rows)
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")

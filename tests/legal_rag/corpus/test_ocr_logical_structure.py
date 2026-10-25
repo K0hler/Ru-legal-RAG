@@ -582,6 +582,26 @@ def test_inserted_points_and_subpoints_are_siblings():
     assert got["2.4"] == "S/I/1/е¹" and got["2.5"] == "S/I/1/ж"
 
 
+def test_multi_paragraph_amending_quotation_is_text_of_the_introducing_unit():
+    """Cycle 8 C5: after «… изложить в следующей редакции:» the quoted «"5) …», «6) …», «7) …";» are text
+    of the introducing subpoint; «б)» after the closing quote is structure again. A quotation whose
+    closing quote is lost in a quoted form ends at the next number of an outer list («2.» after «1.»)."""
+    pages = [[("Section-header", "Статья 1"), ("Text", "Внести в Кодекс следующие изменения:"),
+              ("Text", "1) в статье 34:"), ("Text", "а) пункт 5 изложить в следующей редакции:"),
+              ("Text", "\"5) в виде расходов на приобретение;"), ("Text", "6) в виде процентов;"),
+              ("Text", "7) в виде средств.\";"), ("Text", "б) пункт 8 признать утратившим силу;"),
+              ("Text", "2) статью 35 дополнить словами \"и иных\".")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.4"] == got["1.5"] == got["1.6"] == "A/ст1/1/а"
+    assert got["1.7"] == "A/ст1/1/б" and got["1.8"] == "A/ст1/2"
+    pages = regulation(("Text", "1. В Правилах:"), ("Text", "раздел VIII изложить в следующей редакции:"),
+                       ("Text", "\"VIII. Адреса и реквизиты Сторон"), ("Text", "Орган власти ______________ (наименование)"),
+                       ("Text", "2. В постановлении № 1078 изменения не вносятся."), ("Text", "а) пункт 28 исключить."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/1" and got["2.5"] == "S/I/1"
+    assert got["2.6"] == "S/I/2" and got["2.7"] == "S/I/2/а"
+
+
 def test_standalone_project_caption_opens_attached_document():
     pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "РАСПОРЯЖЕНИЕ"),
               ("Text", "Одобрить представленный проект Соглашения."),
