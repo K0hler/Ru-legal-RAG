@@ -102,6 +102,11 @@
   doubts and strict blindness: all 11 notes say «Память Codex: не загружалась», job logs show no memory reads).
   prikaz-minenergetiki-90-2019 30.8-31.8 (12 regions) carry `S/AN3|S/AN3/I` or `|S/AN3/II` (form headings outside the grid).
 
+- JSON-vs-Codex pilot (24.10.2026, owner request): `m1/m1-04a/experiments/20261024-json-codex-pilot/`.
+  PP 491 IPS HTML + structure JSON (rdk 21) -> Chrome PDF -> image-only "scan" -> dots.mocr -> JSON owners projected
+  onto OCR regions by word alignment (`freeze-json-gold.json` written before the Codex run) vs one blind Codex job:
+  282/282 owners equal. Synthetic, not a pool batch; report `docs/milestones/m1/04a/M1_04A_JSON_CODEX_PILOT_2026-10-24.md`.
+
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
   `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a
