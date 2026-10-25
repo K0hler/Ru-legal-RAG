@@ -122,6 +122,9 @@
 - Cycle 8 (25.10.2026): JSON corpus runs `20261025-json-baseline-dev-proj2/c8-{c1,c2,c2-r2,c3}-results.json`
   (`c8-c2` is the attempt that missed «Дополнение»), pool regressions `experiments/20261025-dev-regression-cycle8-
   {c1,c2,c2-r2,c3}/` against `20261024-dev-regression-v6-1/summary.json` (no drops, errors equal).
+  C4-C12: JSON runs `…-proj2/c8-{c4,c5,c5-r2,c5-r3,c5-r4,c6,c7,c7-r2,c8,c9,c9-r2}` and on projection 3
+  `20261025-json-baseline-dev-proj3/` (freeze 6df9bb99…; `v6-1` base 79.8%, `c8-{c10,c11,c12}`, c12 96.3%);
+  pool `20261025-dev-regression-cycle8-c8-*`, failed attempts `…-c8-c5-attempt1-failed`, `…-c8-c9-attempt1-failed`.
 
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
