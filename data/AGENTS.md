@@ -130,6 +130,17 @@
   JSON holdout measured once on 25.10.2026: `20261025-json-holdout-proj4/` (freeze 42f82227…, `run-receipt.json`,
   `v7`/`v6-1` outputs and results); never re-run; the holdout is now development.
 
+- Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
+  seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired
+  11/11 `new` then `unchanged`. OCR `ocr/<slug>/run-01` (rotation retry config, 243 pages, 2003 regions, 168 tables,
+  11 `grid: unresolved` all in prikaz-mintruda-141-2023, 0 rotations, replays equal), summary
+  `experiments/20261025-batch-08-ocr/summary.json` (f4a1f713…). Two launch attempts failed before OCR (Docker Desktop
+  not running; script not started from the repo root). Gold: 6 blind Codex jobs (memory off), 1710 regions, 62 `+`, 1
+  alternative, frozen in `experiments/20261025-batch-08-gold-freeze/` (freeze d2668fa1…; addendum f1f511c5…, which
+  supersedes `freeze-addendum.attempt1-no-files.json` written before any run). First pass
+  `experiments/20261025-batch-08-first-pass/` (freeze 6dc51ce9…, v7 + v6.1, git_head 38a6843), run once 16:06 UTC;
+  never re-run. Ukaz 1428/2012 appoints judges: names stay out of docs (sample-30 stays local).
+
 - Check-pool batch 7 first pass: `m1/m1-04a/experiments/20261024-batch-07-first-pass/` (`freeze.json` /3 4378b883…,
   v5 + v4 frozen copies, `git_head` d4fac12, both equivalences). Run once (24.10 05:33 UTC); never re-run.
   `error-classes-{v5,v4}.json` with `cross_scope_v2`; `sample-30.json` (seed 20261027) has one ukaz-410 row with a

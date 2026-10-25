@@ -310,6 +310,11 @@
   v6.1: fz-602263702 383 -> 280 (C5 guard closed a quoted article at its own «6)» after the introducing «5)»).
   New classes: KoAP article notes «Примечание.», quoted new articles; IPS calls «1.» inside a concept section a
   «раздел» (convention question). The holdout is now development. `m1_04a_json_baseline.py --split holdout`.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_8_2026-10-25.md`: batch-8 first pass of frozen v7 (+ v6.1): both 1365/1710,
+  identical owners; quote the without-494/553 figure (910/932) and the FAS gold question (forms without own caption split
+  into separate documents -> 132 ordinal-shift errors). Only C3 fired (5, no owner change). `cross_scope_v2` 320, one new
+  class (approval sheet after the last annex), counter 0. Selection profile `batch-08` (= batch-07, prior 01-07);
+  `POOL_STATUS` has batch-08 (development). Codex jobs and logs: `.superpowers/sdd/2026-10-25-m1-04a-pool-batch-8/`.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
