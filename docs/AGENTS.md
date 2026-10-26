@@ -373,6 +373,9 @@
   laws and government orders are ready by §7 with frozen v8 as their candidate; decrees and resolutions wait for a
   targeted family measure on frozen v8; ministry orders continue in cycle 10. §7 readiness is not Task 3/G13.
 - Cycle 10 A1: dev regression covers 100 documents (+ `BATCH_9` on frozen `20261026-batch-09-gold-freeze`, `.gold.txt`).
+- Cycle 10 A2: `run_m1_04a_dev_regression.py --baseline S --frozen-families [FAMILY ...]` (no names = all but
+  «приказы», `FROZEN_FAMILIES_DEFAULT`) fails when a document of a frozen family changes its error list against
+  `S`'s sibling `errors.json` — also when it improved (`frozen_family_changes`). Cycle-10 rules must pass it.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

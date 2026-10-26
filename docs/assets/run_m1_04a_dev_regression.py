@@ -16,7 +16,9 @@ Writes ``summary.json`` and ``errors.json`` into a new directory; an existing on
 With ``--baseline`` (an earlier ``summary.json``) it also writes ``baseline-comparison.json``:
 per document ``no_section``, ``strict`` and ``cross_scope_v2`` against the baseline. A document is
 below baseline when ``no_section`` or ``strict`` fell, ``cross_scope_v2`` rose, its region count
-changed or it is missing; the CLI then exits with status 1 (the track-B no-drop gate).
+changed or it is missing; the CLI then exits with status 1 (the track-B no-drop gate). Cycle 10:
+``--frozen-families [FAMILY ...]`` (no names: every family except «приказы») also exits 1 when a document of
+those families changes its error list against the baseline's ``errors.json`` (``frozen_family_changes``).
 Documents: the 8 earlier development documents (``logical-v1/inputs`` + ``gold``), the 8 of
 check-pool batch 1, the 9 + 9 of batches 2 (gold-v2) and 3 (gold as frozen) and the 11 of
 batch 4 (gold as frozen in ``20261023-batch-04-gold-freeze``, cycle 4) and the 11 of batch 5 (gold as
@@ -128,6 +130,15 @@ def recorded_path(path: Path) -> str:
         return str(path)
 
 
+# Cycle 10 (owner decision 26.10.2026): rules for ministry orders must not change any owner in other families.
+FROZEN_FAMILIES_DEFAULT = tuple(f for f in FAMILIES if f != "приказы")
+
+
+def frozen_family_changes(rows: list[dict], errors: dict, base_errors: dict, frozen: tuple) -> list[str]:
+    """Documents of a frozen family whose error list differs from the baseline's (any change, also a gain)."""
+    return [r["name"] for r in rows if r["family"] in frozen and errors.get(r["name"]) != base_errors.get(r["name"])]
+
+
 def compare_to_baseline(summary: dict, baseline: dict) -> dict:
     """Per-document comparison of ``summary`` with ``baseline`` on ``COMPARED``; lists the drops."""
     current = {r["name"]: r for r in summary["rows"]}
@@ -157,7 +168,8 @@ def compare_to_baseline(summary: dict, baseline: dict) -> dict:
 
 
 def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict] | None = None,
-                       baseline: Path | None = None, attached_ordinal: bool = True) -> dict:
+                       baseline: Path | None = None, attached_ordinal: bool = True,
+                       frozen_families: tuple | None = None) -> dict:
     prototype_path, output = Path(prototype_path).resolve(), Path(output)
     if output.exists():
         raise FileExistsError(f"output exists: {output}")
@@ -209,6 +221,12 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
         comparison["baseline"] = recorded_path(baseline)
         summary["baseline_comparison"] = {"baseline": comparison["baseline"],
                                           "below_baseline": comparison["below_baseline"]}
+        if frozen_families is not None:
+            base_errors = json.loads((Path(baseline).parent / "errors.json").read_text(encoding="utf-8"))
+            changes = frozen_family_changes(rows, errors, base_errors, tuple(frozen_families))
+            comparison["frozen_families"] = list(frozen_families)
+            comparison["frozen_family_changes"] = changes
+            summary["baseline_comparison"]["frozen_family_changes"] = changes
         outputs.append(("baseline-comparison.json", comparison))
     output.mkdir(parents=True)
     for name, data in outputs:
@@ -217,20 +235,27 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
     return summary
 
 
-def main(argv=None) -> None:
+def main(argv=None, documents: list[dict] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--prototype", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--baseline", type=Path, help="earlier summary.json; exit 1 if any document is below it")
     parser.add_argument("--attached-ordinal", action=argparse.BooleanOptionalAction, default=True,
                         help="attached documents and act annexes compared by order of appearance (default on)")
+    parser.add_argument("--frozen-families", nargs="*", metavar="FAMILY",
+                        help="with --baseline: exit 1 if a document of these families changes its error list "
+                             "(no names: every family except «приказы»)")
     args = parser.parse_args(argv)
-    summary = run_dev_regression(args.prototype, args.output, baseline=args.baseline,
-                                 attached_ordinal=args.attached_ordinal)
+    frozen = None
+    if args.frozen_families is not None:
+        frozen = tuple(args.frozen_families) or FROZEN_FAMILIES_DEFAULT
+    summary = run_dev_regression(args.prototype, args.output, documents=documents, baseline=args.baseline,
+                                 attached_ordinal=args.attached_ordinal, frozen_families=frozen)
     print(json.dumps({"parser_version": summary["parser_version"], "groups": summary["groups"], "families": summary["families"],
                       "total": summary["total"], "baseline_comparison": summary.get("baseline_comparison")},
                      ensure_ascii=False))
-    if summary.get("baseline_comparison", {}).get("below_baseline"):
+    comparison = summary.get("baseline_comparison", {})
+    if comparison.get("below_baseline") or comparison.get("frozen_family_changes"):
         raise SystemExit(1)
 
 

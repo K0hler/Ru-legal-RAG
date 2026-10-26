@@ -183,6 +183,32 @@ def test_dev_regression_baseline_comparison_flags_drops(tmp_path, monkeypatch):
     assert stop.value.code == 1
 
 
+def test_dev_regression_gate_keeps_other_families_unchanged(tmp_path):
+    """Cycle 10 A2: with --frozen-families a document of a frozen family whose error list differs from the
+    baseline's is reported (and fails the run) even when its score rose; an order may change freely."""
+    proto = tmp_path / "fake_prototype.py"
+    proto.write_text(FAKE_PROTOTYPE, encoding="utf-8")
+    docs = authored_documents(tmp_path)
+    docs[0]["family"] = "законы"  # "one"; "two" stays «приказы»
+    base = tmp_path / "base"
+    D.run_dev_regression(proto, base, documents=docs)
+    # «two» (order) gets its 1.2 right; «one» (law) moves 1.2 S/1 -> S/2: a frozen-family change.
+    changed = tmp_path / "changed.py"
+    changed.write_text(FAKE_PROTOTYPE.replace('"1.2": "S/1"', '"1.2": "S/2"'), encoding="utf-8")
+    out = D.run_dev_regression(changed, tmp_path / "gated", documents=docs, baseline=base / "summary.json",
+                               frozen_families=D.FROZEN_FAMILIES_DEFAULT)
+    assert out["baseline_comparison"]["frozen_family_changes"] == ["one"]
+    assert "приказы" not in D.FROZEN_FAMILIES_DEFAULT and "законы" in D.FROZEN_FAMILIES_DEFAULT
+    same = D.run_dev_regression(proto, tmp_path / "same", documents=docs, baseline=base / "summary.json",
+                                frozen_families=D.FROZEN_FAMILIES_DEFAULT)
+    assert same["baseline_comparison"]["frozen_family_changes"] == []
+    plain = D.run_dev_regression(changed, tmp_path / "plain", documents=docs, baseline=base / "summary.json")
+    assert "frozen_family_changes" not in plain["baseline_comparison"]
+    with pytest.raises(SystemExit):
+        D.main(["--prototype", str(changed), "--output", str(tmp_path / "cli"), "--baseline",
+                str(base / "summary.json"), "--frozen-families"], documents=docs)
+
+
 def test_dev_regression_records_repo_relative_paths():
     inside = D.ROOT / "docs" / "assets" / "ocr_logical_structure.py"
     assert D.recorded_path(inside) == "docs/assets/ocr_logical_structure.py"
