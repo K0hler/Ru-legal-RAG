@@ -369,7 +369,9 @@
   decrees meet the thresholds, resolutions are borderline; always quote the sample caveats (3 decrees, 6 orders/
   resolutions, Wilson bounds, regions of one document are dependent) and that the Task 3 reserve holds only
   resolutions and sanitary rules. Cycle 10 (`plans/2026-10-26-m1-04a-cycle-10.md`) works on ministry orders only and
-  gates every rule on byte-equal errors of all other families.
+  gates every rule on byte-equal errors of all other families. Owner decision 26.10.2026 (protocol §9, variant A):
+  laws and government orders are ready by §7 with frozen v8 as their candidate; decrees and resolutions wait for a
+  targeted family measure on frozen v8; ministry orders continue in cycle 10. §7 readiness is not Task 3/G13.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
