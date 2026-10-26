@@ -2028,3 +2028,22 @@ def test_quoted_list_number_does_not_close_its_own_quotation():
     got = owners(S.build(extraction(pages)))
     assert [got[f"1.{k}"] for k in range(3, 12)] == ["A/ст2/5"] * 9
     assert (got["1.12"], got["1.13"]) == ("A/ст2/6", "A/ст2/6/а")
+
+
+def quoted_articles(closing):
+    return [[("Title", "ФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Section-header", "Статья 1"), ("Text", "Внести в Федеральный закон изменения:"),
+             ("Text", "5) дополнить статьями 10 и 11 следующего содержания:"),
+             ("Section-header", "\"Статья 10. Устав общины"), ("Text", "1. Устав содержит сведения."),
+             ("Section-header", "Статья 11. Членство в общине"), ("Text", "1. Членами вправе быть лица."),
+             ("Text", "2. Воля выражается в заявлении." + closing),
+             ("Section-header", "Статья 2"), ("Text", "Настоящий Федеральный закон вступает в силу.")]]
+
+
+@pytest.mark.parametrize("closing", ["\";", ""])
+def test_quoted_article_heading_stays_quoted_text(closing):
+    """Cycle 9 B4: inside an amending quotation a later article heading («Статья 11.») is quoted text of the
+    introducing point, not an article of the act; the act's own next article «Статья 2» closes the quotation
+    even when the closing quote is lost."""
+    got = owners(S.build(extraction(quoted_articles(closing))))
+    assert [got[f"1.{k}"] for k in range(3, 9)] == ["A/ст1/5"] * 6
+    assert (got["1.9"], got["1.10"]) == ("A/ст2", "A/ст2")

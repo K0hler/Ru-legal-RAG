@@ -345,6 +345,12 @@
   fz-602263702 280 -> 487/487, fz-603153558 23 -> 25; pp-1000000000102370341 67 -> 46 is an IPS tree error, not a
   drop: IPS files the quoted Rules' points «7.»-«16.» (quotation opened at «"УТВЕРЖДЕНЫ», closed only after «16. …".»)
   as points of the amendment list. Treat that act's 21 regions as known gold errors.
+- Cycle 9 B4 (`quoted_markers`, `close_subpoints`, `marker_number`): inside an open amending quotation a heading
+  («Статья 11.», «Статья 25¹⁷.») is quoted text; only the act's own next article/chapter («Статья 2» after
+  «Статья 1») ends the quotation (also with a lost closing quote). A quoted heading does not close a subpoint.
+  Article marker values are strings: compare numbers through `marker_number` (ASCII digits only; «5¹».isdigit() is
+  True). `…-cycle9-b4`: pool unchanged; JSON +130 (fz-603471775 48 -> 98/98, fz-603123263 85 -> 129, fz-603161051
+  496 -> 527, fz-603471778 -> 106/106), no drops.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

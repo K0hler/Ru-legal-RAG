@@ -905,8 +905,8 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         stack = stacks[k]
         if not k or not stack or stack[-1][0] not in SUBPOINT_KINDS or not p.text[:1].isupper():
             continue
-        if inside_quote or strip_sup(p.text).rstrip(" .").endswith("»"):
-            continue
+        if inside_quote or strip_sup(p.text).rstrip(" .").endswith("»") or any("quoted" in e for e in p.evidence):
+            continue  # cycle 9 B4: a quoted heading («Статья 11.» inside the quotation) closes nothing
         j = k - 1  # the previous provision text; a standalone editorial note in between does not count
         while j > 0 and editorial_only(body[j]):
             j -= 1
@@ -1048,6 +1048,14 @@ def unbalanced_quotes(text: str) -> int:
     return 0
 
 
+def marker_number(marker: Marker) -> int | None:
+    """The plain integer of a marker («5)», «3.», «Статья 11»); None for letters, «1.1» or «25¹⁷»."""
+    if isinstance(marker.value, int):
+        return marker.value
+    plain = isinstance(marker.value, str) and re.fullmatch(r"[0-9]+", marker.value) and not marker.sup
+    return int(marker.value) if plain else None
+
+
 def quoted_markers(items: list[Paragraph]) -> None:
     """Paragraphs after the first one of a multi-paragraph amending quotation keep no marker: «48³¹)»,
     «1.», «Статья 5» there are quoted text of the unit that introduces the quotation. The quotation opens
@@ -1057,30 +1065,41 @@ def quoted_markers(items: list[Paragraph]) -> None:
     next number of the introducing list («д)» after «г)») ends an open quotation; after a quoted form
     or table (where the closing quote is often lost) so does the next number of any list open before
     the quotation («2.» after «1.»). A number that goes on the quotation's own list («6)» after a quoted «5)»)
-    never ends it."""
+    never ends it. A heading inside the quotation («Статья 11.») is quoted text too; the act's own next article
+    or chapter heading ends the quotation."""
     open_from, last, previous = None, {}, None  # last: marker kind -> value seen outside quotations
     introducer, formish = None, False
     inner = {}  # marker kind -> value of the quotation's own numbered lines
     for p in items:
         if p.flow != "body":
             continue
-        if p.kind != "text":
+        heading = p.kind == "heading"
+        if p.kind != "text" and not heading:
             formish = formish or open_from is not None
+            continue
+        if heading and open_from is None:
+            if marker_number(p.marker) is not None:
+                last[p.marker.kind] = marker_number(p.marker)  # the act's own articles and chapters
+            previous = p
             continue
         text = strip_sup(p.text).rstrip() if p.text else ""
         if open_from is not None:
             formish = formish or bool(FORM_LINE.search(p.text or ""))
-            continues = isinstance(last.get(p.marker.kind), int) and p.marker.value == last[p.marker.kind] + 1
+            number = marker_number(p.marker)
+            continues = isinstance(last.get(p.marker.kind), int) and number == last[p.marker.kind] + 1
             # Cycle 9 B3: «6)» right after the quotation's own «5)» goes on the quoted list, even when the
             # introducing point is «5)» too
-            own = isinstance(inner.get(p.marker.kind), int) and p.marker.value == inner[p.marker.kind] + 1
-            nxt = continues and not own and (formish or (introducer is not None and p.marker.kind == introducer.kind))
+            own = isinstance(inner.get(p.marker.kind), int) and number == inner[p.marker.kind] + 1
+            # Cycle 9 B4: a heading inside the quotation is quoted («Статья 11.» after a quoted «Статья 10.»)
+            # unless it is the act's own next article or chapter («Статья 2» after «Статья 1»)
+            nxt = continues and not own and (formish or heading
+                                             or (introducer is not None and p.marker.kind == introducer.kind))
             if nxt or open_from > QUOTE_MAX_PARAGRAPHS:
                 open_from = None
             else:
                 open_from += 1
                 if p.marker.kind not in {"none", "dash"}:
-                    inner[p.marker.kind] = p.marker.value
+                    inner[p.marker.kind] = number
                 if p.marker.kind != "none":
                     p.marker = Marker("none")
                     p.kind = "text"
