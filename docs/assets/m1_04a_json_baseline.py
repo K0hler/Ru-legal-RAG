@@ -183,10 +183,12 @@ def node_paths(nodes, order, first_text, projection=1):
                 value = m.group(1) if m.group(1).isdigit() else str(roman_value(m.group(1)))
                 seg = f"гл{value}" + (f"^{m.group(2)}" if m.group(2) else "")
         elif unit in ("раздел", "подраздел"):
-            m = re.match(r"^(?:Раздел|РАЗДЕЛ|Подраздел|ПОДРАЗДЕЛ)?\s*(\d+|[IVXLC]+)(?:<sup>(\d+)</sup>)?", cap)
+            m = re.match(r"^(Раздел|РАЗДЕЛ|Подраздел|ПОДРАЗДЕЛ)?\s*(\d+|[IVXLC]+)(?:<sup>(\d+)</sup>)?", cap)
             if m:
-                seg = (m.group(1) if ROMAN.match(m.group(1)) else f"разд{m.group(1)}") + (
-                    f"^{m.group(2)}" if m.group(2) else "")
+                # projection 5: a bare «1.» without the word «Раздел» is a point (convention v2 §6.1, 26.10.2026)
+                point = projection >= 5 and m.group(2).isdigit() and not m.group(1)
+                seg = (m.group(2) if ROMAN.match(m.group(2)) or point else f"разд{m.group(2)}") + (
+                    f"^{m.group(3)}" if m.group(3) else "")
         elif unit == "§":
             m = re.match(r"^§\s*(\d+)", cap)
             seg = f"§{m.group(1)}" if m else None
@@ -439,12 +441,13 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4), default=4,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5), default=5,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
                              "also accept the previous printed sibling; 3: 2 + compound superscript indices "
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
                              "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
-                             "-> its document, own approval caption -> separate document)")
+                             "-> its document, own approval caption -> separate document); 5: 4 + a bare numbered «1.» "
+                             "(sub)section (no word «Раздел») is a point (convention v2 §6.1, 26.10.2026)")
     parser.add_argument("--split", choices=("dev", "holdout", "all"), default="dev",
                         help="corpus part to project; the holdout was measured once (25.10.2026) and is development "
                              "now; all: the 100 acts, dev then holdout")

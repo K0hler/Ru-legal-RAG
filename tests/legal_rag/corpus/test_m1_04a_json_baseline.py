@@ -45,3 +45,17 @@ def test_split_parts_keep_their_slugs():
     assert J.split_slugs(split, "dev") == ["a", "c"]
     assert J.split_slugs(split, "holdout") == ["b"]
     assert J.split_slugs(split, "all") == ["a", "c", "b"]
+
+
+def test_projection_5_bare_numbered_subsection_is_a_point():
+    # Convention v2 §6.1 (owner decision 26.10.2026): «1.» inside a concept section is a point, not a section;
+    # a subsection captioned with the word («Подраздел 1») stays a section.
+    nodes = [{"id": "r", "lvl": 0, "unit": "раздел", "caption": "I. Общие положения", "np": "p1", "npe": "p3"},
+             {"id": "s1", "lvl": 1, "unit": "подраздел", "caption": "1. Мировые тенденции", "np": "p2", "npe": "p2"},
+             {"id": "s2", "lvl": 1, "unit": "подраздел", "caption": "Подраздел 2. Цели", "np": "p3", "npe": "p3"}]
+    order = {"p1": 0, "p2": 1, "p3": 2}
+    first = {"p1": "I. Общие положения", "p2": "1. Мировые тенденции", "p3": "Подраздел 2. Цели"}
+    paths4, _ = J.node_paths(nodes, order, first, projection=4)
+    paths5, _ = J.node_paths(nodes, order, first, projection=5)
+    assert (paths4["s1"], paths4["s2"]) == ("A/I/разд1", "A/I/разд2")
+    assert (paths5["s1"], paths5["s2"]) == ("A/I/1", "A/I/разд2")

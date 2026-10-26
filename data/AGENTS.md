@@ -133,6 +133,9 @@
   (89 docs, 16632/16917 no_section, `cross_scope_v2` 188 — all in batch 8; the 78 old rows equal
   `…-dev-regression-v7`); JSON `20261026-json-all-proj4/` (`--split all`, 200 files byte-equal to the frozen dev and
   holdout projections; `v7` 36994/38337 = 96.5%, dev 21472/21908, holdout 15522/16429, 75/100 perfect).
+  The corpus baseline of cycle 9 is projection 5 (owner decision 26.10.2026, «1.» in a concept section is a point):
+  `20261026-json-all-proj5/` — gold differs from proj4 only in rp-1000000000602087490 (218 rows; the header line
+  names the projection), `v7` 37212/38337 = 97.1%, 76/100 perfect.
 
 - Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
   seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired
