@@ -405,6 +405,12 @@
   `data/m1/m1-04a/experiments/20261026-prototype-v9-freeze/`; regression `20261026-dev-regression-v9` 19102/19241 with
   the family gate (no changes; errors equal to `…-cycle10-b5`), JSON proj6 `v9` equal to v8. v8 stays the candidate
   for laws and government orders; v9 is measured on the next pool batch.
+- Owner request 26.10.2026: two data paths again. Pool profile `batch-10` (`BATCH10_QUOTAS`: law 1, decrees 2,
+  resolutions 2, government order 1, ministry orders 5; prior 01-09) measures v9 on orders and adds decrees and
+  resolutions to the targeted family measure of v8. `acquire_m1_04a_json_corpus.py --profile v2` (`PROFILES`): 150 new
+  IPS acts (decrees 45, resolutions 45, laws 25, government orders 15, codes 8, FKZ/pre-1993/Duma-SF 4 each), seed
+  20261026, v1 acts excluded (`excluded_nds`); `--profile v1` (default) reproduces the v1 order. IPS holds no ministry
+  orders, so the JSON path cannot measure that family.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

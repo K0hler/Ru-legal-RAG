@@ -1275,6 +1275,18 @@ def test_batch_09_profile_repeats_batch_08_with_prior_batches_01_to_08():
     assert b8["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07")
 
 
+def test_batch_10_profile_shifts_quotas_to_ministry_orders():
+    # Owner decision 26.10.2026: batch 10 measures v9 on 5 ministry orders and adds 2 decrees and 2 resolutions to the
+    # targeted family measure; everything else as batch 09, excluding batches 1-9.
+    b9, b10 = P.PROFILES["batch-09"], P.PROFILES["batch-10"]
+    assert b10["quotas"] == {"federal_law": 1, "presidential_decree": 2, "government_resolution": 2,
+                             "government_order": 1, "ministry_order": 5}
+    assert {k: v for k, v in b10.items() if k not in ("prior_batches", "quotas")} == {
+        k: v for k, v in b9.items() if k not in ("prior_batches", "quotas")}
+    assert b10["prior_batches"] == b9["prior_batches"] + ("batch-09",)
+    assert b9["quotas"] == P.BATCH4_QUOTAS
+
+
 def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
     import json
 

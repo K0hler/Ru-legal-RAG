@@ -78,6 +78,15 @@ BATCH4_QUOTAS = {
     "government_order": 2,
     "ministry_order": 3,
 }
+# Batch 10 (owner decision 26.10.2026): 5 ministry orders for the measure of v9, 2 decrees and 2 resolutions for the
+# targeted family measure of v8.
+BATCH10_QUOTAS = {
+    "federal_law": 1,
+    "presidential_decree": 2,
+    "government_resolution": 2,
+    "government_order": 1,
+    "ministry_order": 5,
+}
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
 BATCH2_LONG_MIN, LONG_PAGES = 4, 20
@@ -856,6 +865,12 @@ PROFILES = {
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
                                    "batch-07", "batch-08"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Batch 10: batch-09 settings with BATCH10_QUOTAS, excluding batches 1-9.
+    "batch-10": {"quotas": BATCH10_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days

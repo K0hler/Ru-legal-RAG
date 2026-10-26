@@ -59,6 +59,29 @@ GROUPS = {
     "ks": (0, [{"type": "Постановление", "organ": "Конституционный Суд"}, {"type": "Определение"}]),
     "osnovy": (0, [{"type": "Основы законодательства"}]),
 }
+CORPORA = Path(__file__).resolve().parents[2] / "data/m1/m1-04a/json-corpus"
+# Acquisition profiles. v1 is the frozen 25.10.2026 corpus (default; reproduces as before). v2 (owner request
+# 26.10.2026): 150 new acts biased to decrees and government resolutions, none of them in v1.
+PROFILES = {
+    "v1": {"seed": SEED, "quotas": {g: q for g, (q, _) in GROUPS.items()}, "round_1": QUOTAS_ROUND_1,
+           "exclude_corpora": ()},
+    "v2": {"seed": 20261026,
+           "quotas": {"pp": 45, "fz": 25, "ukaz": 45, "rp": 15, "intl": 0, "code": 8, "fkz": 4, "law-pre1993": 4,
+                      "duma-sf": 4, "ks": 0, "osnovy": 0},
+           "round_1": {"pp": 45, "fz": 25, "ukaz": 45, "rp": 15, "code": 8, "fkz": 4, "law-pre1993": 4,
+                       "duma-sf": 4},
+           "exclude_corpora": (CORPORA / "20261025-v1",)},
+}
+
+
+def excluded_nds(profile) -> set:
+    """IPS document ids already in an earlier corpus (its fetched documents)."""
+    out = set()
+    for corpus in profile["exclude_corpora"]:
+        out |= {d["nd"] for d in json.loads((Path(corpus) / "fetch.json").read_text(encoding="utf-8"))["documents"]}
+    return out
+
+
 # Screening round 2 continues each group's seeded candidate order until it has this many
 # documents with structure nodes (or the candidates run out).
 ROUND2_TARGET_FACTOR = 2
@@ -136,12 +159,14 @@ def count(client, filters):
 # ------------------------------------------------------------------ phases
 
 
-def phase_candidates(root: Path):
+def phase_candidates(root: Path, profile=PROFILES["v1"]):
     client = Client(root / "requests.jsonl")
-    rng = random.Random(SEED)
-    out = {"schema_version": "m1-04a-json-corpus-candidates/1", "seed": SEED, "base": BASE_ID,
+    rng = random.Random(profile["seed"])
+    out = {"schema_version": "m1-04a-json-corpus-candidates/1", "seed": profile["seed"], "base": BASE_ID,
            "created_at": now(), "groups": {}}
     for group, (_, filter_list) in GROUPS.items():
+        if not profile["quotas"].get(group) and profile is not PROFILES["v1"]:
+            continue  # v1 also searched its zero-quota groups; later profiles skip them
         entries = []
         for filters in filter_list:
             total, _ = count(client, filters)
@@ -194,14 +219,16 @@ def features(nodes, docdate, name):
     return sorted(feats)
 
 
-def candidate_orders(root: Path):
-    """Each group's deduplicated candidates in the seeded screening order (shared by both rounds)."""
+def candidate_orders(root: Path, profile=PROFILES["v1"]):
+    """Each group's deduplicated candidates in the seeded screening order (shared by both rounds); documents of an
+    excluded earlier corpus are left out."""
     candidates = json.loads((root / "candidates.json").read_text(encoding="utf-8"))
-    rng = random.Random(SEED + 1)
+    rng = random.Random(profile["seed"] + 1)
     orders = {}
+    excluded = excluded_nds(profile)
     for group in GROUPS:
-        pool, seen = [], set()
-        for entry in candidates["groups"][group]:
+        pool, seen = [], set(excluded)
+        for entry in candidates["groups"].get(group, []):
             for d in entry["docs"]:
                 if d["nd"] not in seen:
                     seen.add(d["nd"])
@@ -233,12 +260,12 @@ def screen_one(client, root: Path, d):
         return {**d, "error": f"{type(error).__name__}: {error}"}
 
 
-def phase_screen(root: Path):
-    orders = candidate_orders(root)
+def phase_screen(root: Path, profile=PROFILES["v1"]):
+    orders = candidate_orders(root, profile)
     client = Client(root / "requests.jsonl")
     screened = {"schema_version": "m1-04a-json-corpus-screen/1", "created_at": now(), "groups": {}}
     for group in GROUPS:
-        quota = QUOTAS_ROUND_1[group]
+        quota = profile["round_1"].get(group, 0)
         rows = []
         for d in orders[group][: max(quota, math.ceil(quota * SCREEN_FACTOR))]:
             rows.append(screen_one(client, root, d))
@@ -247,16 +274,17 @@ def phase_screen(root: Path):
     write_once(root / "screen.json", screened)
 
 
-def phase_screen2(root: Path):
+def phase_screen2(root: Path, profile=PROFILES["v1"]):
     """Continue each group's seeded order until ROUND2_TARGET_FACTOR * quota structured documents."""
     first = json.loads((root / "screen.json").read_text(encoding="utf-8"))
-    orders = candidate_orders(root)
+    orders = candidate_orders(root, profile)
     client = Client(root / "requests.jsonl")
     screened = {"schema_version": "m1-04a-json-corpus-screen/1", "round": 2, "created_at": now(),
                 "target_factor": ROUND2_TARGET_FACTOR, "groups": {}}
-    for group, (quota, _) in GROUPS.items():
-        done = {r["nd"] for r in first["groups"][group]}
-        have = sum(1 for r in first["groups"][group] if r.get("nodes"))
+    for group in GROUPS:
+        quota = profile["quotas"][group]
+        done = {r["nd"] for r in first["groups"].get(group, [])}
+        have = sum(1 for r in first["groups"].get(group, []) if r.get("nodes"))
         rows = []
         for d in orders[group]:
             if have >= ROUND2_TARGET_FACTOR * quota:
@@ -294,11 +322,12 @@ def screened_rows(root: Path):
     return rows
 
 
-def phase_select(root: Path):
+def phase_select(root: Path, profile=PROFILES["v1"]):
     screened = {"groups": screened_rows(root)}
-    rng = random.Random(SEED + 2)
+    rng = random.Random(profile["seed"] + 2)
     covered, groups = set(), {}
-    for group, (quota, _) in GROUPS.items():
+    for group in GROUPS:
+        quota = profile["quotas"][group]
         order = rank_group(screened["groups"].get(group, []), covered, rng) if quota else []
         picks, reserve = order[:quota], order[quota:]
         for r in picks:
@@ -306,10 +335,12 @@ def phase_select(root: Path):
         groups[group] = {"quota": quota, "picks": [r["nd"] for r in picks], "reserve": [r["nd"] for r in reserve],
                          "shortfall": max(0, quota - len(picks))}
         print(group, "picks", len(picks), "reserve", len(reserve), flush=True)
-    selection = {"schema_version": "m1-04a-json-corpus-selection/1", "seed": SEED, "created_at": now(),
+    selection = {"schema_version": "m1-04a-json-corpus-selection/1", "seed": profile["seed"], "created_at": now(),
                  "screen_sha256": {n: sha((root / n).read_bytes())
                                    for n in ("screen.json", "screen-round-2.json") if (root / n).exists()},
-                 "quotas_round_1": QUOTAS_ROUND_1,
+                 "quotas_round_1": profile["round_1"],
+                 **({"excluded_corpora": [Path(c).name for c in profile["exclude_corpora"]]}
+                    if profile["exclude_corpora"] else {}),
                  "rule": "greedy by new structure features (corpus-wide coverage), seeded tie order; "
                          "documents without structure nodes are not eligible",
                  "groups": groups, "covered_features": sorted(covered)}
@@ -340,7 +371,7 @@ def nesting_check(html_text: str, nodes):
     return len(ids), problems
 
 
-def phase_fetch(root: Path):
+def phase_fetch(root: Path, profile=PROFILES["v1"]):
     selection = json.loads((root / "selection.json").read_text(encoding="utf-8"))
     rows = {r["nd"]: (g, r) for g, items in screened_rows(root).items() for r in items}
     client = Client(root / "requests.jsonl")
@@ -387,10 +418,10 @@ def phase_fetch(root: Path):
     write_once(root / "fetch.json", result)
 
 
-def phase_split(root: Path):
+def phase_split(root: Path, profile=PROFILES["v1"]):
     fetched = json.loads((root / "fetch.json").read_text(encoding="utf-8"))
-    rng = random.Random(SEED + 3)
-    split = {"schema_version": "m1-04a-json-corpus-split/1", "seed": SEED + 3, "created_at": now(),
+    rng = random.Random(profile["seed"] + 3)
+    split = {"schema_version": "m1-04a-json-corpus-split/1", "seed": profile["seed"] + 3, "created_at": now(),
              "fetch_sha256": sha((root / "fetch.json").read_bytes()), "holdout_share": HOLDOUT_SHARE,
              "rule": "per group: shuffle slugs with the seed, round(share * n) go to holdout",
              "dev": [], "holdout": []}
@@ -411,11 +442,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("phase", choices=("candidates", "screen", "screen2", "select", "fetch", "split"))
     parser.add_argument("--root", required=True)
+    parser.add_argument("--profile", choices=sorted(PROFILES), default="v1",
+                        help="v1: the frozen 25.10.2026 corpus; v2: 150 new acts biased to decrees and resolutions")
     args = parser.parse_args(argv)
     root = Path(args.root)
     root.mkdir(parents=True, exist_ok=True)
     {"candidates": phase_candidates, "screen": phase_screen, "screen2": phase_screen2, "select": phase_select,
-     "fetch": phase_fetch, "split": phase_split}[args.phase](root)
+     "fetch": phase_fetch, "split": phase_split}[args.phase](root, PROFILES[args.profile])
 
 
 if __name__ == "__main__":
