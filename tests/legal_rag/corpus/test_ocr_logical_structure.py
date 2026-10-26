@@ -1944,3 +1944,32 @@ def test_rubrics_of_a_table_annex_do_not_count_as_roman_sections():
     assert not any("roman_sequence" in e for ev in evidence for e in ev)
     rows = [p for p in result["paragraphs"] if any("table_row" in e for e in p["evidence"])]
     assert [p["text_preview"][:3] for p in rows] == ["I. "]
+
+
+def test_long_title_case_annex_caption_of_the_approved_text():
+    """Cycle 9 B1: «Приложение № N к Административному регламенту по предоставлению … утвержденному приказом …
+    от … № 494 (форма)» in title case is over 300 characters and still opens the annex of the approved text,
+    like the uppercase «ПРИЛОЖЕНИЕ № N к <Документ>» of C7. A long sentence ending with a dot stays text."""
+    service = ("по предоставлению государственной услуги по регистрации опасных производственных объектов "
+               "в государственном реестре опасных производственных объектов, ")
+    caption = (f"Приложение № {{n}}\nк Административному регламенту\n{service}утвержденному приказом Федеральной "
+               "службы по экологическому, технологическому и атомному надзору\nот 25 ноября 2016 г. № 494{{tail}}")
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемый Административный регламент."),
+              ("Text", "А.Алёшин", 1200)],
+             [("Text", "УТВЕРЖДЕН\nприказом Ростехнадзора\nот 25 ноября 2016 г. № 494", 1000),
+              ("Section-header", "АДМИНИСТРАТИВНЫЙ РЕГЛАМЕНТ"), ("Text", "1. Регламент устанавливает сроки."),
+              ("Text", "2. Заявление подается по форме приложения № 2.")],
+             [("Text", caption.format(n=1, tail=""), 1000), ("Section-header", "СВЕДЕНИЯ О ТЕРРИТОРИАЛЬНЫХ ОРГАНАХ"),
+              ("Text", "Центральное управление.")],
+             [("Text", caption.format(n=2, tail=" (форма)"), 1000), ("Section-header", "ЗАЯВЛЕНИЕ"),
+              ("Text", "Прошу зарегистрировать объект.")]]
+    assert len(caption.format(n=1, tail="")) > S.CAPTION_BLOCK_MAX
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/2"
+    assert (got["3.0"], got["3.1"], got["3.2"]) == ("S/AN1",) * 3
+    assert (got["4.0"], got["4.1"], got["4.2"]) == ("S/AN2",) * 3
+    sentence = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемый Административный регламент.")],
+                [("Text", "УТВЕРЖДЕН\nприказом Ростехнадзора", 1000), ("Section-header", "АДМИНИСТРАТИВНЫЙ РЕГЛАМЕНТ"),
+                 ("Text", "1. Сроки."),
+                 ("Text", f"Приложение № 1 к Административному регламенту {service * 2}содержит сведения об органах.")]]
+    assert owners(S.build(extraction(sentence)))["2.3"] == "S/1"

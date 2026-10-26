@@ -242,9 +242,12 @@ def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Mat
     if len(text) <= CAPTION_MAX:
         return m
     reference = m.group("ref") or ""
-    # The capitalised word «ПРИЛОЖЕНИЕ № N к <Документ> …» is a caption even when the document's full name
-    # is long (an agreement title: 373 characters in development); sentences never start with it.
-    limit = CAPTION_UPPER_MAX if text.startswith("ПРИЛОЖЕНИЕ") and m.group("sign") else CAPTION_BLOCK_MAX
+    # «ПРИЛОЖЕНИЕ № N к <Документ> …» is a caption even when the document's full name is long (an agreement
+    # title: 373 characters in development); sentences never start with it. Cycle 9: so is the title-case
+    # «Приложение № N к Административному регламенту по предоставлению …, утвержденному приказом … № 494»
+    # (328 characters): a numbered caption naming a capitalised document, never a sentence (no final dot).
+    long_allowed = text.startswith("ПРИЛОЖЕНИЕ") or DOCUMENT_REFERENT.match(reference)
+    limit = CAPTION_UPPER_MAX if m.group("sign") and long_allowed else CAPTION_BLOCK_MAX
     if len(text) < limit and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
                               or DOCUMENT_REFERENT.match(reference)):
         return m
