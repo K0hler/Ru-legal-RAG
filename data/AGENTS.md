@@ -141,6 +141,14 @@
   `20261026-dev-regression-cycle9-<step>`.
 
 - Check-pool batch 9 (26.10.2026): `m1/m1-04a/documents/pool/batch-09/selection.json` (dffabeca…, profile `batch-09`,
+- Check-pool batch 10 (26.10.2026): `m1/m1-04a/documents/pool/batch-10/selection.json` (13b0d4f6…, profile `batch-10`,
+  seed 20261030, code ed57f20); minkultury-2782 OCR timed out -> `failures/0001201512010017-ocr-run-01.json`, refill 01
+  (ac7be193…) -> prikaz-fas-690-2022 (OCR `experiments/20261026-batch-10-ocr-refill-01/`). OCR
+  `experiments/20261026-batch-10-ocr/summary.json`. Gold 7 Codex jobs (pp-728 in 3 parts), 2454 regions, frozen
+  `experiments/20261026-batch-10-gold-freeze/` (b3c431be…, addendum f38dd21d…). First pass
+  `experiments/20261026-batch-10-first-pass/` (freeze 1564edcc…, v9 + v8, git_head d33708f), run once 19:00 UTC 26.10;
+  never re-run. Add `BATCH_10` to the dev regression before the next cycle.
+
 - JSON corpus v2 (26.10.2026): `m1/m1-04a/json-corpus/20261026-v2/` (`--profile v2`, 146 acts, selection f075720e…, split
   80370800…: 102 dev / 44 holdout). Holdout measured once: `experiments/20261026-json-v2-holdout-proj6/` (freeze 3747fb31…,
   `run-receipt.json` first, `v9`/`v8` results equal, 12152/12219); never re-run; the holdout is now development.

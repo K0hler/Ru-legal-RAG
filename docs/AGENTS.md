@@ -415,6 +415,13 @@
   the one-time holdout measure of frozen v9 and v8 (identical, 99.45%): decrees 14/14 perfect, resolutions 97.5%. Clean
   text, not OCR: quote it as extra evidence beside the pool, never as §7 on its own. `m1_04a_json_baseline.py --corpus`
   selects the corpus (`freeze.json` records `corpus` when it is not v1).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_10_2026-10-26.md`: batch-10 first pass of frozen v9 (+ v8): 1378/2454; always quote
+  the without-pp-728 figure (1125/1138) and the per-family table. pp-728-2020 (1316 regions) was annotated in 3 page-range
+  parts (`experiments/20261026-batch-10-annotation-input/pp-728-2020-chunks/`, `gold/pp-728-2020/chunks/`, stitched
+  unchanged); its errors are amending quotations inside the attached «Изменения» (subpoint closed early; a quoted
+  «Приложение № 7 к Правилам» opening an annex: 477 transfers). prikaz-minkultury-2782 refilled after an OCR timeout
+  (`failures/`, `selection-refill-01.json`, `index-superseded-11-acts.json`). `POOL_STATUS` has batch-10. Codex jobs:
+  `.superpowers/sdd/2026-10-26-m1-04a-pool-batch-10/`.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

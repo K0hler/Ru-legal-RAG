@@ -1319,10 +1319,13 @@ def test_catalog_records_batch_07_measured_then_development():
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_7_2026-10-24.md"
 
 
-def test_catalog_lists_batch_10_before_its_first_pass():
+def test_catalog_records_batch_10_measured_then_development():
     catalog = load_script("build_m1_04a_catalog")
     assert catalog.POOL_BATCHES[-1] == "batch-10" and len(catalog.POOL_BATCHES) == 10
-    assert "batch-10" not in catalog.POOL_STATUS  # written only after the first pass
+    history = catalog.POOL_STATUS["batch-10"]  # written only after the first pass
+    assert [h["status"] for h in history] == ["measured", "development"]
+    assert history[0]["evidence"] == "experiments/20261026-batch-10-first-pass"
+    assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_10_2026-10-26.md"
 
 
 def test_catalog_records_batch_09_measured_then_development():
