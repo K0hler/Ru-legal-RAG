@@ -376,6 +376,13 @@
 - Cycle 10 A2: `run_m1_04a_dev_regression.py --baseline S --frozen-families [FAMILY ...]` (no names = all but
   «приказы», `FROZEN_FAMILIES_DEFAULT`) fails when a document of a frozen family changes its error list against
   `S`'s sibling `errors.json` — also when it improved (`frozen_family_changes`). Cycle-10 rules must pass it.
+- Cycle 10 B1 (prototype; report `milestones/m1/04a/M1_04A_CYCLE10_2026-10-26.md`): `PRINT_MARK` («Компьютер /Н.Н./
+  При-К7552-3», «21.08.2024 15:44 kompburo /Н.И./П-К7552») in a page header/footer is a page mark; a page mark never
+  opens the requisite block; a page header/footer opens it only by text (`requisite_like`), not by position; an OCR
+  `Caption` is never a signature by position (landscape-page «Таблица 4.4» sat at the right edge). Attempt 1
+  (`…-cycle10-b1`: no position signature for any header/footer) dropped pp-1455 (footer code «5807597 (1.3)» lost its
+  root owner; caught by the family gate); r2 left captions opening the block (+8). Final `…-cycle10-b1-r3`: FNS 403 ->
+  462, favt-547 168 -> 178, minobrazovaniya-1126 +1, other families unchanged, JSON unchanged.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

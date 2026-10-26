@@ -462,8 +462,10 @@ def signature_like(region: Region) -> bool:
     # title and right-edge lines must be short unterminated lines that do not start lowercase:
     # «Руководитель органа обеспечивает исполнение.» or a right-aligned «… ассигнований;» is text
     line = bool(text) and not text[0].islower() and not terminated(text)
+    # cycle 10 B1: an OCR Caption (a table/figure caption «Таблица 4.4» on a landscape page) is never a signature
+    # by its position alone
     return bool(initials or (line and title and len(text) < 120)
-                or (line and right and len(text) < 40 and not is_caption(text)))
+                or (line and right and len(text) < 40 and not is_caption(text) and region.category != "Caption"))
 
 
 # Requisites of an act or of an attached document, recognised from text alone (no X
@@ -494,14 +496,18 @@ FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:
 
 
 PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
+# Cycle 10 B1: a typist's mark «Компьютер /Н.Н./При-К7552-3», «21.08.2024 15:44 kompburo /Н.И./П-К7552»: a word,
+# initials between slashes and a job code; OCR reads the word differently on every page, so it is not running noise.
+PRINT_MARK = re.compile(r"^(?:[\d.:\s]+)?[\w.]+\s*/\s*[А-ЯЁA-Z]\.\s?(?:[А-ЯЁA-Z]\.)?\s*/\s*[\w.-]*$")
 PAGE_MARK_EVIDENCE = {"page_mark": "file name printed in a page header/footer"}
 BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
 
 
 def page_mark(region: Region) -> bool:
-    """A service file code printed in a page header/footer («200716A9.doc»), not repeated often
-    enough to be running noise: a mark of the page, never text of the unit it happens to follow."""
-    return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text))
+    """A service file code printed in a page header/footer («200716A9.doc») or a typist's mark
+    («Компьютер /Н.Н./При-К7552-3»), not repeated often enough to be running noise: a mark of the page,
+    never text of the unit it happens to follow."""
+    return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text))
 
 
 def barcode_like(text: str) -> bool:
@@ -1350,10 +1356,13 @@ def build(extraction: dict) -> dict:
         # everything from there to the end of the scope belongs to the scope root. Unmarked
         # text before that paragraph stays with the last point.
         last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
+        # cycle 10 B1: a page mark (file code, typist's mark) never opens the block, and a page header/footer
+        # opens it only by its text, not by its position («X», «Компьютер /Н.Н./…» sit at the right edge)
         block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
-                      and not body[k].text[0].islower()
+                      and PAGE_MARK_EVIDENCE not in body[k].evidence and not body[k].text[0].islower()
                       and (requisite_like(body[k].text)
-                           or (signature_like(body[k].first) and id(body[k]) not in framed))), None)
+                           or (signature_like(body[k].first) and id(body[k]) not in framed
+                               and body[k].first.category not in NOISE_CATEGORIES))), None)
         in_block = False
         blank = None  # (stack, parent path) of the last marked paragraph when it is a fill-in line «2. ___»
         fill_parent: dict[int, str] = {}

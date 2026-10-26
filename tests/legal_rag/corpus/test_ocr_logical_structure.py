@@ -2047,3 +2047,24 @@ def test_quoted_article_heading_stays_quoted_text(closing):
     got = owners(S.build(extraction(quoted_articles(closing))))
     assert [got[f"1.{k}"] for k in range(3, 9)] == ["A/ст1/5"] * 6
     assert (got["1.9"], got["1.10"]) == ("A/ст2", "A/ст2")
+
+
+def test_print_shop_footer_is_a_page_mark_not_a_signature():
+    """Cycle 10 B1: a typist's mark in a page footer («Компьютер /Н.Н./При-К7552-3», read differently on every
+    page, so not running noise) is a page mark of the scope root: it does not open the requisite block, and the
+    tables after it stay with the open point. A real signature printed as a footer still opens the block."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить формат."), ("Text", "Руководитель А.А. Иванов", 1200)],
+             [("Text", "Приложение № 1\nк приказу ФНС России", 1000), ("Section-header", "I. Общие сведения"),
+              ("Text", "1. Формат описывает файл обмена."), ("Table", "<table><tr><td>Элемент</td></tr></table>"),
+              ("Page-footer", "Компьютер /Н.Н./При-К7552-3", 1500)],
+             [("Page-header", "X", 900), ("Table", "<table><tr><td>Сведения</td></tr></table>"),
+              ("Caption", "Таблица 4.3"), ("Caption", "Таблица 4.4", 1200), ("Table", "<table><tr><td>НПЮЛ</td></tr></table>"),
+              ("Page-footer", "копибуто /Н.И./Прил-К7552-3", 1500)]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == got["2.3"] == "A/AN1/I/1"
+    # a table caption at the right edge of a landscape page is no signature either
+    assert [got[f"3.{k}"] for k in range(1, 5)] == ["A/AN1/I/1"] * 4
+    assert got["2.4"] == got["3.5"] == "A/AN1"
+    signed = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить формат."), ("Text", "2. Контроль оставляю за собой."),
+               ("Page-footer", "Руководитель Д.В. Егоров", 1100)]]
+    assert owners(S.build(extraction(signed)))["1.3"] == "A"
