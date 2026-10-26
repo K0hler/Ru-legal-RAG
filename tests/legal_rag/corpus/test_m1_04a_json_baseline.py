@@ -59,3 +59,22 @@ def test_projection_5_bare_numbered_subsection_is_a_point():
     paths5, _ = J.node_paths(nodes, order, first, projection=5)
     assert (paths4["s1"], paths4["s2"]) == ("A/I/разд1", "A/I/разд2")
     assert (paths5["s1"], paths5["s2"]) == ("A/I/1", "A/I/разд2")
+
+
+def test_projection_6_article_notes_are_transparent():
+    # IPS stores article notes as «вложение» nodes («Примечания» with «примечание 1», «примечание 2<sup>1</sup>»);
+    # they are notes of the article, not annexes: projection 6 gives their paragraphs to the article.
+    nodes = [{"id": "a", "lvl": 0, "unit": "статья", "caption": "Статья 9.1. Нарушение", "np": "p1", "npe": "p5"},
+             {"id": "c4", "lvl": 1, "unit": "часть", "caption": "часть 4", "np": "p2", "npe": "p2"},
+             {"id": "n", "lvl": 1, "unit": "вложение", "caption": "Примечания", "np": "p3", "npe": "p5"},
+             {"id": "n1", "lvl": 2, "unit": "вложение", "caption": "примечание 1", "np": "p4", "npe": "p4"},
+             {"id": "n2", "lvl": 2, "unit": "вложение", "caption": "примечание 2<sup>1</sup>", "np": "p5", "npe": "p5"}]
+    order = {f"p{i}": i - 1 for i in range(1, 6)}
+    first = {"p1": "Статья 9.1. Нарушение", "p2": "4. Дача ложного заключения", "p3": "Примечания:",
+             "p4": "1. Под грубым нарушением понимается", "p5": "2¹. Для целей настоящей статьи"}
+    paths5, _ = J.node_paths(nodes, order, first, projection=5)
+    paths6, _ = J.node_paths(nodes, order, first, projection=6)
+    assert (paths5["n"], paths5["n1"]) == ("A/ст9.1/AN1", "A/ст9.1/AN1/AN1")
+    assert (paths6["c4"], paths6["n"], paths6["n1"], paths6["n2"]) == ("A/ст9.1/ч4", None, None, None)
+    owners6 = J.paragraph_owners(nodes, order, first, projection=6)
+    assert [owners6[f"p{i}"][0] for i in range(1, 6)] == ["A/ст9.1", "A/ст9.1/ч4", "A/ст9.1", "A/ст9.1", "A/ст9.1"]

@@ -1002,6 +1002,29 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are
             p.evidence.append({"editorial_note": f"names the {unit} -> that unit"})
 
 
+# Cycle 9 B2: a code's article note «Примечание. Положение части 3 …» / «Примечания:» followed by «1. …», «2¹. …».
+ARTICLE_NOTE = re.compile(r"^Примечани[ея](?:\s*[.:]|$)")
+
+
+def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
+    """A note «Примечание. …» or «Примечания:» after the parts of an article belongs to the article, not to
+    its last part; so do the numbered notes «N.» under it and editorial notes after them, up to the next named
+    unit or any other marker. Outside an article a note keeps its owner, and so does a note under a point «5)» of
+    an article (an amending law quoting a new article with its note)."""
+    note = None  # the article's stack while inside its note block
+    for k, p in enumerate(body):
+        if note is not None and p.marker.kind not in {"none", "int"}:
+            note = None
+        if note is None and p.kind == "text" and p.marker.kind == "none" and ARTICLE_NOTE.match(p.text):
+            level = next((i for i, e in enumerate(stacks[k]) if e[0] == "article"), None)
+            below = stacks[k][level + 1:level + 2] if level is not None else ()
+            if level is not None and all(e[2].startswith("ч") for e in below):
+                note = stacks[k][:level + 1]
+                p.evidence.append({"article_note": "note block of the article"})
+        if note is not None:
+            stacks[k] = note
+
+
 # Amending text quotes the new wording over several paragraphs: «… изложить в следующей редакции:» then
 # «"5²) …» … «12) …";» (or «…»). Inside such a quotation numbers and headings are quoted text.
 QUOTE_OPEN = re.compile(r"^[«\"„“]")
@@ -1294,6 +1317,7 @@ def build(extraction: dict) -> dict:
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         editorial_note_owners(body, stacks, points_are_parts)
+        article_notes(body, stacks)
         framed = between_tables(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and

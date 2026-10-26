@@ -1973,3 +1973,42 @@ def test_long_title_case_annex_caption_of_the_approved_text():
                  ("Text", "1. Сроки."),
                  ("Text", f"Приложение № 1 к Административному регламенту {service * 2}содержит сведения об органах.")]]
     assert owners(S.build(extraction(sentence)))["2.3"] == "S/1"
+
+
+KOAP_NOTES = [[("Title", "КОДЕКС РОССИЙСКОЙ ФЕДЕРАЦИИ ОБ АДМИНИСТРАТИВНЫХ ПРАВОНАРУШЕНИЯХ"),
+               ("Section-header", "Статья 1.5. Презумпция невиновности"), ("Text", "1. Лицо подлежит ответственности."),
+               ("Text", "2. Лицо считается невиновным."),
+               ("Text", "Примечание. Положение части 1 настоящей статьи не распространяется на правонарушения."),
+               ("Section-header", "Статья 9.1. Нарушение требований"), ("Text", "1. Нарушение требований -"),
+               ("Text", "влечет наложение штрафа."), ("Text", "2. Дача ложного заключения -"),
+               ("Text", "(Дополнение частью - Федеральный закон от 02.07.2013 № 186-ФЗ)"), ("Text", "Примечания:"),
+               ("Text", "1. Под грубым нарушением понимается нарушение."), ("Text", "2¹. Для целей настоящей статьи иное."),
+               ("Text", "(Дополнение примечанием - Федеральный закон от 02.07.2005 № 80-ФЗ)"),
+               ("Section-header", "Статья 9.2. Далее"), ("Text", "1. Текст статьи.")]]
+
+
+def test_article_note_belongs_to_the_article_not_its_last_part():
+    """Cycle 9 B2: «Примечание. …» or «Примечания:» after the parts of an article belongs to the article, and so
+    do the numbered notes «1.», «2¹.» under it and the editorial note after them, up to the next article. The
+    next article's parts open as usual."""
+    got = owners(S.build(extraction(KOAP_NOTES)))
+    assert (got["1.2"], got["1.3"], got["1.4"]) == ("A/ст1.5/ч1", "A/ст1.5/ч2", "A/ст1.5")
+    assert (got["1.8"], got["1.9"]) == ("A/ст9.1/ч2", "A/ст9.1/ч2")
+    assert [got[f"1.{k}"] for k in range(10, 14)] == ["A/ст9.1"] * 4
+    assert (got["1.14"], got["1.15"]) == ("A/ст9.2", "A/ст9.2/ч1")
+
+
+def test_note_outside_an_article_keeps_its_point():
+    """Cycle 9 B2 Review Focus 2: in a resolution with points and no articles «Примечание.» after a point stays
+    with that point."""
+    pages = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить перечень."), ("Text", "2. Установить сроки."),
+              ("Text", "Примечание. Сроки исчисляются в рабочих днях.")]]
+    assert owners(S.build(extraction(pages)))["1.3"] == "A/2"
+    # An amending law quotes a new code article with its note: the note is quoted text of point «5)».
+    amending = [[("Title", "ФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Section-header", "Статья 1"), ("Text", "Внести в Кодекс изменения:"),
+                 ("Text", "5) дополнить статьей 13.42¹ следующего содержания:"),
+                 ("Section-header", "\"Статья 13.42¹. Нарушение требований"), ("Text", "1. Нарушение -"),
+                 ("Text", "Примечание. За правонарушения лица несут ответственность как юридические лица.\";"),
+                 ("Text", "6) дополнить статьей 13.49 следующего содержания:")]]
+    got = owners(S.build(extraction(amending)))
+    assert (got["1.6"], got["1.7"]) == ("A/ст1/5", "A/ст1/6")

@@ -334,6 +334,12 @@
   any case, not only «ПРИЛОЖЕНИЕ». Regression `20261026-dev-regression-cycle9-b1-r2`: 16790/16917, only
   prikaz-fsetan-494 360 -> 518, `cross_scope_v2` 188 -> 7; JSON proj5 unchanged (37212). Track B baseline stays
   `…-dev-regression-89-v7` for no-drop gating; compare a new rule with the previous step's run too.
+- Cycle 9 B2: JSON projection 6 (default) makes IPS note attachments («Примечания», «примечание N») transparent,
+  so their paragraphs are the article's (they were `…/AN<k>`); gold changes only in KoAP (145 rows) and one ukaz (4).
+  Prototype `article_notes`: «Примечание. …»/«Примечания:» opens a note block owned by the article when the unit
+  under the article is a part («ч…») or nothing; «N.» notes and editorial notes stay in it; any other marker ends it.
+  A note under a point «5)» (an amending law quoting a new article) keeps its owner — attempt 1 without that guard
+  dropped fz-603158321 87 -> 48 (`…-cycle9-b2`, kept). Final `…-cycle9-b2-r2`: pool unchanged, JSON KoAP 9516 -> 9745.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

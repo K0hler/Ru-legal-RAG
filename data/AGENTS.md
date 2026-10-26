@@ -136,6 +136,9 @@
   The corpus baseline of cycle 9 is projection 5 (owner decision 26.10.2026, «1.» in a concept section is a point):
   `20261026-json-all-proj5/` — gold differs from proj4 only in rp-1000000000602087490 (218 rows; the header line
   names the projection), `v7` 37212/38337 = 97.1%, 76/100 perfect.
+  Cycle 9 runs: proj5 `c9-b1`; projection 6 (article notes transparent) `20261026-json-all-proj6/` with `c9-b1`
+  (37215, the cycle-9 step baseline there), `c9-b2` (attempt 1, failed), `c9-b2-r2`, later steps `c9-<step>`; pool
+  `20261026-dev-regression-cycle9-<step>`.
 
 - Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
   seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired

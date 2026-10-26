@@ -42,6 +42,7 @@ HEADER_CLASSES = {"T", "Z", "H"}
 RIGHT_CLASSES = {"S", "R"}
 CENTRE_CLASSES = {"C", "T", "Z", "E"}
 TRANSPARENT_CAPTIONS = {"указ", "преамбула", "примечание"}
+NOTE_CAPTION = re.compile(r"^\s*примечани[ея](?![а-яё])", re.IGNORECASE)
 ORDINALS = {"первая": 1, "вторая": 2, "третья": 3, "четвертая": 4, "четвёртая": 4, "пятая": 5,
             "шестая": 6, "седьмая": 7, "восьмая": 8, "девятая": 9, "десятая": 10}
 ROMAN = re.compile(r"^[IVXLC]+$")
@@ -156,7 +157,8 @@ def node_paths(nodes, order, first_text, projection=1):
         seg = None
         if unit == "вложение":
             own_caption = projection >= 4 and re.match(r"^УТВЕРЖДЕН", first_text.get(n["np"], ""))
-            if cap.strip().lower() in TRANSPARENT_CAPTIONS:
+            if cap.strip().lower() in TRANSPARENT_CAPTIONS or (projection >= 6 and NOTE_CAPTION.match(cap)):
+                # projection 6: «Примечания» / «примечание 2<sup>1</sup>» are article notes, not annexes
                 seg = None
             elif parent == "A" or own_caption:
                 # projection 4: a document with its own approval caption is attached to the act even when
@@ -441,13 +443,14 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5), default=5,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5, 6), default=6,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
                              "also accept the previous printed sibling; 3: 2 + compound superscript indices "
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
                              "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
                              "-> its document, own approval caption -> separate document); 5: 4 + a bare numbered «1.» "
-                             "(sub)section (no word «Раздел») is a point (convention v2 §6.1, 26.10.2026)")
+                             "(sub)section (no word «Раздел») is a point (convention v2 §6.1, 26.10.2026); 6: 5 + article notes "
+                             "(«вложение» «Примечания», «примечание N») are transparent: their text is the article's")
     parser.add_argument("--split", choices=("dev", "holdout", "all"), default="dev",
                         help="corpus part to project; the holdout was measured once (25.10.2026) and is development "
                              "now; all: the 100 acts, dev then holdout")
