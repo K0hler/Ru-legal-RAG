@@ -2012,3 +2012,19 @@ def test_note_outside_an_article_keeps_its_point():
                  ("Text", "6) дополнить статьей 13.49 следующего содержания:")]]
     got = owners(S.build(extraction(amending)))
     assert (got["1.6"], got["1.7"]) == ("A/ст1/5", "A/ст1/6")
+
+
+def test_quoted_list_number_does_not_close_its_own_quotation():
+    """Cycle 9 B3: a quoted article whose own list reaches «5)» and goes on «6)» stays quoted although the
+    introducing point is «5)»: «6)» continues the quotation's list, not the introducing one. After the closing
+    quote the introducing list goes on."""
+    pages = [[("Title", "ФЕДЕРАЛЬНЫЙ ЗАКОН"), ("Section-header", "Статья 2"), ("Text", "Внести в Федеральный закон изменения:"),
+              ("Text", "5) дополнить статьей 9 следующего содержания:"),
+              ("Section-header", "\"Статья 9. Федеральная организация"), ("Text", "1. Организацией признается союз."),
+              ("Text", "2. Организация выполняет функции:"), ("Text", "1) установление стандартов;"),
+              ("Text", "5) выдача сертификатов;"), ("Text", "6) составление расчета;"),
+              ("Text", "7) иные функции."), ("Text", "3. Стандарты обязательны для членов.\";"),
+              ("Text", "6) в статье 10:"), ("Text", "а) часть 1 изложить в следующей редакции:")]]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"1.{k}"] for k in range(3, 12)] == ["A/ст2/5"] * 9
+    assert (got["1.12"], got["1.13"]) == ("A/ст2/6", "A/ст2/6/а")

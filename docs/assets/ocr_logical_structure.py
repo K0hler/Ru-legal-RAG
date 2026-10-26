@@ -1056,9 +1056,11 @@ def quoted_markers(items: list[Paragraph]) -> None:
     followed by «.;,)»). Counting «…» balance is not used: OCR merges or drops nested closing quotes. The
     next number of the introducing list («д)» after «г)») ends an open quotation; after a quoted form
     or table (where the closing quote is often lost) so does the next number of any list open before
-    the quotation («2.» after «1.»)."""
+    the quotation («2.» after «1.»). A number that goes on the quotation's own list («6)» after a quoted «5)»)
+    never ends it."""
     open_from, last, previous = None, {}, None  # last: marker kind -> value seen outside quotations
     introducer, formish = None, False
+    inner = {}  # marker kind -> value of the quotation's own numbered lines
     for p in items:
         if p.flow != "body":
             continue
@@ -1069,11 +1071,16 @@ def quoted_markers(items: list[Paragraph]) -> None:
         if open_from is not None:
             formish = formish or bool(FORM_LINE.search(p.text or ""))
             continues = isinstance(last.get(p.marker.kind), int) and p.marker.value == last[p.marker.kind] + 1
-            nxt = continues and (formish or (introducer is not None and p.marker.kind == introducer.kind))
+            # Cycle 9 B3: «6)» right after the quotation's own «5)» goes on the quoted list, even when the
+            # introducing point is «5)» too
+            own = isinstance(inner.get(p.marker.kind), int) and p.marker.value == inner[p.marker.kind] + 1
+            nxt = continues and not own and (formish or (introducer is not None and p.marker.kind == introducer.kind))
             if nxt or open_from > QUOTE_MAX_PARAGRAPHS:
                 open_from = None
             else:
                 open_from += 1
+                if p.marker.kind not in {"none", "dash"}:
+                    inner[p.marker.kind] = p.marker.value
                 if p.marker.kind != "none":
                     p.marker = Marker("none")
                     p.kind = "text"
@@ -1084,7 +1091,7 @@ def quoted_markers(items: list[Paragraph]) -> None:
                 continue
         if (QUOTE_OPEN.match(p.text or "") and previous is not None and final_char(previous.text) == ":"
                 and unbalanced_quotes(text) > 0 and not QUOTE_CLOSE.search(text)):
-            open_from, formish = 0, False
+            open_from, formish, inner = 0, False, {}
         if p.marker.kind not in {"none", "dash"}:
             last[p.marker.kind] = p.marker.value
             introducer = p.marker

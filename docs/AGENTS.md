@@ -340,6 +340,11 @@
   under the article is a part («ч…») or nothing; «N.» notes and editorial notes stay in it; any other marker ends it.
   A note under a point «5)» (an amending law quoting a new article) keeps its owner — attempt 1 without that guard
   dropped fz-603158321 87 -> 48 (`…-cycle9-b2`, kept). Final `…-cycle9-b2-r2`: pool unchanged, JSON KoAP 9516 -> 9745.
+- Cycle 9 B3 (`quoted_markers`): a number continuing the quotation's own list («6)» after a quoted «5)») never
+  ends the quotation, even when it also continues the introducing list. `…-cycle9-b3`: pool unchanged; JSON
+  fz-602263702 280 -> 487/487, fz-603153558 23 -> 25; pp-1000000000102370341 67 -> 46 is an IPS tree error, not a
+  drop: IPS files the quoted Rules' points «7.»-«16.» (quotation opened at «"УТВЕРЖДЕНЫ», closed only after «16. …".»)
+  as points of the amendment list. Treat that act's 21 regions as known gold errors.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
