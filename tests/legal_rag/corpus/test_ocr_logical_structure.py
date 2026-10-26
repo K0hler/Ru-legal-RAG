@@ -2088,3 +2088,34 @@ def test_lowercase_document_referent_nests_in_the_open_act_annex():
     assert (got["3.0"], got["3.1"]) == ("A/AN1/AN1", "A/AN1/AN1")
     assert (got["4.0"], got["4.1"]) == ("A/AN1/AN2", "A/AN1/AN2")
     assert (got["5.0"], got["5.2"]) == ("A/AN2", "A/AN2/1")
+
+
+def same_row(ext, page, indexes, y):
+    """Put the listed regions of a page on one printed row (the helper stacks regions vertically)."""
+    for i in indexes:
+        bbox = ext["pages"][page - 1]["regions"][i]["bbox"]
+        bbox[1], bbox[3] = y, y + 40
+    return ext
+
+
+def test_card_field_on_a_table_row_is_not_a_signature():
+    """Cycle 10 B3: in a professional standard's card the short fields at the right («Код», «А/01.4», «Уровень
+    квалификации», «Код оригинала») share their printed row with a table or a long text at the left: they are
+    cells of that row and stay with the open point, not a signature of the document. A signer's name at the
+    right of a long title row is still a signature."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить профессиональный стандарт."),
+              ("Text", "Министр А.О. Котяков", 1200)],
+             [("Text", "УТВЕРЖДЕН\nприказом Министерства труда", 1000), ("Title", "ПРОФЕССИОНАЛЬНЫЙ СТАНДАРТ"),
+              ("Section-header", "III. Характеристика трудовых функций"), ("Section-header", "3.1. Обобщенная трудовая функция"),
+              ("Text", "Контроль технического состояния кузнечно-штамповочного оборудования", 400),
+              ("Text", "Код", 1030), ("Text", "А/01.4", 1110), ("Text", "Уровень квалификации", 1270), ("Text", "4", 1510),
+              ("Table", "<table><tr><td>Оригинал</td><td>X</td></tr></table>", 480), ("Text", "Код оригинала", 1080),
+              ("Text", "Регистрационный номер профессионального стандарта", 1250),
+              ("Table", "<table><tr><td>Трудовые действия</td><td>Подготовка</td></tr></table>")]]
+    # «Код оригинала» sits under the table, on one row with the long field name at its right
+    ext = same_row(same_row(extraction(pages), 2, [4, 5, 6, 7, 8], 700), 2, [10, 11], 800)
+    got = owners(S.build(ext))
+    assert [got[f"2.{k}"] for k in range(4, 13)] == ["S/III/3.1"] * 9
+    signed = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить правила."),
+               ("Text", "Председатель Правительства Российской Федерации"), ("Text", "М.Мишустин", 1250)]]
+    assert owners(S.build(same_row(extraction(signed), 1, [2, 3], 600)))["1.3"] == "A"

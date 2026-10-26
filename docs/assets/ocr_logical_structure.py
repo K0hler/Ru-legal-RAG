@@ -94,6 +94,33 @@ class Region:
     role: str = "content"  # content | noise | picture | table
     repeats: int = 0  # running header/footer: regions with exactly the same text
     repeat_index: int = 0  # 0 for the first of those regions in reading order
+    row_cell: bool = False  # cycle 10 B3: a right-hand cell of a printed row that starts with a table or long text
+
+
+ROW_LEFT_TEXT_MIN = 40  # a left cell this long is a row of a card or table, not a signer's title
+
+
+def mark_row_cells(regions: list[Region]) -> None:
+    """Cycle 10 B3: a body region whose printed row (vertical overlap of at least half the lower height) also holds
+    a table or a long text («Контроль технического состояния … оборудования» | «Код» | «А/01.4»; «Код оригинала» |
+    «Регистрационный номер профессионального стандарта» in a professional standard's card) is a cell of that row:
+    its right position is no signature evidence. Page headers/footers are never cells."""
+    by_page = defaultdict(list)
+    for r in regions:
+        by_page[r.page].append(r)
+    for page in by_page.values():
+        for r in page:
+            if r.category in NOISE_CATEGORIES:
+                continue
+            for q in page:
+                if q is r or q.category in NOISE_CATEGORIES:
+                    continue
+                overlap = min(r.bbox[3], q.bbox[3]) - max(r.bbox[1], q.bbox[1])
+                height = min(r.bbox[3] - r.bbox[1], q.bbox[3] - q.bbox[1])
+                wide = q.category == "Table" or len(q.text) > ROW_LEFT_TEXT_MIN
+                if height > 0 and overlap * 2 >= height and wide:
+                    r.row_cell = True
+                    break
 
 
 def load_regions(extraction: dict) -> list[Region]:
@@ -108,6 +135,7 @@ def load_regions(extraction: dict) -> list[Region]:
             rid = region["region_id"]
             regions.append(Region(len(regions), page["page"], index, rid, region["category"], region["bbox"],
                                   page["image_size"], raw.get(rid, ""), view(raw.get(rid, "")), nodes.get(rid, [])))
+    mark_row_cells(regions)
     running = Counter(re.sub(r"\d+", "#", r.text) for r in regions if r.category in NOISE_CATEGORIES and r.text)
     # Exact repeats (not digit-normalised): «Приложение № 1 …» and «Приложение № 2 …»
     # are different captions, while the same caption on every page is a running header.
@@ -467,7 +495,7 @@ def signature_like(region: Region) -> bool:
     line = bool(text) and not text[0].islower() and not terminated(text)
     # cycle 10 B1: a table/figure caption («Таблица 4.4» on a landscape page; OCR Caption or the text itself) is
     # never a signature by its position alone
-    figure = region.category == "Caption" or bool(FIGURE_CAPTION.match(text))
+    figure = region.category == "Caption" or bool(FIGURE_CAPTION.match(text)) or region.row_cell
     return bool(initials or (line and title and len(text) < 120)
                 or (line and right and len(text) < 40 and not is_caption(text) and not figure))
 

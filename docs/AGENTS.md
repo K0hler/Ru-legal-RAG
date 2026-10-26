@@ -388,6 +388,11 @@
   capitalised `DOCUMENT_REFERENT`. Same step, B1 addendum: a text caption (`FIGURE_CAPTION`, «Таблица 4.23» in OCR
   Text) is no position signature either. Runs `…-cycle10-b2` (referent only: FNS 478, `cross_scope_v2` 35 -> 19),
   `…-b2-r2` (caption edit did not apply), `…-b2-r3`: FNS 504/552, pool 19042/19241, other families unchanged.
+- Cycle 10 B3 `mark_row_cells` (in `load_regions`, `Region.row_cell`): a body region sharing its printed row (vertical
+  overlap ≥ half the lower height) with a table or a text over `ROW_LEFT_TEXT_MIN` (40) characters on either side is a
+  row cell, never a position signature (professional-standard card fields «Код», «А/01.4», «Код оригинала»);
+  headers/footers are never cells. Attempt 1 (`…-cycle10-b3`, left neighbours only, footers included) cost FNS 5 page
+  marks and missed «Код оригинала» under its table. Final `…-b3-r2`: 687н 250 -> 269, 141н 247 -> 263, favt-547 179.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
