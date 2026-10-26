@@ -351,6 +351,10 @@
   Article marker values are strings: compare numbers through `marker_number` (ASCII digits only; «5¹».isdigit() is
   True). `…-cycle9-b4`: pool unchanged; JSON +130 (fz-603471775 48 -> 98/98, fz-603123263 85 -> 129, fz-603161051
   496 -> 527, fz-603471778 -> 106/106), no drops.
+- Cycle 9 freeze (owner 26.10.2026: projection 6 confirmed, pp-1000000000102370341 a known IPS gold error):
+  prototype v8 `ocr-logical-structure/8-experiment` (sha256 0de5daa5…, LF, blob 7fd671c0) in
+  `data/m1/m1-04a/experiments/20261026-prototype-v8-freeze/`; regression `20261026-dev-regression-v8` 16790/16917
+  (errors equal to `…-cycle9-b4`), JSON proj6 `v8` 98.5%, 79/100. Development result; the measure is pool batch 9.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
