@@ -383,6 +383,11 @@
   (`…-cycle10-b1`: no position signature for any header/footer) dropped pp-1455 (footer code «5807597 (1.3)» lost its
   root owner; caught by the family gate); r2 left captions opening the block (+8). Final `…-cycle10-b1-r3`: FNS 403 ->
   462, favt-547 168 -> 178, minobrazovaniya-1126 +1, other families unchanged, JSON unchanged.
+- Cycle 10 B2: `LOWERCASE_DOCUMENT_REFERENT` — with an act annex open, «Приложение № N к форме налоговой декларации»
+  (a lowercase document noun, not the act: `annex_to_act` decides first) nests as `A/AN<k>/AN<n>` like the
+  capitalised `DOCUMENT_REFERENT`. Same step, B1 addendum: a text caption (`FIGURE_CAPTION`, «Таблица 4.23» in OCR
+  Text) is no position signature either. Runs `…-cycle10-b2` (referent only: FNS 478, `cross_scope_v2` 35 -> 19),
+  `…-b2-r2` (caption edit did not apply), `…-b2-r3`: FNS 504/552, pool 19042/19241, other families unchanged.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -178,6 +178,9 @@ def is_project_caption(text: str) -> bool:
 ACT_REFERENT = re.compile(r"^к\s+(?:настоящему\s+)?(?:(?:федеральному\s+)?(?:конституционному\s+)?закону"
                           r"|кодексу|постановлению|приказу|указу|распоряжению|решению)(?![а-яё])", re.IGNORECASE)
 DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[А-ЯЁA-Z]")
+# Cycle 10 B2: «к форме налоговой декларации», «к порядку заполнения …» — a document named by a lowercase noun (not the
+# act itself, which ACT_REFERENT catches first)
+LOWERCASE_DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[а-яё]{3,}")
 
 
 # The kind of the act itself, from a header line («ПОСТАНОВЛЕНИЕ», «ПРИКАЗ», «ФЕДЕРАЛЬНЫЙ ЗАКОН») or
@@ -462,10 +465,11 @@ def signature_like(region: Region) -> bool:
     # title and right-edge lines must be short unterminated lines that do not start lowercase:
     # «Руководитель органа обеспечивает исполнение.» or a right-aligned «… ассигнований;» is text
     line = bool(text) and not text[0].islower() and not terminated(text)
-    # cycle 10 B1: an OCR Caption (a table/figure caption «Таблица 4.4» on a landscape page) is never a signature
-    # by its position alone
+    # cycle 10 B1: a table/figure caption («Таблица 4.4» on a landscape page; OCR Caption or the text itself) is
+    # never a signature by its position alone
+    figure = region.category == "Caption" or bool(FIGURE_CAPTION.match(text))
     return bool(initials or (line and title and len(text) < 120)
-                or (line and right and len(text) < 40 and not is_caption(text) and region.category != "Caption"))
+                or (line and right and len(text) < 40 and not is_caption(text) and not figure))
 
 
 # Requisites of an act or of an attached document, recognised from text alone (no X
@@ -1296,7 +1300,9 @@ def build(extraction: dict) -> dict:
             reference = m.group("ref") or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
             to_act = annex_to_act(reference, act_kind)
             base = approved_scope if approved_opened and not to_act else "A"
-            nested = act_annex_document is not None and not to_act and bool(DOCUMENT_REFERENT.match(reference))
+            # cycle 10 B2: a lowercase document word («к форме налоговой декларации») names the open act annex too
+            nested = act_annex_document is not None and not to_act and bool(
+                DOCUMENT_REFERENT.match(reference) or LOWERCASE_DOCUMENT_REFERENT.match(reference))
             if nested:
                 base = act_annex_document
             if running and f"{base}/{label}" == scopes[-1][0]:

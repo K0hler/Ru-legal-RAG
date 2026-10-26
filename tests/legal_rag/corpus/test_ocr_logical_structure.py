@@ -2059,12 +2059,32 @@ def test_print_shop_footer_is_a_page_mark_not_a_signature():
               ("Page-footer", "Компьютер /Н.Н./При-К7552-3", 1500)],
              [("Page-header", "X", 900), ("Table", "<table><tr><td>Сведения</td></tr></table>"),
               ("Caption", "Таблица 4.3"), ("Caption", "Таблица 4.4", 1200), ("Table", "<table><tr><td>НПЮЛ</td></tr></table>"),
+              ("Text", "Таблица 4.23", 1150), ("Text", "Сведения о сумме акциза"),
+              ("Table", "<table><tr><td>Сумма</td></tr></table>"),
               ("Page-footer", "копибуто /Н.И./Прил-К7552-3", 1500)]]
     got = owners(S.build(extraction(pages)))
     assert got["2.2"] == got["2.3"] == "A/AN1/I/1"
     # a table caption at the right edge of a landscape page is no signature either
-    assert [got[f"3.{k}"] for k in range(1, 5)] == ["A/AN1/I/1"] * 4
-    assert got["2.4"] == got["3.5"] == "A/AN1"
+    assert [got[f"3.{k}"] for k in range(1, 8)] == ["A/AN1/I/1"] * 7
+    assert got["2.4"] == got["3.8"] == "A/AN1"
     signed = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить формат."), ("Text", "2. Контроль оставляю за собой."),
                ("Page-footer", "Руководитель Д.В. Егоров", 1100)]]
     assert owners(S.build(extraction(signed)))["1.3"] == "A"
+
+
+def test_lowercase_document_referent_nests_in_the_open_act_annex():
+    """Cycle 10 B2: inside an act annex («Приложение № 1 к приказу ФНС России», a declaration form) the captions
+    «Приложение № 1 к форме налоговой декларации» name that form in lowercase: they are annexes of the act annex
+    (`A/AN1/AN1`), not act annexes. «Приложение № 2 к приказу» in lowercase still opens the next act annex."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму и порядок."), ("Text", "Руководитель А.А. Иванов", 1200)],
+             [("Text", "Приложение № 1\nк приказу ФНС России", 1000), ("Section-header", "Налоговая декларация"),
+              ("Text", "Сумма акциза исчисляется налогоплательщиком.")],
+             [("Text", "Приложение № 1\nк форме налоговой декларации", 1000), ("Text", "Расчет суммы акциза.")],
+             [("Text", "Приложение № 2\nк форме налоговой декларации", 1000), ("Text", "Сведения о гарантиях.")],
+             [("Text", "Приложение № 2\nк приказу ФНС России", 1000), ("Section-header", "ПОРЯДОК заполнения"),
+              ("Text", "1. Декларация заполняется.")]]
+    got = owners(S.build(extraction(pages)))
+    assert (got["2.0"], got["2.2"]) == ("A/AN1", "A/AN1")
+    assert (got["3.0"], got["3.1"]) == ("A/AN1/AN1", "A/AN1/AN1")
+    assert (got["4.0"], got["4.1"]) == ("A/AN1/AN2", "A/AN1/AN2")
+    assert (got["5.0"], got["5.2"]) == ("A/AN2", "A/AN2/1")
