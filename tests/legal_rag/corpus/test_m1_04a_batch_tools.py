@@ -189,14 +189,14 @@ def test_dev_regression_records_repo_relative_paths():
     assert D.recorded_path(D.ROOT / "data" / "x" / ".." / "summary.json") == "data/summary.json"
 
 
-def test_dev_regression_78_documents_families_and_cross_scope_v2(tmp_path):
+def test_dev_regression_89_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
-    assert len(docs) == 78 and len({d["name"] for d in docs}) == 78
+    assert len(docs) == 89 and len({d["name"] for d in docs}) == 89
     sizes = {}
     for d in docs:
         sizes[d["group"]] = sizes.get(d["group"], 0) + 1
     assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9, "batch-4": 11, "batch-5": 11,
-                     "batch-6": 11, "batch-7": 11}
+                     "batch-6": 11, "batch-7": 11, "batch-8": 11}
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs
                if d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6", "batch-7"))
@@ -215,6 +215,11 @@ def test_dev_regression_78_documents_families_and_cross_scope_v2(tmp_path):
     # Batch 7 is scored on its frozen gold (no page-range parts).
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-7") == sorted(
         ["приказы", "законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы",
+         "распоряжения", "распоряжения", "указы"])
+    # Batch 8 is scored on the gold derived under convention v2 §6.1 (forms without own caption, 25.10.2026).
+    assert all(d["gold"].name.endswith(".gold-forms.txt") for d in docs if d["group"] == "batch-8")
+    assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-8") == sorted(
+        ["законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
          "распоряжения", "распоряжения", "указы"])
     rp = next(d["gold"] for d in docs if d["name"] == "rp-1099-2014")
     assert (rp.parent.name, rp.name) == ("rp-1099-2014", "agent-rp-1099-2014.gold.txt")

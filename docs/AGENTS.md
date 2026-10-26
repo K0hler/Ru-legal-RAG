@@ -321,6 +321,8 @@
   roots renamed by a hand-written `agent-<slug>.forms-map.json` pinned to the frozen gold, others copied). Development
   rescore `20261025-batch-08-rescore-forms`: v7 = v6.1 1495/1710 (87.4%), FAS 225/234, `cross_scope_v2` 188; the 79.8%
   ledger entry is unchanged.
+- Cycle 9 A1 (plan `plans/2026-10-25-m1-04a-cycle-9.md`): dev regression covers 89 documents (+ `BATCH_8` scored on
+  `agent-<slug>.gold-forms.txt`, never the raw frozen gold, which under-counts FAS by 130 regions).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
