@@ -147,7 +147,11 @@
   (2a3f5d84…). Gold: 6 blind Codex jobs (memory off), 2324 regions, 107 `+`, no alternatives, frozen in
   `experiments/20261026-batch-09-gold-freeze/` (freeze 59df7e2e…, addendum 41b9b971… with the `files` map). First pass
   `experiments/20261026-batch-09-first-pass/` (freeze d996d5a1…, v8 + v7, git_head 376041e), run once 10:00 UTC; never
-  re-run. Dev regression does not include batch 9 yet (add `BATCH_9` on `gold` before the next cycle).
+  re-run. Cycle 10 A3 baseline of frozen v8 on 100 documents: `experiments/20261026-dev-regression-100-v8/` (summary
+  45ecd43b…): 18930/19241 no_section, `cross_scope_v2` 42 (all orders: batch 9 35, FAS 7); the 89 earlier rows and
+  errors equal `…-dev-regression-v8`. Cycle-10 rules gate with `--baseline` it and `--frozen-families`;
+  `…-cycle10-gate-check` (working code = v8) exits 0 with no changes. JSON corpus baseline stays
+  `20261026-json-all-proj6/v8-results.json` (37762/38337).
 
 - Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
   seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired
