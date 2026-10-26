@@ -411,6 +411,10 @@
   IPS acts (decrees 45, resolutions 45, laws 25, government orders 15, codes 8, FKZ/pre-1993/Duma-SF 4 each), seed
   20261026, v1 acts excluded (`excluded_nds`); `--profile v1` (default) reproduces the v1 order. IPS holds no ministry
   orders, so the JSON path cannot measure that family.
+- `milestones/m1/04a/M1_04A_JSON_CORPUS_V2_2026-10-26.md`: JSON corpus v2 (146 acts, no Duma/SF acts with structure) and
+  the one-time holdout measure of frozen v9 and v8 (identical, 99.45%): decrees 14/14 perfect, resolutions 97.5%. Clean
+  text, not OCR: quote it as extra evidence beside the pool, never as §7 on its own. `m1_04a_json_baseline.py --corpus`
+  selects the corpus (`freeze.json` records `corpus` when it is not v1).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

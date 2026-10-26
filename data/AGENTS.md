@@ -141,6 +141,10 @@
   `20261026-dev-regression-cycle9-<step>`.
 
 - Check-pool batch 9 (26.10.2026): `m1/m1-04a/documents/pool/batch-09/selection.json` (dffabeca…, profile `batch-09`,
+- JSON corpus v2 (26.10.2026): `m1/m1-04a/json-corpus/20261026-v2/` (`--profile v2`, 146 acts, selection f075720e…, split
+  80370800…: 102 dev / 44 holdout). Holdout measured once: `experiments/20261026-json-v2-holdout-proj6/` (freeze 3747fb31…,
+  `run-receipt.json` first, `v9`/`v8` results equal, 12152/12219); never re-run; the holdout is now development.
+
   seed 20261029, code d713d75, `scripts_dirty` false, no soft fallbacks); acquired 11/11 `new` then `unchanged`. OCR
   `ocr/<slug>/run-01` (rotation retry config, 304 pages, 2846 regions, 220 tables, 1 `grid: unresolved` in
   prikaz-mintruda-687-2018 p. 23, 0 rotations, replays equal), summary `experiments/20261026-batch-09-ocr/summary.json`
