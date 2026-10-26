@@ -129,6 +129,10 @@
   Prototype v7 freeze `20261025-prototype-v7-freeze/`, pool regression `20261025-dev-regression-v7`.
   JSON holdout measured once on 25.10.2026: `20261025-json-holdout-proj4/` (freeze 42f82227…, `run-receipt.json`,
   `v7`/`v6-1` outputs and results); never re-run; the holdout is now development.
+  Cycle 9 baselines of frozen v7 (26.10.2026; track B gates against them): pool `20261026-dev-regression-89-v7/`
+  (89 docs, 16632/16917 no_section, `cross_scope_v2` 188 — all in batch 8; the 78 old rows equal
+  `…-dev-regression-v7`); JSON `20261026-json-all-proj4/` (`--split all`, 200 files byte-equal to the frozen dev and
+  holdout projections; `v7` 36994/38337 = 96.5%, dev 21472/21908, holdout 15522/16429, 75/100 perfect).
 
 - Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
   seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired
