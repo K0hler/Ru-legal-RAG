@@ -1266,6 +1266,15 @@ def test_batch_08_profile_repeats_batch_07_with_prior_batches_01_to_07():
     assert b7["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06")
 
 
+def test_batch_09_profile_repeats_batch_08_with_prior_batches_01_to_08():
+    b8, b9 = P.PROFILES["batch-08"], P.PROFILES["batch-09"]
+    assert {k: v for k, v in b9.items() if k != "prior_batches"} == {
+        k: v for k, v in b8.items() if k != "prior_batches"}
+    assert b9["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07",
+                                   "batch-08")
+    assert b8["prior_batches"] == ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07")
+
+
 def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
     import json
 

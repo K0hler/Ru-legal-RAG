@@ -851,6 +851,12 @@ PROFILES = {
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
                                    "batch-07"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Batch 9 (measure of v8): batch-08 settings unchanged, excluding batches 1-8.
+    "batch-09": {"quotas": BATCH4_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
