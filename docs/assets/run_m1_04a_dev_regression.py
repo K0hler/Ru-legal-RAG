@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 89 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 100 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -24,7 +24,8 @@ frozen in ``20261023-batch-05-gold-freeze``, rp-1099 stitched from its two page-
 the 11 of batch 6 (gold as frozen in ``20261023-batch-06-gold-freeze``, cycle 6) and the 11 of batch 7
 (gold as frozen in ``20261024-batch-07-gold-freeze``, cycle 7) and the 11 of batch 8 (``gold-forms``: the gold frozen
 in ``20261025-batch-08-gold-freeze`` with convention v2 §6.1 forms merged into their annex by
-``derive_m1_04a_gold_forms.py``, cycle 9); all are development since their first
+``derive_m1_04a_gold_forms.py``, cycle 9) and the 11 of batch 9 (gold as frozen in
+``20261026-batch-09-gold-freeze``, cycle 10); all are development since their first
 pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
@@ -64,6 +65,8 @@ BATCH_7 = ("prikaz-minenergetiki-90-2019", "fz-15-2013", "fz-410-2016", "fz-411-
            "ukaz-410-2021")
 BATCH_8 = ("fz-123-2012", "fz-125-2012", "fz-517-2022", "pp-2285-2022", "pp-48-2021", "prikaz-fas-553-2015",
            "prikaz-fsetan-494-2016", "prikaz-mintruda-141-2023", "rp-2192-2015", "rp-755-2016", "ukaz-1428-2012")
+BATCH_9 = ("fz-161-2015", "fz-193-2025", "fz-488-2014", "pp-1464-2019", "pp-1521-2014", "prikaz-fns-815-2024",
+           "prikaz-mintruda-553-2018", "prikaz-mintruda-687-2018", "rp-2612-2017", "rp-2738-2014", "ukaz-202-2017")
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -104,7 +107,8 @@ def development_documents() -> list[dict]:
     for group, slugs, suffix in (("batch-1", BATCH_1, "gold"), ("batch-2", BATCH_2, "gold-v2"),
                                  ("batch-3", BATCH_3, "gold"), ("batch-4", BATCH_4, "gold"),
                                  ("batch-5", BATCH_5, "gold"), ("batch-6", BATCH_6, "gold"),
-                                 ("batch-7", BATCH_7, "gold"), ("batch-8", BATCH_8, "gold-forms")):
+                                 ("batch-7", BATCH_7, "gold"), ("batch-8", BATCH_8, "gold-forms"),
+                                 ("batch-9", BATCH_9, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})
