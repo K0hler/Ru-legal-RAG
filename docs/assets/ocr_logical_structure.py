@@ -570,6 +570,19 @@ def strip_emphasis(text: str) -> str:
     return EMPHASIS.sub(r"\2", text)
 
 
+# Cycle 10 B4: a table-of-contents line — words, then a dot leader and maybe a page number («I. Общие сведения
+# ………… 1», «3.1. Обобщенная трудовая функция «…» ……»).
+TOC_LEADER = re.compile(r"(?:\s*\.){5,}\s*\d{0,4}\s*$|…{2,}\s*\d{0,4}\s*$")
+TOC_EVIDENCE = {"toc_line": "table-of-contents line (dot leader): text of the document root"}
+
+
+def toc_line(text: str) -> bool:
+    """A contents line: a dot leader at the end and at least three letters before it (a fill-in line
+    «2. ……………» has none)."""
+    m = TOC_LEADER.search(text or "")
+    return bool(m) and len(re.findall(r"[А-Яа-яЁёA-Za-z]", text[:m.start()])) >= 3
+
+
 # A numbered fill-in line of a form: the marker and only a blank («2. __________», «3) .......»).
 FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}$")
 FILL_IN_EVIDENCE = {"fill_in_line": "after a numbered fill-in line of a form: its parent (the line holds no text)"}
@@ -1358,6 +1371,10 @@ def build(extraction: dict) -> dict:
         list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
+            if toc_line(p.text):
+                p.marker = Marker("none")
+                p.kind = "text"
+                p.evidence.append(dict(TOC_EVIDENCE))
             number = list_number(p.text)
             if p.marker.kind == "none" and leading_zero_list(p.text):
                 p.evidence.append({"list_line": "leading-zero marker, stays in the current unit"})
@@ -1384,6 +1401,9 @@ def build(extraction: dict) -> dict:
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         editorial_note_owners(body, stacks, points_are_parts)
         article_notes(body, stacks)
+        for k, p in enumerate(body):
+            if TOC_EVIDENCE in p.evidence:
+                stacks[k] = ()  # cycle 10 B4: a contents line belongs to the document root
         framed = between_tables(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and

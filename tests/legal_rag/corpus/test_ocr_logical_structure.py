@@ -2119,3 +2119,24 @@ def test_card_field_on_a_table_row_is_not_a_signature():
     signed = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить правила."),
                ("Text", "Председатель Правительства Российской Федерации"), ("Text", "М.Мишустин", 1250)]]
     assert owners(S.build(same_row(extraction(signed), 1, [2, 3], 600)))["1.3"] == "A"
+
+
+def test_table_of_contents_lines_belong_to_the_document_root():
+    """Cycle 10 B4: a professional standard opens with its table of contents: «I. Общие сведения ………… 1»,
+    «3.1. Обобщенная трудовая функция «…» ……». Such lines (words, then a dot leader and maybe a page number)
+    open no section or point; they are text of the document root. The real sections after them open as usual;
+    a numbered fill-in line of a form («2. ……………») is not a contents line."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить профессиональный стандарт."),
+              ("Text", "Министр А.О. Котяков", 1200)],
+             [("Text", "УТВЕРЖДЕН\nприказом Министерства труда", 1000), ("Title", "ПРОФЕССИОНАЛЬНЫЙ СТАНДАРТ"),
+              ("List-item", "I. Общие сведения ................................................ 1"),
+              ("List-item", "III. Характеристика обобщенных трудовых функций ........................ 3"),
+              ("List-item", "3.1. Обобщенная трудовая функция «Перемещение ручной клади» ............"),
+              ("Section-header", "I. Общие сведения"), ("Text", "Обслуживание пассажиров вокзала."),
+              ("Section-header", "III. Характеристика обобщенных трудовых функций"),
+              ("Section-header", "3.1. Обобщенная трудовая функция"), ("Text", "Перемещение ручной клади."),
+              ("Text", "4. ………………………")]]
+    got = owners(S.build(extraction(pages)))
+    assert (got["2.2"], got["2.3"], got["2.4"]) == ("S", "S", "S")
+    assert (got["2.5"], got["2.6"], got["2.7"], got["2.9"]) == ("S/I", "S/I", "S/III", "S/III/3.1")
+    assert S.toc_line("I. Общие сведения ........ 1") and not S.toc_line("4. ………………………")

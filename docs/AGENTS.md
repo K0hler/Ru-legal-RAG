@@ -393,6 +393,10 @@
   row cell, never a position signature (professional-standard card fields «Код», «А/01.4», «Код оригинала»);
   headers/footers are never cells. Attempt 1 (`…-cycle10-b3`, left neighbours only, footers included) cost FNS 5 page
   marks and missed «Код оригинала» under its table. Final `…-b3-r2`: 687н 250 -> 269, 141н 247 -> 263, favt-547 179.
+- Cycle 10 B4 `toc_line` (`TOC_LEADER`, evidence `toc_line`): a body paragraph ending in a dot leader (≥ 5 dots or
+  «……», maybe a page number) with at least three letters before it is a table-of-contents line: no marker, owner the
+  scope root (stack emptied after `article_notes`); a fill-in line «2. ……» has no letters and stays `FILL_IN`.
+  `…-cycle10-b4`: 687н 269 -> 275/277 (strict 15 -> 272), nothing else changed.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
