@@ -401,6 +401,10 @@
   after the last point opens the notes of the scope root (evidence `notes_heading`) up to the next marker; a note
   sentence «Примечание. Текст …» keeps its owner (pp-1521 15.8 stays wrong on purpose: the family gate).
   `…-cycle10-b5`: fsetan-494 518 -> 536/544, nothing else changed.
+- Cycle 10 freeze: prototype v9 `ocr-logical-structure/9-experiment` (sha256 38c57541…, LF) in
+  `data/m1/m1-04a/experiments/20261026-prototype-v9-freeze/`; regression `20261026-dev-regression-v9` 19102/19241 with
+  the family gate (no changes; errors equal to `…-cycle10-b5`), JSON proj6 `v9` equal to v8. v8 stays the candidate
+  for laws and government orders; v9 is measured on the next pool batch.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
