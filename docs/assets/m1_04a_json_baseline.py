@@ -1,4 +1,4 @@
-"""M1-04A second layer: baseline of a frozen prototype on clean official text (JSON corpus dev split).
+"""M1-04A second layer: baseline of a frozen prototype on clean official text (JSON corpus).
 
 Phases (repository root, PYTHONPATH=src;docs/assets; every phase writes once into --out):
 
@@ -335,10 +335,15 @@ def pseudo_extraction(slug, regions):
             "pages": pages, "blocks": blocks, "text_nodes": text_nodes}
 
 
+def split_slugs(split: dict, part: str) -> list[str]:
+    """Acts of a corpus part; ``all`` is dev then holdout (the holdout is development since its measure, 25.10.2026)."""
+    return split["dev"] + split["holdout"] if part == "all" else split[part]
+
+
 def phase_project(out: Path, projection: int = 1, part: str = "dev"):
     split = json.loads((CORPUS / "split.json").read_text(encoding="utf-8"))
     files, stats = {}, {}
-    for slug in split[part]:
+    for slug in split_slugs(split, part):
         doc = CORPUS / "docs" / slug
         html = (doc / "document.html").read_text(encoding="utf-8")
         nodes = json.loads((doc / "document_content.json").read_text(encoding="utf-8"))["data"]
@@ -440,8 +445,9 @@ def main(argv=None):
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
                              "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
                              "-> its document, own approval caption -> separate document)")
-    parser.add_argument("--split", choices=("dev", "holdout"), default="dev",
-                        help="corpus part to project; holdout only for a frozen prototype, once")
+    parser.add_argument("--split", choices=("dev", "holdout", "all"), default="dev",
+                        help="corpus part to project; the holdout was measured once (25.10.2026) and is development "
+                             "now; all: the 100 acts, dev then holdout")
     parser.add_argument("--prototype")
     parser.add_argument("--prototype-sha256")
     args = parser.parse_args(argv)

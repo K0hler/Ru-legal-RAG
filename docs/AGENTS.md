@@ -323,6 +323,9 @@
   ledger entry is unchanged.
 - Cycle 9 A1 (plan `plans/2026-10-25-m1-04a-cycle-9.md`): dev regression covers 89 documents (+ `BATCH_8` scored on
   `agent-<slug>.gold-forms.txt`, never the raw frozen gold, which under-counts FAS by 130 regions).
+- Cycle 9 A2: `m1_04a_json_baseline.py project --split all` projects the 100 acts (dev then holdout, `split_slugs`)
+  as one development stand; `freeze.json` records `split_part: all`. Never rewrite the frozen `…-dev-proj4` /
+  `…-holdout-proj4` directories.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
