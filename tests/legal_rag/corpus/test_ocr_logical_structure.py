@@ -2140,3 +2140,20 @@ def test_table_of_contents_lines_belong_to_the_document_root():
     assert (got["2.2"], got["2.3"], got["2.4"]) == ("S", "S", "S")
     assert (got["2.5"], got["2.6"], got["2.7"], got["2.9"]) == ("S/I", "S/I", "S/III", "S/III/3.1")
     assert S.toc_line("I. Общие сведения ........ 1") and not S.toc_line("4. ………………………")
+
+
+def test_notes_heading_after_the_last_point_belongs_to_the_document():
+    """Cycle 10 B5: a form («Сведения, характеризующие ОПО», an annex) ends with its last point «8. …», a table and
+    a standalone heading «Примечания» with explanatory paragraphs: the notes belong to the form, not to point 8.
+    A note sentence «Примечание. Текст …» after a point keeps its owner (B2 covers only articles)."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить регламент."), ("Text", "Руководитель А.В. Алёшин", 1200)],
+             [("Text", "Приложение № 4\nк Административному регламенту", 1000), ("Section-header", "Сведения, характеризующие ОПО"),
+              ("Section-header", "8. Сведения о составе ОПО"), ("Table", "<table><tr><td>№ п/п</td></tr></table>"),
+              ("Section-header", "Примечания", 700), ("Text", "Сведения оформляются заявителем в виде документа."),
+              ("Text", "В графе 1.1 вносится полное наименование объекта.")]]
+    got = owners(S.build(extraction(pages)))
+    assert (got["2.2"], got["2.3"]) == ("A/AN4/8", "A/AN4/8")
+    assert (got["2.4"], got["2.5"], got["2.6"]) == ("A/AN4", "A/AN4", "A/AN4")
+    sentence = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить перечень."), ("Text", "2. Установить сроки."),
+                 ("Text", "Примечание. Сроки исчисляются в рабочих днях.")]]
+    assert owners(S.build(extraction(sentence)))["1.3"] == "A/2"

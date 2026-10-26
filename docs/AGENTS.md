@@ -397,6 +397,10 @@
   «……», maybe a page number) with at least three letters before it is a table-of-contents line: no marker, owner the
   scope root (stack emptied after `article_notes`); a fill-in line «2. ……» has no letters and stays `FILL_IN`.
   `…-cycle10-b4`: 687н 269 -> 275/277 (strict 15 -> 272), nothing else changed.
+- Cycle 10 B5 (`article_notes`, `NOTES_HEADING`): outside an article a standalone heading «Примечания»/«Примечание:»
+  after the last point opens the notes of the scope root (evidence `notes_heading`) up to the next marker; a note
+  sentence «Примечание. Текст …» keeps its owner (pp-1521 15.8 stays wrong on purpose: the family gate).
+  `…-cycle10-b5`: fsetan-494 518 -> 536/544, nothing else changed.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

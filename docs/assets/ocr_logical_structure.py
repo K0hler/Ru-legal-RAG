@@ -1055,21 +1055,29 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are
 
 # Cycle 9 B2: a code's article note «Примечание. Положение части 3 …» / «Примечания:» followed by «1. …», «2¹. …».
 ARTICLE_NOTE = re.compile(r"^Примечани[ея](?:\s*[.:]|$)")
+# Cycle 10 B5: a standalone heading «Примечания» / «Примечание:» (nothing else on the line)
+NOTES_HEADING = re.compile(r"Примечани[ея]\s*[.:]?")
 
 
 def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
     """A note «Примечание. …» or «Примечания:» after the parts of an article belongs to the article, not to
     its last part; so do the numbered notes «N.» under it and editorial notes after them, up to the next named
     unit or any other marker. Outside an article a note keeps its owner, and so does a note under a point «5)» of
-    an article (an amending law quoting a new article with its note)."""
+    an article (an amending law quoting a new article with its note). Cycle 10 B5: outside an article a standalone
+    heading «Примечания» after the last point opens the notes of the document root, up to the next marker."""
     note = None  # the article's stack while inside its note block
     for k, p in enumerate(body):
-        if note is not None and p.marker.kind not in {"none", "int"}:
+        if note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
             note = None
         if note is None and p.kind == "text" and p.marker.kind == "none" and ARTICLE_NOTE.match(p.text):
             level = next((i for i, e in enumerate(stacks[k]) if e[0] == "article"), None)
             below = stacks[k][level + 1:level + 2] if level is not None else ()
-            if level is not None and all(e[2].startswith("ч") for e in below):
+            if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()):
+                # cycle 10 B5: outside an article a standalone «Примечания» heading after the last point opens the
+                # notes of the document (a form's explanations), not text of that point
+                note = ()
+                p.evidence.append({"notes_heading": "notes of the document after its last point"})
+            elif level is not None and all(e[2].startswith("ч") for e in below):
                 note = stacks[k][:level + 1]
                 p.evidence.append({"article_note": "note block of the article"})
         if note is not None:
