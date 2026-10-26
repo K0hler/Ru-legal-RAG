@@ -364,6 +364,12 @@
   evaluator (`equivalent(..., "no_section", single, heads)`). Profile `batch-09` (= batch-08, prior 01-08);
   `POOL_STATUS` has batch-09 (development). Codex jobs: `.superpowers/sdd/2026-10-26-m1-04a-pool-batch-9/`.
   Docker Desktop must be started outside the command sandbox (`Start-Process` inside it silently does nothing).
+- `milestones/m1/04a/M1_04A_FAMILY_READINESS_2026-10-26.md` (owner request 26.10.2026): §7 per family over batches 7-9
+  from the recorded first passes (each batch's own frozen version), not a new measure. Laws, government orders and
+  decrees meet the thresholds, resolutions are borderline; always quote the sample caveats (3 decrees, 6 orders/
+  resolutions, Wilson bounds, regions of one document are dependent) and that the Task 3 reserve holds only
+  resolutions and sanitary rules. Cycle 10 (`plans/2026-10-26-m1-04a-cycle-10.md`) works on ministry orders only and
+  gates every rule on byte-equal errors of all other families.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
