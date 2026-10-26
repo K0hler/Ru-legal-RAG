@@ -357,7 +357,8 @@
   (errors equal to `…-cycle9-b4`), JSON proj6 `v8` 98.5%, 79/100. Development result; the measure is pool batch 9.
 - `milestones/m1/04a/M1_04A_POOL_BATCH_9_2026-10-26.md`: batch-9 first pass of frozen v8 (+ v7): both 2140/2324 (92.1%),
   identical owners; cycle-9 rules never fired on scans. Quote the without-FNS-815@ figure (1737/1772). `cross_scope_v2`
-  35 (FNS «Приложение № N к форме налоговой декларации», lowercase referent, read as order annexes). New class: a
+  35 (FNS «Приложение № N к форме налоговой декларации», lowercase referent, read as order annexes; owner 26.10.2026:
+  a variant of the batch-7 class, not a new class, recorded in protocol §6). New class: a
   professional standard's table of contents («3.1. … ……» with dot leaders) read as points (6) -> counter 0 of 3.
   The strict classifier marks section-only differences «Не классифицировано»; count no_section errors with the
   evaluator (`equivalent(..., "no_section", single, heads)`). Profile `batch-09` (= batch-08, prior 01-08);
