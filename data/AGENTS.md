@@ -140,6 +140,15 @@
   (37215, the cycle-9 step baseline there), `c9-b2` (attempt 1, failed), `c9-b2-r2`, later steps `c9-<step>`; pool
   `20261026-dev-regression-cycle9-<step>`.
 
+- Check-pool batch 9 (26.10.2026): `m1/m1-04a/documents/pool/batch-09/selection.json` (dffabeca…, profile `batch-09`,
+  seed 20261029, code d713d75, `scripts_dirty` false, no soft fallbacks); acquired 11/11 `new` then `unchanged`. OCR
+  `ocr/<slug>/run-01` (rotation retry config, 304 pages, 2846 regions, 220 tables, 1 `grid: unresolved` in
+  prikaz-mintruda-687-2018 p. 23, 0 rotations, replays equal), summary `experiments/20261026-batch-09-ocr/summary.json`
+  (2a3f5d84…). Gold: 6 blind Codex jobs (memory off), 2324 regions, 107 `+`, no alternatives, frozen in
+  `experiments/20261026-batch-09-gold-freeze/` (freeze 59df7e2e…, addendum 41b9b971… with the `files` map). First pass
+  `experiments/20261026-batch-09-first-pass/` (freeze d996d5a1…, v8 + v7, git_head 376041e), run once 10:00 UTC; never
+  re-run. Dev regression does not include batch 9 yet (add `BATCH_9` on `gold` before the next cycle).
+
 - Check-pool batch 8 (25.10.2026): `m1/m1-04a/documents/pool/batch-08/selection.json` (14b7020a…, profile `batch-08`,
   seed 20261028, code af20afa, `scripts_dirty` false, soft fallbacks 123-FZ issuer-day and 517-FZ 3 pages); acquired
   11/11 `new` then `unchanged`. OCR `ocr/<slug>/run-01` (rotation retry config, 243 pages, 2003 regions, 168 tables,

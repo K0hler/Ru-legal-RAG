@@ -355,6 +355,14 @@
   prototype v8 `ocr-logical-structure/8-experiment` (sha256 0de5daa5…, LF, blob 7fd671c0) in
   `data/m1/m1-04a/experiments/20261026-prototype-v8-freeze/`; regression `20261026-dev-regression-v8` 16790/16917
   (errors equal to `…-cycle9-b4`), JSON proj6 `v8` 98.5%, 79/100. Development result; the measure is pool batch 9.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_9_2026-10-26.md`: batch-9 first pass of frozen v8 (+ v7): both 2140/2324 (92.1%),
+  identical owners; cycle-9 rules never fired on scans. Quote the without-FNS-815@ figure (1737/1772). `cross_scope_v2`
+  35 (FNS «Приложение № N к форме налоговой декларации», lowercase referent, read as order annexes). New class: a
+  professional standard's table of contents («3.1. … ……» with dot leaders) read as points (6) -> counter 0 of 3.
+  The strict classifier marks section-only differences «Не классифицировано»; count no_section errors with the
+  evaluator (`equivalent(..., "no_section", single, heads)`). Profile `batch-09` (= batch-08, prior 01-08);
+  `POOL_STATUS` has batch-09 (development). Codex jobs: `.superpowers/sdd/2026-10-26-m1-04a-pool-batch-9/`.
+  Docker Desktop must be started outside the command sandbox (`Start-Process` inside it silently does nothing).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
