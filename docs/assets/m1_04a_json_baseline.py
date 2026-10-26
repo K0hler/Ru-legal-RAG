@@ -34,7 +34,8 @@ from bs4 import BeautifulSoup
 from evaluate_ocr_owner_gold import evaluate
 
 ROOT = Path(__file__).resolve().parents[2]
-CORPUS = ROOT / "data/m1/m1-04a/json-corpus/20261025-v1"
+DEFAULT_CORPUS = ROOT / "data/m1/m1-04a/json-corpus/20261025-v1"
+CORPUS = DEFAULT_CORPUS  # `--corpus` selects another one (v2, 26.10.2026)
 SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 REGIONS_PER_PAGE = 10
 PAGE = [1654, 2339]
@@ -394,6 +395,7 @@ def phase_project(out: Path, projection: int = 1, part: str = "dev"):
         print(slug, stats[slug], flush=True)
     write_once(out / "freeze.json", {"schema_version": "m1-04a-json-baseline-freeze/1", "projection": projection,
                                      "split_sha256": sha((CORPUS / "split.json").read_bytes()),
+                                     **({"corpus": CORPUS.name} if CORPUS != DEFAULT_CORPUS else {}),
                                      **({"split_part": part} if part != "dev" else {}),
                                      "script_sha256": sha(Path(__file__).read_bytes()), "files": files,
                                      "stats": stats})
@@ -456,7 +458,11 @@ def main(argv=None):
                              "now; all: the 100 acts, dev then holdout")
     parser.add_argument("--prototype")
     parser.add_argument("--prototype-sha256")
+    parser.add_argument("--corpus", help="corpus directory (default: json-corpus/20261025-v1)")
     args = parser.parse_args(argv)
+    if args.corpus:
+        global CORPUS
+        CORPUS = Path(args.corpus)
     out = Path(args.out)
     if args.phase == "project":
         phase_project(out, args.projection, args.split)

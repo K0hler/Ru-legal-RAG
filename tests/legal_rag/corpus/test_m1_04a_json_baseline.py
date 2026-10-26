@@ -78,3 +78,11 @@ def test_projection_6_article_notes_are_transparent():
     assert (paths6["c4"], paths6["n"], paths6["n1"], paths6["n2"]) == ("A/ст9.1/ч4", None, None, None)
     owners6 = J.paragraph_owners(nodes, order, first, projection=6)
     assert [owners6[f"p{i}"][0] for i in range(1, 6)] == ["A/ст9.1", "A/ст9.1/ч4", "A/ст9.1", "A/ст9.1", "A/ст9.1"]
+
+
+def test_project_reads_the_corpus_given_on_the_command_line(tmp_path):
+    corpus = fake_corpus(tmp_path / "v2")
+    out = tmp_path / "proj"
+    J.main(["project", "--out", str(out), "--split", "holdout", "--corpus", str(corpus)])
+    freeze = json.loads((out / "freeze.json").read_text(encoding="utf-8"))
+    assert list(freeze["stats"]) == ["pp-b"] and freeze["corpus"] == corpus.name
