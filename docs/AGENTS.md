@@ -447,6 +447,9 @@
   `self_closing`: with straight quotes only an even count closes an opener; «…» keep the C9 rule. Final
   `…-cycle11-b3-r2`: pp-728 1315/1316, JSON v1 37814 (fz-603161051 560/560), v2 52017 (pp-602033590 57/57,
   pp-605786844 104/104), no drops, family gate clean.
+- Cycle 11 freeze: prototype v10 `ocr-logical-structure/10-experiment` (sha256 4c20134c…, LF) in
+  `data/m1/m1-04a/experiments/20261027-prototype-v10-freeze/`; regression `20261027-dev-regression-v10` 21542/21695 with the
+  family gate (errors equal to `…-cycle11-b3-r2`); JSON v1 and v2 `v10` equal to the last cycle step. Not measured yet.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

@@ -31,7 +31,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-VERSION = "ocr-logical-structure/9-experiment"
+VERSION = "ocr-logical-structure/10-experiment"
 
 SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUP_DIGIT = {c: str(i) for i, c in enumerate(SUP)}
