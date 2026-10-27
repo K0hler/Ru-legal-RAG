@@ -424,6 +424,12 @@
   `.superpowers/sdd/2026-10-26-m1-04a-pool-batch-10/`.
   Owner decisions 26.10.2026 (protocol §9): decrees ready by §7 (candidate v8), batch 10 has no new class (counter 1 of 3),
   resolutions not ready; cycle 11 starts with pp-728 (amending quotations in the attached «Изменения»).
+- Cycle 11 A: dev regression covers 111 documents (+ `BATCH_10` without the refilled minkultury-2782). Baselines of
+  frozen v9: pool `20261027-dev-regression-111-v9` (a0a3b28e…, 20480/21695, `cross_scope_v2` 503 = pp-728 477 + orders
+  26; the 100 earlier rows equal `…-dev-regression-v9`); JSON v1 `20261026-json-all-proj6/v9-results.json`, JSON v2
+  `20261027-json-v2-all-proj6/v9-results.json` (146 acts, `--corpus …/20261026-v2 --split all`; its holdout rows equal
+  the measure). Cycle-11 rules gate with `--frozen-families законы кодексы распоряжения приказы указы "санитарные правила"`
+  (resolutions may change, never below the baseline) and no corpus document below its baseline.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

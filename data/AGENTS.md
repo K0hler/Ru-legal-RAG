@@ -147,7 +147,7 @@
   `experiments/20261026-batch-10-ocr/summary.json`. Gold 7 Codex jobs (pp-728 in 3 parts), 2454 regions, frozen
   `experiments/20261026-batch-10-gold-freeze/` (b3c431be…, addendum f38dd21d…). First pass
   `experiments/20261026-batch-10-first-pass/` (freeze 1564edcc…, v9 + v8, git_head d33708f), run once 19:00 UTC 26.10;
-  never re-run. Add `BATCH_10` to the dev regression before the next cycle.
+  never re-run. In the dev regression since cycle 11 (`BATCH_10`, 11 acts without minkultury-2782).
 
 - JSON corpus v2 (26.10.2026): `m1/m1-04a/json-corpus/20261026-v2/` (`--profile v2`, 146 acts, selection f075720e…, split
   80370800…: 102 dev / 44 holdout). Holdout measured once: `experiments/20261026-json-v2-holdout-proj6/` (freeze 3747fb31…,
