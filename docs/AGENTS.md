@@ -440,6 +440,13 @@
   paragraphs never open the requisite block or become a signature by position («(форма)» at the right), but a
   closing rule «____» still opens the block by text (attempt `…-cycle11-b2` dropped 4 JSON acts whose quotation never
   closed). Final `…-cycle11-b2-r2`: pp-728 -> 1064/1316, `cross_scope_v2` 477 -> 0, JSON v1 37811, v2 51973, no drops.
+- Cycle 11 B3-B4: an opener «"б) …;» seeds the quotation's own list with its marker (`inner`), so «в)» does not end it
+  (cycle 9 B3 knew only later quoted lines); `article_notes` ignores a «Примечания:» that is quoted text. Attempt
+  `…-cycle11-b3` dropped JSON v2 pp-602033590 34 -> 13: its first quotation ends with a quoted title («…"Развитие
+  образования".») and was taken as self-closing (C9), and the newly stripped quoted «4.» re-nested the real points.
+  `self_closing`: with straight quotes only an even count closes an opener; «…» keep the C9 rule. Final
+  `…-cycle11-b3-r2`: pp-728 1315/1316, JSON v1 37814 (fz-603161051 560/560), v2 52017 (pp-602033590 57/57,
+  pp-605786844 104/104), no drops, family gate clean.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region

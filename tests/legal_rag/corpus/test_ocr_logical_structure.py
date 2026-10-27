@@ -2197,3 +2197,21 @@ def test_annex_caption_quoted_in_an_amendment_opens_no_annex():
     assert [got[f"1.{k}"] for k in range(6, 15)] == ["S/3/б"] * 9
     assert got["1.15"] == "S/4"
     assert (got["2.0"], got["2.1"]) == ("A/AN", "A/AN")
+
+
+def test_quotation_opened_by_its_own_letter_keeps_its_list_and_notes():
+    """Cycle 11 B3-B4: an amendment quotes new subpoints «"б) …;», «в) …;», «г) …"» right inside the introducing
+    subpoint «б)»: the opener's own «б)» starts the quotation's list, so «в)» continues it and does not end the
+    quotation. A quoted form's «Примечания:» inside a quotation is quoted text, not the notes of the document."""
+    pages = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить прилагаемые изменения."),
+              ("Text", "УТВЕРЖДЕНЫ\nпостановлением Правительства", 1000), ("Section-header", "ИЗМЕНЕНИЯ"),
+              ("Text", "4. В постановлении от 29 июля 2013 г. № 645:"), ("Text", "а) в тексте постановления слова заменить;"),
+              ("Text", "б) в типовом договоре:"), ("Text", "подпункты \"б\" - \"г\" изложить в следующей редакции:"),
+              ("Text", "\"б) орган местного самоуправления;"), ("Text", "в) территориальный орган;"),
+              ("Text", "г) структурные подразделения органа;\";"), ("Text", "приложение изложить в следующей редакции:"),
+              ("Text", "\"1. Канализационный выпуск № 1"), ("Section-header", "Примечания:"),
+              ("Text", "1. Значение концентрации указывается в миллиграммах.\";"),
+              ("Text", "в) в типовом договоре водоотведения слова заменить.")]]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"1.{k}"] for k in range(6, 15)] == ["S/4/б"] * 9
+    assert got["1.15"] == "S/4/в"

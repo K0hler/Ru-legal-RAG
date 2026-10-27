@@ -1070,7 +1070,8 @@ def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
     for k, p in enumerate(body):
         if note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
             note = None
-        if note is None and p.kind == "text" and p.marker.kind == "none" and ARTICLE_NOTE.match(p.text):
+        quoted = any("quoted" in e or "in_quotation" in e for e in p.evidence)  # cycle 11 B4: a quoted form's notes
+        if note is None and p.kind == "text" and p.marker.kind == "none" and ARTICLE_NOTE.match(p.text) and not quoted:
             level = next((i for i, e in enumerate(stacks[k]) if e[0] == "article"), None)
             below = stacks[k][level + 1:level + 2] if level is not None else ()
             if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()):
@@ -1109,6 +1110,17 @@ def unbalanced_quotes(text: str) -> int:
 
 
 IN_QUOTATION_EVIDENCE = {"in_quotation": "unmarked paragraph inside an amending quotation"}
+
+
+def self_closing(text: str) -> bool:
+    """An opener that also ends the quotation. With «…» it is the final closing mark (OCR merges or drops nested
+    closing marks, cycle 8 C9); cycle 11: with straight quotes only an even count closes — an odd count with a final
+    quote («"1. … программы "Развитие образования".») ends a quoted title inside the still open quotation."""
+    if not QUOTE_CLOSE.search(text):
+        return False
+    if '"' in text and not any(mark in text for mark in "«»„“"):
+        return text.count('"') % 2 == 0
+    return True
 
 
 def marker_number(marker: Marker) -> int | None:
@@ -1175,8 +1187,12 @@ def quoted_markers(items: list[Paragraph]) -> None:
                 previous = p
                 continue
         if (QUOTE_OPEN.match(p.text or "") and previous is not None and final_char(previous.text) == ":"
-                and unbalanced_quotes(text) > 0 and not QUOTE_CLOSE.search(text)):
+                and unbalanced_quotes(text) > 0 and not self_closing(text)):
             open_from, formish, inner = 0, False, {}
+            # cycle 11 B3: an opener «"б) …;» starts the quotation's own list with its «б)»
+            own = parse_marker(QUOTE_OPEN.sub("", p.text, count=1), p.first.category)
+            if own.kind not in {"none", "dash"} and marker_number(own) is not None:
+                inner[own.kind] = marker_number(own)
         if p.marker.kind not in {"none", "dash"}:
             last[p.marker.kind] = p.marker.value
             introducer = p.marker
@@ -1317,7 +1333,7 @@ def build(extraction: dict) -> dict:
             plain = strip_sup(text).rstrip()
             if quote_open is None:
                 if (QUOTE_OPEN.match(text) and final_char(previous_text) == ":" and unbalanced_quotes(plain) > 0
-                        and not QUOTE_CLOSE.search(plain)):
+                        and not self_closing(plain)):
                     quote_open = 0
             else:
                 quote_open += 1
