@@ -20,6 +20,12 @@
   an amendment is `S2` in the Codex gold (§6.1 own-mark rule) but quoted text of point «2.» for the prototype (as the
   pp-728 annotator did). prikaz-fns-93-2015 (858 regions) annotated in 2 page-range parts; ukaz-1615-2011 refilled
   (ZIP instead of PDF). `POOL_STATUS` has batch-11. Codex jobs: `.superpowers/sdd/2026-10-27-m1-04a-pool-batch-11/`.
+  Owner decision 27.10.2026 (convention v2 §6.1): a whole document with its own approval mark quoted in an amendment is
+  quoted text of the introducing amendment point; the own-mark rule does not apply to quotations. Counter 2 of 3.
+  `assets/derive_m1_04a_gold_quoted.py` derives write-once `agent-<slug>.gold-quoted.txt` (+ receipt; map
+  `agent-<slug>.quoted-map.json` pinned to the frozen gold collapses a quoted document's root `S2…` into its introducing
+  point `S/2`; acts without a map copied). Rescore `20261027-batch-11-rescore-quoted`: П11 1690/1998, rp-2417 169/169
+  (П10 77). The dev regression must score batch 11 on `gold-quoted`, never the raw frozen gold.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

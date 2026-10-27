@@ -152,7 +152,9 @@
   Codex jobs (FNS-93 in 2 parts under `gold/prikaz-fns-93-2015/chunks/`), 1998 regions, frozen
   `experiments/20261027-batch-11-gold-freeze/` (0c649860…, addendum 5542841e…). Check
   `experiments/20261027-batch-11-first-pass/` (freeze 5af0ed44…, v10 = П11 + v9 = П10, git_head 8deadaa), run once
-  08:34 UTC 27.10; never re-run. Not yet in the dev regression (add `BATCH_11` before the next step).
+  08:34 UTC 27.10; never re-run. Not yet in the dev regression (add `BATCH_11` on `gold-quoted` before the next step).
+  Quoted-document decision 27.10.2026: `gold/rp-2417-2015/agent-rp-2417-2015.quoted-map.json`, `agent-<slug>.gold-quoted.{txt,sha256}`
+  for all 11 acts; rescore `experiments/20261027-batch-11-rescore-quoted/` (summary ec091fcd…), rework only.
 
 - Check-pool batch 10 (26.10.2026): `m1/m1-04a/documents/pool/batch-10/selection.json` (13b0d4f6…, profile `batch-10`,
   seed 20261030, code ed57f20); minkultury-2782 OCR timed out -> `failures/0001201512010017-ocr-run-01.json`, refill 01
