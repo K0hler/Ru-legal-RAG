@@ -60,6 +60,11 @@
   `20261027-batch-12-rescore-ordinal-single`: 1750/1782, minekonomicheskogo-136 243/243, `cross_scope_v2` 0. prikaz-fsb-641-2020 (625 regions) annotated in 2 page-range parts. `POOL_STATUS` has batch-12.
   Profile `batch-12` (`BATCH12_QUOTAS`: orders 5, resolutions 3, law, decree, government order 1 each; prior 01-11).
   Codex jobs: `.superpowers/sdd/2026-10-27-m1-04a-pool-batch-12/`.
+- Step 13 A (owner 27.10.2026: batch 12 into the stand, orders on the FSB regulation): dev regression covers 133
+  documents (+ `BATCH_12` on the frozen `.gold.txt`; prikaz-fsb-641 is the stitched file). Baseline of frozen П12 (v11)
+  `20261027-dev-regression-133-v11`: 25292/25475, batch 12 1750 (= the rework rescore), `cross_scope_v2` 26; the 122
+  earlier rows and errors equal `…-dev-regression-122-v11-ordinal-single`. Step-13 rules gate with `--baseline` it and
+  `--frozen-families`; JSON v1/v2 runs must equal `v11-results.json` per act.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

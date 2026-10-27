@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 122 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 133 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -32,7 +32,8 @@ in ``20261025-batch-08-gold-freeze`` with convention v2 §6.1 forms merged into 
 ``20261026-batch-09-gold-freeze``, cycle 10) and the 11 of batch 10 (``20261026-batch-10-gold-freeze``; pp-728-2020
 is the gold stitched from three page-range parts, cycle 11) and the 11 of scan batch 11 (``gold-quoted``: the gold
 frozen in ``20261027-batch-11-gold-freeze`` with a document quoted in an amendment given to its introducing point by
-``derive_m1_04a_gold_quoted.py``, step 12); all are development since their first
+``derive_m1_04a_gold_quoted.py``, step 12) and the 11 of scan batch 12 (``20261027-batch-12-gold-freeze``;
+prikaz-fsb-641-2020 is the gold stitched from two page-range parts, step 13); all are development since their first
 pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
@@ -81,6 +82,9 @@ BATCH_10 = ("fz-431-2015", "pp-1696-2023", "pp-728-2020", "prikaz-fas-1225-2015"
 BATCH_11 = ("fz-50-2012", "fz-58-2012", "pp-1094-2022", "pp-262-2017", "pp-291-2025", "pp-818-2022",
             "prikaz-fns-93-2015", "prikaz-minobrazovaniya-518-2017", "prikaz-mintruda-79-2025", "rp-2417-2015",
             "ukaz-137-2025")
+BATCH_12 = ("fz-435-2020", "pp-766-2025", "pp-93-2020", "pp-996-2022", "prikaz-fsb-641-2020",
+            "prikaz-minekonomicheskogo-136-2022", "prikaz-mintruda-1141-2014", "prikaz-mintruda-393-2025",
+            "prikaz-minvnutrennikh-995-2019", "rp-3372-2020", "ukaz-486-2015")
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -123,7 +127,7 @@ def development_documents() -> list[dict]:
                                  ("batch-5", BATCH_5, "gold"), ("batch-6", BATCH_6, "gold"),
                                  ("batch-7", BATCH_7, "gold"), ("batch-8", BATCH_8, "gold-forms"),
                                  ("batch-9", BATCH_9, "gold"), ("batch-10", BATCH_10, "gold"),
-                                 ("batch-11", BATCH_11, "gold-quoted")):
+                                 ("batch-11", BATCH_11, "gold-quoted"), ("batch-12", BATCH_12, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})
