@@ -2157,3 +2157,20 @@ def test_notes_heading_after_the_last_point_belongs_to_the_document():
     sentence = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить перечень."), ("Text", "2. Установить сроки."),
                  ("Text", "Примечание. Сроки исчисляются в рабочих днях.")]]
     assert owners(S.build(extraction(sentence)))["1.3"] == "A/2"
+
+
+def test_closing_paragraph_of_an_amending_quotation_does_not_close_the_subpoint():
+    """Cycle 11 B1: inside «б) в Правилах …:» an amendment quotes new points «"13. …», «14. …» and a closing
+    paragraph «При отклонении … суда.";» without a marker. That closing paragraph is quoted text: it closes no
+    subpoint, and the later amendments of «б)» («дополнить пунктом 15¹ …») stay in «б)»."""
+    pages = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить прилагаемые изменения."),
+              ("Text", "УТВЕРЖДЕНЫ\nпостановлением Правительства", 1000), ("Section-header", "ИЗМЕНЕНИЯ"),
+              ("Text", "3. В постановлении от 29 июля 2013 г. № 644:"), ("Text", "а) пункт 3 признать утратившим силу;"),
+              ("Text", "б) в Правилах холодного водоснабжения:"), ("Text", "пункты 13 и 14 изложить в следующей редакции:"),
+              ("Text", "\"13. Абонент направляет проект договора."), ("Text", "14. В случае разногласий договор заключается."),
+              ("Text", "При отклонении протокола абонент вправе обратиться в суд.\";"),
+              ("Text", "дополнить пунктом 15¹ следующего содержания:"),
+              ("Text", "4. В постановлении от 29 июля 2013 г. № 645 слова заменить.")]]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"1.{k}"] for k in range(6, 12)] == ["S/3/б"] * 6
+    assert got["1.12"] == "S/4"

@@ -956,8 +956,9 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         stack = stacks[k]
         if not k or not stack or stack[-1][0] not in SUBPOINT_KINDS or not p.text[:1].isupper():
             continue
-        if inside_quote or strip_sup(p.text).rstrip(" .").endswith("»") or any("quoted" in e for e in p.evidence):
-            continue  # cycle 9 B4: a quoted heading («Статья 11.» inside the quotation) closes nothing
+        if (inside_quote or strip_sup(p.text).rstrip(" .").endswith("»")
+                or any("quoted" in e or "in_quotation" in e for e in p.evidence)):
+            continue  # cycle 9 B4 / 11 B1: a quoted heading or paragraph (straight quotes too) closes nothing
         j = k - 1  # the previous provision text; a standalone editorial note in between does not count
         while j > 0 and editorial_only(body[j]):
             j -= 1
@@ -1107,6 +1108,9 @@ def unbalanced_quotes(text: str) -> int:
     return 0
 
 
+IN_QUOTATION_EVIDENCE = {"in_quotation": "unmarked paragraph inside an amending quotation"}
+
+
 def marker_number(marker: Marker) -> int | None:
     """The plain integer of a marker («5)», «3.», «Статья 11»); None for letters, «1.1» or «25¹⁷»."""
     if isinstance(marker.value, int):
@@ -1163,6 +1167,9 @@ def quoted_markers(items: list[Paragraph]) -> None:
                     p.marker = Marker("none")
                     p.kind = "text"
                     p.evidence.append({"quoted": "inside an amending quotation; text of the introducing unit"})
+                else:
+                    # cycle 11 B1: an unmarked paragraph of the quotation (also its closing one) is quoted text too
+                    p.evidence.append(dict(IN_QUOTATION_EVIDENCE))
                 if QUOTE_CLOSE.search(text) and unbalanced_quotes(text) < 0:
                     open_from = None
                 previous = p
