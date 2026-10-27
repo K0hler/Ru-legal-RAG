@@ -104,6 +104,9 @@ BATCH12_QUOTAS = {
     "government_order": 1,
     "ministry_order": 5,
 }
+# Scan batch 13 (owner go-ahead 27.10.2026): checks П13 (step 13 worked on ministry orders again) with the batch-12
+# composition.
+BATCH13_QUOTAS = dict(BATCH12_QUOTAS)
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
 BATCH2_LONG_MIN, LONG_PAGES = 4, 20
@@ -900,6 +903,12 @@ PROFILES = {
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
                                    "batch-07", "batch-08", "batch-09", "batch-10", "batch-11"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Scan batch 13: batch-12 settings with BATCH13_QUOTAS, excluding batches 1-12.
+    "batch-13": {"quotas": BATCH13_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09", "batch-10", "batch-11", "batch-12"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days

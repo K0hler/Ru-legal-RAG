@@ -1309,6 +1309,16 @@ def test_batch_12_profile_checks_ministry_orders():
     assert b12["prior_batches"] == b11["prior_batches"] + ("batch-11",)
 
 
+def test_batch_13_profile_checks_ministry_orders_again():
+    # Owner go-ahead 27.10.2026: scan batch 13 checks П13 (step 13: ministry orders) with the batch-12 composition,
+    # excluding batches 1-12.
+    b12, b13 = P.PROFILES["batch-12"], P.PROFILES["batch-13"]
+    assert b13["quotas"] == b12["quotas"] and b13["quotas"] is not b12["quotas"]
+    assert {k: v for k, v in b13.items() if k not in ("prior_batches", "quotas")} == {
+        k: v for k, v in b12.items() if k not in ("prior_batches", "quotas")}
+    assert b13["prior_batches"] == b12["prior_batches"] + ("batch-12",)
+
+
 def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
     import json
 
