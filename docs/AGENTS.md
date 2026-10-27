@@ -40,6 +40,10 @@
   taken: run `…-step12-b3` used the old pattern by accident, `…-b3-r2` has equal errors); B4 `SIGNER` takes «Высшее
   должностное лицо …»/«Должностное лицо …». Final `…-step12-b4`: 23542/23693, batch 11 1992/1998, orders 7758 -> 8068
   of 8188, `cross_scope_v2` 94 -> 26, no drops, other families byte-equal, JSON v1/v2 unchanged.
+- Step 12 freeze: П12 = v11 `ocr-logical-structure/11-experiment` (sha256 4824bde3…, LF, blob 3c9ad46f) in
+  `data/m1/m1-04a/experiments/20261027-prototype-v11-freeze/` (`code-v11.sha256` also pins
+  `derive_m1_04a_gold_quoted.py`); regression `20261027-dev-regression-v11` 23542/23693 with the family gate (errors
+  equal to `…-step12-b4`); JSON v1/v2 `v11-results.json` equal to `v10` per act. Measured on scan batch 12.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
