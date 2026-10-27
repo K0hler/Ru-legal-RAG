@@ -87,7 +87,9 @@
   errors: signer titles «Директор … – главнокомандующий …» and «Врио Министра» (signature block), a paragraph after
   subpoint 3.2 (classifier leaves it unclassified: gold `S` vs predicted `A/AN`), strict-only profstandard field
   caption. No new class (owner 27.10.2026: counter 4, batches 10-13): first batch meeting all three section-7
-  conditions. Rosaviatsiya
+  conditions. Owner 27.10.2026: ministry orders and government resolutions are ready by §7 with frozen П13 (v12,
+  c3789931…) as their candidate; rule B2 stays as is (pp-1006 keeps its 3 errors). Laws, government orders and
+  decrees keep the v8 (П9) candidate. §7 readiness is not Task 3/G13: no qualification set exists yet. Rosaviatsiya
   favt-150 refilled by fadm-313 (nested `<table>` on p. 63 rejected by `pdf_extraction._Table`).
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
