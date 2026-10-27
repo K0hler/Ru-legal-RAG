@@ -14,6 +14,12 @@
     27.10 in `20261027-prototype-v10-freeze/`). Earlier versions (`code-final`, v1-v6.1) have no П-name. When you name
     a frozen copy or data folder, give both (`П11 (v10)`). Owner decision 27.10.2026: folders, file names and the
     code's `VERSION` label are **not** renamed — the old->new table is enough; do not propose renaming again.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_11_2026-10-27.md`: scan batch 11, the check of П11 (v10; П10 = v9 equal in total,
+  differences only in rp-2417): 1532/1998; quote the without-rp-2417 figure (1521/1829) and the per-type table
+  (resolutions 464/465). rp-2417-2015 is a convention question: a whole Programme with its own «ОДОБРЕНА» mark quoted in
+  an amendment is `S2` in the Codex gold (§6.1 own-mark rule) but quoted text of point «2.» for the prototype (as the
+  pp-728 annotator did). prikaz-fns-93-2015 (858 regions) annotated in 2 page-range parts; ukaz-1615-2011 refilled
+  (ZIP instead of PDF). `POOL_STATUS` has batch-11. Codex jobs: `.superpowers/sdd/2026-10-27-m1-04a-pool-batch-11/`.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

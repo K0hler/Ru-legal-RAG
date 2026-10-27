@@ -146,6 +146,14 @@
   `20261026-dev-regression-cycle9-<step>`.
 
 - Check-pool batch 9 (26.10.2026): `m1/m1-04a/documents/pool/batch-09/selection.json` (dffabeca…, profile `batch-09`,
+- Scan batch 11 (27.10.2026): `m1/m1-04a/documents/pool/batch-11/selection.json` (profile `batch-11`, seed 20261031, code
+  b537d37); ukaz-1615-2011 is ZIP-only on publication.pravo.gov.ru -> `failures/0001201112140012-*.json`, refill 01
+  (bd772553…) -> ukaz-137-2025. OCR `experiments/20261027-batch-11-ocr/summary.json` (11/11, replays equal). Gold 7
+  Codex jobs (FNS-93 in 2 parts under `gold/prikaz-fns-93-2015/chunks/`), 1998 regions, frozen
+  `experiments/20261027-batch-11-gold-freeze/` (0c649860…, addendum 5542841e…). Check
+  `experiments/20261027-batch-11-first-pass/` (freeze 5af0ed44…, v10 = П11 + v9 = П10, git_head 8deadaa), run once
+  08:34 UTC 27.10; never re-run. Not yet in the dev regression (add `BATCH_11` before the next step).
+
 - Check-pool batch 10 (26.10.2026): `m1/m1-04a/documents/pool/batch-10/selection.json` (13b0d4f6…, profile `batch-10`,
   seed 20261030, code ed57f20); minkultury-2782 OCR timed out -> `failures/0001201512010017-ocr-run-01.json`, refill 01
   (ac7be193…) -> prikaz-fas-690-2022 (OCR `experiments/20261026-batch-10-ocr-refill-01/`). OCR
