@@ -1298,6 +1298,17 @@ def test_batch_11_profile_checks_resolutions():
     assert b11["prior_batches"] == b10["prior_batches"] + ("batch-10",)
 
 
+def test_batch_12_profile_checks_ministry_orders():
+    # Owner go-ahead 27.10.2026: scan batch 12 checks П12 (step 12: ministry orders) with 5 orders, 3 resolutions,
+    # a law, a decree and a government order; everything else as batch 11, excluding batches 1-11.
+    b11, b12 = P.PROFILES["batch-11"], P.PROFILES["batch-12"]
+    assert b12["quotas"] == {"federal_law": 1, "presidential_decree": 1, "government_resolution": 3,
+                             "government_order": 1, "ministry_order": 5}
+    assert {k: v for k, v in b12.items() if k not in ("prior_batches", "quotas")} == {
+        k: v for k, v in b11.items() if k not in ("prior_batches", "quotas")}
+    assert b12["prior_batches"] == b11["prior_batches"] + ("batch-11",)
+
+
 def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
     import json
 
