@@ -155,6 +155,18 @@
   evaluator fix (owner 27.10.2026): `experiments/20261027-batch-12-rescore-ordinal-single/` (summary 75bf36d7…).
   In the dev regression since step 13 (`20261027-dev-regression-133-v11` and `…-step13-*`); JSON step-13 runs are
   `s13-*` labels inside `20261026-json-all-proj6/` and `20261027-json-v2-all-proj6/`.
+- Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
+  6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
+  on the owner's request (GPU memory 15939/16303 MiB): 9 acts complete, raw summary reconstructed
+  (`summary.raw.reconstructed.json`, no per-act seconds), replays in `summary.raw.replay-*.json`; favt-150 and ukaz-732
+  kept as `ocr/<slug>/run-01-failed-attempt1/` and re-run in `…-ocr-r2` (ukaz complete; favt-150 all 67 pages OCRed but
+  rejected: nested OCR table on p. 63) -> `failures/0001202306290007-ocr-run-01.json`, refill 01 (1212b151…) ->
+  prikaz-fadm-313-2016 (`…-ocr-refill-01`). Pool PDF copies exist only after `build_m1_04a_catalog.py` lists the
+  batch: build the catalog before annotation (job b13-04 stopped without them; log kept). Gold 7 Codex jobs (fsvng-63
+  in 2 parts under `gold/prikaz-fsvng-63-2019/chunks/`), 2430 regions, frozen
+  `experiments/20261027-batch-13-gold-freeze/` (0587b3c8…, addendum 23b3e2f9…). Check
+  `experiments/20261027-batch-13-first-pass/` (freeze 7ccd89d7…, v12 = П13 + v11 = П12, git_head 34358b4,
+  `ordinal_single_annex` on), run once 18:28 UTC 27.10; never re-run. Pass the 11 measured slugs explicitly.
 
 - Scan batch 11 (27.10.2026): `m1/m1-04a/documents/pool/batch-11/selection.json` (profile `batch-11`, seed 20261031, code
   b537d37); ukaz-1615-2011 is ZIP-only on publication.pravo.gov.ru -> `failures/0001201112140012-*.json`, refill 01

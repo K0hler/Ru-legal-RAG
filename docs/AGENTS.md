@@ -80,6 +80,14 @@
   `20261027-dev-regression-v12` 25330/25475 (errors equal to `…-step13-b3-r2`; the family gate's only change is the
   accepted pp-262-2017, so its exit 1 is expected); JSON v1/v2 `v12-results.json` equal to v11 per act. Measured on
   scan batch 13.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_13_2026-10-27.md`: scan batch 13, the check of П13 (v12; П12 = v11 2413):
+  2424/2430 (99.75%), strict 2423, `cross_scope_v2` 0 for both; orders 1546/1549 (fsvng-63 regulation 613/615, B1 fixed
+  all 12 П12 subheadings), resolutions 500/503: pp-1006 «Приложение: 1. Поэтажный план …» at the end of a form (gold
+  `S2`, root of the form) becomes item `S2/IX/1` under B2 where П12 left `S2/IX` (no_section −1 against П12). Other
+  errors: signer titles «Директор … – главнокомандующий …» and «Врио Министра» (signature block), a paragraph after
+  subpoint 3.2 (classifier leaves it unclassified: gold `S` vs predicted `A/AN`), strict-only profstandard field
+  caption. No new class (owner to confirm): first batch meeting all three section-7 conditions. Rosaviatsiya
+  favt-150 refilled by fadm-313 (nested `<table>` on p. 63 rejected by `pdf_extraction._Table`).
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
