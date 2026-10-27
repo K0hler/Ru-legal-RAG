@@ -1092,7 +1092,9 @@ def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
         if note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
             note = None
         quoted = any("quoted" in e or "in_quotation" in e for e in p.evidence)  # cycle 11 B4: a quoted form's notes
-        if note is None and p.kind == "text" and p.marker.kind == "none" and ARTICLE_NOTE.match(p.text) and not quoted:
+        # step 13 B2: «Примечания: 1. …» took the marker its label hid; in an article it still opens the note block
+        unmarked = p.marker.kind == "none" or LABELLED_FIRST_EVIDENCE in p.evidence
+        if note is None and p.kind == "text" and unmarked and ARTICLE_NOTE.match(p.text) and not quoted:
             level = next((i for i, e in enumerate(stacks[k]) if e[0] == "article"), None)
             below = stacks[k][level + 1:level + 2] if level is not None else ()
             if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()):
@@ -1218,6 +1220,24 @@ def quoted_markers(items: list[Paragraph]) -> None:
             last[p.marker.kind] = p.marker.value
             introducer = p.marker
         previous = p
+
+
+# Step 13 B2: a list whose first item is printed on the line of its label: «Приложение: 1. Копии документов …»,
+# then «2. Опись прилагаемых документов.» (a form's list of enclosures). A capitalised label of one or two words.
+LABELLED_FIRST = re.compile(r"^[А-ЯЁ][а-яё]+(?:\s[а-яё]+)?:\s+1([.)])\s+\S")
+LABELLED_FIRST_EVIDENCE = {"labelled_first": "«<Label>: 1. …» right before «2. …» is item 1 of that list"}
+
+
+def labelled_first_items(items: list[Paragraph]) -> None:
+    """An unmarked paragraph «<Label>: 1. …» followed by a body paragraph «2. …» (or «1) …» by «2) …»; pictures
+    skipped, nothing else between) is item 1 of that list: it takes the marker the label hid."""
+    seq = [p for p in items if p.flow == "body" and p.kind != "picture"]
+    for p, nxt in zip(seq, seq[1:]):
+        m = LABELLED_FIRST.match(p.text) if p.kind == "text" and p.marker.kind == "none" else None
+        kind = "int" if m and m.group(1) == "." else "paren"
+        if m and nxt.kind == "text" and nxt.marker.kind == kind and nxt.marker.value == 2:
+            p.marker = Marker(kind, 1, "1")
+            p.evidence.append(dict(LABELLED_FIRST_EVIDENCE))
 
 
 def mark_restarts(items: list[Paragraph]) -> None:
@@ -1474,6 +1494,7 @@ def build(extraction: dict) -> dict:
                 p.marker = Marker("none")
                 p.kind = "text"
                 p.evidence.append(dict(TABLE_ROW_EVIDENCE))
+        labelled_first_items(items)
         quoted_markers(items)
         roman_sequence(items, rows)
         mark_restarts(items)

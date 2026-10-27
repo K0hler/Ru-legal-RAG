@@ -2036,6 +2036,33 @@ def test_note_outside_an_article_keeps_its_point():
     assert (got["1.6"], got["1.7"]) == ("A/ст1/5", "A/ст1/6")
 
 
+def test_labelled_first_item_opens_the_list():
+    """Step 13 B2: «Приложение: 1. Копии …» right before «2. Опись …» is item 1 of the enclosure list (FSB sample
+    forms; «Примечания: 1. …» in a resolution's form). Negatives: no «2.» next, «2)» after «1.», a label of three
+    words. In an article «Примечания: 1. …» still opens the article's note block."""
+    form = [[("Text", "1. Утвердить форму заявления."), ("Text", "Директор", 1200)],
+            [("Text", "Приложение № 1\nк приказу Министерства", 1000), ("Title", "ЗАЯВЛЕНИЕ"),
+             ("Text", "Сведения о заявителе: ________"),
+             ("Text", "Приложение: 1. Копии документов и сведения согласно описи."),
+             ("Text", "2. Опись прилагаемых документов.")]]
+    got = owners(S.build(extraction(form)))
+    assert (got["2.3"], got["2.4"]) == ("A/AN1/1", "A/AN1/2")
+    for second in ("Опись прилагаемых документов.", "2) Опись прилагаемых документов."):
+        changed = copy.deepcopy(form)
+        changed[1][4] = ("Text", second)
+        assert owners(S.build(extraction(changed)))["2.3"] == "A/AN1", second
+    changed = copy.deepcopy(form)
+    changed[1][3] = ("Text", "Приложение к заявлению: 1. Копии документов и сведения согласно описи.")
+    assert owners(S.build(extraction(changed)))["2.3"] == "A/AN1"
+    koap = [[("Title", "КОДЕКС"), ("Section-header", "Статья 15.27. Неисполнение требований"),
+             ("Text", "1. Неисполнение требований влечет наложение штрафа."),
+             ("Text", "2. Повторное неисполнение влечет дисквалификацию."),
+             ("Text", "Примечания: 1. Предприниматели несут ответственность как юридические лица."),
+             ("Text", "2. Сотрудники освобождаются от ответственности.")]]
+    got = owners(S.build(extraction(koap)))
+    assert (got["1.4"], got["1.5"]) == ("A/ст15.27", "A/ст15.27")
+
+
 def test_quoted_list_number_does_not_close_its_own_quotation():
     """Cycle 9 B3: a quoted article whose own list reaches «5)» and goes on «6)» stays quoted although the
     introducing point is «5)»: «6)» continues the quotation's list, not the introducing one. After the closing
