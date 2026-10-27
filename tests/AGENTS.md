@@ -88,6 +88,9 @@
   The cycle-7 negative now expects «М.П.» after a point with text to open the form's block.
   Scan batch 13: `test_catalog_records_batch_13_checked_then_rework` (catalog lists batch 13, measured then
   development).
+  IPS tree coverage (`corpus/test_ips_tree_coverage.py`, no network): organ groups and decades, `required_n` with the
+  finite-population correction (97/96/81/29/5), small organ groups merged, seeded plan, Wilson and stratified shares
+  (census adds no variance), screen record of the actual edition, resumable screen with cache reuse and estimate.
   Scan batch 12 evaluator fix: `test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document` (opt-in,
   `A/AN2/AN` = gold `S2/AN1`, no transfer with `result_heads`, two annexes keep their numbers, default after batch-12).
   Step 12 B1-B4 (`test_ocr_logical_structure.py`): typist marks in footers open no point and belong to the scope

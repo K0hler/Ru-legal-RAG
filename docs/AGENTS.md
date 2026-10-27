@@ -91,6 +91,13 @@
   c3789931…) as their candidate; rule B2 stays as is (pp-1006 keeps its 3 errors). Laws, government orders and
   decrees keep the v8 (П9) candidate. §7 readiness is not Task 3/G13: no qualification set exists yet. Rosaviatsiya
   favt-150 refilled by fadm-313 (nested `<table>` on p. 63 rejected by `pdf_extraction._Table`).
+- `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
+  structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
+  `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
+  `required_n` = worst-case 95% margin 10 pp with finite-population correction), `screen` (card + document_content,
+  resumable, reuses the 25-26.10 corpus screens), `estimate` (Wilson per stratum, type share weighted by exact
+  stratum sizes, Agresti-Coull variance). Uses the `acquire_m1_04a_json_corpus` client (1.1 s pause). Output
+  `data/m1/m1-04a/experiments/20261028-ips-tree-coverage/`.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
