@@ -1297,6 +1297,10 @@ def build(extraction: dict) -> dict:
     act_annex_document = None
     act_kind = None  # the act's own kind: a header line, else the first approval caption
     page_first: dict[int, Paragraph] = {}  # the first body text paragraph of each page
+    # Cycle 11 B2: an amending quotation open in the body («… изложить в следующей редакции:» «"ПРИЛОЖЕНИЕ № 6 …»
+    # … «…";»): annex captions inside it are quoted text, not annexes of the attached document.
+    quote_open: int | None = None  # paragraphs since the quotation opened
+    previous_text = ""
     for q in paragraphs:
         if q.flow == "body" and q.kind == "text":
             page_first.setdefault(q.first.page, q)
@@ -1307,6 +1311,19 @@ def build(extraction: dict) -> dict:
         text = p.text
         if not approved_opened and act_kind is None and p.kind == "text":
             act_kind = act_kind_of_header(p.first.raw)
+        quoted_here = False
+        if p.flow == "body" and p.kind == "text" and text:
+            quoted_here = quote_open is not None
+            plain = strip_sup(text).rstrip()
+            if quote_open is None:
+                if (QUOTE_OPEN.match(text) and final_char(previous_text) == ":" and unbalanced_quotes(plain) > 0
+                        and not QUOTE_CLOSE.search(plain)):
+                    quote_open = 0
+            else:
+                quote_open += 1
+                if (QUOTE_CLOSE.search(plain) and unbalanced_quotes(plain) < 0) or quote_open > QUOTE_MAX_PARAGRAPHS:
+                    quote_open = None
+            previous_text = text
         # A running header/footer (same text on REPEAT_THRESHOLD+ regions) repeating a caption
         # of the current scope continues that scope instead of reopening it. A caption printed
         # only twice is not running: two approved texts may carry identical captions.
@@ -1355,6 +1372,11 @@ def build(extraction: dict) -> dict:
             label = f"AN{number}" if number else "AN"
             reference = m.group("ref") or (nxt.text if nxt is not None and nxt.text.startswith("к ") else "")
             to_act = annex_to_act(reference, act_kind)
+            if quoted_here and not to_act:
+                p.kind = "text"  # cycle 11 B2: a caption quoted in an amendment; the act's own annex still opens
+                p.evidence.append({"quoted_caption": "annex caption inside an amending quotation"})
+                scopes[-1][1].append(p)
+                continue
             base = approved_scope if approved_opened and not to_act else "A"
             # cycle 10 B2: a lowercase document word («к форме налоговой декларации») names the open act annex too
             nested = act_annex_document is not None and not to_act and bool(
@@ -1427,11 +1449,14 @@ def build(extraction: dict) -> dict:
         last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
         # cycle 10 B1: a page mark (file code, typist's mark) never opens the block, and a page header/footer
         # opens it only by its text, not by its position («X», «Компьютер /Н.Н./…» sit at the right edge)
+        # cycle 11 B2: a paragraph of an amending quotation («(форма)» of a quoted form) opens no block by its
+        # position either; by its text (a closing rule «____» after a quotation whose quote mark was lost) it still does
         block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
                       and PAGE_MARK_EVIDENCE not in body[k].evidence and not body[k].text[0].islower()
                       and (requisite_like(body[k].text)
                            or (signature_like(body[k].first) and id(body[k]) not in framed
-                               and body[k].first.category not in NOISE_CATEGORIES))), None)
+                               and body[k].first.category not in NOISE_CATEGORIES
+                               and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)))), None)
         in_block = False
         blank = None  # (stack, parent path) of the last marked paragraph when it is a fill-in line «2. ___»
         fill_parent: dict[int, str] = {}
@@ -1445,7 +1470,8 @@ def build(extraction: dict) -> dict:
                 p.kind = "requisite"
                 p.owner = scope_path
                 p.evidence.append({"requisite_block": "after the last numbered or named element"})
-            elif p.marker.kind == "none" and ((signature_like(p.first) and id(p) not in framed)
+            elif p.marker.kind == "none" and ((signature_like(p.first) and id(p) not in framed
+                                               and not any("in_quotation" in e for e in p.evidence))
                                               or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence):
                 p.kind = "signature"
                 p.owner = scope_path

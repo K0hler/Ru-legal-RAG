@@ -2174,3 +2174,26 @@ def test_closing_paragraph_of_an_amending_quotation_does_not_close_the_subpoint(
     got = owners(S.build(extraction(pages)))
     assert [got[f"1.{k}"] for k in range(6, 12)] == ["S/3/б"] * 6
     assert got["1.12"] == "S/4"
+
+
+def test_annex_caption_quoted_in_an_amendment_opens_no_annex():
+    """Cycle 11 B2: «приложения № 6 и 7 изложить в следующей редакции:» quotes two new annexes of the amended Rules:
+    «"ПРИЛОЖЕНИЕ № 6 к Правилам …» and, without its own quote mark, «ПРИЛОЖЕНИЕ № 7 к Правилам …». Inside the
+    quotation neither caption opens an annex, and a quoted right-hand «(форма)» opens no requisite block: everything
+    up to the closing quote is text of «б)». An act annex («ПРИЛОЖЕНИЕ к постановлению …») after the quotation
+    still opens."""
+    pages = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Утвердить прилагаемые изменения."),
+              ("Text", "УТВЕРЖДЕНЫ\nпостановлением Правительства", 1000), ("Section-header", "ИЗМЕНЕНИЯ"),
+              ("Text", "3. В постановлении от 29 июля 2013 г. № 644:"), ("Text", "а) пункт 3 признать утратившим силу;"),
+              ("Text", "б) в Правилах холодного водоснабжения:"), ("Text", "приложения № 6 и 7 изложить в следующей редакции:"),
+              ("Section-header", "\"ПРИЛОЖЕНИЕ № 6\nк Правилам холодного водоснабжения", 900), ("Text", "(форма)", 1300),
+              ("Section-header", "ПЕРИОДИЧНОСТЬ"), ("Text", "отбора проб сточных вод."),
+              ("Section-header", "ПРИЛОЖЕНИЕ № 7\nк Правилам холодного водоснабжения", 900),
+              ("Section-header", "Значения нормативов состава сточных вод"), ("Text", "Нормативы утверждаются ежегодно.\";"),
+              ("Text", "4. В постановлении от 29 июля 2013 г. № 645 слова заменить.")],
+             [("Text", "ПРИЛОЖЕНИЕ\nк постановлению Правительства от 22 мая 2020 г. № 728", 1000),
+              ("Text", "Перечень утративших силу актов.")]]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"1.{k}"] for k in range(6, 15)] == ["S/3/б"] * 9
+    assert got["1.15"] == "S/4"
+    assert (got["2.0"], got["2.1"]) == ("A/AN", "A/AN")

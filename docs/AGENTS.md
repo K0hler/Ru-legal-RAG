@@ -434,6 +434,12 @@
   closing one, «… суда.";») gets evidence `in_quotation`, and `close_subpoints` skips it like `quoted` (straight quotes
   are invisible to `quote_balance`). `…-cycle11-b1` is a no-op run (the edit had not applied, code = v9); final
   `…-cycle11-b1-r2`: pp-728 253 -> 726/1316, JSON v1 +49, v2 +10, no drops, family gate clean.
+- Cycle 11 B2 (scope loop `quote_open`, evidence `quoted_caption`): the scope loop tracks an open amending quotation
+  (opener after «…:», closer «…";»); an annex caption inside it whose referent is not the act («ПРИЛОЖЕНИЕ № 7 к
+  Правилам …», no quote mark of its own) is quoted text and opens nothing; the act's own annex still opens. Quoted
+  paragraphs never open the requisite block or become a signature by position («(форма)» at the right), but a
+  closing rule «____» still opens the block by text (attempt `…-cycle11-b2` dropped 4 JSON acts whose quotation never
+  closed). Final `…-cycle11-b2-r2`: pp-728 -> 1064/1316, `cross_scope_v2` 477 -> 0, JSON v1 37811, v2 51973, no drops.
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
