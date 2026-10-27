@@ -26,6 +26,20 @@
   `agent-<slug>.quoted-map.json` pinned to the frozen gold collapses a quoted document's root `S2…` into its introducing
   point `S/2`; acts without a map copied). Rescore `20261027-batch-11-rescore-quoted`: П11 1690/1998, rp-2417 169/169
   (П10 77). The dev regression must score batch 11 on `gold-quoted`, never the raw frozen gold.
+- Step 12 A (owner 27.10.2026: «84,6% слишком низкий показатель»): dev regression covers 122 documents (+ `BATCH_11` on
+  `gold-quoted`). Baseline of frozen П11 (v10) `20261027-dev-regression-122-v10`: 23232/23693, batch 11 1690 (= the
+  rescore), the 111 earlier rows equal `…-dev-regression-v10`. Step-12 rules gate with `--baseline` it and
+  `--frozen-families` (no names: all but «приказы»); JSON v1/v2 `s12-*` runs must equal `v10-results.json` per act.
+- Step 12 B1-B4 (report `milestones/m1/04a/M1_04A_CYCLE12_2026-10-27.md`, prototype not frozen, `VERSION` unchanged):
+  B1 a page header/footer never carries a marker (`PAGE_BAND_EVIDENCE`; in 122 documents only FNS-93 typist marks
+  «1. Коприво ИНМ / Прип-ГВ108-0» ever did, all wrong) and `JOB_CODE` makes a header/footer ending in a job code
+  («Прил-ГВ198-3», «Прим. 18198-7» after a slash; without a slash a hyphen and 3+ digits) a page mark; B2 a bare
+  «Приложение № N» (or one naming the act) before «УТВЕРЖДЕН …» heads every approved document, not only the first;
+  B3 `APPROVED_DOCUMENT`: a «№» caption with a lowercase document referent that names its approving act («…,
+  утвержденному приказом …») gets the 600-character limit in any OCR category (the name `APPROVED_BY` was already
+  taken: run `…-step12-b3` used the old pattern by accident, `…-b3-r2` has equal errors); B4 `SIGNER` takes «Высшее
+  должностное лицо …»/«Должностное лицо …». Final `…-step12-b4`: 23542/23693, batch 11 1992/1998, orders 7758 -> 8068
+  of 8188, `cross_scope_v2` 94 -> 26, no drops, other families byte-equal, JSON v1/v2 unchanged.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

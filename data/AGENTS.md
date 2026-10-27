@@ -152,7 +152,9 @@
   Codex jobs (FNS-93 in 2 parts under `gold/prikaz-fns-93-2015/chunks/`), 1998 regions, frozen
   `experiments/20261027-batch-11-gold-freeze/` (0c649860…, addendum 5542841e…). Check
   `experiments/20261027-batch-11-first-pass/` (freeze 5af0ed44…, v10 = П11 + v9 = П10, git_head 8deadaa), run once
-  08:34 UTC 27.10; never re-run. Not yet in the dev regression (add `BATCH_11` on `gold-quoted` before the next step).
+  08:34 UTC 27.10; never re-run. In the dev regression since step 12 (`BATCH_11` on `gold-quoted`); step-12 runs
+  `experiments/20261027-dev-regression-122-v10` (baseline) and `…-step12-b1`, `-b2`, `-b3`, `-b3-r2`, `-b4`; JSON
+  `s12-b4` in `20261026-json-all-proj6/` and `20261027-json-v2-all-proj6/`.
   Quoted-document decision 27.10.2026: `gold/rp-2417-2015/agent-rp-2417-2015.quoted-map.json`, `agent-<slug>.gold-quoted.{txt,sha256}`
   for all 11 acts; rescore `experiments/20261027-batch-11-rescore-quoted/` (summary ec091fcd…), rework only.
 

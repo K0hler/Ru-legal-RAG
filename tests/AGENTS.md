@@ -79,6 +79,12 @@
   Cycle 5 A1: 56 documents (batch 5 on `.gold.txt`, rp-1099 the stitched file).
   Cycle 6 A1: 67 documents (batch 6 on `.gold.txt`).
   Cycle 7 A1: 78 documents (batch 7 on `.gold.txt`).
+  Step 12 A: 122 documents (scan batch 11 on `.gold-quoted.txt`).
+  Step 12 B1-B4 (`test_ocr_logical_structure.py`): typist marks in footers open no point and belong to the scope
+  root (job codes with and without a slash; «№ 553/15», «Стр. 12» are not); a bare «Приложение № 2» before
+  «УТВЕРЖДЕН» heads `S2` («к Формату …» stays `S/AN1`); a 230-character lowercase sample caption «… утвержденному
+  приказом …» opens `A/AN2/AN2` (not without «№» or with a final dot); «Высшее должностное лицо …» opens a form's
+  requisite block (a terminated «Должностное лицо, …» sentence stays in the point).
   Cycle 5 B1 (`test_ocr_logical_structure.py`): rubrics «I. Подпрограмма …» and rows «1.», «1.1» between the
   parts of a table that opens an annex are annex text (evidence `table_row`); negatives: «2.» after a table in
   ordinary text or in an annex whose first point precedes the table, a point after the last table, and an
