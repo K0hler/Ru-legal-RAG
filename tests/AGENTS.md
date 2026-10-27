@@ -80,6 +80,8 @@
   Cycle 6 A1: 67 documents (batch 6 on `.gold.txt`).
   Cycle 7 A1: 78 documents (batch 7 on `.gold.txt`).
   Step 12 A: 122 documents (scan batch 11 on `.gold-quoted.txt`).
+  Scan batch 12 evaluator fix: `test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document` (opt-in,
+  `A/AN2/AN` = gold `S2/AN1`, no transfer with `result_heads`, two annexes keep their numbers, default after batch-12).
   Step 12 B1-B4 (`test_ocr_logical_structure.py`): typist marks in footers open no point and belong to the scope
   root (job codes with and without a slash; «№ 553/15», «Стр. 12» are not); a bare «Приложение № 2» before
   «УТВЕРЖДЕН» heads `S2` («к Формату …» stays `S/AN1`); a 230-character lowercase sample caption «… утвержденному

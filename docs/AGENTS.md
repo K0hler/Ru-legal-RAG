@@ -48,8 +48,16 @@
   by region, step-12 rules never fired): 1738/1782 (97.5%), orders 1313/1354. Evaluator gap (no owner decision yet):
   `single_annex_documents`/`number_single_annex` work on raw paths before ordinal renaming, so `A/AN2/AN` (the only
   annex of a document printed as an act annex) never equals gold `S2/AN1` (minekonomicheskogo-136, 12 regions,
-  counted as `cross_scope_v2`; 1750/1782 with it). Candidate new class: «6.Сообщение» (no space after the number,
-  fz-435 2 regions). prikaz-fsb-641-2020 (625 regions) annotated in 2 page-range parts. `POOL_STATUS` has batch-12.
+  counted as `cross_scope_v2`; 1750/1782 with it). «6.Сообщение» (no space after the number, fz-435 2 regions).
+  Owner decisions 27.10.2026: «6.Сообщение» is a variant of the known class «OCR distorted the marker», so batch 12 has no
+  new class — counter 3 of 3 (batches 10-12); the evaluator fix is accepted (convention v2 §5): opt-in
+  `evaluate(..., ordinal_single_annex=True)` / `--ordinal-single-annex` re-applies `single_annex_documents` to the
+  ordinally renamed gold (`ordinal_single_annex_documents`) and numbers both paths after `rename_head`; the eval result
+  records `attached_ordinal.single_annex_documents`, and consumers read heads through `result_heads(result)` (a 3-tuple
+  then). `run_m1_04a_first_pass.py` freezes/runs with it by default for batches after batch-12
+  (`default_ordinal_single_annex`; summary/freeze key `ordinal_single_annex_equivalence`); the dev regression defaults it
+  on (`--no-ordinal-single-annex`; 122 documents unchanged, `…-dev-regression-122-v11-ordinal-single`). Rework rescore
+  `20261027-batch-12-rescore-ordinal-single`: 1750/1782, minekonomicheskogo-136 243/243, `cross_scope_v2` 0. prikaz-fsb-641-2020 (625 regions) annotated in 2 page-range parts. `POOL_STATUS` has batch-12.
   Profile `batch-12` (`BATCH12_QUOTAS`: orders 5, resolutions 3, law, decree, government order 1 each; prior 01-11).
   Codex jobs: `.superpowers/sdd/2026-10-27-m1-04a-pool-batch-12/`.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья

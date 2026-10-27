@@ -151,7 +151,8 @@
   (11/11, replays equal, 6 unresolved grids, 1 rotation-retry page). Gold 7 Codex jobs (FSB-641 in 2 parts under
   `gold/prikaz-fsb-641-2020/chunks/`), 1782 regions, frozen `experiments/20261027-batch-12-gold-freeze/` (1a705901…,
   addendum bdd4d356…). Check `experiments/20261027-batch-12-first-pass/` (freeze be979e6f…, v11 = П12 + v10 = П11,
-  git_head a95aa1c), run once 13:01 UTC 27.10; never re-run. Not yet in the dev regression.
+  git_head a95aa1c), run once 13:01 UTC 27.10; never re-run. Not yet in the dev regression. Rework rescore with the
+  evaluator fix (owner 27.10.2026): `experiments/20261027-batch-12-rescore-ordinal-single/` (summary 75bf36d7…).
 
 - Scan batch 11 (27.10.2026): `m1/m1-04a/documents/pool/batch-11/selection.json` (profile `batch-11`, seed 20261031, code
   b537d37); ukaz-1615-2011 is ZIP-only on publication.pravo.gov.ru -> `failures/0001201112140012-*.json`, refill 01
