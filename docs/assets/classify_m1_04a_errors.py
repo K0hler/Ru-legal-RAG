@@ -382,8 +382,8 @@ def read_paths(evaluator, error: dict, single: frozenset, heads: tuple[dict, dic
         return error
     gold, predicted = error["gold"], error["predicted"]
     if heads is not None:
-        gold = evaluator.rename_head(evaluator.canonical(gold, attached, single), heads[0])
-        predicted = evaluator.rename_head(evaluator.canonical(predicted, attached, single), heads[1])
+        # with the scan batch 12 decision the heads also carry the renamed single-annex documents
+        gold, predicted = evaluator._compared(gold, predicted, attached, single, heads)
     else:
         gold = evaluator.number_single_annex(gold, single)
         predicted = None if predicted is None else evaluator.number_single_annex(predicted, single)
@@ -457,7 +457,7 @@ def main(argv=None) -> None:
         errors = result["errors"]
         heads = None
         if ordinal:
-            heads = (result["attached_ordinal"]["gold"], result["attached_ordinal"]["predicted"])
+            heads = evaluator.result_heads(result)
         attached, single = None, frozenset()
         if evaluator is not None:
             gold_path = M / "gold" / slug / f"agent-{slug}.{args.gold_suffix}.txt"

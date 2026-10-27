@@ -727,3 +727,25 @@ def test_ocr_summary_table_stats_are_opt_in(tmp_path):
     assert act["regions"] == 5 and act["tables"] == 3
     assert act["tables_grid_unresolved"] == 2 and act["tables_grid_unresolved_pages"] == [2]
     assert act["orientation_retry_pages"] == [2]
+
+
+def test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document():
+    """Scan batch 12 (owner decision 27.10.2026): a document printed as an act annex (`A/AN2`) with one unnumbered
+    annex (`A/AN2/AN`) is the gold `S2/AN1` when the renamed gold `S2` has exactly that annex. Opt-in: without the
+    flag the region stays an error and a transfer; a document with two annexes keeps its numbering."""
+    ev = load_script("evaluate_ocr_owner_gold")
+    gold = {"1.1": {"owners": ["A"], "continuation": False}, "2.1": {"owners": ["S/1"], "continuation": False},
+            "3.1": {"owners": ["S2/1"], "continuation": False}, "4.1": {"owners": ["S2/AN1"], "continuation": False}}
+    predicted = {"1.1": "A", "2.1": "A/AN1/1", "3.1": "A/AN2/1", "4.1": "A/AN2/AN"}
+    kwargs = {"single_annex": True, "attached_ordinal": True}
+    before = ev.evaluate(gold, predicted, **kwargs)
+    assert before["no_section"]["correct"] == 3 and "single_annex_documents" not in before["attached_ordinal"]
+    after = ev.evaluate(gold, predicted, ordinal_single_annex=True, **kwargs)
+    assert after["no_section"]["correct"] == 4 and after["attached_ordinal"]["single_annex_documents"] == ["S2"]
+    heads = ev.result_heads(after)
+    assert len(heads) == 3 and not ev.cross_scope_v2("S2/AN1", "A/AN2/AN", after["attached_count"], heads=heads)
+    assert ev.cross_scope_v2("S2/AN1", "A/AN2/AN", before["attached_count"], heads=ev.result_heads(before))
+    two = {**gold, "5.1": {"owners": ["S2/AN2"], "continuation": False}}
+    assert ev.evaluate(two, {**predicted, "5.1": "A/AN2/AN2"}, ordinal_single_annex=True,
+                       **kwargs)["no_section"]["correct"] == 4
+    assert [R.default_ordinal_single_annex(b) for b in ("batch-01", "batch-12", "batch-13")] == [False, False, True]

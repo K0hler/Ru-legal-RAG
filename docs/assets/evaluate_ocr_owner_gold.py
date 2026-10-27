@@ -23,6 +23,10 @@ alternatives), separately for the gold and for the prediction; the tail of a pat
 (``S/AN<n>/...``, an annex of an attached document) is kept under the renamed head.
 A merged or moved document stays an error and a ``cross_scope_v2`` transfer.
 Without the flag scores are unchanged.
+Opt-in ``--ordinal-single-annex`` (owner decision 27.10.2026, scan batch 12; needs both flags above): the single-annex
+equivalence is applied once more after the ordinal renaming, to the renamed documents. A document printed as an act
+annex (``A/AN2``) with one unnumbered annex (``A/AN2/AN``) is then the gold ``S2/AN1`` when the renamed gold document
+``S2`` has exactly that one annex. Without the flag scores are unchanged.
 Metrics:
   owner_accuracy      share of gold regions whose predicted owner path matches;
   continuation P/R    regions predicted as a continuation of the previous
@@ -188,10 +192,30 @@ def attached_ordinal_heads(gold, predicted, attached, single=frozenset()):
     return ordinal_heads(gold_paths), ordinal_heads(predicted_paths)
 
 
+def ordinal_single_annex_documents(gold, heads, attached, single=frozenset()):
+    """``single_annex_documents`` of the gold after the ordinal renaming of its heads (``S``, ``S2``...)."""
+    renamed = {k: {"owners": [rename_head(canonical(o, attached, single), heads) for o in g["owners"]]}
+               for k, g in gold.items()}
+    return single_annex_documents(renamed)
+
+
+def result_heads(result):
+    """The ordinal heads an ``evaluate`` result recorded: (gold, predicted[, renamed single-annex documents])."""
+    info = result.get("attached_ordinal")
+    if info is None:
+        return None
+    if "single_annex_documents" in info:
+        return info["gold"], info["predicted"], frozenset(info["single_annex_documents"])
+    return info["gold"], info["predicted"]
+
+
 def _compared(gold_path, predicted_path, attached, single, heads):
     g, p = canonical(gold_path, attached, single), canonical(predicted_path, attached, single)
     if heads is not None:
         g, p = rename_head(g, heads[0]), rename_head(p, heads[1])
+        if len(heads) > 2 and heads[2]:
+            g = number_single_annex(g, heads[2])
+            p = None if p is None else number_single_annex(p, heads[2])
     return g, p
 
 
@@ -224,7 +248,8 @@ def variant(path, name):
     return "/".join(parts)
 
 
-def evaluate(gold, predicted, continuation=None, attached=None, single_annex=False, attached_ordinal=False):
+def evaluate(gold, predicted, continuation=None, attached=None, single_annex=False, attached_ordinal=False,
+             ordinal_single_annex=False):
     if attached is None:
         attached = attached_count(gold)
     result = {"regions": len(gold), "attached_count": attached}
@@ -236,6 +261,10 @@ def evaluate(gold, predicted, continuation=None, attached=None, single_annex=Fal
     if attached_ordinal:
         heads = attached_ordinal_heads(gold, predicted, attached, single)
         result["attached_ordinal"] = {"gold": heads[0], "predicted": heads[1]}
+        if ordinal_single_annex:
+            renamed_single = ordinal_single_annex_documents(gold, heads[0], attached, single)
+            result["attached_ordinal"]["single_annex_documents"] = sorted(renamed_single)
+            heads = (*heads, renamed_single)
     for name in ("strict", "no_section", "numbers"):
         ok, rows = 0, []
         for key, g in gold.items():
@@ -270,6 +299,9 @@ def main(argv=None):
     parser.add_argument("--attached-ordinal", action="store_true",
                         help="attached documents and act annexes compared by order of appearance "
                              "(owner decision 23.10.2026)")
+    parser.add_argument("--ordinal-single-annex", action="store_true",
+                        help="with both flags above: the single-annex equivalence also after the ordinal renaming "
+                             "(owner decision 27.10.2026)")
     args = parser.parse_args(argv)
     with open(args.run, encoding="utf-8") as handle:
         run = json.load(handle)
@@ -278,7 +310,7 @@ def main(argv=None):
     else:
         owners, cont = run.get("owners", run), run.get("continuation")
     result = evaluate(load_gold(args.gold), owners, cont, single_annex=args.single_annex,
-                      attached_ordinal=args.attached_ordinal)
+                      attached_ordinal=args.attached_ordinal, ordinal_single_annex=args.ordinal_single_annex)
     text = json.dumps(result, ensure_ascii=False, indent=1)
     if args.output:
         with open(args.output, "x", encoding="utf-8") as handle:

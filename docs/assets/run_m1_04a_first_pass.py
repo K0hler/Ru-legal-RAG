@@ -85,6 +85,13 @@ def default_attached_ordinal(batch: str) -> bool:
     return batch not in PRE_ORDINAL_BATCHES
 
 
+# Owner decision 27.10.2026 (scan batch 12): the single-annex equivalence also after the ordinal renaming; batches
+# 1-12 were frozen and run without it, every later batch with it.
+def default_ordinal_single_annex(batch: str) -> bool:
+    number = batch.rpartition("-")[2]
+    return number.isdigit() and int(number) > 12
+
+
 def addendum_for(gold_freeze: Path) -> Path:
     return gold_freeze.with_name("freeze-addendum.json")
 
@@ -166,8 +173,10 @@ def apply_convention(gold_map: dict, extraction_data: dict, convention: str) -> 
 
 
 def score(evaluator, g: dict, owners: dict, cont: dict | None = None,
-          single_annex: bool = False, attached_ordinal: bool = False) -> tuple[dict, dict]:
-    res = evaluator.evaluate(g, owners, cont, single_annex=single_annex, attached_ordinal=attached_ordinal)
+          single_annex: bool = False, attached_ordinal: bool = False,
+          ordinal_single_annex: bool = False) -> tuple[dict, dict]:
+    extra = {"ordinal_single_annex": True} if ordinal_single_annex else {}
+    res = evaluator.evaluate(g, owners, cont, single_annex=single_annex, attached_ordinal=attached_ordinal, **extra)
     row = {k: res[k]["correct"] for k in METRICS}
     if cont is not None:
         row["continuation"] = res.get("continuation")
@@ -211,11 +220,13 @@ def parse_prototypes(specs: list[str] | None) -> dict[str, Path]:
 
 def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, convention: str,
               prototypes: dict[str, Path] | None = None, single_annex: bool | None = None,
-              attached_ordinal: bool | None = None) -> None:
+              attached_ordinal: bool | None = None, ordinal_single_annex: bool | None = None) -> None:
     if single_annex is None:
         single_annex = default_single_annex(batch)
     if attached_ordinal is None:
         attached_ordinal = default_attached_ordinal(batch)
+    if ordinal_single_annex is None:
+        ordinal_single_annex = default_ordinal_single_annex(batch)
     code_final = {}
     for line in CODE_FINAL.read_text().splitlines():
         if line.strip():
@@ -255,6 +266,8 @@ def do_freeze(out: Path, batch: str, slugs: list[str], gold_freeze: Path, conven
         record["single_annex_equivalence"] = True
     if attached_ordinal:
         record["attached_ordinal_equivalence"] = True
+    if ordinal_single_annex:
+        record["ordinal_single_annex_equivalence"] = True
     out.mkdir(parents=True, exist_ok=False)
     write_new(out / "freeze.json", record)
     print(sha(out / "freeze.json"))
@@ -305,6 +318,7 @@ def do_run(out: Path) -> None:
     convention, batch = record["convention"], record["batch"]
     single_annex = record.get("single_annex_equivalence", False)
     ordinal = record.get("attached_ordinal_equivalence", False)
+    ordinal_single = record.get("ordinal_single_annex_equivalence", False)
     sys.path.insert(0, str(ROOT / "src"))
     exporter = load("export_owner_maps", EXPORTER)
     evaluator = load("evaluate_ocr_owner_gold", EVALUATOR)
@@ -325,7 +339,7 @@ def do_run(out: Path) -> None:
             subprocess.run([sys.executable, str(prototype), "--input", str(ext_path), "--output", str(proto_out)],
                            check=True)
             owners, cont = evaluator.from_logical(json.loads(proto_out.read_text(encoding="utf-8")))
-            res, row[name] = score(evaluator, g, owners, cont, single_annex, ordinal)
+            res, row[name] = score(evaluator, g, owners, cont, single_annex, ordinal, ordinal_single)
             write_new(out / "eval" / f"{name}-{slug}.json", res)
         claim = json.loads(source(batch, slug).read_text(encoding="utf-8"))["declared_identity"]
         try:
@@ -333,7 +347,8 @@ def do_run(out: Path) -> None:
         except Exception as error:  # recorded once, not retried
             cur, meta = {}, {"route": "error", "error": f"{type(error).__name__}: {error}"}
         write_new(out / "current" / f"{slug}.json", {"owners": cur, "meta": meta})
-        res, row["current"] = score(evaluator, g, cur, single_annex=single_annex, attached_ordinal=ordinal)
+        res, row["current"] = score(evaluator, g, cur, single_annex=single_annex, attached_ordinal=ordinal,
+                                    ordinal_single_annex=ordinal_single)
         row["current"]["meta"] = meta
         write_new(out / "eval" / f"current-{slug}.json", res)
         rows.append(row)
@@ -346,6 +361,8 @@ def do_run(out: Path) -> None:
         summary["single_annex_equivalence"] = True
     if ordinal:
         summary["attached_ordinal_equivalence"] = True
+    if ordinal_single:
+        summary["ordinal_single_annex_equivalence"] = True
     write_new(out / "summary.json", summary)
     print(json.dumps(totals(rows), ensure_ascii=False))
 
@@ -354,7 +371,8 @@ def do_run(out: Path) -> None:
 
 
 def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = None,
-               single_annex: bool | None = None, attached_ordinal: bool | None = None) -> None:
+               single_annex: bool | None = None, attached_ordinal: bool | None = None,
+               ordinal_single_annex: bool | None = None) -> None:
     """Score the saved outputs of ``src`` under ``convention``; systems are not re-run.
 
     Without ``gold_suffix`` and ``single_annex`` the output is that of the batch-1 rescore
@@ -367,6 +385,8 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         single_annex = default_single_annex(src_freeze.get("batch", "batch-01"))
     if attached_ordinal is None:
         attached_ordinal = default_attached_ordinal(src_freeze.get("batch", "batch-01"))
+    if ordinal_single_annex is None:
+        ordinal_single_annex = default_ordinal_single_annex(src_freeze.get("batch", "batch-01"))
     for name, digest in json.loads((ROOT / rel_from_record(src_freeze)).read_text(encoding="utf-8"))["files"].items():
         if sha(ROOT / name) != digest:
             raise SystemExit(f"gold changed after freeze: {name}")
@@ -374,6 +394,7 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
     src_convention = src_summary.get("convention", "all-regions")
     src_single = src_summary.get("single_annex_equivalence", False)
     src_ordinal = src_summary.get("attached_ordinal_equivalence", False)
+    src_ordinal_single = src_summary.get("ordinal_single_annex_equivalence", False)
     proto_systems = [s for s in systems(src_summary["rows"]) if s != "current"]
     out.mkdir(parents=True, exist_ok=False)
     (out / "eval").mkdir()
@@ -403,17 +424,18 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         # Rescoring the frozen gold under the source run's convention must reproduce its row exactly.
         ok = len(frozen) == src_row["regions"]
         for system, (owners, cont) in outputs.items():
-            ok = ok and score(evaluator, frozen, owners, cont, src_single, src_ordinal)[1] == src_row[system]
+            ok = ok and score(evaluator, frozen, owners, cont, src_single, src_ordinal,
+                              src_ordinal_single)[1] == src_row[system]
         check[slug] = ok and score(evaluator, frozen, current["owners"], single_annex=src_single,
-                                   attached_ordinal=src_ordinal)[1] == {
+                                   attached_ordinal=src_ordinal, ordinal_single_annex=src_ordinal_single)[1] == {
             k: v for k, v in src_row["current"].items() if k != "meta"}
         g, removed = apply_convention(full, ext, convention)
         row = {"slug": slug, "regions": len(g), "not_scored": removed}
         for system, (owners, cont) in outputs.items():
-            res, row[system] = score(evaluator, g, owners, cont, single_annex, attached_ordinal)
+            res, row[system] = score(evaluator, g, owners, cont, single_annex, attached_ordinal, ordinal_single_annex)
             write_new(out / "eval" / f"{system}-{slug}.json", res)
         res, row["current"] = score(evaluator, g, current["owners"], single_annex=single_annex,
-                                    attached_ordinal=attached_ordinal)
+                                    attached_ordinal=attached_ordinal, ordinal_single_annex=ordinal_single_annex)
         row["current"]["meta"] = current["meta"]
         write_new(out / "eval" / f"current-{slug}.json", res)
         rows.append(row)
@@ -425,7 +447,7 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": inputs, "rows": rows, "total": totals(rows),
         "source_total_all_regions": src_summary["total"]}
-    if gold_suffix or single_annex or attached_ordinal:
+    if gold_suffix or single_annex or attached_ordinal or ordinal_single_annex:
         del record["all_regions_matches_source"], record["source_total_all_regions"]
         record.update({"gold": f"agent-<slug>.{gold_suffix or 'gold'}.txt", "source_convention": src_convention,
                        "frozen_gold_matches_source": True, "source_total": src_summary["total"]})
@@ -433,6 +455,8 @@ def do_rescore(out: Path, src: Path, convention: str, gold_suffix: str | None = 
         record["single_annex_equivalence"] = True
     if attached_ordinal:
         record["attached_ordinal_equivalence"] = True
+    if ordinal_single_annex:
+        record["ordinal_single_annex_equivalence"] = True
     write_new(out / "summary.json", record)
     print(json.dumps(totals(rows), ensure_ascii=False))
 
@@ -516,18 +540,22 @@ def main(argv=None) -> None:
     parser.add_argument("--attached-ordinal", action=argparse.BooleanOptionalAction, default=None,
                         help="attached documents and act annexes compared by order of appearance "
                              "(freeze, rescore; default on for batches after batch-04, off for batches 1-4)")
+    parser.add_argument("--ordinal-single-annex", action=argparse.BooleanOptionalAction, default=None,
+                        help="the single-annex equivalence also after the ordinal renaming (freeze, rescore; "
+                             "owner decision 27.10.2026: default on for batches after batch-12)")
     args = parser.parse_args(argv)
     out = Path(args.out).resolve()
     if args.phase == "freeze":
         if not (args.gold_freeze and args.slugs):
             parser.error("freeze needs --gold-freeze and --slugs")
         do_freeze(out, args.batch, args.slugs, Path(args.gold_freeze).resolve(), args.convention,
-                  parse_prototypes(args.prototype), args.single_annex, args.attached_ordinal)
+                  parse_prototypes(args.prototype), args.single_annex, args.attached_ordinal,
+                  args.ordinal_single_annex)
     elif args.phase == "run":
         do_run(out)
     elif args.phase == "rescore":
         do_rescore(out, Path(args.source).resolve(), args.convention, args.gold_suffix, args.single_annex,
-                   args.attached_ordinal)
+                   args.attached_ordinal, args.ordinal_single_annex)
     else:
         sample = build_sample(Path(args.source).resolve(), args.seed, args.size, args.system)
         _write_sample(out, sample)

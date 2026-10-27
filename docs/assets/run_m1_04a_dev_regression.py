@@ -7,6 +7,8 @@ one annex) and ``cross_scope_v2`` (an owner in another document or annex than go
 per document. The summary also has a per-family breakdown (``FAMILIES``). Cycle 4 (owner
 decision 23.10.2026, convention v2 §6): ``attached_ordinal=True`` by default (attached documents
 and act annexes compared by order of appearance; ``--no-attached-ordinal`` turns it off).
+Scan batch 12 (owner decision 27.10.2026): ``ordinal_single_annex=True`` by default (the single-annex equivalence
+also after the ordinal renaming; ``--no-ordinal-single-annex`` turns it off).
 The prototype is loaded from an explicit file so that a snapshot can be compared with ``code-final``.
 
     python docs/assets/run_m1_04a_dev_regression.py --prototype FILE --output NEW_DIR [--baseline SUMMARY]
@@ -180,7 +182,7 @@ def compare_to_baseline(summary: dict, baseline: dict) -> dict:
 
 def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict] | None = None,
                        baseline: Path | None = None, attached_ordinal: bool = True,
-                       frozen_families: tuple | None = None) -> dict:
+                       frozen_families: tuple | None = None, ordinal_single_annex: bool = True) -> dict:
     prototype_path, output = Path(prototype_path).resolve(), Path(output)
     if output.exists():
         raise FileExistsError(f"output exists: {output}")
@@ -196,11 +198,10 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
         built = prototype.build(ext)
         versions.add(built.get("parser_version"))
         owners, cont = evaluator.from_logical(built)
-        result = evaluator.evaluate(gold, owners, cont, single_annex=True, attached_ordinal=attached_ordinal)
+        result = evaluator.evaluate(gold, owners, cont, single_annex=True, attached_ordinal=attached_ordinal,
+                                    ordinal_single_annex=attached_ordinal and ordinal_single_annex)
         attached, single = result["attached_count"], frozenset(result["single_annex_documents"])
-        heads = None
-        if attached_ordinal:
-            heads = (result["attached_ordinal"]["gold"], result["attached_ordinal"]["predicted"])
+        heads = evaluator.result_heads(result)
         cross_v2 = sum(evaluator.cross_scope_v2(e["gold"], e["predicted"], attached, single, heads=heads)
                        for e in result["errors"])
         categories = region_categories(ext)
@@ -226,6 +227,8 @@ def run_dev_regression(prototype_path: Path, output: Path, documents: list[dict]
                "total": total}
     if attached_ordinal:
         summary["attached_ordinal_equivalence"] = True
+        if ordinal_single_annex:
+            summary["ordinal_single_annex_equivalence"] = True
     outputs = [("summary.json", summary), ("errors.json", errors)]
     if base is not None:
         comparison = compare_to_baseline(summary, base)
@@ -253,6 +256,9 @@ def main(argv=None, documents: list[dict] | None = None) -> None:
     parser.add_argument("--baseline", type=Path, help="earlier summary.json; exit 1 if any document is below it")
     parser.add_argument("--attached-ordinal", action=argparse.BooleanOptionalAction, default=True,
                         help="attached documents and act annexes compared by order of appearance (default on)")
+    parser.add_argument("--ordinal-single-annex", action=argparse.BooleanOptionalAction, default=True,
+                        help="the single-annex equivalence also after the ordinal renaming (owner decision "
+                             "27.10.2026, default on)")
     parser.add_argument("--frozen-families", nargs="*", metavar="FAMILY",
                         help="with --baseline: exit 1 if a document of these families changes its error list "
                              "(no names: every family except «приказы»)")
@@ -261,7 +267,8 @@ def main(argv=None, documents: list[dict] | None = None) -> None:
     if args.frozen_families is not None:
         frozen = tuple(args.frozen_families) or FROZEN_FAMILIES_DEFAULT
     summary = run_dev_regression(args.prototype, args.output, documents=documents, baseline=args.baseline,
-                                 attached_ordinal=args.attached_ordinal, frozen_families=frozen)
+                                 attached_ordinal=args.attached_ordinal, frozen_families=frozen,
+                                 ordinal_single_annex=args.ordinal_single_annex)
     print(json.dumps({"parser_version": summary["parser_version"], "groups": summary["groups"], "families": summary["families"],
                       "total": summary["total"], "baseline_comparison": summary.get("baseline_comparison")},
                      ensure_ascii=False))
