@@ -86,7 +86,8 @@
   `S2`, root of the form) becomes item `S2/IX/1` under B2 where П12 left `S2/IX` (no_section −1 against П12). Other
   errors: signer titles «Директор … – главнокомандующий …» and «Врио Министра» (signature block), a paragraph after
   subpoint 3.2 (classifier leaves it unclassified: gold `S` vs predicted `A/AN`), strict-only profstandard field
-  caption. No new class (owner to confirm): first batch meeting all three section-7 conditions. Rosaviatsiya
+  caption. No new class (owner 27.10.2026: counter 4, batches 10-13): first batch meeting all three section-7
+  conditions. Rosaviatsiya
   favt-150 refilled by fadm-313 (nested `<table>` on p. 63 rejected by `pdf_extraction._Table`).
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
