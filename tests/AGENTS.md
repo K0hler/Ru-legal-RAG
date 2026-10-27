@@ -81,6 +81,11 @@
   Cycle 7 A1: 78 documents (batch 7 on `.gold.txt`).
   Step 12 A: 122 documents (scan batch 11 on `.gold-quoted.txt`).
   Step 13 A: 133 documents (scan batch 12 on `.gold.txt`, prikaz-fsb-641 the stitched file).
+  Step 13 B1-B3 (`test_ocr_logical_structure.py`): a 400-character Text rubric is a subheading only in a
+  corroborated scope and up to `SUBHEADING_STYLED_MAX`; «Приложение: 1. …» before «2. …» is item 1 (not without
+  «2.», with «2)», or a three-word label) and «Примечания: 1. …» in an article stays its note; form signature
+  captions and «Директор» open the requisite block, «(фамилия, имя, отчество …)» and a quoted «М.П.» do not.
+  The cycle-7 negative now expects «М.П.» after a point with text to open the form's block.
   Scan batch 12 evaluator fix: `test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document` (opt-in,
   `A/AN2/AN` = gold `S2/AN1`, no transfer with `result_heads`, two annexes keep their numbers, default after batch-12).
   Step 12 B1-B4 (`test_ocr_logical_structure.py`): typist marks in footers open no point and belong to the scope

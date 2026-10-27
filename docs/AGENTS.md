@@ -65,6 +65,16 @@
   `20261027-dev-regression-133-v11`: 25292/25475, batch 12 1750 (= the rework rescore), `cross_scope_v2` 26; the 122
   earlier rows and errors equal `…-dev-regression-122-v11-ordinal-single`. Step-13 rules gate with `--baseline` it and
   `--frozen-families`; JSON v1/v2 runs must equal `v11-results.json` per act.
+- Step 13 B1-B3 (report `milestones/m1/04a/M1_04A_CYCLE13_2026-10-27.md`, prototype not frozen, `VERSION` unchanged):
+  B1 `SUBHEADING_STYLED_MAX` (1000): in a corroborated scope (two header-category subheading runs) a body-text
+  subheading may be longer than `SUBHEADING_MAX` (`subheading_candidate(p, long=True)`); B2 `labelled_first_items`
+  (`LABELLED_FIRST`, evidence `labelled_first`): «<one or two words>: 1. …» right before «2. …» (or «1)»/«2)») takes
+  marker 1; `article_notes` still opens an article's notes on such «Примечания: 1. …» (attempt `s13-b2` cost KoAP 5
+  on JSON v1); B3 `SIGNATURE_CAPTION`/`signature_caption`: «(подпись)», «(наименование должности», «(инициалы …»,
+  «М.П.» open the requisite block after the last marker unless quoted, and `SIGNER` takes «(Генеральный) Директор»
+  (attempt `…-step13-b3` also took «(фамилия, имя …)» and quoted lines: JSON v2 two resolutions -1/-3). Final
+  `…-step13-b3-r2`: 25330/25475, batch 12 1779/1782, FSB-641 625/625, orders 9430/9542, no drops; the family gate
+  reports pp-262-2017 100 -> 101 (B2 gain, owner decision pending); JSON `s13-b3-r2` equal to v11 per act.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
