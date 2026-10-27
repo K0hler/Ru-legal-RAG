@@ -2063,6 +2063,30 @@ def test_labelled_first_item_opens_the_list():
     assert (got["1.4"], got["1.5"]) == ("A/ст15.27", "A/ст15.27")
 
 
+@pytest.mark.parametrize("captions", [
+    ["(наименование должности", "руководителя юридического лица)", "(подпись)", "(инициалы, фамилия)", "М.П."],
+    ["(подпись)", "(инициалы, фамилия индивидуального предпринимателя)", "М.П. (при наличии)"],
+])
+def test_form_signature_captions_open_the_requisite_block(captions):
+    """Step 13 B3: the captions under a sample form's signature lines after its last point belong to the form, not
+    to the last point; «Директор» over «А.Бортников» after the order's last point opens the order's requisites.
+    Negatives: a field caption «(фамилия, имя, отчество …)» stays with the point; a quoted form's «М.П.» does not
+    end the amending quotation's point."""
+    form = [[("Text", "1. Утвердить форму заявления."), ("Text", "2. Признать утратившим силу приказ."),
+             ("Text", "Директор"), ("Text", "А.Бортников")],
+            [("Text", "Приложение № 1\nк приказу Министерства", 1000), ("Title", "ЗАЯВЛЕНИЕ"),
+             ("Text", "1. Копии документов согласно описи."), ("Text", "2. Опись прилагаемых документов."),
+             *[("Text", c) for c in captions]]]
+    got = owners(S.build(extraction(form)))
+    assert (got["1.2"], got["1.3"]) == ("A", "A")
+    assert [got[f"2.{k}"] for k in range(4, 4 + len(captions))] == ["A/AN1"] * len(captions)
+    form[1][4:] = [("Text", "(фамилия, имя, отчество (при наличии)"), ("Text", "серия ____ № ____")]
+    assert owners(S.build(extraction(form)))["2.4"] == "A/AN1/2"
+    quoted = [[("Title", "ПОСТАНОВЛЕНИЕ"), ("Text", "1. Внести в Правила изменение, изложив форму в редакции:"),
+               ("Text", "\"Руководитель организации ______ (подпись)"), ("Text", "М.П. (при наличии)\".")]]
+    assert owners(S.build(extraction(quoted)))["1.3"] == "A/1"     # the quotation runs to the end of the act
+
+
 def test_quoted_list_number_does_not_close_its_own_quotation():
     """Cycle 9 B3: a quoted article whose own list reaches «5)» and goes on «6)» stays quoted although the
     introducing point is «5)»: «6)» continues the quotation's list, not the introducing one. After the closing

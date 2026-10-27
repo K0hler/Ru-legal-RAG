@@ -521,8 +521,10 @@ REQUISITE_LINES = (
 )
 # signer title or agreement signature place («За Правительство ...», «От Правительства ...»): a short
 # unterminated line; «От Сторон» names both parties, not one signature place; step 12 B4: the signature place of a
-# sample form «Высшее должностное лицо субъекта Российской Федерации (уполномоченное им лицо)»
+# sample form «Высшее должностное лицо субъекта Российской Федерации (уполномоченное им лицо)»; step 13 B3: the head
+# of a federal service signs as «Директор» («Директор» / «А.Бортников»)
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
+                    r"|(?:Генеральный\s+)?Директор"
                     r"|Временно исполняющий обязанности|Главный государственный санитарный врач"
                     r"|(?:Высшее\s+должностное|Должностное)\s+лицо)\b"
                     r"|(?:За|От)\s+(?!Сторон(?![а-яё]))[А-ЯЁ][а-яё]+)")
@@ -533,6 +535,10 @@ SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
 # the signature heading of a form: «Подписи членов рабочей комиссии:», «Подпись руководителя:» (a few words, a colon)
 FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:$")
+# Step 13 B3: the captions under a form's signature lines — «(подпись)», «(наименование должности», «(инициалы,
+# фамилия)» — and the seal place «М.П.» («М.П. (при наличии)»). Not «(фамилия, имя, отчество)»: that captions a
+# field of the form («Я, ______,»), not its signature.
+SIGNATURE_CAPTION = re.compile(r"^\((?:подпись|наименование\s+должности|инициалы)|^М\.\s?П\.(?:\s|$)", re.IGNORECASE)
 
 
 PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
@@ -561,6 +567,10 @@ def page_mark(region: Region) -> bool:
 def barcode_like(text: str) -> bool:
     """A printed barcode number: one run of 12-14 digits or EAN-13 grouping «2 100039 06204 3»."""
     return bool(re.fullmatch(r"\d{12,14}|\d\s\d{6}\s\d{5}\s\d", text))
+
+
+def signature_caption(text: str) -> bool:
+    return bool(SIGNATURE_CAPTION.match(text)) and len(text) < 120
 
 
 def requisite_like(text: str) -> bool:
@@ -1515,9 +1525,13 @@ def build(extraction: dict) -> dict:
         # opens it only by its text, not by its position («X», «Компьютер /Н.Н./…» sit at the right edge)
         # cycle 11 B2: a paragraph of an amending quotation («(форма)» of a quoted form) opens no block by its
         # position either; by its text (a closing rule «____» after a quotation whose quote mark was lost) it still does
+        # step 13 B3: a form's signature caption («(подпись)», «М.П.») opens it, but not inside an amending quotation
+        # (a quoted form ends «М.П. (при наличии)".»)
         block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
                       and PAGE_MARK_EVIDENCE not in body[k].evidence and not body[k].text[0].islower()
                       and (requisite_like(body[k].text)
+                           or (signature_caption(body[k].text)
+                               and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence))
                            or (signature_like(body[k].first) and id(body[k]) not in framed
                                and body[k].first.category not in NOISE_CATEGORIES
                                and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)))), None)
