@@ -75,6 +75,11 @@
   (attempt `…-step13-b3` also took «(фамилия, имя …)» and quoted lines: JSON v2 two resolutions -1/-3). Final
   `…-step13-b3-r2`: 25330/25475, batch 12 1779/1782, FSB-641 625/625, orders 9430/9542, no drops; the family gate
   reports pp-262-2017 100 -> 101 (B2 gain, owner decision pending); JSON `s13-b3-r2` equal to v11 per act.
+- Step 13 freeze (owner 27.10.2026: the pp-262 gain is accepted): П13 = v12 `ocr-logical-structure/12-experiment`
+  (sha256 c3789931…, LF) in `data/m1/m1-04a/experiments/20261027-prototype-v12-freeze/`; regression
+  `20261027-dev-regression-v12` 25330/25475 (errors equal to `…-step13-b3-r2`; the family gate's only change is the
+  accepted pp-262-2017, so its exit 1 is expected); JSON v1/v2 `v12-results.json` equal to v11 per act. Measured on
+  scan batch 13.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
