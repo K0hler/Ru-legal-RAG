@@ -1389,8 +1389,14 @@ def test_catalog_records_batch_08_measured_then_development():
 
 def test_catalog_records_batch_12_checked_then_rework():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[-1] == "batch-12" and len(catalog.POOL_BATCHES) == 12
+    assert catalog.POOL_BATCHES[11] == "batch-12"
     history = catalog.POOL_STATUS["batch-12"]  # written only after the check
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261027-batch-12-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_12_2026-10-27.md"
+
+
+def test_catalog_lists_batch_13_before_its_check():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES[-1] == "batch-13" and len(catalog.POOL_BATCHES) == 13
+    assert "batch-13" not in catalog.POOL_STATUS  # written only after the check
