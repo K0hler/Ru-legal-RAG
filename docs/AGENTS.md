@@ -422,6 +422,8 @@
   «Приложение № 7 к Правилам» opening an annex: 477 transfers). prikaz-minkultury-2782 refilled after an OCR timeout
   (`failures/`, `selection-refill-01.json`, `index-superseded-11-acts.json`). `POOL_STATUS` has batch-10. Codex jobs:
   `.superpowers/sdd/2026-10-26-m1-04a-pool-batch-10/`.
+  Owner decisions 26.10.2026 (protocol §9): decrees ready by §7 (candidate v8), batch 10 has no new class (counter 1 of 3),
+  resolutions not ready; cycle 11 starts with pp-728 (amending quotations in the attached «Изменения»).
 - Cycle 4 A1 (owner decision 23.10.2026, convention v2 §6; old §6-8 renumbered 7-9): opt-in `--attached-ordinal`
   (evaluator, `rescore`, classifier via the run summary) renames each top-level non-`A` scope (`S`, `S<k>`, `A/AN`,
   `A/AN<n>`, after the single-document/single-annex equivalences) to `S`, `S2`... by first appearance in region
