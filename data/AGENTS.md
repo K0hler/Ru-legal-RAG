@@ -168,6 +168,12 @@
   `experiments/20261027-batch-13-first-pass/` (freeze 7ccd89d7…, v12 = П13 + v11 = П12, git_head 34358b4,
   `ordinal_single_annex` on), run once 18:28 UTC 27.10; never re-run. Pass the 11 measured slugs explicitly.
 
+- IPS tree coverage (28.10.2026): `m1/m1-04a/experiments/20261028-ips-tree-coverage/` — `frame/<type>.json` (full
+  search lists of 32 types, 252,381 acts), `sample.json` (207dbc7a…, seed 20261028, 99 strata, 4190 acts),
+  `screened/<nd>.json` (one record per act; 149 from the 25-26.10 corpus screens, `source` says which),
+  `estimate.json` (84e04321…), `coverage.md` (64151e7a…), `requests.jsonl` (9401, 0 errors); about 151 MB, local only.
+  Write-once: `estimate` refuses to overwrite; a rerun goes to a new dated folder.
+
 - Scan batch 11 (27.10.2026): `m1/m1-04a/documents/pool/batch-11/selection.json` (profile `batch-11`, seed 20261031, code
   b537d37); ukaz-1615-2011 is ZIP-only on publication.pravo.gov.ru -> `failures/0001201112140012-*.json`, refill 01
   (bd772553…) -> ukaz-137-2025. OCR `experiments/20261027-batch-11-ocr/summary.json` (11/11, replays equal). Gold 7

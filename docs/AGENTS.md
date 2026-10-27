@@ -98,6 +98,11 @@
   resumable, reuses the 25-26.10 corpus screens), `estimate` (Wilson per stratum, type share weighted by exact
   stratum sizes, Agresti-Coull variance). Uses the `acquire_m1_04a_json_corpus` client (1.1 s pause). Output
   `data/m1/m1-04a/experiments/20261028-ips-tree-coverage/`.
+  Result (`milestones/m1/04a/M1_04A_IPS_TREE_COVERAGE_2026-10-28.md`): 252,381 acts listed (equals the per-type
+  counters), 99 strata, 4190 screened, 9401 requests, 0 errors; 25.9% (24.5-27.3%) with a tree, 2020s 76.3%,
+  1990s 6.0%, 2000s 9.1%, 2010s 13.1%. `has_text` (actual edition `hascontent`) equals `nodes > 0` in all 4190:
+  IPS gives no text without a tree. Zero trees: Constitutional Court acts, treaties/agreements/conventions, appeals,
+  statements, other organs of the 1990s. Measurement of the source only; not a prototype check.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
