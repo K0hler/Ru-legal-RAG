@@ -12,7 +12,8 @@
   - old names stay where they are (old reports, `experiments/<date>-prototype-v<k>-freeze/`, `VERSION =
     "ocr-logical-structure/<k>-experiment"`, `cycle` in file names): П8 = v7, П9 = v8, П10 = v9, П11 = v10 (frozen
     27.10 in `20261027-prototype-v10-freeze/`). Earlier versions (`code-final`, v1-v6.1) have no П-name. When you name
-    a frozen copy or data folder, give both (`П11 (v10)`) until the owner approves renaming the folders.
+    a frozen copy or data folder, give both (`П11 (v10)`). Owner decision 27.10.2026: folders, file names and the
+    code's `VERSION` label are **not** renamed — the old->new table is enough; do not propose renaming again.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

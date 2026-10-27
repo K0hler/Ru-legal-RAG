@@ -9,7 +9,7 @@
   moved (pinned paths); `m1/m1-04a/LEGACY.md` maps it.
 
 - M1-04A naming (owner decision 27.10.2026, full rule in `docs/AGENTS.md`): step N -> prototype П<N> -> scan batch N.
-  Data paths keep the old names and are not renamed without an owner decision: `experiments/<date>-prototype-v<k>-freeze/`
+  Data paths keep the old names (owner decision 27.10.2026: never rename them): `experiments/<date>-prototype-v<k>-freeze/`
   holds П<k+1> from v7 on (v7 = П8, v8 = П9, v9 = П10, v10 = П11); `documents/pool/batch-NN` = «сканы, партия N»;
   `json-corpus/20261025-v1` = «официальные деревья от 25.10», `json-corpus/20261026-v2` = «деревья от 26.10».
 
