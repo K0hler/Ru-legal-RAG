@@ -1126,8 +1126,9 @@ def test_text_after_a_numbered_point_with_its_own_text_stays_in_the_point():
     pages = form_with_numbered_lines(("Text", "1. __________"), ("Text", "2. Координаты определяются в системе МСК."))
     got = owners(S.build(extraction(pages)))
     assert got["3.4"] == "S/AN1/1" and got["3.5"] == "S/AN1/2"
-    assert [got[f"3.{k}"] for k in range(6, 11)] == ["S/AN1/2"] * 5
-    assert [got[f"4.{k}"] for k in range(3)] == ["S/AN1/2"] * 3
+    assert [got[f"3.{k}"] for k in range(6, 10)] == ["S/AN1/2"] * 4
+    # step 13 B3: the stamp «М.П.» opens the form's requisite block; what follows it belongs to the form
+    assert got["3.10"] == "S/AN1" and [got[f"4.{k}"] for k in range(3)] == ["S/AN1"] * 3
 
 
 GEO_TABLE = ("Table", "<table><tr><th>Номера точек</th><th>Северная широта *</th><th>Восточная долгота**</th></tr>"
