@@ -836,6 +836,9 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
 SUBHEADING_MAX = 200  # a subheading printed as body text
 SUBHEADING_HEADER_MAX = 500  # with OCR heading evidence (Section-header/Title): regulations print ~450
 SUBHEADING_CORROBORATION = 2  # body-text subheadings need this many header-category ones in the scope
+# Step 13 B1: in a corroborated scope a body-text subheading may be long (an administrative regulation's standard
+# rubric «Показатели доступности и качества государственной услуги, в том числе …» runs to ~900 characters)
+SUBHEADING_STYLED_MAX = 1000
 HEADING_CATEGORIES = {"Section-header", "Title"}
 # A figure/table/form caption by its text: «Схема 2», «Рисунок 1 - Знак …», «Рис. 3», «Таблица 3», «Форма N 2».
 FIGURE_CAPTION = re.compile(r"^(?:Схема|Рисунок|Рис\.|Таблица|Форма|Диаграмма|График)\s*(?:№|N)?\s*\d")
@@ -874,14 +877,14 @@ def heading_evidence(p: Paragraph) -> bool:
     return p.first.category in HEADING_CATEGORIES
 
 
-def subheading_candidate(p: Paragraph) -> bool:
+def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     """An unmarked capitalised line that is not a sentence: no final «.;:!?», no broken tail («,»,
     hyphen). Not a figure/table/form caption (OCR category Caption or the text «Схема 1», «Рисунок
     1 - …», «Таблица 2», «Форма N 3»), a labelled value («Адрес: …»), a requisite or signature line,
-    or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text,
-    SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
+    or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text
+    (SUBHEADING_STYLED_MAX with ``long``), SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
     text = p.text
-    limit = SUBHEADING_HEADER_MAX if heading_evidence(p) else SUBHEADING_MAX
+    limit = SUBHEADING_HEADER_MAX if heading_evidence(p) else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
     return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
             and bool(text) and text[0].isupper()
             and len(text) <= limit and not terminated(text) and final_char(text) not in ",-–—"
@@ -899,18 +902,19 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
     directly in the scope root) such a line stays with the open point: there it is as likely a
     sentence cut by OCR. A run printed as body text (no Section-header/Title region) also needs
     corroboration: at least SUBHEADING_CORROBORATION such runs with heading evidence in the same
-    scope (the document's subheading style); otherwise an OCR-cut sentence would qualify.
+    scope (the document's subheading style); otherwise an OCR-cut sentence would qualify. Step 13 B1: such a
+    corroborated body-text run may also be longer than SUBHEADING_MAX, up to SUBHEADING_STYLED_MAX.
     Returns the changed body indices."""
     index = {id(p): k for k, p in enumerate(body)}
     seq = [p for p in items if p.flow == "body"]  # a table or picture in between blocks the rule
     runs = []  # (run paragraphs, parent stack)
     k = 0
     while k < len(seq):
-        if id(seq[k]) not in index or not subheading_candidate(seq[k]):
+        if id(seq[k]) not in index or not subheading_candidate(seq[k], long=True):
             k += 1
             continue
         end = k
-        while end + 1 < len(seq) and id(seq[end + 1]) in index and subheading_candidate(seq[end + 1]):
+        while end + 1 < len(seq) and id(seq[end + 1]) in index and subheading_candidate(seq[end + 1], long=True):
             end += 1
         prev = seq[k - 1] if k else None
         nxt = seq[end + 1] if end + 1 < len(seq) else None
@@ -923,7 +927,8 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
     styled = sum(any(heading_evidence(q) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
     changed: set[int] = set()
     for run, parent in runs:
-        if not styled and not any(heading_evidence(q) for q in run):
+        if not styled and (not any(heading_evidence(q) for q in run)
+                           or not all(subheading_candidate(q) for q in run)):
             continue
         for q in run:
             j = index[id(q)]

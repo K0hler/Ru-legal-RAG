@@ -1302,7 +1302,8 @@ def test_unnumbered_subheading_inside_section_belongs_to_the_section():
     assert got["2.12"] == "S/II" and got["2.13"] == "S/II/5"        # a long subheading
     assert got["2.16"] == "S/II" and got["2.17"] == "S/II"          # two subheading lines in a row
     assert got["2.18"] == "S/II/6"
-    # a body-text line over 200 characters is not a subheading without heading evidence
+    # a body-text line over 200 characters is not a subheading without heading evidence (here the scope has only
+    # one header-category subheading run before a point, so it is not corroborated; step 13 B1 needs both)
     pages[1][12] = ("Text", long_heading)
     assert owners(S.build(extraction(pages)))["2.12"] == "S/II/4"
     # without two header-category subheadings in the scope a body-text line stays with its point
@@ -1427,6 +1428,27 @@ def test_figure_and_form_captions_by_text_are_not_subheadings(line):
                                                       ("Text", "5. Следующий пункт.")))))
     assert got["2.2"] == "S/I/1" and got["2.4"] == "S/I/2"     # the style is there
     assert got["2.8"] == "S/I/4", line
+
+
+def test_long_body_text_subheading_in_a_corroborated_scope():
+    """Step 13 B1: with the subheading style established (two Section-header subheadings) a body-text rubric of
+    an administrative regulation longer than 200 characters (FSB regulation: 206-892) is a subheading too, up to
+    SUBHEADING_STYLED_MAX; longer, or without the style, it stays with the open point."""
+    rubric = ("Показатели доступности и качества государственной услуги, в том числе количество взаимодействий "
+              "заявителя с должностными лицами при предоставлении государственной услуги и их продолжительность, "
+              "возможность получения информации о ходе предоставления государственной услуги, в том числе с "
+              "использованием информационно-коммуникационных технологий")
+    assert 200 < len(rubric) <= S.SUBHEADING_STYLED_MAX
+    body = (("Text", "4. Помещения оборудуются пандусами."), ("Text", rubric),
+            ("Text", "5. Показателями доступности являются:"))
+    got = owners(S.build(extraction(styled_regulation(*body))))
+    assert got["2.8"] == "S/I" and got["2.9"] == "S/I/5"
+    too_long = rubric + ", " + "в том числе с учетом особенностей предоставления услуги " * 12 + "в электронной форме"
+    assert len(too_long) > S.SUBHEADING_STYLED_MAX
+    got = owners(S.build(extraction(styled_regulation(body[0], ("Text", too_long), body[2]))))
+    assert got["2.8"] == "S/I/4"
+    got = owners(S.build(extraction(regulation(("Text", "1. Регламент устанавливает порядок."), *body))))
+    assert got["2.3"] == "S/I/4"                                    # no style in the scope
 
 
 def test_cut_sentence_and_labelled_line_stay_with_the_point():
