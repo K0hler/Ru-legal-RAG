@@ -1287,6 +1287,17 @@ def test_batch_10_profile_shifts_quotas_to_ministry_orders():
     assert b9["quotas"] == P.BATCH4_QUOTAS
 
 
+def test_batch_11_profile_checks_resolutions():
+    # Owner go-ahead 27.10.2026: batch 11 checks П11 (step 11: resolutions) with 4 resolutions, 3 ministry orders,
+    # 2 laws, a decree and a government order; everything else as batch 10, excluding batches 1-10.
+    b10, b11 = P.PROFILES["batch-10"], P.PROFILES["batch-11"]
+    assert b11["quotas"] == {"federal_law": 2, "presidential_decree": 1, "government_resolution": 4,
+                             "government_order": 1, "ministry_order": 3}
+    assert {k: v for k, v in b11.items() if k not in ("prior_batches", "quotas")} == {
+        k: v for k, v in b10.items() if k not in ("prior_batches", "quotas")}
+    assert b11["prior_batches"] == b10["prior_batches"] + ("batch-10",)
+
+
 def test_frozen_batch_06_selection_reproduces_from_its_feed_cache():
     import json
 

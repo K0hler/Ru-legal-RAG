@@ -87,6 +87,14 @@ BATCH10_QUOTAS = {
     "government_order": 1,
     "ministry_order": 5,
 }
+# Batch 11 (27.10.2026): 4 resolutions to check П11 (step 11 worked on amending quotations in resolutions).
+BATCH11_QUOTAS = {
+    "federal_law": 2,
+    "presidential_decree": 1,
+    "government_resolution": 4,
+    "government_order": 1,
+    "ministry_order": 3,
+}
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
 BATCH2_LONG_MIN, LONG_PAGES = 4, 20
@@ -871,6 +879,12 @@ PROFILES = {
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
                                    "batch-07", "batch-08", "batch-09"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Batch 11: batch-10 settings with BATCH11_QUOTAS, excluding batches 1-10.
+    "batch-11": {"quotas": BATCH11_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09", "batch-10"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
