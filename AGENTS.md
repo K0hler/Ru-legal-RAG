@@ -19,6 +19,10 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
 - Keep implemented behavior, target architecture, research findings, and hypotheses explicitly separate.
 - Keep the repository root limited to project-wide entry points and configuration.
 - Do not use the `law-housing-utilities-law` skill in this project; rely on this repository's sources and instructions instead.
+- M1-04A naming (owner decision 27.10.2026): one number for step, prototype and check — step N freezes prototype
+  П<N>, checked on scan batch N. Write owner-facing text with «сканы», «официальные деревья от <дата>», «проверка»,
+  «доработка»; never introduce new words for these. Glossary and the old→new name table: section 0 and 3 of
+  [`docs/milestones/m1/04a/M1_04A_MAP_2026-10-25.md`](docs/milestones/m1/04a/M1_04A_MAP_2026-10-25.md).
 
 ## Development workflow
 

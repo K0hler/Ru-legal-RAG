@@ -5,6 +5,22 @@
   facts, project implications and proposed tests separate; the note grants no
   corpus admission, implemented capability or milestone-scope change.
 
+- **M1-04A naming (owner decision 27.10.2026; the owner was confused by versions, pools, cycles, corpora and
+  batches whose numbers differed by one). Follow it in every new report, plan and message:**
+  - one number: **step N** (old «цикл N») freezes **prototype П<N>**, which is checked on **scan batch N**. The next
+    step after П11 is step 12 -> П12 -> batch 12. Never number a prototype differently from its step.
+  - old names stay where they are (old reports, `experiments/<date>-prototype-v<k>-freeze/`, `VERSION =
+    "ocr-logical-structure/<k>-experiment"`, `cycle` in file names): П8 = v7, П9 = v8, П10 = v9, П11 = v10 (frozen
+    27.10 in `20261027-prototype-v10-freeze/`). Earlier versions (`code-final`, v1-v6.1) have no П-name. When you name
+    a frozen copy or data folder, give both (`П11 (v10)`) until the owner approves renaming the folders.
+  - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
+    от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
+    `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen
+    prototype on unseen data with gold frozen first — the only progress) and **доработка** (old «разработка»,
+    «регрессия», «dev»). Plain words instead of internals: «ничего не сломалось» (no document below the baseline),
+    «другие виды актов не затронуты» (family gate), «текст ушёл в чужой документ» (`cross_scope_v2`).
+  - the glossary, the old->new table and «где мы сейчас» live in `milestones/m1/04a/M1_04A_MAP_2026-10-25.md`
+    (sections 0, 2, 3); update that map after every step and check, in these words.
 - M1-04A source-pool fixes are recorded in
   `milestones/m1/04a/M1_04A_BUG_SOURCE_ACQUISITION_2026-10-22.md` ("Результат").
   Future selection schema /3 uses `publication-pravo-pool/2`, retains per-item
