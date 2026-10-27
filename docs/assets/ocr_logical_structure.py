@@ -209,6 +209,8 @@ DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[А-ЯЁA
 # Cycle 10 B2: «к форме налоговой декларации», «к порядку заполнения …» — a document named by a lowercase noun (not the
 # act itself, which ACT_REFERENT catches first)
 LOWERCASE_DOCUMENT_REFERENT = re.compile(r"^к\s+(?:настоящ[а-яё]+\s+)?[а-яё]{3,}")
+# Step 12 B3: «…, утвержденному приказом Министерства …»: the caption names its document by the act approving it
+APPROVED_DOCUMENT = re.compile(r"утвержденн[а-яё]+\s+(?:приказом|постановлением|распоряжением|указом|решением)")
 
 
 # The kind of the act itself, from a header line («ПОСТАНОВЛЕНИЕ», «ПРИКАЗ», «ФЕДЕРАЛЬНЫЙ ЗАКОН») or
@@ -277,10 +279,14 @@ def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Mat
     # title: 373 characters in development); sentences never start with it. Cycle 9: so is the title-case
     # «Приложение № N к Административному регламенту по предоставлению …, утвержденному приказом … № 494»
     # (328 characters): a numbered caption naming a capitalised document, never a sentence (no final dot).
-    long_allowed = text.startswith("ПРИЛОЖЕНИЕ") or DOCUMENT_REFERENT.match(reference)
+    # Step 12 B3: «Приложение № 2 к порядку представления …, утвержденному приказом … № 791» (OCR Text): a numbered
+    # caption naming a lowercase document approved by an act, never a sentence
+    approved_document = bool(m.group("sign") and LOWERCASE_DOCUMENT_REFERENT.match(reference)
+                             and APPROVED_DOCUMENT.search(text))
+    long_allowed = text.startswith("ПРИЛОЖЕНИЕ") or DOCUMENT_REFERENT.match(reference) or approved_document
     limit = CAPTION_UPPER_MAX if m.group("sign") and long_allowed else CAPTION_BLOCK_MAX
     if len(text) < limit and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
-                              or DOCUMENT_REFERENT.match(reference)):
+                              or DOCUMENT_REFERENT.match(reference) or approved_document):
         return m
     return None
 
@@ -514,9 +520,11 @@ REQUISITE_LINES = (
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )
 # signer title or agreement signature place («За Правительство ...», «От Правительства ...»): a short
-# unterminated line; «От Сторон» names both parties, not one signature place
+# unterminated line; «От Сторон» names both parties, not one signature place; step 12 B4: the signature place of a
+# sample form «Высшее должностное лицо субъекта Российской Федерации (уполномоченное им лицо)»
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
-                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач)\b"
+                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач"
+                    r"|(?:Высшее\s+должностное|Должностное)\s+лицо)\b"
                     r"|(?:За|От)\s+(?!Сторон(?![а-яё]))[А-ЯЁ][а-яё]+)")
 # the heading of an agreement's signature block: «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон»
 SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|подписи|(?:банковские\s+)?реквизиты)"
@@ -531,15 +539,23 @@ PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
 # Cycle 10 B1: a typist's mark «Компьютер /Н.Н./При-К7552-3», «21.08.2024 15:44 kompburo /Н.И./П-К7552»: a word,
 # initials between slashes and a job code; OCR reads the word differently on every page, so it is not running noise.
 PRINT_MARK = re.compile(r"^(?:[\d.:\s]+)?[\w.]+\s*/\s*[А-ЯЁA-Z]\.\s?(?:[А-ЯЁA-Z]\.)?\s*/\s*[\w.-]*$")
+# Step 12 B1: OCR reads such a mark beyond recognition («1. Коприво ИНМ / Прип-ГВ108-0», «Г. конфликт /ИН И /Прип.
+# Г0198-3»); what survives is the job code at the end, after a slash: a short word, maybe a dot or hyphen, letters and
+# digits, maybe a sheet number («Прил-ГВ198-3», «Прим. 18198-7», «П-К7552», «Прип-СВ199 5»). Without the slash
+# («И.И. Прын-ТВ108-1», «(Прим-Г8198-2)») the code needs its hyphen and three digits («Стр. 12» is no job code).
+JOB_CODE = re.compile(r"/[^/]*?[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}\.?\s*-?\s*[А-ЯЁA-Z0-9]{0,3}\s?\d{2,5}(?:[-\s]\d)?$"
+                      r"|(?:^|[\s(])[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}-[А-ЯЁA-Z0-9]{0,3}\d{3,5}(?:-\d)?\)?$")
 PAGE_MARK_EVIDENCE = {"page_mark": "file name printed in a page header/footer"}
 BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
+PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 
 
 def page_mark(region: Region) -> bool:
     """A service file code printed in a page header/footer («200716A9.doc») or a typist's mark
     («Компьютер /Н.Н./При-К7552-3»), not repeated often enough to be running noise: a mark of the page,
     never text of the unit it happens to follow."""
-    return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text))
+    return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text)
+                                                        or (len(region.text) <= 100 and JOB_CODE.search(region.text)))
 
 
 def barcode_like(text: str) -> bool:
@@ -1376,8 +1392,10 @@ def build(extraction: dict) -> dict:
             if caption_here else None
         if m:
             p.kind = "annex"
+            # step 12 B2: a bare «Приложение № 2» (or one naming the act) heads the next approved document as well
+            heads_approved = not approved_opened or not m.group("ref") or annex_to_act(m.group("ref"), act_kind)
             if nxt is not None and not running_caption(nxt) and (
-                    (APPROVAL.match(nxt.text) and not approved_opened) or is_project_caption(nxt.text)):
+                    (APPROVAL.match(nxt.text) and heads_approved) or is_project_caption(nxt.text)):
                 # "Приложение / УТВЕРЖДЕНЫ ..." on the approved text, or "Приложение / Проект"
                 # on an attached draft: part of its approval caption
                 p.kind = "approval"
@@ -1424,6 +1442,10 @@ def build(extraction: dict) -> dict:
         list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
         for p in body:
             p.marker = parse_marker(p.text, p.first.category)
+            if p.first.category in NOISE_CATEGORIES and p.marker.kind != "none":
+                # step 12 B1: a page header/footer is outside the text flow and never opens a unit («1. Коприво …»)
+                p.marker = Marker("none")
+                p.evidence.append(dict(PAGE_BAND_EVIDENCE))
             if toc_line(p.text):
                 p.marker = Marker("none")
                 p.kind = "text"

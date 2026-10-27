@@ -2215,3 +2215,91 @@ def test_quotation_opened_by_its_own_letter_keeps_its_list_and_notes():
     got = owners(S.build(extraction(pages)))
     assert [got[f"1.{k}"] for k in range(6, 15)] == ["S/4/б"] * 9
     assert got["1.15"] == "S/4/в"
+
+
+def test_typist_mark_in_a_footer_opens_no_point_and_belongs_to_the_scope_root():
+    """Step 12 B1: OCR reads the typist's mark «Г:\копир\Н.И.\Прил-ГВ198-3» differently on every page («1. Коприво
+    ИНМ / Прип-ГВ108-0», «Г. конфликт /ИН И /Прип. Г0198-3»): a page header/footer never opens a numbered point,
+    and a header/footer ending in a job code («Прил-ГВ198-3», «Прим. 18198-7») after a slash is a page mark of the
+    scope root. The tables of point «4.» after the page break stay in «4.». A caption «… № 553/15» is no job code."""
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить формат."), ("Text", "Руководитель А.А. Иванов", 1200)],
+             [("Text", "Приложение № 1\nк приказу ФНС России", 1000), ("Section-header", "II. Состав файла"),
+              ("Text", "3. Файл содержит элементы."), ("Text", "4. Описание элементов приведено в таблицах."),
+              ("Table", "<table><tr><td>Файл</td></tr></table>"),
+              ("Page-footer", "1. Коприво ИНМ / Прип-ГВ108-0", 1500)],
+             [("Table", "<table><tr><td>Документ</td></tr></table>"), ("Caption", "Таблица 4.2"),
+              ("Table", "<table><tr><td>Сведения</td></tr></table>"),
+              ("Page-footer", "Г. конфликт /ИН И /Прип. Г0198-3", 1500)],
+             [("Table", "<table><tr><td>Подписант</td></tr></table>"),
+              ("Page-footer", "03.03.2015 13:48 1. копр. № 14/11/При-18198-5", 1500)]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == got["3.0"] == got["3.1"] == got["3.2"] == got["4.0"] == "A/AN1/II/4"
+    assert got["2.5"] == got["3.3"] == got["4.1"] == "A/AN1"
+    for text in ("1. Конфиско НН И/Прим. 18198-7", "Компьютер/Н.П.Приш-К7552-3", "1. КОМПЬЮТНО/МИ/ПРИП-Г0198-7",
+                 "11.02.2015 13:41 В. Коприцкого И.И. Прын-ТВ108-1", "11.02.2015 12:52 t.kompburo@h.mj (Прим-Г8198-2)"):
+        assert S.page_mark(S.Region(0, 1, 0, "r", "Page-footer", [0, 0, 1, 1], [1, 1], text, text, []))
+    for text in ("Приложение № 1 к приказу ФАС России от 06.07.2015 № 553/15", "Руководитель Д.В. Егоров", "Стр. 12",
+                 "Приложение № 2 к приказу ФНС России № ЕД-7-20/957"):
+        assert not S.page_mark(S.Region(0, 1, 0, "r", "Page-header", [0, 0, 1, 1], [1, 1], text, text, []))
+
+
+def test_bare_annex_number_before_an_approval_caption_heads_the_next_approved_document():
+    """Step 12 B2: an order approving several formats heads each with «Приложение № N» (no reference) and
+    «УТВЕРЖДЕН приказом …». The bare caption belongs to the approved document it heads (`S2`), also after the
+    first one, not to the previous document as its annex (`S/AN2`). A caption naming another document («к
+    Формату …») before an approval caption stays an annex of the open document."""
+    approved = "УТВЕРЖДЕН\nприказом ФНС России\nот 24.03.2015 № ММВ-7-15/93@"
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форматы."), ("Text", "Руководитель А.А. Иванов", 1200)],
+             [("Text", "Приложение № 1", 1000), ("Text", approved, 1000), ("Section-header", "ФОРМАТ счета-фактуры"),
+              ("Text", "1. Формат описывает файл.")],
+             [("Text", "Приложение № 2", 1000), ("Text", approved, 1000), ("Section-header", "ФОРМАТ журнала"),
+              ("Text", "1. Формат описывает журнал.")]]
+    got = owners(S.build(extraction(pages)))
+    assert (got["2.0"], got["2.1"], got["2.3"]) == ("S", "S", "S/1")
+    assert (got["3.0"], got["3.1"], got["3.2"], got["3.3"]) == ("S2", "S2", "S2", "S2/1")
+    nested = pages[:2] + [[("Text", "Приложение № 1\nк Формату счета-фактуры", 1000),
+                           ("Text", "Сведения о файле.")]]
+    assert owners(S.build(extraction(nested)))["3.0"] == "S/AN1"
+
+
+def test_long_numbered_caption_naming_a_lowercase_approved_document_opens_its_annex():
+    """Step 12 B3: inside an act annex («Приложение № 2 к приказу», a Procedure) the samples are headed «Приложение
+    № 2 к порядку представления … заявки …, утвержденному приказом Министерства … № 791» (over 120 characters, OCR
+    Text, lowercase document noun). A numbered caption naming a lowercase document that it calls approved by an
+    act opens that document's annex (`A/AN2/AN2`) like a page-header caption does; its signature lines stay in it.
+    Without «№» or with a final dot it is no caption."""
+    procedure = ("к порядку представления субъектом Российской Федерации заявки на предоставление субсидии на "
+                 "очередной финансовый год и плановый период, утвержденному приказом Министерства труда и социальной "
+                 "защиты Российской Федерации от «24» февраля 2025 г. № 791")
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить порядок."), ("Text", "Министр А.А. Иванов", 1200)],
+             [("Page-header", "Приложение № 2\nк приказу Министерства труда", 1000), ("Section-header", "Порядок"),
+              ("Text", "1. Заявка представляется ежегодно."), ("Text", "2. К заявке прилагаются документы.")],
+             [("Page-header", f"Приложение № 1 {procedure}", 900), ("Section-header", "ПОЯСНИТЕЛЬНАЯ ЗАПИСКА"),
+              ("Text", "1. Цель субсидии:"), ("Text", "Высшее должностное лицо субъекта Российской Федерации")],
+             [("Text", f"Приложение № 2 {procedure}", 900), ("Text", "(Рекомендуемый образец)", 1100),
+              ("Section-header", "Финансово-экономическое обоснование"), ("Text", "1. Общая часть:"),
+              ("Text", "Высшее должностное лицо субъекта Российской Федерации")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["3.0"] == "A/AN2/AN1"
+    assert (got["4.0"], got["4.1"], got["4.2"], got["4.3"]) == ("A/AN2/AN2", "A/AN2/AN2", "A/AN2/AN2", "A/AN2/AN2/1")
+    for text in (f"Приложение 2 {procedure}", f"Приложение № 2 {procedure} заполняется заявителем."):
+        p = S.Paragraph("body", [S.Region(0, 1, 0, "r", "Text", [0, 0, 1, 1], [1, 1], text, text, [])])
+        assert S.annex_caption(p) is None
+
+
+def test_official_signature_place_after_a_forms_last_point_opens_its_requisite_block():
+    """Step 12 B4: a sample form ends «9. Дополнительная информация:» and then the signature place «Высшее
+    должностное лицо субъекта Российской Федерации (уполномоченное им лицо)», «(подпись)», «(расшифровка подписи)»,
+    the executor's name and phone: from the official's title on, the lines belong to the form root, not to «9.».
+    A terminated sentence about an official stays in the point."""
+    form = [("Page-header", "Приложение № 1\nк приказу Министерства труда", 1000), ("Section-header", "ЗАПИСКА"),
+            ("Text", "8. Сведения о проекте."), ("Text", "9. Дополнительная информация (при необходимости):"),
+            ("Text", "Высшее должностное лицо субъекта Российской Федерации (уполномоченное им лицо)"),
+            ("Text", "(подпись)", 800), ("Text", "(расшифровка подписи)", 1150),
+            ("Text", "Контактные телефоны: ______, адрес электронной почты: ______.")]
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму."), ("Text", "Министр А.А. Иванов", 1200)], form]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "A/AN1/9"
+    assert [got[f"2.{k}"] for k in range(4, 8)] == ["A/AN1"] * 4
+    sentence = form[:4] + [("Text", "Должностное лицо, ответственное за подготовку заявки, подписывает ее.")]
+    assert owners(S.build(extraction([pages[0], sentence])))["2.4"] == "A/AN1/9"
