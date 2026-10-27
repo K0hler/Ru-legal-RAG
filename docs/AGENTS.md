@@ -44,6 +44,14 @@
   `data/m1/m1-04a/experiments/20261027-prototype-v11-freeze/` (`code-v11.sha256` also pins
   `derive_m1_04a_gold_quoted.py`); regression `20261027-dev-regression-v11` 23542/23693 with the family gate (errors
   equal to `…-step12-b4`); JSON v1/v2 `v11-results.json` equal to `v10` per act. Measured on scan batch 12.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_12_2026-10-27.md`: scan batch 12, the check of П12 (v11; П11 = v10 identical region
+  by region, step-12 rules never fired): 1738/1782 (97.5%), orders 1313/1354. Evaluator gap (no owner decision yet):
+  `single_annex_documents`/`number_single_annex` work on raw paths before ordinal renaming, so `A/AN2/AN` (the only
+  annex of a document printed as an act annex) never equals gold `S2/AN1` (minekonomicheskogo-136, 12 regions,
+  counted as `cross_scope_v2`; 1750/1782 with it). Candidate new class: «6.Сообщение» (no space after the number,
+  fz-435 2 regions). prikaz-fsb-641-2020 (625 regions) annotated in 2 page-range parts. `POOL_STATUS` has batch-12.
+  Profile `batch-12` (`BATCH12_QUOTAS`: orders 5, resolutions 3, law, decree, government order 1 each; prior 01-11).
+  Codex jobs: `.superpowers/sdd/2026-10-27-m1-04a-pool-batch-12/`.
   - owner-facing words: **сканы** / **партия N** (old «пул», «проверочный пул», «стенд пула»), **официальные деревья
     от <дата>** (old «корпус JSON v1/v2», «проекция»: `json-corpus/20261025-v1` = «деревья от 25.10»,
     `…/20261026-v2` = «деревья от 26.10»), **проверка** (old «мера», «первый прогон», «holdout»: one run of a frozen

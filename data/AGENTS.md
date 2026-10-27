@@ -146,6 +146,13 @@
   `20261026-dev-regression-cycle9-<step>`.
 
 - Check-pool batch 9 (26.10.2026): `m1/m1-04a/documents/pool/batch-09/selection.json` (dffabeca…, profile `batch-09`,
+- Scan batch 12 (27.10.2026): `m1/m1-04a/documents/pool/batch-12/selection.json` (profile `batch-12`, seed 20261101, code
+  3297760, sha 66812fc2…); acquired 11/11 `new` then `unchanged`, no refill. OCR `experiments/20261027-batch-12-ocr/`
+  (11/11, replays equal, 6 unresolved grids, 1 rotation-retry page). Gold 7 Codex jobs (FSB-641 in 2 parts under
+  `gold/prikaz-fsb-641-2020/chunks/`), 1782 regions, frozen `experiments/20261027-batch-12-gold-freeze/` (1a705901…,
+  addendum bdd4d356…). Check `experiments/20261027-batch-12-first-pass/` (freeze be979e6f…, v11 = П12 + v10 = П11,
+  git_head a95aa1c), run once 13:01 UTC 27.10; never re-run. Not yet in the dev regression.
+
 - Scan batch 11 (27.10.2026): `m1/m1-04a/documents/pool/batch-11/selection.json` (profile `batch-11`, seed 20261031, code
   b537d37); ukaz-1615-2011 is ZIP-only on publication.pravo.gov.ru -> `failures/0001201112140012-*.json`, refill 01
   (bd772553…) -> ukaz-137-2025. OCR `experiments/20261027-batch-11-ocr/summary.json` (11/11, replays equal). Gold 7
