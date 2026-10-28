@@ -190,6 +190,12 @@
   SP 2.4.2.4283-26 (56 p.), SP 3.1/2.4.3598-20, SP 2.2.1.4111-25, law 16-FZ/2014 (24 p.), decree 258/2015 (awards),
   resolution 737/2019, government order 1838-r/2013 (title from IPS `description`), orders 220n/2017 and 728/2015;
   5 long acts, no soft fallbacks.
+  Acquired 12/12 `new` then `unchanged` (code 2e1a2c4 lists batch 15 in the catalog). OCR
+  `experiments/20261028-batch-15-ocr/` (summary.json 00763590…): 12/12 complete, replays match, no refill, so the
+  batch `index.json` (9d7e70b6…, 12 rows) was built once after OCR. 258 pages, 2812 regions, 151 tables (138 in
+  prikaz-mintruda-220-2017, 1 grid unresolved there), no rotation retries; 952 s of OCR (3.7 s/page). Do not start
+  dotsmocr before `run_m1_04a_ocr.ps1`: the runner starts it and refuses a busy GPU (first attempt, log kept in
+  the session scratchpad as gpu-busy, wrote nothing).
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
