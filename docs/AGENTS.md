@@ -140,6 +140,11 @@
   row cut out between the parts («3.»-«5.» after «2.», a subsidy calculation form) are rows too; the first marker that
   does not go on stops it. `…-step14-c4` (7b615357…): 32563/32711 (+5, pp-737-2019 144/144), nothing else changed;
   batch 15 2512/2513. JSON `s14-c4` equal to `s14-c2` per act.
+- Step 14 C5 (`page_mark`): a Page-footer line printed on exactly two pages («ФГОС ВО культурология -05») is a page
+  mark of the scope root (convention v2 §2) and opens no continuation; on three or more it is running noise as
+  before. `…-step14-c5` (9c99cdc9…): 32567/32711 (+4: prikaz-minobrazovaniya-1412-2015, also pp-1327-2019 +2 and
+  prikaz-minobrazovaniya-1126-2017 +1), nothing lower; batches 13/14/15 = 2424/2293/2512. JSON `s14-c5` equal to
+  `s14-c2` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

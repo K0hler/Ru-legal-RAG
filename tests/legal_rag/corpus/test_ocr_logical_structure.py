@@ -2505,3 +2505,20 @@ def test_rows_after_the_last_table_part_that_continue_the_row_numbers_are_annex_
     assert marked == ["1.", "2.", "3.", "4.", "5."]
     got = owners(S.build(extraction(program_with_table_annex(*rows[:5], ("Text", "1. Средства уточняются ежегодно.")))))
     assert got["3.8"] == "S/AN1/1"
+
+
+def test_footer_printed_on_two_pages_is_a_page_mark_of_the_scope_root():
+    # Step 14 C5 (batch 14): «ФГОС ВО культурология -05» in the footer of two pages is a page mark of the
+    # document (convention v2 §2), not text of point 2 it interrupts; the point still continues on the next page.
+    # A footer line printed once keeps the old reading.
+    def act(second_footer):
+        return [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить прилагаемый стандарт."),
+                 ("Text", "2. Признать утратившими силу:"), ("Text", "приказ от 25 января 2010 г. № 71 «Об утверждении"),
+                 ("Page-footer", "ФГОС ВО культурология -05")],
+                [("Text", "образовательного стандарта»;"), ("Text", "Министр Д.В. Ливанов", 1100),
+                 ("Page-footer", second_footer)]]
+    result = S.build(extraction(act("ФГОС ВО культурология -05")))
+    got = owners(result)
+    assert got["1.4"] == "A"
+    assert got["2.0"] == "A/2" and conts(result)["2.0"] is True
+    assert owners(S.build(extraction(act("Страница 2"))))["1.4"] == "A/2"

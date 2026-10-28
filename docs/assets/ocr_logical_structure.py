@@ -579,9 +579,11 @@ PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 def page_mark(region: Region) -> bool:
     """A service file code printed in a page header/footer («200716A9.doc») or a typist's mark
     («Компьютер /Н.Н./При-К7552-3»), not repeated often enough to be running noise: a mark of the page,
-    never text of the unit it happens to follow."""
+    never text of the unit it happens to follow. Step 14 C5: also a footer line printed on two pages («ФГОС ВО
+    культурология -05»; on three it is running noise)."""
     return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text)
-                                                        or (len(region.text) <= 100 and JOB_CODE.search(region.text)))
+                                                        or (len(region.text) <= 100 and JOB_CODE.search(region.text))
+                                                        or (region.category == "Page-footer" and region.repeats == 2))
 
 
 def barcode_like(text: str) -> bool:
