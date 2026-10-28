@@ -118,6 +118,17 @@ BATCH14_QUOTAS = {
     "government_order": 1,
     "ministry_order": 2,
 }
+# Scan batch 15 (owner go-ahead 28.10.2026): the second SanPiN/SP batch (3 + 3) and 2011-2019 acts without an IPS
+# tree; one resolution less than batch 14 (resolutions are ready by section 7).
+BATCH15_QUOTAS = {
+    "sanpin_2010s": 3,
+    "sanpin_2020s": 3,
+    "federal_law": 1,
+    "presidential_decree": 1,
+    "government_resolution": 1,
+    "government_order": 1,
+    "ministry_order": 2,
+}
 SANPIN_TYPES = ("sanpin_2010s", "sanpin_2020s")
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
@@ -152,6 +163,8 @@ REASONS = (
     "not_in_ips",
     "ips_identity_ambiguous",
     "tree_lookup_error",
+    # Batch 15: an empty feed title, so the amending filter cannot read it (rp-774-2017 in batch 14).
+    "title_missing",
 )
 # Only metadata may reach a selected record.
 METADATA_FIELDS = (
@@ -255,11 +268,14 @@ def ordered(candidates, seed):
     return sorted(candidates, key=lambda row: order_key(seed, row["eo_number"]))
 
 
-def cheap_reason(row, already_used=frozenset(), pages_range=(PAGES_MIN, PAGES_MAX), code_pages_max=None):
+def cheap_reason(row, already_used=frozenset(), pages_range=(PAGES_MIN, PAGES_MAX), code_pages_max=None,
+                 require_title=False):
     """Rejections decidable from feed metadata alone. ``code_pages_max`` raises the page
-    ceiling for codes only."""
+    ceiling for codes only; ``require_title`` rejects an empty feed title."""
     if row["eo_number"] in already_used:
         return "already_used"
+    if require_title and not _title(row.get("title", "")):
+        return "title_missing"
     if is_amending(row.get("title", "")):
         return "amending_act"
     upper = code_pages_max if code_pages_max and row.get("act_type") == "code" else pages_range[1]
@@ -370,7 +386,8 @@ class SoftPreferences:
 
 def select_pool(candidates, quotas, seed, *, require_single_edition=True, already_used=frozenset(),
                 pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
-                preferred_pages_min=None, one_per_issuer_day=False, require_no_ips_tree=False):
+                preferred_pages_min=None, one_per_issuer_day=False, require_no_ips_tree=False,
+                require_title=False):
     """Seeded selection. With long_min, a first pass fills the share of acts with at
     least long_pages pages, then a second pass fills the remaining quotas. Soft
     preferences (off by default) run those passes first with, then without them.
@@ -378,7 +395,7 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
     rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
     reasons = {}
     for row in rows:
-        reason = cheap_reason(row, already_used, pages_range, code_pages_max)
+        reason = cheap_reason(row, already_used, pages_range, code_pages_max, require_title)
         if reason is None and require_single_edition:
             reason = official_reason(row)
         if reason is None and require_no_ips_tree:
@@ -410,6 +427,8 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
               "long_selected": counter.long, "selected": selected, "rejected": rejected}
     if code_pages_max:
         result["code_pages_max"] = code_pages_max
+    if require_title:
+        result["require_title"] = True
     if require_no_ips_tree:
         # Every looked-up act with its answer: the refill draws only from those found without a tree.
         result["require_no_ips_tree"] = True
@@ -991,7 +1010,7 @@ def lookup(actual, ips, row):
 
 def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
            pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
-           preferred_pages_min=None, one_per_issuer_day=False, mode="single_edition"):
+           preferred_pages_min=None, one_per_issuer_day=False, mode="single_edition", require_title=False):
     """Single-edition profile: look up candidates in selection order until the quotas are
     filled. Counters are incremental (one pass per phase), mirroring select_pool.
     mode="no_ips_tree" (batch 14) looks up the IPS tree instead and keeps acts without one."""
@@ -1007,7 +1026,7 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
             if counter.full():
                 return
             eo = row["eo_number"]
-            if (eo in taken or cheap_reason(row, already_used, pages_range, code_pages_max) is not None
+            if (eo in taken or cheap_reason(row, already_used, pages_range, code_pages_max, require_title) is not None
                     or not counter.wants(row, long_phase) or (soft_pass and soft.misses(row))):
                 continue
             if eo not in enriched:
@@ -1018,7 +1037,8 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
                 taken.add(eo)
 
 
-def tree_reserve(pool, enriched, ips, quotas, seed, already_used, pages_range, code_pages_max, reserve):
+def tree_reserve(pool, enriched, ips, quotas, seed, already_used, pages_range, code_pages_max, reserve,
+                 require_title=False):
     """After a no-tree selection, look up further candidates per category in seeded order until `reserve` acts
     without a tree beyond the quota are known, so that a refill draws from checked acts only."""
     for kind, quota in quotas.items():
@@ -1027,7 +1047,7 @@ def tree_reserve(pool, enriched, ips, quotas, seed, already_used, pages_range, c
             if passing >= quota + reserve:
                 break
             if (row["act_type"] != kind or row["eo_number"] in enriched
-                    or cheap_reason(row, already_used, pages_range, code_pages_max) is not None):
+                    or cheap_reason(row, already_used, pages_range, code_pages_max, require_title) is not None):
                 continue
             enriched[row["eo_number"]] = dict(row, **tree_lookup(ips, row))
             passing += tree_reason(enriched[row["eo_number"]]) is None
@@ -1108,6 +1128,14 @@ PROFILES = {
                                    "batch-13"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True,
                  "require_no_ips_tree": True, "sanpin_candidates": True},
+    # Scan batch 15: batch-14 settings with BATCH15_QUOTAS and the empty-title rejection, excluding batches 1-14.
+    "batch-15": {"quotas": BATCH15_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09", "batch-10", "batch-11", "batch-12",
+                                   "batch-13", "batch-14"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True,
+                 "require_no_ips_tree": True, "sanpin_candidates": True, "require_title": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
@@ -1208,6 +1236,7 @@ def run(args):
         pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
     tree = profile.get("require_no_ips_tree", False)
+    titled = profile.get("require_title", False)
     prior_days = set()
     if profile.get("prior_batches"):
         used, prior_days = prior_batch_exclusions(profile["prior_batches"])
@@ -1220,6 +1249,8 @@ def run(args):
                "long_min": long_min, "long_pages": LONG_PAGES, "code_pages_max": code_pages_max}
     if tree:
         options["require_no_ips_tree"] = True
+    if titled:
+        options["require_title"] = True
     soft_options = {key: profile[key] for key in ("preferred_pages_min", "one_per_issuer_day") if key in profile}
     options.update(soft_options)
     code_rows, code_reference = [], None
@@ -1272,9 +1303,10 @@ def run(args):
             Path(args.feed_cache).write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
         if strict or tree:
             enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES,
-                   code_pages_max, **soft_options, mode="no_ips_tree" if tree else "single_edition")
+                   code_pages_max, **soft_options, mode="no_ips_tree" if tree else "single_edition",
+                   require_title=titled)
             rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
-                                              and cheap_reason(r, used, pages_range, code_pages_max) is not None]
+                                              and cheap_reason(r, used, pages_range, code_pages_max, titled) is not None]
         else:
             rows = list(pool.values())
         result = select_pool(rows, quotas, args.seed, **options)
@@ -1282,9 +1314,10 @@ def run(args):
             break
     if tree and quotas_full(result):
         picked = [r["eo_number"] for r in result["selected"]]
-        tree_reserve(pool, enriched, ips, quotas, args.seed, used, pages_range, code_pages_max, TREE_RESERVE)
+        tree_reserve(pool, enriched, ips, quotas, args.seed, used, pages_range, code_pages_max, TREE_RESERVE,
+                     titled)
         rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
-                                          and cheap_reason(r, used, pages_range, code_pages_max) is not None]
+                                          and cheap_reason(r, used, pages_range, code_pages_max, titled) is not None]
         result = select_pool(rows, quotas, args.seed, **options)
         if [r["eo_number"] for r in result["selected"]] != picked:
             raise RuntimeError("tree reserve lookups changed the selection")
@@ -1402,6 +1435,7 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
     by_eo = {row["eo_number"]: row for row in selection["selected"]}
     kept = [row for row in selection["selected"] if row["eo_number"] not in failures]
     no_tree = selection.get("require_no_ips_tree", False)
+    titled = selection.get("require_title", False)
     checked = {r["eo_number"] for r in selection.get("tree_checked", ()) if r["reason"] is None}
     replaced, chosen = [], []
     for eo in sorted(failures, key=lambda e: order_key(seed, e)):
@@ -1415,7 +1449,7 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
                 continue
             if no_tree and row["eo_number"] not in checked:
                 continue
-            if cheap_reason(row, frozenset(), pages_range, code_pages_max) is not None:
+            if cheap_reason(row, frozenset(), pages_range, code_pages_max, titled) is not None:
                 continue
             if need_long and row["pages"] < long_pages:
                 continue
@@ -1434,6 +1468,8 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
               "long_selected_after": sum(r["pages"] >= long_pages for r in kept + chosen)}
     if code_pages_max:
         result["code_pages_max"] = code_pages_max
+    if titled:
+        result["require_title"] = True
     return result
 
 

@@ -19,6 +19,8 @@
   write-once and checksum refusal, short or foreign listings refused before writing; `tree_reason` per category;
   `ips_tree` reads the actual edition of the single exact match; tree `enrich` stops at the quotas; refill takes
   only checked acts without a tree; a full run with frozen SanPiN, rejected trees, reserves and a SanPiN refill.
+  Batch-15: profile = batch-14 + 3/3 SanPiN, 1 resolution, `require_title`; `title_missing` only when required
+  (empty and quote-only titles), recorded by `select_pool`, honoured by `refill`.
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

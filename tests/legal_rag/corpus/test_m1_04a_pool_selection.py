@@ -1407,7 +1407,7 @@ def test_catalog_records_batch_13_checked_then_rework():
 
 def test_catalog_lists_batch_14_before_its_check():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[-1] == "batch-14" and len(catalog.POOL_BATCHES) == 14
+    assert catalog.POOL_BATCHES[13] == "batch-14"
     assert "batch-14" not in catalog.POOL_STATUS  # written only after the check
 
 
@@ -1657,3 +1657,48 @@ def test_sanpin_slug_uses_the_resolution_number():
     acquire = load_script("acquire_m1_04a_pool")
     assert acquire.slug({"act_type": "sanpin_2020s", "number": "32", "date": "2020-10-27"}) == "sanpin-32-2020"
     assert acquire.slug({"act_type": "sanpin_2010s", "number": "7", "date": "2015-07-14"}) == "sanpin-7-2015"
+
+
+# ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
+
+def test_batch_15_profile_takes_six_sanpin_and_requires_a_title():
+    # Owner go-ahead 28.10.2026: the second SanPiN batch (3 + 3) with batch-14 settings, one resolution less,
+    # excluding batches 1-14; acts with an empty feed title are rejected.
+    b14, b15 = P.PROFILES["batch-14"], P.PROFILES["batch-15"]
+    assert b15["quotas"] == {"sanpin_2010s": 3, "sanpin_2020s": 3, "federal_law": 1, "presidential_decree": 1,
+                             "government_resolution": 1, "government_order": 1, "ministry_order": 2}
+    assert b15["require_title"] is True and "require_title" not in b14
+    assert {k: v for k, v in b15.items() if k not in ("prior_batches", "quotas", "require_title")} == {
+        k: v for k, v in b14.items() if k not in ("prior_batches", "quotas")}
+    assert b15["prior_batches"] == b14["prior_batches"] + ("batch-14",)
+
+
+def test_empty_title_is_rejected_only_when_required():
+    blank, quoted, titled = card(1, title=""), card(2, title=" «» "), card(3)
+    for row in (blank, quoted):
+        assert P.cheap_reason(row) is None  # earlier profiles keep their behaviour
+        assert P.cheap_reason(row, require_title=True) == "title_missing"
+    assert P.cheap_reason(titled, require_title=True) is None
+    assert P.cheap_reason(card(4, title="О внесении изменений в акт"), require_title=True) == "amending_act"
+    assert "title_missing" in P.REASONS
+
+
+def test_select_pool_records_title_rule_and_rejects_untitled_acts():
+    rows = [card(1, title=""), card(2), card(3)]
+    result = P.select_pool(rows, {"federal_law": 2}, 7, require_single_edition=False, require_title=True)
+    assert {r["eo_number"] for r in result["selected"]} == {card(2)["eo_number"], card(3)["eo_number"]}
+    assert result["rejected"] == [{"eo_number": card(1)["eo_number"], "reason": "title_missing"}]
+    assert result["require_title"] is True
+    assert "require_title" not in P.select_pool(rows, {"federal_law": 2}, 7, require_single_edition=False)
+
+
+def test_refill_skips_untitled_acts_when_the_selection_requires_a_title():
+    first = card(10)
+    untitled, titled = P.ordered([card(11), card(12)], 7)
+    untitled = dict(untitled, title="")  # first in seeded order
+    selection = {"seed": 7, "pages_range": [3, 200], "long_min": 0, "long_pages": 20, "already_used": [],
+                 "selected": [first], "require_title": True}
+    pool = {r["eo_number"]: r for r in (untitled, titled)}
+    assert P.refill(selection, pool, {first["eo_number"]: "ocr"})["selected"][0]["eo_number"] == titled["eo_number"]
+    del selection["require_title"]
+    assert P.refill(selection, pool, {first["eo_number"]: "ocr"})["selected"][0]["eo_number"] == untitled["eo_number"]

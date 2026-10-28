@@ -153,6 +153,11 @@
   `tree_checked` records every answer; a refill of such a selection draws only from checked acts without a tree.
   Acquisition slugs: `sanpin-<resolution number>-<year>`. The portal day feed starts in December 2011 (empty
   days in 2010 and early 2011), so 2010s scans are 2011-2019.
+- Profile `batch-15` (owner go-ahead 28.10.2026): batch-14 settings with quotas `sanpin_2010s` 3, `sanpin_2020s`
+  3, law 1, decree 1, resolution 1, government order 1, ministry orders 2, prior batches 1-14, and
+  `require_title`: `cheap_reason` rejects an empty bare feed title as `title_missing` (batch 14's rp-774-2017
+  passed the amending filter that way). The flag is written to the selection and its refills; earlier profiles
+  keep their behaviour. The run reuses the frozen batch-14 SanPiN list.
 
 - `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
   logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),
