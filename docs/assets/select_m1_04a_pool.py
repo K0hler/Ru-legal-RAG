@@ -130,8 +130,10 @@ BATCH15_QUOTAS = {
     "ministry_order": 2,
 }
 # Scan batches 17-19 (owner go-ahead 28.10.2026: 30 SanPiN at once, three batches of 10 checking П17 to close the
-# SanPiN family by section 7): SanPiN only, 6 of 2011-2019 and 4 of 2020+ per batch.
-SANPIN_ONLY_QUOTAS = {"sanpin_2010s": 6, "sanpin_2020s": 4}
+# SanPiN family by section 7): SanPiN only, 6 of 2011-2019 and 4 of 2020+ in batch 17. The frozen list then holds 14
+# eligible acts (11 + 3), so batches 18 and 19 take 7 each.
+SANPIN_ONLY_QUOTAS = {17: {"sanpin_2010s": 6, "sanpin_2020s": 4}, 18: {"sanpin_2010s": 5, "sanpin_2020s": 2},
+                      19: {"sanpin_2010s": 6, "sanpin_2020s": 1}}
 SANPIN_TYPES = ("sanpin_2010s", "sanpin_2020s")
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
@@ -1167,7 +1169,7 @@ PROFILES = {
 # Scan batches 17-19: batch-16 settings with SANPIN_ONLY_QUOTAS and no long-act minimum, each excluding the batches
 # before it.
 for _number in (17, 18, 19):
-    PROFILES[f"batch-{_number}"] = {**PROFILES["batch-16"], "quotas": SANPIN_ONLY_QUOTAS, "long_min": 0,
+    PROFILES[f"batch-{_number}"] = {**PROFILES["batch-16"], "quotas": SANPIN_ONLY_QUOTAS[_number], "long_min": 0,
                                     "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, _number))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"

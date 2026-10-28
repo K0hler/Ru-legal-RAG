@@ -1685,12 +1685,13 @@ def test_batch_15_profile_takes_six_sanpin_and_requires_a_title():
     assert b15["prior_batches"] == b14["prior_batches"] + ("batch-14",)
 
 
-def test_batches_17_to_19_take_ten_sanpin_each_excluding_the_batches_before():
-    # Owner go-ahead 28.10.2026: 30 SanPiN at once, three batches of 10 (6 of 2011-2019, 4 of 2020+) checking П17.
+def test_batches_17_to_19_take_sanpin_only_excluding_the_batches_before():
+    # Owner go-ahead 28.10.2026: three SanPiN batches checking П17 — 10, then 7 and 7 (what the frozen list holds).
     b16 = P.PROFILES["batch-16"]
+    quotas = {17: (6, 4), 18: (5, 2), 19: (6, 1)}
     for number in (17, 18, 19):
         b = P.PROFILES[f"batch-{number}"]
-        assert b["quotas"] == {"sanpin_2010s": 6, "sanpin_2020s": 4} and b["long_min"] == 0
+        assert b["quotas"] == dict(zip(("sanpin_2010s", "sanpin_2020s"), quotas[number])) and b["long_min"] == 0
         assert b["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, number))
         assert {k: v for k, v in b.items() if k not in ("quotas", "long_min", "prior_batches")} == {
             k: v for k, v in b16.items() if k not in ("quotas", "long_min", "prior_batches")}

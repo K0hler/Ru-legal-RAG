@@ -171,6 +171,11 @@
   First attempt inside `parse_marker` (no sequence check) cost prikaz-minkultury-1321-2016 «12.1 принятие …» one
   region: kept as `…-step15-b-failed-minkultury1321`. `…-step15-b2` (2c7836c3…): 37308/37463 (+5 sanpin-30-2020),
   nothing below; batch 16 4741/4752. JSON `s15-b` equal to `v13` per act.
+- Step 17 freeze (owner go-ahead 28.10.2026: 30 SanPiN at once to close the family): П17 = v17
+  `ocr-logical-structure/17-experiment` (sha256 78fecc69…, LF; no v14-v16 labels) in
+  `data/m1/m1-04a/experiments/20261028-prototype-v17-freeze/`; regression `20261028-dev-regression-179-v17`
+  37308/37463 (errors equal to `…-step15-b2`); JSON `v17-results.json` equal to v13 per act. Measured on scan
+  batches 17, 18 and 19 (profiles `batch-17..19`: 6 SanPiN of 2011-2019 + 4 of 2020+ each, `long_min` 0).
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
