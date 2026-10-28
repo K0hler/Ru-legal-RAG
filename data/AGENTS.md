@@ -155,6 +155,14 @@
   evaluator fix (owner 27.10.2026): `experiments/20261027-batch-12-rescore-ordinal-single/` (summary 75bf36d7…).
   In the dev regression since step 13 (`20261027-dev-regression-133-v11` and `…-step13-*`); JSON step-13 runs are
   `s13-*` labels inside `20261026-json-all-proj6/` and `20261027-json-v2-all-proj6/`.
+- Scan batch 14 (28.10.2026): `m1/m1-04a/documents/pool/batch-14/selection.json` (681988a7…, profile `batch-14`,
+  seed 20261103, `--from 2011-01-01 --to 2019-12-31`, code 4cc42dc). SanPiN list `batch-14/sanpin/selection.json`
+  (5aee8725…; 567 acts of the Chief State Sanitary Doctor, 48 SanPiN/SP approvals: 26 of 2014-2019, 22 of 2020+,
+  5 already used, 2 over 200 pages). 120 feed days, 0 failed; IPS tree filter: 55 acts checked, 23 rejected with a
+  tree (decrees 14, resolutions 8, law 1), 4-5 checked reserves per category. Selected: 2 SP/SanPiN 2015, SP 2020,
+  SP 2026 (93 p.), law 24-FZ/2013 (3 p., soft fallback), decree 225/2016, resolutions 469/2017 and 1250/2018,
+  government order 774-r/2017, orders 1412/2015 and 134/2016; 6 long acts.
+
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
   on the owner's request (GPU memory 15939/16303 MiB): 9 acts complete, raw summary reconstructed
