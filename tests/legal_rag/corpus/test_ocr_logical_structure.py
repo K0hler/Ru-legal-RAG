@@ -2522,3 +2522,37 @@ def test_footer_printed_on_two_pages_is_a_page_mark_of_the_scope_root():
     assert got["1.4"] == "A"
     assert got["2.0"] == "A/2" and conts(result)["2.0"] is True
     assert owners(S.build(extraction(act("Страница 2"))))["1.4"] == "A/2"
+
+
+def test_a_list_of_point_references_is_text_of_the_point_that_lists_them():
+    # Step 15 B (owner 28.10.2026: a new class of batch 16): in «1.5. … не применяются к транспортным средствам, …
+    # утверждена до вступления в силу» the lines «2.1.42 и 2.2.7 в части …», «2.1.34, 4.1.4 в части …» are references
+    # to points (number without its dot, then a lowercase word, «,» or «и»), not points. A dotless point with a
+    # capitalised text («2.1.8 Организации …», as «7.1.8» in batch 16) is still a point.
+    pages = [[("Text", "УТВЕРЖДЕНЫ постановлением от 16.10.2020 № 30", 900),
+              ("Section-header", "I. Общие положения"),
+              ("Text", "1.4. Правила применяются к судам."),
+              ("Text", "1.5. Правила не применяются к транспортным средствам, документация на которые утверждена"),
+              ("Text", "2.1.42 и 2.2.7 в части наличия вкладных резервуаров;"),
+              ("Text", "2.1.43 в части наличия документов об оценке соответствия;"),
+              ("Text", "2.1.34, 4.1.4, 4.3.11 в части требований к обеззараживанию воздуха."),
+              ("Text", "1.6. Требования пунктов 2.5.4 и 3.4.4 применяются с 2025 года."),
+              ("Section-header", "II. Учет источников"),
+              ("Text", "2.1. Учет ведется в журналах."),
+              ("Text", "2.1.7. Передача продукции оформляется документально."),
+              ("Text", "2.1.8 Организации проводят инвентаризацию источников один раз в год.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.3"] == "S/I/1.5"
+    for index in (4, 5, 6):
+        assert got[f"1.{index}"] == "S/I/1.5", index
+    assert got["1.7"] == "S/I/1.6"
+    assert got["1.11"] == "S/II/2.1/2.1.8"
+
+
+def test_a_dotless_lowercase_subpoint_that_goes_on_keeps_its_marker():
+    # Step 15 B negative (prikaz-minkultury-1321-2016): «12.1 принятие решения …» under «12.» is a subpoint.
+    got = owners(S.build(extraction(regulation(
+        ("Text", "12. Сроки предоставления услуги составляют:"),
+        ("Text", "12.1 принятие решения о внесении сведений - не позднее 5 дней;"),
+        ("Text", "12.2. принятие решения об отказе - не позднее 5 дней.")))))
+    assert got["2.3"] == "S/I/12/12.1" and got["2.4"] == "S/I/12/12.2"

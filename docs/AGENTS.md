@@ -164,6 +164,13 @@
 - Step 15 A (prototype not frozen, `VERSION` 13 unchanged): `subpoint_level` is back to «1)» / «а)» only (the C2
   dotted reading removed). `…-step15-a` (77f34461…): 37303/37463 (+15: sanpin-30-2020 +11, sanpin-31-2015 +2, sanpin-61/69 +1
   each), nothing below; batch 16 4736 (rework, the check stays 4723). JSON `s15-a` equal to `v13` per act.
+- Owner 28.10.2026 «Да, новый вид»: point references read as points are a new class; the section-7 counter restarts
+  (0 after batch 16). Step 15 B (`point_references`, before `table_rows`): a `POINT_REFERENCES` line (dotted number
+  without its dot, then «,» / «и» and a number, or a lowercase word) whose number does not go on from the last
+  marker (`goes_on_from`: child, sibling or parent's sibling) loses its marker (evidence `point_references`).
+  First attempt inside `parse_marker` (no sequence check) cost prikaz-minkultury-1321-2016 «12.1 принятие …» one
+  region: kept as `…-step15-b-failed-minkultury1321`. `…-step15-b2` (2c7836c3…): 37308/37463 (+5 sanpin-30-2020),
+  nothing below; batch 16 4741/4752. JSON `s15-b` equal to `v13` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

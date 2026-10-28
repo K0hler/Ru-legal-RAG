@@ -1353,6 +1353,41 @@ TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens
 ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
 
 
+# Step 15 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
+# вкладных резервуаров;», «2.1.34, 4.1.4, 4.3.11 в части …»): a dotted number without its final dot, then «,», «и» and
+# another number, or a lowercase word.
+POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё])")
+POINT_REFERENCES_EVIDENCE = {"point_references": "numbers of points referred to, not a point of its own"}
+
+
+def goes_on_from(value: tuple, prev: Marker | None) -> bool:
+    """A dotted ``value`` continues the numbering after the marker ``prev``: its child («12.1» after «12.»,
+    «2.1.1» after «2.1.»), its sibling («12.2» after «12.1») or a sibling of its parent («2.2» after «2.1.5»)."""
+    if prev is None:
+        return False
+    if prev.kind == "int":
+        return len(value) == 2 and value[0] == prev.value
+    if prev.kind != "decimal":
+        return False
+    return value[:-1] == prev.value or value[:-1] == prev.value[:-1] or value[:-1] == prev.value[:-2]
+
+
+def point_references(body: list[Paragraph]) -> None:
+    """Step 15 B: a reference line (``POINT_REFERENCES``) whose number does not go on from the last marker
+    is text of the open point. A dotless subpoint that does go on («12.1 принятие решения …» after «12.», or
+    «7.1.8 Организации …» with a capital) keeps its marker."""
+    prev = None
+    for p in body:
+        if p.marker.kind in {"none", "dash"}:
+            continue
+        if (p.kind == "text" and p.marker.kind == "decimal" and POINT_REFERENCES.match(strip_sup(p.text))
+                and not goes_on_from(p.marker.value, prev)):
+            p.marker = Marker("none")
+            p.evidence.append(dict(POINT_REFERENCES_EVIDENCE))
+            continue
+        prev = p.marker
+
+
 def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     """Ids of marked body paragraphs that are rows of a table annex (owner decision 23.10.2026,
     convention v2 §6). When an annex scope (`…/AN<n>`) opens with a table (no marked paragraph before
@@ -1556,6 +1591,7 @@ def build(extraction: dict) -> dict:
                 list_prev = None
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
+        point_references(body)
         rows = table_rows(scope_path, items)
         for p in body:
             if id(p) in rows:

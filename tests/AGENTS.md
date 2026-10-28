@@ -37,6 +37,8 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 15 B: point-reference lines inside «1.5.» are its text, a dotless capitalised «2.1.8 Организации …» and a
+  dotless lowercase «12.1 принятие …» under «12.» keep their markers.
 - Step 15 A: the paragraph after the last dotted «7.1.5.» stays in it (owner 28.10.2026); dev regression lists 179
   documents (batch 15 on `gold-dotted`, batch 16 on `gold`); `test_m1_04a_gold_footnotes.py` derives a later copy
   (`--base gold-footnotes --suffix gold-dotted --map dotted-map`) pinned to the earlier copy.
