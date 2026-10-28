@@ -103,8 +103,9 @@
   (v12; П12 = v11 2440): 2442/2513 (97.17%), strict 2441, `cross_scope_v2` 0. SanPiN/SP 1478/1541: job b15-06 gave
   37 source footnotes (+ one continuation) of sanpin-69-2016 and sanpin-61-2015 to the root `S`, while the prototype
   and every earlier gold give a footnote to the point carrying its mark (37/38 match; 8.9 is a footnote
-  continuation given to the page's last point). The convention names no footnote owner: owner question; by the mark
-  2479/2513 (98.65%), SanPiN 98.3%. sanpin-19-2026: OCR «б)» for «6)» twice nests real subpoints under «5)» (23,
+  continuation given to the page's last point). Owner 28.10.2026: a footnote belongs to the point carrying its mark
+  (convention v2 §6.1); `assets/derive_m1_04a_gold_footnotes.py` writes `gold-footnotes` copies from per-region
+  maps pinned to the frozen gold (from-owner checked); rework rescore 2479/2513 (98.65%), SanPiN 98.3%. sanpin-19-2026: OCR «б)» for «6)» twice nests real subpoints under «5)» (23,
   classifier names only the marker region). pp-737 form rows «3. …»-«5. Итого» and signatures as points (5),
   minenergetiki-728 unnumbered subheadings (3), paragraph after the last subpoint (2, unclassified). New class: none
   by reading, owner to confirm.

@@ -203,7 +203,11 @@
   31.1 `S/III/24/3 +`; frozen `experiments/20261028-batch-15-gold-freeze/` (44dd8339…, addendum 0ddd2044…).
   First pass `experiments/20261028-batch-15-first-pass/` (freeze b63f675c…, git_head ea21bc3; summary f986379e…,
   classes v12 042d2a55…, v11 9c3ab914…, sample-30 2bbccd8b… seed 20261104, 29/30): П13 2442/2513, П12 2440. The
-  38 source-footnote regions of sanpin-69-2016/sanpin-61-2015 are an open gold question (root `S` in this gold).
+  38 source-footnote regions of sanpin-69-2016/sanpin-61-2015 had the root `S` in this gold. Owner 28.10.2026: a
+  footnote belongs to the point with its mark -> maps `gold/<slug>/agent-<slug>.footnotes-map.json` (19 + 19 regions,
+  each with its mark region) and `agent-<slug>.gold-footnotes.{txt,sha256}` for all 12 acts (10 exact copies);
+  rescore `experiments/20261028-batch-15-rescore-footnotes/` (summary 73416656…, classes v12 a44a77c4…, v11
+  65147ad5…), rework only: П13 2479/2513, П12 2477.
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped

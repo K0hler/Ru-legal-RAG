@@ -28,6 +28,10 @@
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation
   negatives) fail on the frozen v6.1 copy and pass on the working prototype.
 
+- `corpus/test_m1_04a_gold_footnotes.py` covers the footnote-owner derivation (owner 28.10.2026): mapped regions
+  get the marked point (continuation `+` kept, alternatives allowed), unmapped acts are exact copies, the receipt lists
+  derived gold, frozen gold and map; an unpinned map, an absent region, a wrong `from` owner or a malformed owner is
+  refused before writing; write-once.
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
