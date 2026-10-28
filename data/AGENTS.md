@@ -181,6 +181,22 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batch 16 (28.10.2026, the check of П14 = v13): `m1/m1-04a/documents/pool/batch-16/selection.json`
+  (186797b8…, profile `batch-16` = batch-15 excluding batches 1-15, seed 20261105, `--from 2011-01-01 --to
+  2019-12-31`, code 961ab2e, SanPiN list reused from batch 14). 120 feed days; IPS tree filter: 32 acts checked, 2
+  decrees with a tree rejected. Selected: SanPiN 2.6.1.3288-15, SP 2.3.4.3258-15, SanPiN 2.1.7.3550-19, SP
+  2.5.3650-20 (101 p.), SP 3.1.3271-21, SP 2.5.4286-26 (113 p.), law 108-FZ/2015 (3 p., soft fallback), decree
+  843/2013 (awards), resolution 705/2018, government order 2240-r/2014 (173 p., title from IPS), orders
+  Mintrans 100/2015 (estimate norms) and 603/2015 (Rospatent regulation); 7 long acts.
+  Acquired 12/12 `new` then `unchanged`. OCR `experiments/20261028-batch-16-ocr/` (summary.json 9cb70166…): 12/12
+  complete, replays match, no refill, index.json 295d628d… built once after OCR (catalog also wrote batch-14/15
+  `status.json`). 619 pages, 5566 regions, 444 tables (172 in rp-2240-2014), one rotation retry (sanpin-31-2015
+  p. 55); 2206 s of OCR (3.56 s/page).
+  Annotation input `experiments/20261028-batch-16-annotation-input/` (4752 regions; sanpin-16-2026 pages 1-34 /
+  35-113 and sanpin-30-2020 pages 1-36 / 37-101, 40 context rows). 10 Codex jobs
+  `.superpowers/sdd/2026-10-28-m1-04a-pool-batch-16/` (batch-15 template with batch-16 paths plus the 28.10
+  footnote decision of convention v2 §6.1, no SanPiN hints).
+
 - Scan batch 15 (28.10.2026): `m1/m1-04a/documents/pool/batch-15/selection.json` (d01b7b4a…, profile `batch-15`,
   seed 20261104, `--from 2011-01-01 --to 2019-12-31`, code 8a290f3, SanPiN list reused from batch 14). Attempt 1
   (code 58a3aea, 43ec9076…) is kept as `selection.attempt-01.*`: it drew law 252-FZ «О внесении дополнения …» and
