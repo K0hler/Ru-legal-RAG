@@ -196,6 +196,12 @@
   prikaz-mintruda-220-2017, 1 grid unresolved there), no rotation retries; 952 s of OCR (3.7 s/page). Do not start
   dotsmocr before `run_m1_04a_ocr.ps1`: the runner starts it and refuses a busy GPU (first attempt, log kept in
   the session scratchpad as gpu-busy, wrote nothing).
+  Annotation input `experiments/20261028-batch-15-annotation-input/` (2513 regions; sanpin-19-2026 in 2 parts,
+  pages 1-30 / 31-56, 40 context rows). 7 Codex jobs `.superpowers/sdd/2026-10-28-m1-04a-pool-batch-15/` (batch-14
+  template with batch-15 paths, no SanPiN hints), all complete first time. Gold 2513 regions, 118 `+`, 14
+  alternatives (10 endnotes in prikaz-mintruda-220-2017, 4 in sanpin-19-2026 17.4-17.7), seam 30.11 `S/III/24/3` |
+  31.1 `S/III/24/3 +`; frozen `experiments/20261028-batch-15-gold-freeze/` (44dd8339…, addendum 0ddd2044…). No
+  prototype has run on batch 15 yet.
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
