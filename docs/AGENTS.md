@@ -150,6 +150,12 @@
   `derive_m1_04a_gold_footnotes.py`); regression `20261028-dev-regression-167-v13` 32567/32711 (errors equal to
   `…-step14-c5`); JSON `v13-results.json` on both stands (v1 equal to v12 per act, v2 one code +1). Report
   `milestones/m1/04a/M1_04A_CYCLE14_2026-10-28.md`. Measured on scan batch 16 (SanPiN reported separately).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_16_2026-10-28.md`: scan batch 16, the check of П14 (v13; П13 = v12 4736):
+  4723/4752 (99.39%), strict 4723, `cross_scope_v2` 0, sample 30/30; SanPiN 3332/3360 (99.17%). П14 fixed nothing
+  over П13 and added 13 errors, all from the dotted part of C2: a second paragraph of the last «N.M.K.» point stays
+  in it in this gold (two batch-15 regions said the point) — the dotted extension overfitted batch 15. Reading:
+  a list of point references «2.1.42 и 2.2.7 в части …» read as points (5, sanpin-30-2020, both prototypes) is a
+  new class. Owner questions: that class and the counter; dotted subpoint paragraphs.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

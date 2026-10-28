@@ -195,7 +195,12 @@
   Annotation input `experiments/20261028-batch-16-annotation-input/` (4752 regions; sanpin-16-2026 pages 1-34 /
   35-113 and sanpin-30-2020 pages 1-36 / 37-101, 40 context rows). 10 Codex jobs
   `.superpowers/sdd/2026-10-28-m1-04a-pool-batch-16/` (batch-15 template with batch-16 paths plus the 28.10
-  footnote decision of convention v2 §6.1, no SanPiN hints).
+  footnote decision of convention v2 §6.1, no SanPiN hints), all complete first time. Gold 4752 regions, 176 `+`, 0
+  alternatives, seams 34.19 `S/IV/22/23` | 35.1 `S/IV/22/24` and 36.17 `S/IV/4.5/4.5.2` | 37.1 `S/IV/4.5/4.5.3`;
+  executed commands read only allowed files. Frozen `experiments/20261028-batch-16-gold-freeze/` (5dd0ae39...,
+  addendum 8e4c4437...). Check `experiments/20261028-batch-16-first-pass/` (freeze dc2831da..., v13 = П14 + v12 = П13,
+  git_head f531431), run once 28.10; never re-run. П14 4723/4752 (99.39%), П13 4736; summary 0fdef057..., classes
+  v13 e452e7e1... / v12 3c9433e6..., sample-30 da098639... (seed 20261105, 30/30).
 
 - Scan batch 15 (28.10.2026): `m1/m1-04a/documents/pool/batch-15/selection.json` (d01b7b4a…, profile `batch-15`,
   seed 20261104, `--from 2011-01-01 --to 2019-12-31`, code 8a290f3, SanPiN list reused from batch 14). Attempt 1
