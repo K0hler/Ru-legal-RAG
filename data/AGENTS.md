@@ -200,8 +200,10 @@
   pages 1-30 / 31-56, 40 context rows). 7 Codex jobs `.superpowers/sdd/2026-10-28-m1-04a-pool-batch-15/` (batch-14
   template with batch-15 paths, no SanPiN hints), all complete first time. Gold 2513 regions, 118 `+`, 14
   alternatives (10 endnotes in prikaz-mintruda-220-2017, 4 in sanpin-19-2026 17.4-17.7), seam 30.11 `S/III/24/3` |
-  31.1 `S/III/24/3 +`; frozen `experiments/20261028-batch-15-gold-freeze/` (44dd8339…, addendum 0ddd2044…). No
-  prototype has run on batch 15 yet.
+  31.1 `S/III/24/3 +`; frozen `experiments/20261028-batch-15-gold-freeze/` (44dd8339…, addendum 0ddd2044…).
+  First pass `experiments/20261028-batch-15-first-pass/` (freeze b63f675c…, git_head ea21bc3; summary f986379e…,
+  classes v12 042d2a55…, v11 9c3ab914…, sample-30 2bbccd8b… seed 20261104, 29/30): П13 2442/2513, П12 2440. The
+  38 source-footnote regions of sanpin-69-2016/sanpin-61-2015 are an open gold question (root `S` in this gold).
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped

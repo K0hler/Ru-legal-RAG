@@ -99,6 +99,15 @@
   the digit at the subpoint's own level, so the classifier leaves it unclassified). rp-774-2017 approves changes
   (empty feed title passed the amending filter). No new class (owner 28.10.2026: counter 5, batches 10-14; the nested «з)» -> «3)» is the batch-7 class).
   SanPiN/SP: 1 of 3 batches, not ready by §7.
+- `milestones/m1/04a/M1_04A_POOL_BATCH_15_2026-10-28.md`: scan batch 15 (profile `batch-15`, selection attempt 2), the third check of П13
+  (v12; П12 = v11 2440): 2442/2513 (97.17%), strict 2441, `cross_scope_v2` 0. SanPiN/SP 1478/1541: job b15-06 gave
+  37 source footnotes (+ one continuation) of sanpin-69-2016 and sanpin-61-2015 to the root `S`, while the prototype
+  and every earlier gold give a footnote to the point carrying its mark (37/38 match; 8.9 is a footnote
+  continuation given to the page's last point). The convention names no footnote owner: owner question; by the mark
+  2479/2513 (98.65%), SanPiN 98.3%. sanpin-19-2026: OCR «б)» for «6)» twice nests real subpoints under «5)» (23,
+  classifier names only the marker region). pp-737 form rows «3. …»-«5. Итого» and signatures as points (5),
+  minenergetiki-728 unnumbered subheadings (3), paragraph after the last subpoint (2, unclassified). New class: none
+  by reading, owner to confirm.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
