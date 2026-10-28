@@ -109,20 +109,20 @@
   classifier names only the marker region). pp-737 form rows «3. …»-«5. Итого» and signatures as points (5),
   minenergetiki-728 unnumbered subheadings (3), paragraph after the last subpoint (2, unclassified). New class: none
   by reading, owner to confirm.
-- Step 14 A (owner 28.10.2026: known classes keep recurring on frozen П13): dev regression covers 167 documents
+- Step 16 A (owner 28.10.2026: known classes keep recurring on frozen П13): dev regression covers 167 documents
   (+ `BATCH_13`, `BATCH_14` on the frozen `.gold.txt` without the refilled favt-150/sanpin-20-2015, `BATCH_15` on
   `gold-footnotes`). Baseline of frozen П13 (v12) `20261028-dev-regression-167-v12` (3655a364…): 32522/32711, batches
   13/14/15 = 2424/2289/2479 (the checks and the batch-15 rework rescore); the 133 earlier rows equal
-  `…-dev-regression-v12`. Step-14 rules gate with `--baseline` it and `--frozen-families`; JSON v1/v2 must equal
+  `…-dev-regression-v12`. Step-16 rules gate with `--baseline` it and `--frozen-families`; JSON v1/v2 must equal
   `v12-results.json` per act.
-- Step 14 C1 (prototype not frozen, `VERSION` unchanged): `Marker.alt` holds the other reading of a one-character
+- Step 16 C1 (prototype not frozen, `VERSION` unchanged): `Marker.alt` holds the other reading of a one-character
   subpoint marker OCR confuses (`OCR_CONFUSED`: «б)»/«6)», «з)»/«3)», `with_ocr_reading`); `solve_depths` also
   tries it at `OCR_READING_COST` 0.5 (above a tie-break, below any gap or unexplained nesting), and the build keeps
   the chosen reading in `p.marker` with evidence `ocr_marker`. `…-step14-c1` (43c1f93b…): 32551/32711 (+29), no
   document below baseline; error lists changed only by fixes: sanpin-19-2026 662 -> 685/685, fz-119-2016 350 -> 353,
   fz-15-2013 219 -> 221, prikaz-minselskogo-134-2016 392 -> 393; batch 15 2502/2513 (99.56%). The family gate exits
   1 for those fixes (laws, sanitary rules). JSON `s14-c1` equal to v12 per act on both stands.
-- Step 14 C2 (B4 `close_subpoints`, convention v2 «абзац после последнего подпункта принадлежит родителю»):
+- Step 16 C2 (B4 `close_subpoints`, convention v2 «абзац после последнего подпункта принадлежит родителю»):
   `subpoint_level` also counts a dotted «7.1.5.» inside the dotted point «7.1.» it extends; only the list of the last
   subpoint closes (the paragraph after «д)» inside «2)» goes to «2)», not to the point); the subpoint's own marked
   paragraph that lost its final «.» closes too when the next sentence is on the same page and has at least
@@ -131,27 +131,27 @@
   sanpin-20-2026 15.3), `…-c2c` unterminated (23dd0d5d…, +1 sanpin-20-2026 38.16): 32555/32711, no document below;
   batches 14/15 = 2292/2504. `…-c2c-failed-ukaz410` kept: without the marked-paragraph condition ukaz-410-2021 lost 2
   (appointment lines). JSON `s14-c2`: v1 equal to v12 per act, v2 one code +1 (17813 -> 17814), nothing lower.
-- Step 14 C3 (`subheading_candidate` / `subheading_stacks`): an OCR heading (Section-header/Title) may end with «:»
+- Step 16 C3 (`subheading_candidate` / `subheading_stacks`): an OCR heading (Section-header/Title) may end with «:»
   («## Проведение проверки:» over «### Документарная проверка»), and a run of OCR headings also follows a numbered
   point that lost its final «.»; a body-text line there, a section heading or an editorial note before the run keep
   the old reading. `…-step14-c3` (6bd14c7e…): 32558/32711 (+3, prikaz-minenergetiki-728-2015 212/216), nothing
   else changed; JSON `s14-c3` equal to `s14-c2` per act.
-- Step 14 C4 (`table_rows`): in a table annex, «N.» rows after the last table part that go on by one from the last
+- Step 16 C4 (`table_rows`): in a table annex, «N.» rows after the last table part that go on by one from the last
   row cut out between the parts («3.»-«5.» after «2.», a subsidy calculation form) are rows too; the first marker that
   does not go on stops it. `…-step14-c4` (7b615357…): 32563/32711 (+5, pp-737-2019 144/144), nothing else changed;
   batch 15 2512/2513. JSON `s14-c4` equal to `s14-c2` per act.
-- Step 14 C5 (`page_mark`): a Page-footer line printed on exactly two pages («ФГОС ВО культурология -05») is a page
+- Step 16 C5 (`page_mark`): a Page-footer line printed on exactly two pages («ФГОС ВО культурология -05») is a page
   mark of the scope root (convention v2 §2) and opens no continuation; on three or more it is running noise as
   before. `…-step14-c5` (9c99cdc9…): 32567/32711 (+4: prikaz-minobrazovaniya-1412-2015, also pp-1327-2019 +2 and
   prikaz-minobrazovaniya-1126-2017 +1), nothing lower; batches 13/14/15 = 2424/2293/2512. JSON `s14-c5` equal to
   `s14-c2` per act.
-- Step 14 freeze (owner 28.10.2026 «Сделай все, не спрашивай у меня»): П14 = v13 `ocr-logical-structure/13-experiment`
+- Step 16 freeze (owner 28.10.2026 «Сделай все, не спрашивай у меня»): П16 = v13 `ocr-logical-structure/13-experiment`
   (sha256 b2cee806…, LF) in `data/m1/m1-04a/experiments/20261028-prototype-v13-freeze/` (code hashes add
   `derive_m1_04a_gold_footnotes.py`); regression `20261028-dev-regression-167-v13` 32567/32711 (errors equal to
   `…-step14-c5`); JSON `v13-results.json` on both stands (v1 equal to v12 per act, v2 one code +1). Report
   `milestones/m1/04a/M1_04A_CYCLE14_2026-10-28.md`. Measured on scan batch 16 (SanPiN reported separately).
-- `milestones/m1/04a/M1_04A_POOL_BATCH_16_2026-10-28.md`: scan batch 16, the check of П14 (v13; П13 = v12 4736):
-  4723/4752 (99.39%), strict 4723, `cross_scope_v2` 0, sample 30/30; SanPiN 3332/3360 (99.17%). П14 fixed nothing
+- `milestones/m1/04a/M1_04A_POOL_BATCH_16_2026-10-28.md`: scan batch 16, the check of П16 (v13; П13 = v12 4736):
+  4723/4752 (99.39%), strict 4723, `cross_scope_v2` 0, sample 30/30; SanPiN 3332/3360 (99.17%). П16 fixed nothing
   over П13 and added 13 errors, all from the dotted part of C2: a second paragraph of the last «N.M.K.» point stays
   in it in this gold (two batch-15 regions said the point) — the dotted extension overfitted batch 15. Reading:
   a list of point references «2.1.42 и 2.2.7 в части …» read as points (5, sanpin-30-2020, both prototypes) is a
@@ -160,12 +160,12 @@
   §6.1; list rule only for «1)», «а)»). `assets/derive_m1_04a_gold_footnotes.py` takes `--base/--suffix/--map`:
   batch 15 `gold-dotted` = `gold-footnotes` + maps `agent-<slug>.dotted-map.json` (sanpin-61-2015 11.13,
   sanpin-69-2016 11.6). Dev regression = 179 documents (`BATCH_15` on `gold-dotted`, `BATCH_16` on `gold`); frozen
-  П14 baseline `20261028-dev-regression-179-v13` (2c24b657…): 37288/37463, batches 14/15/16 = 2293/2510/4723.
-- Step 15 A (prototype not frozen, `VERSION` 13 unchanged): `subpoint_level` is back to «1)» / «а)» only (the C2
+  П16 baseline `20261028-dev-regression-179-v13` (2c24b657…): 37288/37463, batches 14/15/16 = 2293/2510/4723.
+- Step 17 A (prototype not frozen, `VERSION` 13 unchanged): `subpoint_level` is back to «1)» / «а)» only (the C2
   dotted reading removed). `…-step15-a` (77f34461…): 37303/37463 (+15: sanpin-30-2020 +11, sanpin-31-2015 +2, sanpin-61/69 +1
   each), nothing below; batch 16 4736 (rework, the check stays 4723). JSON `s15-a` equal to `v13` per act.
 - Owner 28.10.2026 «Да, новый вид»: point references read as points are a new class; the section-7 counter restarts
-  (0 after batch 16). Step 15 B (`point_references`, before `table_rows`): a `POINT_REFERENCES` line (dotted number
+  (0 after batch 16). Step 17 B (`point_references`, before `table_rows`): a `POINT_REFERENCES` line (dotted number
   without its dot, then «,» / «и» and a number, or a lowercase word) whose number does not go on from the last
   marker (`goes_on_from`: child, sibling or parent's sibling) loses its marker (evidence `point_references`).
   First attempt inside `parse_marker` (no sequence check) cost prikaz-minkultury-1321-2016 «12.1 принятие …» one

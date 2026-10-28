@@ -181,7 +181,7 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
-- Scan batch 16 (28.10.2026, the check of П14 = v13): `m1/m1-04a/documents/pool/batch-16/selection.json`
+- Scan batch 16 (28.10.2026, the check of П16 = v13): `m1/m1-04a/documents/pool/batch-16/selection.json`
   (186797b8…, profile `batch-16` = batch-15 excluding batches 1-15, seed 20261105, `--from 2011-01-01 --to
   2019-12-31`, code 961ab2e, SanPiN list reused from batch 14). 120 feed days; IPS tree filter: 32 acts checked, 2
   decrees with a tree rejected. Selected: SanPiN 2.6.1.3288-15, SP 2.3.4.3258-15, SanPiN 2.1.7.3550-19, SP
@@ -198,8 +198,8 @@
   footnote decision of convention v2 §6.1, no SanPiN hints), all complete first time. Gold 4752 regions, 176 `+`, 0
   alternatives, seams 34.19 `S/IV/22/23` | 35.1 `S/IV/22/24` and 36.17 `S/IV/4.5/4.5.2` | 37.1 `S/IV/4.5/4.5.3`;
   executed commands read only allowed files. Frozen `experiments/20261028-batch-16-gold-freeze/` (5dd0ae39...,
-  addendum 8e4c4437...). Check `experiments/20261028-batch-16-first-pass/` (freeze dc2831da..., v13 = П14 + v12 = П13,
-  git_head f531431), run once 28.10; never re-run. П14 4723/4752 (99.39%), П13 4736; summary 0fdef057..., classes
+  addendum 8e4c4437...). Check `experiments/20261028-batch-16-first-pass/` (freeze dc2831da..., v13 = П16 + v12 = П13,
+  git_head f531431), run once 28.10; never re-run. П16 4723/4752 (99.39%), П13 4736; summary 0fdef057..., classes
   v13 e452e7e1... / v12 3c9433e6..., sample-30 da098639... (seed 20261105, 30/30).
   Owner 28.10.2026: a paragraph after the last dotted subpoint belongs to it -> batch-15 maps
   `gold/<slug>/agent-<slug>.dotted-map.json` (sanpin-61-2015 11.13, sanpin-69-2016 11.6, pinned to `gold-footnotes`)

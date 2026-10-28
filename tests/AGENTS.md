@@ -24,7 +24,7 @@
   amending; `ips_title` from card `name` or `description`; with the tree filter an untitled act is looked up and
   judged by `ips_title` (missing / amending / ok), also inside tree `enrich`.
   Batch-16: profile = batch-15 + prior batch 15; the catalog lists batch 16 and records batches 14 and 15 measured
-  then development (step 14, 28.10.2026).
+  then development (step 16, 28.10.2026).
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation
@@ -37,22 +37,22 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
-- Step 15 B: point-reference lines inside «1.5.» are its text, a dotless capitalised «2.1.8 Организации …» and a
+- Step 17 B: point-reference lines inside «1.5.» are its text, a dotless capitalised «2.1.8 Организации …» and a
   dotless lowercase «12.1 принятие …» under «12.» keep their markers.
-- Step 15 A: the paragraph after the last dotted «7.1.5.» stays in it (owner 28.10.2026); dev regression lists 179
+- Step 17 A: the paragraph after the last dotted «7.1.5.» stays in it (owner 28.10.2026); dev regression lists 179
   documents (batch 15 on `gold-dotted`, batch 16 on `gold`); `test_m1_04a_gold_footnotes.py` derives a later copy
   (`--base gold-footnotes --suffix gold-dotted --map dotted-map`) pinned to the earlier copy.
-- Step 14 C5 test: a footer printed on two pages is a page mark of the act (`A`) and the interrupted point still
+- Step 16 C5 test: a footer printed on two pages is a page mark of the act (`A`) and the interrupted point still
   continues; a footer printed once keeps the point.
-- Step 14 C4 test: rows «3.»-«5.» after the last table part going on from the cut-out «1.», «2.» are annex text
+- Step 16 C4 test: rows «3.»-«5.» after the last table part going on from the cut-out «1.», «2.» are annex text
   (`table_row`); a «1.» there is a point.
-- Step 14 C3 test: Section-header subheadings ending «:» and after an unterminated point go to the section; a
+- Step 16 C3 test: Section-header subheadings ending «:» and after an unterminated point go to the section; a
   body-text line after an unterminated point stays its cut sentence.
-- Step 14 C2 tests in `corpus/test_ocr_logical_structure.py`: a paragraph after the last dotted «7.1.5.» returns to
+- Step 16 C2 tests in `corpus/test_ocr_logical_structure.py`: a paragraph after the last dotted «7.1.5.» returns to
   «7.1.» (after «7.1.4.» followed by «7.1.5.» it stays); after a nested «а)»-«б)» list it goes to the list's owner
   «2)»; after an unterminated marked «19)» a same-page sentence goes to the point, on the next page it stays;
   unterminated unmarked lines inside «а)» close nothing.
-- Step 14 C1 tests in `corpus/test_ocr_logical_structure.py`: OCR «б)» for «6)» after «5)» reads as the sixth
+- Step 16 C1 tests in `corpus/test_ocr_logical_structure.py`: OCR «б)» for «6)» after «5)» reads as the sixth
   subpoint and its own «а)»-«в)» nest under it; «3)» after «ж)» reads as «з)»; genuine letter and digit lists keep
   their reading.
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph

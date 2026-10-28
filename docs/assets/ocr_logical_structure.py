@@ -310,7 +310,7 @@ class Marker:
     restart: bool = False
     # inserted unit «2¹.», «3²)», «е¹)»: value is the base number, sup the superscript index
     sup: int = 0
-    # step 14 C1: the other reading of a marker OCR confuses («б)» / «6)», «з)» / «3)»); the solver tries it at
+    # step 16 C1: the other reading of a marker OCR confuses («б)» / «6)», «з)» / «3)»); the solver tries it at
     # OCR_READING_COST and keeps it only where the sequence fits better
     alt: "Marker | None" = None
 
@@ -427,7 +427,7 @@ def parse_marker(text: str, category: str) -> Marker:
     return Marker("none")
 
 
-# Step 14 C1: subpoint markers OCR confuses — Cyrillic «б» and digit «6», «з» and «3» (batches 7, 13, 14, 15).
+# Step 16 C1: subpoint markers OCR confuses — Cyrillic «б» and digit «6», «з» and «3» (batches 7, 13, 14, 15).
 OCR_CONFUSED = {"б": "6", "6": "б", "з": "3", "3": "з"}
 OCR_READING_COST = 0.5  # above a tie-break (0.01 per level), below any gap (2.0+) or unexplained nesting (10.0)
 
@@ -579,7 +579,7 @@ PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 def page_mark(region: Region) -> bool:
     """A service file code printed in a page header/footer («200716A9.doc») or a typist's mark
     («Компьютер /Н.Н./При-К7552-3»), not repeated often enough to be running noise: a mark of the page,
-    never text of the unit it happens to follow. Step 14 C5: also a footer line printed on two pages («ФГОС ВО
+    never text of the unit it happens to follow. Step 16 C5: also a footer line printed on two pages («ФГОС ВО
     культурология -05»; on three it is running noise)."""
     return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text)
                                                         or (len(region.text) <= 100 and JOB_CODE.search(region.text))
@@ -921,7 +921,7 @@ def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     text = p.text
     header = heading_evidence(p)
     limit = SUBHEADING_HEADER_MAX if header else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
-    # step 14 C3: an OCR heading may end with «:» («## Проведение проверки:» over «### Документарная проверка»)
+    # step 16 C3: an OCR heading may end with «:» («## Проведение проверки:» over «### Документарная проверка»)
     open_ = not terminated(text) or (header and final_char(text) == ":")
     return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
             and bool(text) and text[0].isupper()
@@ -956,7 +956,7 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
             end += 1
         prev = seq[k - 1] if k else None
         nxt = seq[end + 1] if end + 1 < len(seq) else None
-        # step 14 C3: a run of OCR headings also follows a point that lost its final «.»
+        # step 16 C3: a run of OCR headings also follows a point that lost its final «.»
         finished = final_char(prev.text) in ".;" if prev is not None else False
         if prev is not None and not finished and prev.marker.kind in POINT_KINDS and final_char(prev.text).isalnum():
             finished = all(heading_evidence(q) for q in seq[k:end + 1])
@@ -992,12 +992,12 @@ def continues_level(nxt: tuple, stack: tuple, level: int) -> bool:
             and not (nxt[level][1] < stack[level][1] and isinstance(nxt[level][1], int)))
 
 
-OWN_SENTENCE_MIN_WORDS = 8  # step 14 C2: a sentence after an unterminated subpoint, not the end of a cut one
+OWN_SENTENCE_MIN_WORDS = 8  # step 16 C2: a sentence after an unterminated subpoint, not the end of a cut one
 
 
 def subpoint_level(stack: tuple, level: int) -> bool:
-    """``stack[level]`` is a list subpoint «1)» / «а)». Step 15 (owner 28.10.2026): a dotted «4.3.26.» is no list
-    item; a paragraph after the last one stays in it (the step-14 C2 dotted reading overfitted batch 15)."""
+    """``stack[level]`` is a list subpoint «1)» / «а)». Step 17 (owner 28.10.2026): a dotted «4.3.26.» is no list
+    item; a paragraph after the last one stays in it (the step-16 C2 dotted reading overfitted batch 15)."""
     return stack[level][0] in SUBPOINT_KINDS
 
 
@@ -1036,7 +1036,7 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         while j > 0 and editorial_only(body[j]):
             j -= 1
         before, own = provision_final(body[j].text), provision_final(p.text)
-        # step 14 C2: the subpoint's marked paragraph lost its final «.» («19) … производственного контроля»),
+        # step 16 C2: the subpoint's marked paragraph lost its final «.» («19) … производственного контроля»),
         # then a sentence of its own on the same page; a short line («Российской Федерации.»), one across a page
         # break or after unmarked lines (a list of names) may end the cut sentence
         cut = (before.isalnum() and own == "." and body[j].marker.kind not in {"none", "dash"}
@@ -1045,7 +1045,7 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         if not (before == "." or (before == ";" and own == ".") or cut):
             continue
         nxt = next((stacks[j] for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), ())
-        # step 14 C2: only the list of the last subpoint closes; the paragraph goes to the owner of that list
+        # step 16 C2: only the list of the last subpoint closes; the paragraph goes to the owner of that list
         # («2)» for its «а)»-«д)»), not further up
         if not continues_level(nxt, stack, len(stack) - 1):
             closed = stacks[k] = stack[:-1]
@@ -1353,7 +1353,7 @@ TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens
 ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
 
 
-# Step 15 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
+# Step 17 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
 # вкладных резервуаров;», «2.1.34, 4.1.4, 4.3.11 в части …»): a dotted number without its final dot, then «,», «и» and
 # another number, or a lowercase word.
 POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё])")
@@ -1373,7 +1373,7 @@ def goes_on_from(value: tuple, prev: Marker | None) -> bool:
 
 
 def point_references(body: list[Paragraph]) -> None:
-    """Step 15 B: a reference line (``POINT_REFERENCES``) whose number does not go on from the last marker
+    """Step 17 B: a reference line (``POINT_REFERENCES``) whose number does not go on from the last marker
     is text of the open point. A dotless subpoint that does go on («12.1 принятие решения …» after «12.», or
     «7.1.8 Организации …» with a capital) keeps its marker."""
     prev = None
@@ -1396,7 +1396,7 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     parts. Such a marker between the first and the last table of the annex opens no section or point:
     it is text of the annex. Named units («Раздел», «Глава», «Статья», «§») keep their meaning. An
     annex whose first marker precedes its first table keeps ordinary numbering, markers after the last
-    table are unchanged unless they go on from the last row («3.» after «2.», step 14 C4), and an approved text that is itself a table (`S`) keeps the previous reading."""
+    table are unchanged unless they go on from the last row («3.» after «2.», step 16 C4), and an approved text that is itself a table (`S`) keeps the previous reading."""
     if not ANNEX_SCOPE.search(scope_path):
         return set()
     seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
@@ -1406,7 +1406,7 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     rows = [p for p in seq[tables[0] + 1:tables[-1]]
             if p.kind in {"text", "heading"} and p.marker.kind not in {"none", "dash"}
             and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")]
-    # step 14 C4: after the last table part, «3.», «4.» … that go on from the last cut-out row «2.» are rows too
+    # step 16 C4: after the last table part, «3.», «4.» … that go on from the last cut-out row «2.» are rows too
     last = rows[-1].marker if rows else None
     for p in seq[tables[-1] + 1:]:
         if p.marker.kind in {"none", "dash"}:

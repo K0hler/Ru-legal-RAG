@@ -2385,7 +2385,7 @@ def subpoint_pages(lines):
 
 
 def test_ocr_letter_marker_in_place_of_the_next_digit_reads_as_that_digit():
-    """Step 14 C1: OCR printed «6)» as «б)» (SP 2.4.2.4283-26, batch 15): after «5)» with no «а)» before, «б)» is the
+    """Step 16 C1: OCR printed «6)» as «б)» (SP 2.4.2.4283-26, batch 15): after «5)» with no «а)» before, «б)» is the
     sixth subpoint, and the real «а)», «б)», «в)» of that subpoint nest under it; «7)» follows as usual."""
     got = owners(S.build(extraction(subpoint_pages([
         "16. Должны соблюдаться требования:", "4) помещения оборудуются;", "5) доски размещаются;",
@@ -2397,7 +2397,7 @@ def test_ocr_letter_marker_in_place_of_the_next_digit_reads_as_that_digit():
 
 
 def test_ocr_digit_marker_in_place_of_the_next_letter_reads_as_that_letter():
-    """Step 14 C1, the reverse (prikaz-minselskogo-134-2016, batch 14): «3)» after «ж)» with no «2)» before is the
+    """Step 16 C1, the reverse (prikaz-minselskogo-134-2016, batch 14): «3)» after «ж)» with no «2)» before is the
     letter «з)», a sibling of «ж)»."""
     letters = [f"{c}) основание {c};" for c in "абвгдеж"]
     got = owners(S.build(extraction(subpoint_pages(
@@ -2416,8 +2416,8 @@ def test_genuine_letters_and_digits_keep_their_reading():
 
 
 def test_paragraph_after_the_last_decimal_subpoint_stays_in_it():
-    # Step 15 (owner 28.10.2026 «Да, подпункту»): a dotted «7.1.5.» is no list item; the paragraph after the last one
-    # is its second paragraph, as after «7.1.4.» (step 14 C2 had given it to «7.1.»).
+    # Step 17 (owner 28.10.2026 «Да, подпункту»): a dotted «7.1.5.» is no list item; the paragraph after the last one
+    # is its second paragraph, as after «7.1.4.» (step 16 C2 had given it to «7.1.»).
     pages = [[("Text", "УТВЕРЖДЕНЫ постановлением от 22.05.2020 № 15", 900),
               ("Section-header", "VII. Требования к содержанию"),
               ("Text", "7.1. Уборка проводится ежедневно."),
@@ -2433,7 +2433,7 @@ def test_paragraph_after_the_last_decimal_subpoint_stays_in_it():
 
 
 def test_paragraph_after_a_nested_list_returns_to_the_owner_of_that_list():
-    # Step 14 C2 (batch 14): after the last «д)» of the list inside «2)» the paragraph belongs to «2)», the owner
+    # Step 16 C2 (batch 14): after the last «д)» of the list inside «2)» the paragraph belongs to «2)», the owner
     # of the list, not to point 25 (convention v2: the point or part the list belongs to).
     got = owners(S.build(extraction(subpoint_pages([
         "25. К освещению предъявляются требования:", "1) показатели освещения соответствуют нормативам;",
@@ -2446,7 +2446,7 @@ def test_paragraph_after_a_nested_list_returns_to_the_owner_of_that_list():
 
 
 def test_sentence_after_an_unterminated_last_subpoint_on_the_same_page_returns_to_the_point():
-    # Step 14 C2 (batch 14): «19) … программой производственного контроля» lost its final «.»; the next
+    # Step 16 C2 (batch 14): «19) … программой производственного контроля» lost its final «.»; the next
     # capitalised sentence on the same page is the point's. On the next page it may be the cut sentence's
     # end («Российской Федерации.»), so it stays in the subpoint.
     head = ["74. При эксплуатации аквапарков:", "18) ванны обрабатываются дезинфицирующими препаратами;",
@@ -2460,7 +2460,7 @@ def test_sentence_after_an_unterminated_last_subpoint_on_the_same_page_returns_t
 
 
 def test_unterminated_lines_inside_a_subpoint_do_not_close_it():
-    # Step 14 C2 negative (ukaz-410-2021): appointment lines without punctuation, then a long sentence ending «.»,
+    # Step 16 C2 negative (ukaz-410-2021): appointment lines without punctuation, then a long sentence ending «.»,
     # stay in «а)»; only the subpoint's own marked paragraph that lost its «.» counts.
     got = owners(S.build(extraction(subpoint_pages([
         "1. Назначить:", "а) судьями:", "председателем Арбитражного суда Мурманской области",
@@ -2470,7 +2470,7 @@ def test_unterminated_lines_inside_a_subpoint_do_not_close_it():
 
 
 def test_header_subheadings_with_a_colon_or_after_an_unterminated_point_belong_to_the_section():
-    # Step 14 C3 (batch 15): OCR Section-header subheadings «Проведение проверки:» / «Документарная проверка» and a
+    # Step 16 C3 (batch 15): OCR Section-header subheadings «Проведение проверки:» / «Документарная проверка» and a
     # Section-header after a point that lost its final «.» belong to the section, as other subheadings do.
     got = owners(S.build(extraction(styled_regulation(
         ("Text", "4. Результатом процедуры является регистрация приказа."),
@@ -2491,7 +2491,7 @@ def test_header_subheadings_with_a_colon_or_after_an_unterminated_point_belong_t
 
 
 def test_rows_after_the_last_table_part_that_continue_the_row_numbers_are_annex_text():
-    # Step 14 C4 (batch 15, a subsidy calculation form): rows «1.», «2.» are cut out between the table parts and
+    # Step 16 C4 (batch 15, a subsidy calculation form): rows «1.», «2.» are cut out between the table parts and
     # «3.»-«5.» after the last part; they continue the row numbers, so they are rows too. A marker that does not
     # continue them («1.» again) is a point as before.
     rows = (MEASURES, ("List-item", "1. Расходы на оплату труда"), ("List-item", "2. Расходы на общехозяйственные нужды"),
@@ -2508,7 +2508,7 @@ def test_rows_after_the_last_table_part_that_continue_the_row_numbers_are_annex_
 
 
 def test_footer_printed_on_two_pages_is_a_page_mark_of_the_scope_root():
-    # Step 14 C5 (batch 14): «ФГОС ВО культурология -05» in the footer of two pages is a page mark of the
+    # Step 16 C5 (batch 14): «ФГОС ВО культурология -05» in the footer of two pages is a page mark of the
     # document (convention v2 §2), not text of point 2 it interrupts; the point still continues on the next page.
     # A footer line printed once keeps the old reading.
     def act(second_footer):
@@ -2525,7 +2525,7 @@ def test_footer_printed_on_two_pages_is_a_page_mark_of_the_scope_root():
 
 
 def test_a_list_of_point_references_is_text_of_the_point_that_lists_them():
-    # Step 15 B (owner 28.10.2026: a new class of batch 16): in «1.5. … не применяются к транспортным средствам, …
+    # Step 17 B (owner 28.10.2026: a new class of batch 16): in «1.5. … не применяются к транспортным средствам, …
     # утверждена до вступления в силу» the lines «2.1.42 и 2.2.7 в части …», «2.1.34, 4.1.4 в части …» are references
     # to points (number without its dot, then a lowercase word, «,» or «и»), not points. A dotless point with a
     # capitalised text («2.1.8 Организации …», as «7.1.8» in batch 16) is still a point.
@@ -2550,7 +2550,7 @@ def test_a_list_of_point_references_is_text_of_the_point_that_lists_them():
 
 
 def test_a_dotless_lowercase_subpoint_that_goes_on_keeps_its_marker():
-    # Step 15 B negative (prikaz-minkultury-1321-2016): «12.1 принятие решения …» under «12.» is a subpoint.
+    # Step 17 B negative (prikaz-minkultury-1321-2016): «12.1 принятие решения …» under «12.» is a subpoint.
     got = owners(S.build(extraction(regulation(
         ("Text", "12. Сроки предоставления услуги составляют:"),
         ("Text", "12.1 принятие решения о внесении сведений - не позднее 5 дней;"),

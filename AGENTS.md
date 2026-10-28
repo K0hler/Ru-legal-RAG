@@ -23,6 +23,12 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
   П<N>, checked on scan batch N. Write owner-facing text with «сканы», «официальные деревья от <дата>», «проверка»,
   «доработка»; never introduce new words for these. Glossary and the old→new name table: section 0 and 3 of
   [`docs/milestones/m1/04a/M1_04A_MAP_2026-10-25.md`](docs/milestones/m1/04a/M1_04A_MAP_2026-10-25.md).
+- The numbers never differ (owner 28.10.2026, «ни при каких обстоятельствах»): a step and its prototype take the
+  number of the scan batch the prototype will be checked on. When a prototype is checked on several batches in a
+  row, the next step takes the next unused batch number and skipped step numbers are never used (old «П14» = П16 =
+  step 16, checked on batch 16; the next is step 17 -> П17 -> batch 17; there are no steps 14 and 15). Before naming
+  a step or prototype, look up the next batch number. Code comments and AGENTS notes follow the same numbers; only
+  folder/file names and `VERSION` labels keep old numbers (`…-step14-c1`, `…-step15-a`, `M1_04A_CYCLE14_…`).
 
 ## Development workflow
 

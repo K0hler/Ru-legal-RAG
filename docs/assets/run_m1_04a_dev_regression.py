@@ -36,10 +36,10 @@ frozen in ``20261027-batch-11-gold-freeze`` with a document quoted in an amendme
 prikaz-fsb-641-2020 is the gold stitched from two page-range parts, step 13) and the 11 + 11 of scan batches 13 and 14
 (gold as frozen; prikaz-fsvng-63-2019 and sanpin-20-2026 stitched from two parts; the refilled favt-150 and sanpin-20-2015
 are not measured) and the 12 of scan batch 15 (``gold-footnotes``: the gold frozen in ``20261028-batch-15-gold-freeze``
-with source footnotes given to the point carrying their mark by ``derive_m1_04a_gold_footnotes.py``, step 14; since
-step 15 ``gold-dotted``: that copy with a paragraph after the last dotted subpoint given to the subpoint, owner
+with source footnotes given to the point carrying their mark by ``derive_m1_04a_gold_footnotes.py``, step 16; since
+step 17 ``gold-dotted``: that copy with a paragraph after the last dotted subpoint given to the subpoint, owner
 28.10.2026) and the 12 of scan batch 16 (gold as frozen in ``20261028-batch-16-gold-freeze``; sanpin-16-2026 and
-sanpin-30-2020 stitched from two parts, step 15); all are development since their first pass. Only gold keys are scored, so a gold that covers a
+sanpin-30-2020 stitched from two parts, step 17); all are development since their first pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
