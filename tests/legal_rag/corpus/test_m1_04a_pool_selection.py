@@ -1661,13 +1661,14 @@ def test_sanpin_slug_uses_the_resolution_number():
 def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_16():
     # Step 14 (28.10.2026) took batches 14 and 15 into development; batch 16 checks П14.
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[-1] == "batch-16" and len(catalog.POOL_BATCHES) == 16
+    assert catalog.POOL_BATCHES[15] == "batch-16" and catalog.POOL_BATCHES[-1] == "batch-19"
     for batch, report in (("batch-14", "M1_04A_POOL_BATCH_14_2026-10-28.md"), ("batch-15", "M1_04A_POOL_BATCH_15_2026-10-28.md")):
         history = catalog.POOL_STATUS[batch]
         assert [h["status"] for h in history] == ["measured", "development"]
         assert history[0]["evidence"] == f"experiments/20261028-{batch}-first-pass"
         assert history[1]["report"] == f"docs/milestones/m1/04a/{report}"
-    assert "batch-16" not in catalog.POOL_STATUS  # written only after the check
+    assert [h["status"] for h in catalog.POOL_STATUS["batch-16"]] == ["measured", "development"]
+    assert not {"batch-17", "batch-18", "batch-19"} & set(catalog.POOL_STATUS)  # written only after the check
 
 
 # ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
@@ -1682,6 +1683,17 @@ def test_batch_15_profile_takes_six_sanpin_and_requires_a_title():
     assert {k: v for k, v in b15.items() if k not in ("prior_batches", "quotas", "require_title")} == {
         k: v for k, v in b14.items() if k not in ("prior_batches", "quotas")}
     assert b15["prior_batches"] == b14["prior_batches"] + ("batch-14",)
+
+
+def test_batches_17_to_19_take_ten_sanpin_each_excluding_the_batches_before():
+    # Owner go-ahead 28.10.2026: 30 SanPiN at once, three batches of 10 (6 of 2011-2019, 4 of 2020+) checking П17.
+    b16 = P.PROFILES["batch-16"]
+    for number in (17, 18, 19):
+        b = P.PROFILES[f"batch-{number}"]
+        assert b["quotas"] == {"sanpin_2010s": 6, "sanpin_2020s": 4} and b["long_min"] == 0
+        assert b["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, number))
+        assert {k: v for k, v in b.items() if k not in ("quotas", "long_min", "prior_batches")} == {
+            k: v for k, v in b16.items() if k not in ("quotas", "long_min", "prior_batches")}
 
 
 def test_batch_16_profile_is_batch_15_excluding_batch_15():

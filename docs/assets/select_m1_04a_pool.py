@@ -129,6 +129,9 @@ BATCH15_QUOTAS = {
     "government_order": 1,
     "ministry_order": 2,
 }
+# Scan batches 17-19 (owner go-ahead 28.10.2026: 30 SanPiN at once, three batches of 10 checking П17 to close the
+# SanPiN family by section 7): SanPiN only, 6 of 2011-2019 and 4 of 2020+ per batch.
+SANPIN_ONLY_QUOTAS = {"sanpin_2010s": 6, "sanpin_2020s": 4}
 SANPIN_TYPES = ("sanpin_2010s", "sanpin_2020s")
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
@@ -1152,7 +1155,7 @@ PROFILES = {
                                    "batch-13", "batch-14"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True,
                  "require_no_ips_tree": True, "sanpin_candidates": True, "require_title": True},
-    # Scan batch 16 (owner 28.10.2026: check П14 with SanPiN): batch-15 settings, excluding batches 1-15.
+    # Scan batch 16 (owner 28.10.2026: check П16 with SanPiN): batch-15 settings, excluding batches 1-15.
     "batch-16": {"quotas": BATCH15_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
                  "require_single_edition": False, "exclude_used": True,
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
@@ -1161,6 +1164,11 @@ PROFILES = {
                  "preferred_pages_min": 5, "one_per_issuer_day": True,
                  "require_no_ips_tree": True, "sanpin_candidates": True, "require_title": True},
 }
+# Scan batches 17-19: batch-16 settings with SANPIN_ONLY_QUOTAS and no long-act minimum, each excluding the batches
+# before it.
+for _number in (17, 18, 19):
+    PROFILES[f"batch-{_number}"] = {**PROFILES["batch-16"], "quotas": SANPIN_ONLY_QUOTAS, "long_min": 0,
+                                    "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, _number))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")
