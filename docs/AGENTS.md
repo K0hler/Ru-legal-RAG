@@ -91,6 +91,13 @@
   c3789931…) as their candidate; rule B2 stays as is (pp-1006 keeps its 3 errors). Laws, government orders and
   decrees keep the v8 (П9) candidate. §7 readiness is not Task 3/G13: no qualification set exists yet. Rosaviatsiya
   favt-150 refilled by fadm-313 (nested `<table>` on p. 63 rejected by `pdf_extraction._Table`).
+- `milestones/m1/04a/M1_04A_POOL_BATCH_14_2026-10-28.md`: scan batch 14 (profile `batch-14`: SanPiN/SP + 2011-2019 acts without an IPS
+  tree), the second check of П13 (v12; П12 = v11 2287): 2289/2293 (99.83%), strict 2289, `cross_scope_v2` 0 for
+  both; SanPiN/SP 1235/1237 on the first sight of the kind (SP 2.1.4284-26 755/757: subpoint closed early, closing
+  sentence of point 74 left in subpoint 19), orders 614/616 (minobrazovaniya-1412 footer «ФГОС ВО …» given to a
+  point; minselskogo-134 20.1 OCR «з)» read «3)» nested under «ж)» as `S/II/30/ж/3` — the batch-7 rule expects
+  the digit at the subpoint's own level, so the classifier leaves it unclassified). rp-774-2017 approves changes
+  (empty feed title passed the amending filter). New class: none by reading, owner to confirm.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

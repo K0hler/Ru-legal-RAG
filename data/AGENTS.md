@@ -176,7 +176,10 @@
   template with batch-14 paths, no SanPiN hints); b14-07 first ended «model at capacity» (log
   `b14-07.attempt1-capacity.log`), re-run complete. Gold 2293 regions, 74 `+`, 0 alternatives, seam 34.11
   `S/VI/73/23` | 35.1 `S/VI/73/24`; frozen `experiments/20261028-batch-14-gold-freeze/` (62271520…, addendum
-  f6d4a0b6…). No prototype has run on batch 14 yet.
+  f6d4a0b6…). Check `experiments/20261028-batch-14-first-pass/` (freeze 1735da04…, v12 = П13 + v11 = П12, git_head
+  ef87216, `ordinal_single_annex` on), run once 28.10; never re-run. 2289/2293 (v11 2287), summary cc3a2eb0…,
+  error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
+  explicitly.
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
