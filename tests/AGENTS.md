@@ -23,6 +23,8 @@
   (empty and quote-only titles), recorded by `select_pool`, honoured by `refill`; singular «дополнения» is
   amending; `ips_title` from card `name` or `description`; with the tree filter an untitled act is looked up and
   judged by `ips_title` (missing / amending / ok), also inside tree `enrich`.
+  Batch-16: profile = batch-15 + prior batch 15; the catalog lists batch 16 and records batches 14 and 15 measured
+  then development (step 14, 28.10.2026).
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

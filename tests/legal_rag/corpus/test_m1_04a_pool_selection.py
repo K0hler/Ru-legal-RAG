@@ -1405,10 +1405,9 @@ def test_catalog_records_batch_13_checked_then_rework():
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_13_2026-10-27.md"
 
 
-def test_catalog_lists_batch_14_before_its_check():
+def test_catalog_lists_batch_14_in_order():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[13] == "batch-14"
-    assert "batch-14" not in catalog.POOL_STATUS  # written only after the check
+    assert catalog.POOL_BATCHES[13] == "batch-14"  # its status is written after the check (batch-16 test)
 
 
 # ---------------------------------------------------------------- scan batch 14: SanPiN and acts without an IPS tree
@@ -1659,10 +1658,16 @@ def test_sanpin_slug_uses_the_resolution_number():
     assert acquire.slug({"act_type": "sanpin_2010s", "number": "7", "date": "2015-07-14"}) == "sanpin-7-2015"
 
 
-def test_catalog_lists_batch_15_before_its_check():
+def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_16():
+    # Step 14 (28.10.2026) took batches 14 and 15 into development; batch 16 checks П14.
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[-1] == "batch-15" and len(catalog.POOL_BATCHES) == 15
-    assert "batch-15" not in catalog.POOL_STATUS  # written only after the check
+    assert catalog.POOL_BATCHES[-1] == "batch-16" and len(catalog.POOL_BATCHES) == 16
+    for batch, report in (("batch-14", "M1_04A_POOL_BATCH_14_2026-10-28.md"), ("batch-15", "M1_04A_POOL_BATCH_15_2026-10-28.md")):
+        history = catalog.POOL_STATUS[batch]
+        assert [h["status"] for h in history] == ["measured", "development"]
+        assert history[0]["evidence"] == f"experiments/20261028-{batch}-first-pass"
+        assert history[1]["report"] == f"docs/milestones/m1/04a/{report}"
+    assert "batch-16" not in catalog.POOL_STATUS  # written only after the check
 
 
 # ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
@@ -1677,6 +1682,12 @@ def test_batch_15_profile_takes_six_sanpin_and_requires_a_title():
     assert {k: v for k, v in b15.items() if k not in ("prior_batches", "quotas", "require_title")} == {
         k: v for k, v in b14.items() if k not in ("prior_batches", "quotas")}
     assert b15["prior_batches"] == b14["prior_batches"] + ("batch-14",)
+
+
+def test_batch_16_profile_is_batch_15_excluding_batch_15():
+    b15, b16 = P.PROFILES["batch-15"], P.PROFILES["batch-16"]
+    assert {k: v for k, v in b16.items() if k != "prior_batches"} == {k: v for k, v in b15.items() if k != "prior_batches"}
+    assert b16["prior_batches"] == b15["prior_batches"] + ("batch-15",)
 
 
 def test_empty_title_is_rejected_only_when_required():

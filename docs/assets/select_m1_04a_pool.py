@@ -1152,6 +1152,14 @@ PROFILES = {
                                    "batch-13", "batch-14"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True,
                  "require_no_ips_tree": True, "sanpin_candidates": True, "require_title": True},
+    # Scan batch 16 (owner 28.10.2026: check П14 with SanPiN): batch-15 settings, excluding batches 1-15.
+    "batch-16": {"quotas": BATCH15_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09", "batch-10", "batch-11", "batch-12",
+                                   "batch-13", "batch-14", "batch-15"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True,
+                 "require_no_ips_tree": True, "sanpin_candidates": True, "require_title": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
