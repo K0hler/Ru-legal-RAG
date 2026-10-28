@@ -1398,11 +1398,17 @@ def test_catalog_records_batch_12_checked_then_rework():
 
 def test_catalog_records_batch_13_checked_then_rework():
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[-1] == "batch-13" and len(catalog.POOL_BATCHES) == 13
+    assert catalog.POOL_BATCHES[12] == "batch-13"
     history = catalog.POOL_STATUS["batch-13"]  # written only after the check
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261027-batch-13-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_13_2026-10-27.md"
+
+
+def test_catalog_lists_batch_14_before_its_check():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES[-1] == "batch-14" and len(catalog.POOL_BATCHES) == 14
+    assert "batch-14" not in catalog.POOL_STATUS  # written only after the check
 
 
 # ---------------------------------------------------------------- scan batch 14: SanPiN and acts without an IPS tree
