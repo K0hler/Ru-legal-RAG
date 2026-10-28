@@ -141,6 +141,7 @@ AMENDING_PREFIXES = (
     "о внесении изменений",
     "о внесении изменения",
     "о внесении дополнений",
+    "о внесении дополнения",
     "о признании утратившими силу",
     "о признании утратившим силу",
 )
@@ -163,14 +164,15 @@ REASONS = (
     "not_in_ips",
     "ips_identity_ambiguous",
     "tree_lookup_error",
-    # Batch 15: an empty feed title, so the amending filter cannot read it (rp-774-2017 in batch 14).
+    # Batch 15: neither the feed nor the IPS card gives a title, so the amending filter cannot read it (rp-774-2017
+    # in batch 14; most government orders arrive untitled in the feed).
     "title_missing",
 )
 # Only metadata may reach a selected record.
 METADATA_FIELDS = (
     "eo_number", "act_type", "date", "number", "title", "pages", "edition_count",
     "official_found", "official_source", "official_hash",
-    "ips_found", "ips_hash", "ips_rdk", "ips_tree_nodes",
+    "ips_found", "ips_hash", "ips_rdk", "ips_tree_nodes", "ips_title",
 )
 # Acts that IPS (base c000000000) never holds: ministry orders and SanPiN; their absence is the expected answer.
 OUTSIDE_IPS = ("ministry_order",) + SANPIN_TYPES
@@ -300,8 +302,10 @@ def official_reason(row):
 TREE_FIELDS = ("ips_found", "tree_lookup_error", "ips_detail")
 
 
-def tree_reason(row):
-    """Rejections of the batch-14 IPS tree filter: an act qualifies only without a tree in its actual edition."""
+def tree_reason(row, require_title=False):
+    """Rejections of the batch-14 IPS tree filter: an act qualifies only without a tree in its actual edition.
+    With require_title (batch 15) an empty feed title is replaced by the IPS card title, which must exist and must
+    not be amending."""
     if row.get("tree_lookup_error"):
         return "tree_lookup_error"
     if row.get("ips_detail") == "ambiguous_ips_identity":
@@ -310,6 +314,12 @@ def tree_reason(row):
         return "not_in_ips"
     if (row.get("ips_tree_nodes") or 0) > 0:
         return "ips_tree_present"
+    if require_title and not _title(row.get("title", "")):
+        title = row.get("ips_title", "")
+        if not title:
+            return "title_missing"
+        if is_amending(title):
+            return "amending_act"
     return None
 
 
@@ -395,11 +405,12 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
     rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
     reasons = {}
     for row in rows:
-        reason = cheap_reason(row, already_used, pages_range, code_pages_max, require_title)
+        reason = cheap_reason(row, already_used, pages_range, code_pages_max,
+                              require_title and not require_no_ips_tree)
         if reason is None and require_single_edition:
             reason = official_reason(row)
         if reason is None and require_no_ips_tree:
-            reason = tree_reason(row)
+            reason = tree_reason(row, require_title)
         reasons[row["eo_number"]] = reason
     counter, taken, selected = QuotaCounter(quotas, long_min, long_pages), set(), []
     soft, fallbacks = SoftPreferences(preferred_pages_min, one_per_issuer_day), []
@@ -434,7 +445,7 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
         result["require_no_ips_tree"] = True
         result["tree_checked"] = [
             {"eo_number": row["eo_number"], "act_type": row["act_type"], "ips_found": row.get("ips_found"),
-             "ips_tree_nodes": row.get("ips_tree_nodes"), "reason": tree_reason(row)}
+             "ips_tree_nodes": row.get("ips_tree_nodes"), "reason": tree_reason(row, require_title)}
             for row in rows if any(key in row for key in TREE_FIELDS)]
     if soft.active:
         result.update({
@@ -591,8 +602,12 @@ def ips_tree(ips, number, iso):
     query = urlencode({"nd": card["nd"], "rdk": card["actualrdk"], "bpa": card["baseid"]})
     content_raw, _ = _retry(lambda: ips._get(ips._api_base + "/document_content?" + query))
     data = json.loads(content_raw).get("data")
-    return {"ips_found": True, "ips_hash": h, "ips_rdk": card["actualrdk"],
+    info = {"ips_found": True, "ips_hash": h, "ips_rdk": card["actualrdk"],
             "ips_tree_nodes": len(data) if isinstance(data, list) else 0}
+    title = _norm(card.get("name") or card.get("description") or "")  # untitled orders: description only
+    if title:
+        info["ips_title"] = title
+    return info
 
 
 def tree_lookup(ips, row):
@@ -1015,7 +1030,8 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
     filled. Counters are incremental (one pass per phase), mirroring select_pool.
     mode="no_ips_tree" (batch 14) looks up the IPS tree instead and keeps acts without one."""
     if mode == "no_ips_tree":
-        look, reason = (lambda row: tree_lookup(ips, row)), tree_reason
+        titled, require_title = require_title, False  # judged on the IPS answer, not on the feed card
+        look, reason = (lambda row: tree_lookup(ips, row)), (lambda row: tree_reason(row, titled))
     else:
         look, reason = (lambda row: lookup(actual, ips, row)), official_reason
     rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
@@ -1042,15 +1058,15 @@ def tree_reserve(pool, enriched, ips, quotas, seed, already_used, pages_range, c
     """After a no-tree selection, look up further candidates per category in seeded order until `reserve` acts
     without a tree beyond the quota are known, so that a refill draws from checked acts only."""
     for kind, quota in quotas.items():
-        passing = sum(1 for r in enriched.values() if r["act_type"] == kind and tree_reason(r) is None)
+        passing = sum(1 for r in enriched.values() if r["act_type"] == kind and tree_reason(r, require_title) is None)
         for row in ordered(pool.values(), seed):
             if passing >= quota + reserve:
                 break
             if (row["act_type"] != kind or row["eo_number"] in enriched
-                    or cheap_reason(row, already_used, pages_range, code_pages_max, require_title) is not None):
+                    or cheap_reason(row, already_used, pages_range, code_pages_max) is not None):
                 continue
             enriched[row["eo_number"]] = dict(row, **tree_lookup(ips, row))
-            passing += tree_reason(enriched[row["eo_number"]]) is None
+            passing += tree_reason(enriched[row["eo_number"]], require_title) is None
 
 
 TREE_RESERVE = 3  # = MAX_REFILL_ATTEMPTS: one checked act per possible refill of a slot
@@ -1306,7 +1322,7 @@ def run(args):
                    code_pages_max, **soft_options, mode="no_ips_tree" if tree else "single_edition",
                    require_title=titled)
             rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
-                                              and cheap_reason(r, used, pages_range, code_pages_max, titled) is not None]
+                                              and cheap_reason(r, used, pages_range, code_pages_max, titled and not tree) is not None]
         else:
             rows = list(pool.values())
         result = select_pool(rows, quotas, args.seed, **options)
@@ -1317,7 +1333,7 @@ def run(args):
         tree_reserve(pool, enriched, ips, quotas, args.seed, used, pages_range, code_pages_max, TREE_RESERVE,
                      titled)
         rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
-                                          and cheap_reason(r, used, pages_range, code_pages_max, titled) is not None]
+                                          and cheap_reason(r, used, pages_range, code_pages_max, titled and not tree) is not None]
         result = select_pool(rows, quotas, args.seed, **options)
         if [r["eo_number"] for r in result["selected"]] != picked:
             raise RuntimeError("tree reserve lookups changed the selection")
@@ -1449,7 +1465,7 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
                 continue
             if no_tree and row["eo_number"] not in checked:
                 continue
-            if cheap_reason(row, frozenset(), pages_range, code_pages_max, titled) is not None:
+            if cheap_reason(row, frozenset(), pages_range, code_pages_max, titled and not no_tree) is not None:
                 continue
             if need_long and row["pages"] < long_pages:
                 continue

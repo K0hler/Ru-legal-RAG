@@ -1702,3 +1702,77 @@ def test_refill_skips_untitled_acts_when_the_selection_requires_a_title():
     assert P.refill(selection, pool, {first["eo_number"]: "ocr"})["selected"][0]["eo_number"] == titled["eo_number"]
     del selection["require_title"]
     assert P.refill(selection, pool, {first["eo_number"]: "ocr"})["selected"][0]["eo_number"] == untitled["eo_number"]
+
+
+def test_singular_supplement_is_an_amending_title():
+    # Batch 15 attempt 1 drew law 252-FZ «О внесении дополнения в Федеральный закон …».
+    assert P.is_amending('Федеральный закон от 21.07.2014 № 252-ФЗ "О внесении дополнения в Федеральный закон"')
+    assert P.cheap_reason(card(1, title="О внесении дополнения в статью 5")) == "amending_act"
+
+
+class TitledIPS(TreeIPS):
+    """IPS fake whose card carries `name`/`description` per act number."""
+
+    def __init__(self, trees, cards):
+        super().__init__(trees)
+        self.cards = cards
+
+    def _get(self, url):
+        import json
+
+        body, headers = super()._get(url)
+        if "document_card" not in url:
+            return body, headers
+        card_json = json.loads(body)
+        card_json.update(self.cards[card_json["nd"][len("ndh"):]])
+        return json.dumps(card_json).encode(), headers
+
+
+def test_ips_tree_records_the_card_name_or_description_as_ips_title(monkeypatch):
+    ips = TitledIPS({"5": 0, "6": 0, "8": 0}, {"5": {"name": "Об  акте", "description": "x"},
+                                              "6": {"name": "", "description": "О передаче имущества"},
+                                              "8": {"name": ""}})
+
+    def search(_, number, dmy):
+        return [{"hash": "h" + number, "docdate": dmy, "adoption": f"Распоряжение от {dmy} № {number}"}]
+
+    monkeypatch.setattr(P, "_ips_search", search)
+    assert P.ips_tree(ips, "5", "2016-03-01")["ips_title"] == "Об акте"
+    assert P.ips_tree(ips, "6", "2016-03-01")["ips_title"] == "О передаче имущества"
+    assert "ips_title" not in P.ips_tree(ips, "8", "2016-03-01")
+    assert "ips_title" in P.METADATA_FIELDS
+
+
+def test_tree_reason_reads_the_ips_title_when_the_feed_title_is_empty():
+    order = dict(card(1, "government_order", title=""), ips_found=True, ips_tree_nodes=0)
+    assert P.tree_reason(order) is None  # earlier profiles: no title rule
+    assert P.tree_reason(order, require_title=True) == "title_missing"
+    assert P.tree_reason(dict(order, ips_title="О передаче имущества"), require_title=True) is None
+    assert P.tree_reason(dict(order, ips_title="О внесении изменений в план"), require_title=True) == "amending_act"
+    titled = dict(card(2, "government_order"), ips_found=True, ips_tree_nodes=0, ips_title="О внесении изменений")
+    assert P.tree_reason(titled, require_title=True) is None  # the feed title decides when present
+    assert P.tree_reason(dict(order, ips_tree_nodes=4, ips_title="Об акте"), require_title=True) == "ips_tree_present"
+
+
+def test_tree_selection_defers_the_title_check_to_the_ips_answer():
+    plain = dict(card(1, title=""), ips_found=True, ips_tree_nodes=0, ips_title="Об утверждении правил")
+    blank = dict(card(2, title=""), ips_found=True, ips_tree_nodes=0)
+    result = P.select_pool([plain, blank], {"federal_law": 2}, 7, require_single_edition=False,
+                           require_no_ips_tree=True, require_title=True)
+    assert [r["eo_number"] for r in result["selected"]] == [plain["eo_number"]]
+    assert result["selected"][0]["ips_title"] == "Об утверждении правил"
+    assert result["rejected"] == [{"eo_number": blank["eo_number"], "reason": "title_missing"}]
+    checked = {r["eo_number"]: r["reason"] for r in result["tree_checked"]}
+    assert checked == {plain["eo_number"]: None, blank["eo_number"]: "title_missing"}
+
+
+def test_tree_enrich_looks_up_untitled_acts_when_a_title_is_required(monkeypatch):
+    rows = [card(n, title="") for n in range(1, 4)]
+    monkeypatch.setattr(P, "tree_lookup", lambda ips, row: {"ips_found": True, "ips_tree_nodes": 0,
+                                                            **({"ips_title": "Об акте"} if row is rows[1] else {})})
+    enriched = {}
+    P.enrich({r["eo_number"]: r for r in rows}, enriched, None, None, {"federal_law": 1}, 3, pages_range=(3, 200),
+             mode="no_ips_tree", require_title=True)
+    result = P.select_pool(list(enriched.values()), {"federal_law": 1}, 3, require_single_edition=False,
+                           pages_range=(3, 200), require_no_ips_tree=True, require_title=True)
+    assert [r["eo_number"] for r in result["selected"]] == [rows[1]["eo_number"]]

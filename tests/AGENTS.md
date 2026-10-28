@@ -20,7 +20,9 @@
   `ips_tree` reads the actual edition of the single exact match; tree `enrich` stops at the quotas; refill takes
   only checked acts without a tree; a full run with frozen SanPiN, rejected trees, reserves and a SanPiN refill.
   Batch-15: profile = batch-14 + 3/3 SanPiN, 1 resolution, `require_title`; `title_missing` only when required
-  (empty and quote-only titles), recorded by `select_pool`, honoured by `refill`.
+  (empty and quote-only titles), recorded by `select_pool`, honoured by `refill`; singular «дополнения» is
+  amending; `ips_title` from card `name` or `description`; with the tree filter an untitled act is looked up and
+  judged by `ips_title` (missing / amending / ok), also inside tree `enrich`.
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

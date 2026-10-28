@@ -155,9 +155,13 @@
   days in 2010 and early 2011), so 2010s scans are 2011-2019.
 - Profile `batch-15` (owner go-ahead 28.10.2026): batch-14 settings with quotas `sanpin_2010s` 3, `sanpin_2020s`
   3, law 1, decree 1, resolution 1, government order 1, ministry orders 2, prior batches 1-14, and
-  `require_title`: `cheap_reason` rejects an empty bare feed title as `title_missing` (batch 14's rp-774-2017
-  passed the amending filter that way). The flag is written to the selection and its refills; earlier profiles
-  keep their behaviour. The run reuses the frozen batch-14 SanPiN list.
+  `require_title` (owner 28.10.2026: title from IPS). 524 of 617 feed government orders of 2011-2019 have an empty
+  `name`, and so does IPS search `name`; the IPS `document_card` often has `description`. `ips_tree` records
+  `ips_title` = card `name` or `description`; with the tree filter `tree_reason(row, require_title)` judges an empty
+  feed title by `ips_title`: none -> `title_missing`, amending -> `amending_act` (without the tree filter
+  `cheap_reason` rejects an empty feed title). The flag is written to the selection and its refills; earlier
+  profiles keep their behaviour. `AMENDING_PREFIXES` now also holds «о внесении дополнения» (attempt 1 drew law
+  252-FZ «О внесении дополнения …»). The run reuses the frozen batch-14 SanPiN list.
 
 - `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
   logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),
