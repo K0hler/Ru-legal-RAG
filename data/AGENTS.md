@@ -181,6 +181,16 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batch 15 (28.10.2026): `m1/m1-04a/documents/pool/batch-15/selection.json` (d01b7b4a…, profile `batch-15`,
+  seed 20261104, `--from 2011-01-01 --to 2019-12-31`, code 8a290f3, SanPiN list reused from batch 14). Attempt 1
+  (code 58a3aea, 43ec9076…) is kept as `selection.attempt-01.*`: it drew law 252-FZ «О внесении дополнения …» and
+  its feed-only title rule rejected 524 of 617 government orders (empty feed `name`); attempt 2 reuses its feed
+  cache. 120 feed days; IPS tree filter: 50 acts checked, 18 with a tree (laws 8, decrees 6, resolutions 3, order 1),
+  1 government order amending by its IPS title. Selected: SP 2.6.1.3247-15, SP 2.1.2.3358-16, SP 2.1.2.3304-15,
+  SP 2.4.2.4283-26 (56 p.), SP 3.1/2.4.3598-20, SP 2.2.1.4111-25, law 16-FZ/2014 (24 p.), decree 258/2015 (awards),
+  resolution 737/2019, government order 1838-r/2013 (title from IPS `description`), orders 220n/2017 and 728/2015;
+  5 long acts, no soft fallbacks.
+
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
   on the owner's request (GPU memory 15939/16303 MiB): 9 acts complete, raw summary reconstructed
