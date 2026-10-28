@@ -171,6 +171,12 @@
   rows like batch 13. Build the catalog after refills. `-ReplayOnly` skips acts whose `run-01-replay` exists, so its
   `summary.raw.replay-*.json` files here are empty; summaries use `--replay-raw summary.raw.json`. 11 measured acts,
   292 pages, 2658 regions; sanpin-20-2026 93 p. / 851 regions / 33 tables.
+  Annotation input `experiments/20261028-batch-14-annotation-input/` (2293 regions; sanpin-20-2026 in 2 parts,
+  pages 1-34 / 35-93, 40 context rows). 7 Codex jobs `.superpowers/sdd/2026-10-28-m1-04a-pool-batch-14/` (batch-13
+  template with batch-14 paths, no SanPiN hints); b14-07 first ended «model at capacity» (log
+  `b14-07.attempt1-capacity.log`), re-run complete. Gold 2293 regions, 74 `+`, 0 alternatives, seam 34.11
+  `S/VI/73/23` | 35.1 `S/VI/73/24`; frozen `experiments/20261028-batch-14-gold-freeze/` (62271520…, addendum
+  f6d4a0b6…). No prototype has run on batch 14 yet.
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
