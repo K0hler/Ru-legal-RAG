@@ -156,6 +156,14 @@
   in it in this gold (two batch-15 regions said the point) — the dotted extension overfitted batch 15. Reading:
   a list of point references «2.1.42 и 2.2.7 в части …» read as points (5, sanpin-30-2020, both prototypes) is a
   new class. Owner questions: that class and the counter; dotted subpoint paragraphs.
+- Owner 28.10.2026 «Да, подпункту»: a paragraph after the last dotted subpoint «N.M.K.» belongs to it (convention v2
+  §6.1; list rule only for «1)», «а)»). `assets/derive_m1_04a_gold_footnotes.py` takes `--base/--suffix/--map`:
+  batch 15 `gold-dotted` = `gold-footnotes` + maps `agent-<slug>.dotted-map.json` (sanpin-61-2015 11.13,
+  sanpin-69-2016 11.6). Dev regression = 179 documents (`BATCH_15` on `gold-dotted`, `BATCH_16` on `gold`); frozen
+  П14 baseline `20261028-dev-regression-179-v13` (2c24b657…): 37288/37463, batches 14/15/16 = 2293/2510/4723.
+- Step 15 A (prototype not frozen, `VERSION` 13 unchanged): `subpoint_level` is back to «1)» / «а)» only (the C2
+  dotted reading removed). `…-step15-a` (77f34461…): 37303/37463 (+15: sanpin-30-2020 +11, sanpin-31-2015 +2, sanpin-61/69 +1
+  each), nothing below; batch 16 4736 (rework, the check stays 4723). JSON `s15-a` equal to `v13` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

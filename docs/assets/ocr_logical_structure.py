@@ -996,11 +996,9 @@ OWN_SENTENCE_MIN_WORDS = 8  # step 14 C2: a sentence after an unterminated subpo
 
 
 def subpoint_level(stack: tuple, level: int) -> bool:
-    """``stack[level]`` is a subpoint: «1)» / «а)», or (step 14 C2, batch 15) a dotted «7.1.5.» inside the
-    dotted point «7.1.» it extends."""
-    kind = stack[level][0]
-    return kind in SUBPOINT_KINDS or (kind == "decimal" and level > 0 and stack[level - 1][0] == "decimal"
-                                      and stack[level][1][:-1] == stack[level - 1][1])
+    """``stack[level]`` is a list subpoint «1)» / «а)». Step 15 (owner 28.10.2026): a dotted «4.3.26.» is no list
+    item; a paragraph after the last one stays in it (the step-14 C2 dotted reading overfitted batch 15)."""
+    return stack[level][0] in SUBPOINT_KINDS
 
 
 def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) -> None:

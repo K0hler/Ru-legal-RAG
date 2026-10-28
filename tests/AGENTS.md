@@ -37,6 +37,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 15 A: the paragraph after the last dotted «7.1.5.» stays in it (owner 28.10.2026); dev regression lists 179
+  documents (batch 15 on `gold-dotted`, batch 16 on `gold`); `test_m1_04a_gold_footnotes.py` derives a later copy
+  (`--base gold-footnotes --suffix gold-dotted --map dotted-map`) pinned to the earlier copy.
 - Step 14 C5 test: a footer printed on two pages is a page mark of the act (`A`) and the interrupted point still
   continues; a footer printed once keeps the point.
 - Step 14 C4 test: rows «3.»-«5.» after the last table part going on from the cut-out «1.», «2.» are annex text

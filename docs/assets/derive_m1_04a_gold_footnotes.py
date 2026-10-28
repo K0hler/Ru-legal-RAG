@@ -8,7 +8,12 @@ hand-written map ``agent-<slug>.footnotes-map.json`` (``{"schema_version": "m1-0
 flag is kept. The map is pinned to the frozen gold hash, and every listed region must exist with the frozen owner
 field ``from``. The receipt lists the derived gold, the frozen gold and the map.
 
-    python docs/assets/derive_m1_04a_gold_footnotes.py --slugs <slug> ...
+Later owner decisions reuse the same mechanism on top of an earlier derived copy: ``--base gold-footnotes --suffix
+gold-dotted --map dotted-map`` (owner 28.10.2026: a paragraph after the last dotted subpoint belongs to it) reads
+``agent-<slug>.gold-footnotes.txt``, pins the map ``agent-<slug>.dotted-map.json`` to it and writes
+``agent-<slug>.gold-dotted.{txt,sha256}``.
+
+    python docs/assets/derive_m1_04a_gold_footnotes.py --slugs <slug> ... [--base B --suffix S --map M]
 """
 
 from __future__ import annotations
@@ -26,12 +31,12 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def derive(slug: str) -> dict:
+def derive(slug: str, base: str = "gold", suffix: str = SUFFIX, map_name: str = "footnotes-map") -> dict:
     folder = GOLD / slug
-    frozen = folder / f"agent-{slug}.gold.txt"
-    out = folder / f"agent-{slug}.{SUFFIX}.txt"
-    receipt = folder / f"agent-{slug}.{SUFFIX}.sha256"
-    mapping = folder / f"agent-{slug}.footnotes-map.json"
+    frozen = folder / f"agent-{slug}.{base}.txt"
+    out = folder / f"agent-{slug}.{suffix}.txt"
+    receipt = folder / f"agent-{slug}.{suffix}.sha256"
+    mapping = folder / f"agent-{slug}.{map_name}.json"
     lines = frozen.read_text(encoding="utf-8").split("\n")
     changed = 0
     if mapping.exists():
@@ -64,8 +69,11 @@ def derive(slug: str) -> dict:
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--slugs", nargs="+", required=True)
+    parser.add_argument("--base", default="gold", help="suffix of the gold copy to start from")
+    parser.add_argument("--suffix", default=SUFFIX, help="suffix of the derived copy")
+    parser.add_argument("--map", default="footnotes-map", help="map name: agent-<slug>.<map>.json")
     args = parser.parse_args(argv)
-    print(json.dumps([derive(slug) for slug in args.slugs], ensure_ascii=False))
+    print(json.dumps([derive(slug, args.base, args.suffix, args.map) for slug in args.slugs], ensure_ascii=False))
 
 
 if __name__ == "__main__":

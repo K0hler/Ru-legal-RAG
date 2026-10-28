@@ -79,3 +79,23 @@ def test_derived_gold_is_write_once(tmp_path, monkeypatch):
     D.derive("fz-x")
     with pytest.raises(FileExistsError):
         D.derive("fz-x")
+
+
+def test_a_later_decision_derives_from_an_earlier_copy(tmp_path, monkeypatch):
+    # Owner 28.10.2026 (dotted subpoints): the map is pinned to the gold-footnotes copy, the new copy is gold-dotted.
+    monkeypatch.setattr(D, "GOLD", tmp_path)
+    folder = write_gold(tmp_path, "sanpin-x")
+    write_map(folder, "sanpin-x", {"1.2": {"from": "S", "owner": "S/I/1.1", "mark": "1.1"}})
+    D.derive("sanpin-x")
+    base = folder / "agent-sanpin-x.gold-footnotes.txt"
+    (folder / "agent-sanpin-x.dotted-map.json").write_text(json.dumps({
+        "schema_version": "m1-04a-gold-footnotes-map/1", "gold_sha256": hashlib.sha256(base.read_bytes()).hexdigest(),
+        "regions": {"2.2": {"from": "S", "owner": "S/I/1.2"}}}), encoding="utf-8")
+    assert D.derive("sanpin-x", "gold-footnotes", "gold-dotted", "dotted-map")["changed_rows"] == 1
+    out = (folder / "agent-sanpin-x.gold-dotted.txt").read_text(encoding="utf-8").split("\n")
+    assert out[2] == "1.2 S/I/1.1" and out[4] == "2.2 S/I/1.2 +"
+    receipt = (folder / "agent-sanpin-x.gold-dotted.sha256").read_text(encoding="utf-8").splitlines()
+    assert [line.split("  ")[1] for line in receipt] == [
+        "agent-sanpin-x.gold-dotted.txt", "agent-sanpin-x.gold-footnotes.txt", "agent-sanpin-x.dotted-map.json"]
+    D.main(["--slugs", "sanpin-x", "--base", "gold-footnotes", "--suffix", "gold-other", "--map", "absent-map"])
+    assert (folder / "agent-sanpin-x.gold-other.txt").read_bytes() == base.read_bytes()

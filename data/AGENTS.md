@@ -201,6 +201,9 @@
   addendum 8e4c4437...). Check `experiments/20261028-batch-16-first-pass/` (freeze dc2831da..., v13 = П14 + v12 = П13,
   git_head f531431), run once 28.10; never re-run. П14 4723/4752 (99.39%), П13 4736; summary 0fdef057..., classes
   v13 e452e7e1... / v12 3c9433e6..., sample-30 da098639... (seed 20261105, 30/30).
+  Owner 28.10.2026: a paragraph after the last dotted subpoint belongs to it -> batch-15 maps
+  `gold/<slug>/agent-<slug>.dotted-map.json` (sanpin-61-2015 11.13, sanpin-69-2016 11.6, pinned to `gold-footnotes`)
+  and `agent-<slug>.gold-dotted.{txt,sha256}` for all 12 batch-15 acts (10 exact copies); batch 16 gold unchanged.
 
 - Scan batch 15 (28.10.2026): `m1/m1-04a/documents/pool/batch-15/selection.json` (d01b7b4a…, profile `batch-15`,
   seed 20261104, `--from 2011-01-01 --to 2019-12-31`, code 8a290f3, SanPiN list reused from batch 14). Attempt 1

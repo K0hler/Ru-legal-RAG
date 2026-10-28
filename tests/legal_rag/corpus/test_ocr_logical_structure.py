@@ -2415,9 +2415,9 @@ def test_genuine_letters_and_digits_keep_their_reading():
     assert got["1.13"] == "A/4/б" and got["1.19"] == "A/4/з"
 
 
-def test_paragraph_after_the_last_decimal_subpoint_returns_to_the_point():
-    # Step 14 C2 (batch 15): «7.1.5.» is the last subpoint of «7.1.»; the next capitalised sentence closes it, as
-    # after «1)» / «а)». A paragraph after a subpoint that the next marker continues («7.1.4.» -> «7.1.5.») stays.
+def test_paragraph_after_the_last_decimal_subpoint_stays_in_it():
+    # Step 15 (owner 28.10.2026 «Да, подпункту»): a dotted «7.1.5.» is no list item; the paragraph after the last one
+    # is its second paragraph, as after «7.1.4.» (step 14 C2 had given it to «7.1.»).
     pages = [[("Text", "УТВЕРЖДЕНЫ постановлением от 22.05.2020 № 15", 900),
               ("Section-header", "VII. Требования к содержанию"),
               ("Text", "7.1. Уборка проводится ежедневно."),
@@ -2428,7 +2428,7 @@ def test_paragraph_after_the_last_decimal_subpoint_returns_to_the_point():
               ("Text", "7.2. Оконные стекла очищаются по мере загрязнения.")]]
     got = owners(S.build(extraction(pages)))
     assert got["1.4"] == "S/VII/7.1/7.1.4"
-    assert got["1.6"] == "S/VII/7.1"
+    assert got["1.6"] == "S/VII/7.1/7.1.5"
     assert got["1.7"] == "S/VII/7.2"
 
 
