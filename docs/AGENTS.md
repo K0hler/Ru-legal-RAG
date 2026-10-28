@@ -109,6 +109,19 @@
   classifier names only the marker region). pp-737 form rows «3. …»-«5. Итого» and signatures as points (5),
   minenergetiki-728 unnumbered subheadings (3), paragraph after the last subpoint (2, unclassified). New class: none
   by reading, owner to confirm.
+- Step 14 A (owner 28.10.2026: known classes keep recurring on frozen П13): dev regression covers 167 documents
+  (+ `BATCH_13`, `BATCH_14` on the frozen `.gold.txt` without the refilled favt-150/sanpin-20-2015, `BATCH_15` on
+  `gold-footnotes`). Baseline of frozen П13 (v12) `20261028-dev-regression-167-v12` (3655a364…): 32522/32711, batches
+  13/14/15 = 2424/2289/2479 (the checks and the batch-15 rework rescore); the 133 earlier rows equal
+  `…-dev-regression-v12`. Step-14 rules gate with `--baseline` it and `--frozen-families`; JSON v1/v2 must equal
+  `v12-results.json` per act.
+- Step 14 C1 (prototype not frozen, `VERSION` unchanged): `Marker.alt` holds the other reading of a one-character
+  subpoint marker OCR confuses (`OCR_CONFUSED`: «б)»/«6)», «з)»/«3)», `with_ocr_reading`); `solve_depths` also
+  tries it at `OCR_READING_COST` 0.5 (above a tie-break, below any gap or unexplained nesting), and the build keeps
+  the chosen reading in `p.marker` with evidence `ocr_marker`. `…-step14-c1` (43c1f93b…): 32551/32711 (+29), no
+  document below baseline; error lists changed only by fixes: sanpin-19-2026 662 -> 685/685, fz-119-2016 350 -> 353,
+  fz-15-2013 219 -> 221, prikaz-minselskogo-134-2016 392 -> 393; batch 15 2502/2513 (99.56%). The family gate exits
+  1 for those fixes (laws, sanitary rules). JSON `s14-c1` equal to v12 per act on both stands.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

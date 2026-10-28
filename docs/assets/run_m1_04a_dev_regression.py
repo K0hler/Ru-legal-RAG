@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 133 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 167 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -33,8 +33,11 @@ in ``20261025-batch-08-gold-freeze`` with convention v2 §6.1 forms merged into 
 is the gold stitched from three page-range parts, cycle 11) and the 11 of scan batch 11 (``gold-quoted``: the gold
 frozen in ``20261027-batch-11-gold-freeze`` with a document quoted in an amendment given to its introducing point by
 ``derive_m1_04a_gold_quoted.py``, step 12) and the 11 of scan batch 12 (``20261027-batch-12-gold-freeze``;
-prikaz-fsb-641-2020 is the gold stitched from two page-range parts, step 13); all are development since their first
-pass. Only gold keys are scored, so a gold that covers a
+prikaz-fsb-641-2020 is the gold stitched from two page-range parts, step 13) and the 11 + 11 of scan batches 13 and 14
+(gold as frozen; prikaz-fsvng-63-2019 and sanpin-20-2026 stitched from two parts; the refilled favt-150 and sanpin-20-2015
+are not measured) and the 12 of scan batch 15 (``gold-footnotes``: the gold frozen in ``20261028-batch-15-gold-freeze``
+with source footnotes given to the point carrying their mark by ``derive_m1_04a_gold_footnotes.py``, step 14); all are
+development since their first pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
@@ -85,6 +88,15 @@ BATCH_11 = ("fz-50-2012", "fz-58-2012", "pp-1094-2022", "pp-262-2017", "pp-291-2
 BATCH_12 = ("fz-435-2020", "pp-766-2025", "pp-93-2020", "pp-996-2022", "prikaz-fsb-641-2020",
             "prikaz-minekonomicheskogo-136-2022", "prikaz-mintruda-1141-2014", "prikaz-mintruda-393-2025",
             "prikaz-minvnutrennikh-995-2019", "rp-3372-2020", "ukaz-486-2015")
+BATCH_13 = ("fz-159-2021", "pp-1006-2019", "pp-430-2016", "pp-896-2024", "prikaz-fadm-313-2016", "prikaz-fsvng-63-2019",
+            "prikaz-minfinansov-203-2020", "prikaz-minnauki-511-2019", "prikaz-mintruda-632-2015", "rp-788-2013",
+            "ukaz-732-2020")
+BATCH_14 = ("fz-24-2013", "pp-1250-2018", "pp-469-2017", "prikaz-minobrazovaniya-1412-2015",
+            "prikaz-minselskogo-134-2016", "rp-774-2017", "sanpin-124-2017", "sanpin-20-2026", "sanpin-32-2015",
+            "sanpin-36-2020", "ukaz-225-2016")
+BATCH_15 = ("fz-16-2014", "pp-737-2019", "rp-1838-2013", "ukaz-258-2015", "prikaz-minenergetiki-728-2015",
+            "prikaz-mintruda-220-2017", "sanpin-4-2015", "sanpin-61-2015", "sanpin-69-2016", "sanpin-1-2025",
+            "sanpin-16-2020", "sanpin-19-2026")
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -127,7 +139,9 @@ def development_documents() -> list[dict]:
                                  ("batch-5", BATCH_5, "gold"), ("batch-6", BATCH_6, "gold"),
                                  ("batch-7", BATCH_7, "gold"), ("batch-8", BATCH_8, "gold-forms"),
                                  ("batch-9", BATCH_9, "gold"), ("batch-10", BATCH_10, "gold"),
-                                 ("batch-11", BATCH_11, "gold-quoted"), ("batch-12", BATCH_12, "gold")):
+                                 ("batch-11", BATCH_11, "gold-quoted"), ("batch-12", BATCH_12, "gold"),
+                                 ("batch-13", BATCH_13, "gold"), ("batch-14", BATCH_14, "gold"),
+                                 ("batch-15", BATCH_15, "gold-footnotes")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})

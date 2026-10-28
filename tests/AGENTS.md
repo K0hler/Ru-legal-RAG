@@ -35,6 +35,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 14 C1 tests in `corpus/test_ocr_logical_structure.py`: OCR «б)» for «6)» after «5)» reads as the sixth
+  subpoint and its own «а)»-«в)» nest under it; «3)» after «ж)» reads as «з)»; genuine letter and digit lists keep
+  their reading.
 - `corpus/test_ocr_logical_structure.py` checks the M1-04A logical-paragraph
   experiment with authored extractions: lowercase continuations never open
   approval scope, terminated list abzacy stay separate, decimal/global point

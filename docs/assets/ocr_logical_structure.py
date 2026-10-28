@@ -29,7 +29,7 @@ import hashlib
 import json
 import re
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 VERSION = "ocr-logical-structure/12-experiment"
 
@@ -310,6 +310,9 @@ class Marker:
     restart: bool = False
     # inserted unit «2¹.», «3²)», «е¹)»: value is the base number, sup the superscript index
     sup: int = 0
+    # step 14 C1: the other reading of a marker OCR confuses («б)» / «6)», «з)» / «3)»); the solver tries it at
+    # OCR_READING_COST and keeps it only where the sequence fits better
+    alt: "Marker | None" = None
 
 
 # Named law units, recognised only at the start of a paragraph. Hierarchy:
@@ -414,13 +417,30 @@ def parse_marker(text: str, category: str) -> Marker:
         return Marker("int", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
     m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\)\s+\S", text)
     if m:
-        return Marker("paren", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
+        return with_ocr_reading(Marker("paren", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2))))
     m = re.match(rf"^([а-я])([{SUP}]*)\)\s+\S", text)
     if m and m.group(1) in LETTERS:
-        return Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1) + m.group(2), sup=sup_value(m.group(2)))
+        return with_ocr_reading(Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1) + m.group(2),
+                                       sup=sup_value(m.group(2))))
     if re.match(r"^[-–—]\s+\S", text):
         return Marker("dash")
     return Marker("none")
+
+
+# Step 14 C1: subpoint markers OCR confuses — Cyrillic «б» and digit «6», «з» and «3» (batches 7, 13, 14, 15).
+OCR_CONFUSED = {"б": "6", "6": "б", "з": "3", "3": "з"}
+OCR_READING_COST = 0.5  # above a tie-break (0.01 per level), below any gap (2.0+) or unexplained nesting (10.0)
+
+
+def with_ocr_reading(marker: Marker) -> Marker:
+    """Attach the other reading of a one-character «б)»/«6)», «з)»/«3)» subpoint marker (a superscript is kept)."""
+    base = strip_sup(marker.label)
+    other = OCR_CONFUSED.get(base) if len(base) == 1 else None
+    if other is not None:
+        tail = marker.label[1:]
+        marker.alt = (Marker("paren", int(other), other + tail, sup=marker.sup) if other.isdigit()
+                      else Marker("letter", LETTERS.index(other) + 1, other + tail, sup=marker.sup))
+    return marker
 
 
 ROMAN_START = re.compile(rf"^([{ROMAN_CHARS}]+)\.\s+[А-ЯЁA-Z]")
@@ -824,8 +844,11 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
             states = [(c, s, li, h + [s]) for c, s, li, h in states]
             continue
         nxt = []
+        alt = replace(marker.alt, restart=marker.restart) if marker.alt is not None else None
         for cost, stack, last_int, hist in states:
             options = list(transitions(stack, marker, last_int, article_parts))
+            if alt is not None:
+                options += [(st, c + OCR_READING_COST) for st, c in transitions(stack, alt, last_int, article_parts)]
             if not options:
                 options = [(stack + ((marker.kind, marker.value, marker.label),), 10.0)]  # unexplained: deep penalty
             for new_stack, c in options:
@@ -1509,6 +1532,11 @@ def build(extraction: dict) -> dict:
         roman_sequence(items, rows)
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
+        for p, stack in zip(body, stacks):
+            alt = p.marker.alt
+            if alt is not None and stack and stack[-1][:2] == (alt.kind, alt.value) and stack[-1][0] != p.marker.kind:
+                p.evidence.append({"ocr_marker": f"«{p.marker.label})» read as «{alt.label})» by the sequence"})
+                p.marker = replace(alt, restart=p.marker.restart)
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         editorial_note_owners(body, stacks, points_are_parts)
         article_notes(body, stacks)

@@ -2377,3 +2377,39 @@ def test_official_signature_place_after_a_forms_last_point_opens_its_requisite_b
     assert [got[f"2.{k}"] for k in range(4, 8)] == ["A/AN1"] * 4
     sentence = form[:4] + [("Text", "Должностное лицо, ответственное за подготовку заявки, подписывает ее.")]
     assert owners(S.build(extraction([pages[0], sentence])))["2.4"] == "A/AN1/9"
+
+
+
+def subpoint_pages(lines):
+    return [[("Title", "ПРИКАЗ"), *[("Text", t) for t in lines]]]
+
+
+def test_ocr_letter_marker_in_place_of_the_next_digit_reads_as_that_digit():
+    """Step 14 C1: OCR printed «6)» as «б)» (SP 2.4.2.4283-26, batch 15): after «5)» with no «а)» before, «б)» is the
+    sixth subpoint, and the real «а)», «б)», «в)» of that subpoint nest under it; «7)» follows as usual."""
+    got = owners(S.build(extraction(subpoint_pages([
+        "16. Должны соблюдаться требования:", "4) помещения оборудуются;", "5) доски размещаются;",
+        "б) при организации питания должны соблюдаться следующие требования:", "а) помещения предусматриваются;",
+        "б) помещения оснащаются;", "в) залы оборудуются;", "7) комнаты обеспечиваются кроватями;",
+        "8) кровати имеют твердое ложе.", "17. Следующий пункт."]))))
+    assert [got[f"1.{k}"] for k in range(4, 11)] == [
+        "A/16/6", "A/16/6/а", "A/16/6/б", "A/16/6/в", "A/16/7", "A/16/8", "A/17"]
+
+
+def test_ocr_digit_marker_in_place_of_the_next_letter_reads_as_that_letter():
+    """Step 14 C1, the reverse (prikaz-minselskogo-134-2016, batch 14): «3)» after «ж)» with no «2)» before is the
+    letter «з)», a sibling of «ж)»."""
+    letters = [f"{c}) основание {c};" for c in "абвгдеж"]
+    got = owners(S.build(extraction(subpoint_pages(
+        ["30. Основанием для отказа является:", *letters, "3) несоответствие заявителя требованиям.",
+         "31. Для предоставления услуги необходимы документы."]))))
+    assert got["1.8"] == "A/30/ж" and got["1.9"] == "A/30/з" and got["1.10"] == "A/31"
+
+
+def test_genuine_letters_and_digits_keep_their_reading():
+    got = owners(S.build(extraction(subpoint_pages([
+        "2. Условия:", "а) первое;", "б) второе;", "3. Перечень:", "1) первое;", "2) второе;", "3) третье;",
+        "4) четвёртое;", "5) пятое;", "6) шестое.", "4. Порядок:", "а) первое;", "б) второе;", "в) третье;",
+        "г) четвёртое;", "д) пятое;", "е) шестое;", "ж) седьмое;", "з) восьмое."]))))
+    assert got["1.3"] == "A/2/б" and got["1.7"] == "A/3/3" and got["1.10"] == "A/3/6"
+    assert got["1.13"] == "A/4/б" and got["1.19"] == "A/4/з"
