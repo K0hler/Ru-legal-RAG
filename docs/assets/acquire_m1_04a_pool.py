@@ -81,7 +81,8 @@ AUTHORIZATION_OCR_GOLD = (
 )
 AUTHORIZED_BY = "project-owner-decision-2026-10-21-recorded-by-agent"
 KIND_PREFIX = {"code": "code", "federal_law": "fz", "presidential_decree": "ukaz", "government_resolution": "pp",
-               "government_order": "rp", "ministry_order": "prikaz"}
+               "government_order": "rp", "ministry_order": "prikaz",
+               "sanpin_2010s": "sanpin", "sanpin_2020s": "sanpin"}
 TRANSLIT = dict(zip(
     "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
     ["a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r", "s",

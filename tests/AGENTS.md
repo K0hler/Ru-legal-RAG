@@ -14,6 +14,11 @@
   kept, defaults off leave results identical; the batch-04 reproduction test skips without local data.
   Batch-06 profile = batch-05 + prior batch 05; frozen batch-05 selection reproduces from its feed cache (skips without data).
   Batch-07 profile = batch-06 + prior batch 06; frozen batch-06 selection reproduces likewise.
+  Batch-14 (no network): profile = batch-13 + SanPiN decade quotas and the tree filter; `sanpin_title` positives
+  and negatives (ГН, amendments, «изменений № 1 к СанПиН»); `freeze-sanpin` over all pages with decade types,
+  write-once and checksum refusal, short or foreign listings refused before writing; `tree_reason` per category;
+  `ips_tree` reads the actual edition of the single exact match; tree `enrich` stops at the quotas; refill takes
+  only checked acts without a tree; a full run with frozen SanPiN, rejected trees, reserves and a SanPiN refill.
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

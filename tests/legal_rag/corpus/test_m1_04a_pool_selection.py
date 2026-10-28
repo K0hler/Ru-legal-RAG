@@ -1403,3 +1403,251 @@ def test_catalog_records_batch_13_checked_then_rework():
     assert [h["status"] for h in history] == ["measured", "development"]
     assert history[0]["evidence"] == "experiments/20261027-batch-13-first-pass"
     assert history[1]["report"] == "docs/milestones/m1/04a/M1_04A_POOL_BATCH_13_2026-10-27.md"
+
+
+# ---------------------------------------------------------------- scan batch 14: SanPiN and acts without an IPS tree
+
+def test_batch_14_profile_takes_sanpin_by_decade_and_acts_without_ips_tree():
+    # Owner go-ahead 28.10.2026: SanPiN/SP (2 of 2014-2019, 2 of 2020+) and 2011-2019 acts without an IPS tree;
+    # batch-13 settings otherwise, excluding batches 1-13.
+    b13, b14 = P.PROFILES["batch-13"], P.PROFILES["batch-14"]
+    assert b14["quotas"] == {"sanpin_2010s": 2, "sanpin_2020s": 2, "federal_law": 1, "presidential_decree": 1,
+                             "government_resolution": 2, "government_order": 1, "ministry_order": 2}
+    assert b14["require_no_ips_tree"] is True and b14["sanpin_candidates"] is True
+    extra = ("prior_batches", "quotas", "require_no_ips_tree", "sanpin_candidates")
+    assert {k: v for k, v in b14.items() if k not in extra} == {
+        k: v for k, v in b13.items() if k not in ("prior_batches", "quotas")}
+    assert b14["prior_batches"] == b13["prior_batches"] + ("batch-13",)
+
+
+def portal_item(n, name, date="2016-05-27", pages=19):
+    return {"eoNumber": f"{n:016d}", "name": name, "number": str(n), "documentDate": date + "T00:00:00",
+            "pagesCount": pages, "signatoryAuthorityId": P.SANPIN_SIGNATORY,
+            "publishDateShort": date + "T00:00:00",
+            "complexName": f"Постановление Главного государственного санитарного врача Российской Федерации от "
+                           f"{date[8:]}.{date[5:7]}.{date[:4]} № {n}\n \"{name}\""}
+
+
+def test_sanpin_titles_are_approvals_of_sanpin_or_sp_only():
+    assert P.sanpin_title('Об утверждении СанПиН 2.6.1.3239-14 "Производство"')
+    assert P.sanpin_title('Об утверждении санитарных правил СП 2.2.1. 3471-17 "Санитарные"')
+    assert P.sanpin_title("Об утверждении санитарно-эпидемиологических правил и норм СанПиН 2.6.4115-25 «X»")
+    assert P.sanpin_title("Об утверждении санитарно-эпидемиологических правил СП 3.1.3310-15")
+    assert P.sanpin_title('"Об утверждении СанПиН 2.4.3259-15"')
+    assert not P.sanpin_title("Об утверждении гигиенических нормативов ГН 2.2.5.3532-18")  # tables, not rules
+    assert not P.sanpin_title("О внесении изменений в СанПиН 2.4.1.3049-13")
+    assert not P.sanpin_title("Об утверждении изменений № 1 к СанПиН 2.1.3.2630-10")
+    assert not P.sanpin_title("О дополнительных мерах по снижению рисков распространения COVID-19")
+
+
+def test_sanpin_candidates_are_frozen_from_every_signatory_page_and_split_by_decade(tmp_path):
+    import json
+
+    items = [portal_item(1, "Об утверждении СанПиН 2.6.1.3239-14", "2014-12-29"),
+             portal_item(2, "Об утверждении СП 2.5.3650-20", "2020-10-16", 101),
+             portal_item(3, "О внесении изменений в СанПиН 1.2.2353-08", "2015-01-01"),
+             portal_item(4, "Об утверждении гигиенических нормативов ГН 2.1.6.3306-15"),
+             portal_item(5, "О мерах по профилактике гриппа")]
+    pages = {1: items[:3], 2: items[3:]}
+    calls = []
+
+    def fetch(page):
+        calls.append(page)
+        return json.dumps({"items": pages[page], "itemsTotalCount": 5, "pagesTotalCount": 2}).encode()
+
+    out = tmp_path / "sanpin" / "selection.json"
+    result = P.freeze_sanpin_candidates(fetch, out)
+    assert calls == [1, 2] and result["listed"] == 5 and len(result["list_pages"]) == 2
+    rows, digest = P.load_sanpin_candidates(out)
+    assert digest == P.hashlib.sha256(out.read_bytes()).hexdigest()
+    assert [(r["eo_number"][-1], r["act_type"]) for r in rows] == [("1", "sanpin_2010s"), ("2", "sanpin_2020s")]
+    assert rows[1]["pages"] == 101 and rows[1]["number"] == "2" and rows[1]["publication_date"] == "2020-10-16"
+    assert rows[1]["date"] == "2020-10-16" and rows[1]["issuer"] == P.SANPIN_SIGNATORY
+    with pytest.raises(FileExistsError):
+        P.freeze_sanpin_candidates(fetch, out)
+    out.write_bytes(out.read_bytes() + b" ")
+    with pytest.raises(ValueError):
+        P.load_sanpin_candidates(out)
+
+
+def test_sanpin_freeze_refuses_a_short_or_foreign_listing(tmp_path):
+    import json
+
+    good = portal_item(1, "Об утверждении СанПиН 2.6.1.3239-14")
+
+    def short(page):
+        return json.dumps({"items": [good], "itemsTotalCount": 2, "pagesTotalCount": 1}).encode()
+
+    def foreign(page):
+        return json.dumps({"items": [dict(good, signatoryAuthorityId="other")], "itemsTotalCount": 1,
+                           "pagesTotalCount": 1}).encode()
+
+    with pytest.raises(ValueError, match="listed 1 of 2"):
+        P.freeze_sanpin_candidates(short, tmp_path / "a" / "selection.json")
+    with pytest.raises(ValueError, match="signatory"):
+        P.freeze_sanpin_candidates(foreign, tmp_path / "b" / "selection.json")
+    assert not (tmp_path / "a").exists() and not (tmp_path / "b").exists()
+
+
+def test_tree_reason_rejects_a_tree_and_an_unconfirmed_federal_absence():
+    law = card(1, "federal_law")
+    assert P.tree_reason(dict(law, ips_found=True, ips_tree_nodes=0)) is None
+    assert P.tree_reason(dict(law, ips_found=True, ips_tree_nodes=12)) == "ips_tree_present"
+    assert P.tree_reason(dict(law, ips_found=False, ips_tree_nodes=0)) == "not_in_ips"  # IPS holds every federal act
+    assert P.tree_reason(dict(law, ips_found=None, ips_detail="ambiguous_ips_identity")) == "ips_identity_ambiguous"
+    assert P.tree_reason(dict(law, tree_lookup_error="URLError: down")) == "tree_lookup_error"
+    order = card(2, "ministry_order")
+    assert P.tree_reason(dict(order, ips_found=False, ips_tree_nodes=0)) is None  # orders are not in this base
+    assert P.tree_reason(dict(card(3, "sanpin_2020s"), ips_found=False, ips_tree_nodes=0)) is None
+    assert P.tree_reason(dict(order, ips_found=True, ips_tree_nodes=3)) == "ips_tree_present"
+    assert all(r in P.REASONS for r in ("ips_tree_present", "not_in_ips", "ips_identity_ambiguous",
+                                         "tree_lookup_error"))
+
+
+class TreeIPS:
+    """IPS fake for card and document_content; `trees` maps act number -> node count."""
+
+    _api_base = "http://ips/api"
+
+    def __init__(self, trees):
+        self.trees, self.urls = trees, []
+
+    def _get(self, url):
+        import json
+        from urllib.parse import parse_qs, urlsplit
+
+        self.urls.append(url)
+        query = {k: v[0] for k, v in parse_qs(urlsplit(url).query).items()}
+        if "document_card" in url:
+            return json.dumps({"nd": "nd" + query["hash"], "actualrdk": 4, "baseid": "c000000000"}).encode(), {}
+        nodes = self.trees[query["nd"][len("ndh"):]]
+        return json.dumps({"status": "200", "data": [{"lvl": 0}] * nodes if nodes else ""}).encode(), {}
+
+
+def test_ips_tree_reads_the_actual_edition_of_the_single_exact_match(monkeypatch):
+    ips = TreeIPS({"5": 0, "6": 7})
+
+    def search(_, number, dmy):
+        if number == "9":
+            return []
+        docs = [{"hash": "h" + number, "docdate": dmy, "adoption": f"Федеральный закон от {dmy} № {number}"},
+                {"hash": "x", "docdate": "01.01.1999", "adoption": f"Федеральный закон от 01.01.1999 № {number}"}]
+        return docs * (2 if number == "7" else 1)
+
+    monkeypatch.setattr(P, "_ips_search", search)
+    assert P.ips_tree(ips, "5", "2016-03-01") == {"ips_found": True, "ips_hash": "h5", "ips_rdk": 4,
+                                                  "ips_tree_nodes": 0}
+    assert any("document_content" in u and "rdk=4" in u for u in ips.urls)
+    assert P.ips_tree(ips, "6", "2016-03-01")["ips_tree_nodes"] == 7
+    assert P.ips_tree(ips, "9", "2016-03-01") == {"ips_found": False, "ips_tree_nodes": 0}
+    assert P.ips_tree(ips, "7", "2016-03-01") == {"ips_found": None, "ips_detail": "ambiguous_ips_identity"}
+
+
+def test_tree_enrich_looks_up_in_order_until_quotas_fill_and_selection_skips_trees(monkeypatch):
+    rows = [card(n, ["federal_law", "ministry_order"][n % 2], pages=25) for n in range(1, 41)]
+    with_tree = {r["eo_number"] for r in rows if r["eo_number"][-1] in "13"}
+    calls = []
+
+    def fake_tree(ips, row):
+        calls.append(row["eo_number"])
+        nodes = 5 if row["eo_number"] in with_tree else 0
+        return {"ips_found": row["act_type"] == "federal_law", "ips_tree_nodes": nodes}
+
+    monkeypatch.setattr(P, "tree_lookup", fake_tree)
+    quotas = {"federal_law": 2, "ministry_order": 2}
+    enriched = {}
+    P.enrich({r["eo_number"]: r for r in rows}, enriched, None, None, quotas, 3, pages_range=(3, 200),
+             mode="no_ips_tree")
+    assert len(calls) == len(set(calls)) < len(rows)
+    result = P.select_pool(list(enriched.values()), quotas, 3, require_single_edition=False,
+                           pages_range=(3, 200), require_no_ips_tree=True)
+    assert P.quotas_full(result) and not set(ids(result)) & with_tree
+    assert {r["reason"] for r in result["rejected"]} <= {"ips_tree_present", "quota_full"}
+    assert all(r["ips_tree_nodes"] == 0 and "ips_found" in r for r in result["selected"])
+    assert result["require_no_ips_tree"] is True
+    assert {r["eo_number"] for r in result["tree_checked"]} == set(calls)
+
+
+def test_refill_of_a_no_tree_selection_takes_only_checked_acts_without_a_tree():
+    rows = [card(n, "federal_law", pages=25) for n in range(1, 8)]
+    order = P.ordered(rows, 11)
+    failed, unchecked, tree, good = order[0], order[1], order[2], order[3]
+    selection = {"seed": 11, "pages_range": [3, 200], "long_min": 0, "long_pages": 20, "already_used": [],
+                 "selected": [failed], "require_no_ips_tree": True,
+                 "tree_checked": [{"eo_number": tree["eo_number"], "reason": "ips_tree_present"},
+                                  {"eo_number": good["eo_number"], "reason": None},
+                                  {"eo_number": failed["eo_number"], "reason": None}]}
+    pool = {r["eo_number"]: r for r in rows}
+    result = P.refill(selection, pool, {failed["eo_number"]: "authored"})
+    assert result["selected"][0]["eo_number"] == good["eo_number"] != unchecked["eo_number"]
+    assert "checked" in result["procedure"]
+    selection["tree_checked"] = selection["tree_checked"][:1]
+    with pytest.raises(ValueError, match="no candidate left"):
+        P.refill(selection, pool, {failed["eo_number"]: "authored"})
+
+
+def test_batch_14_run_adds_frozen_sanpin_and_rejects_acts_with_a_tree(tmp_path, monkeypatch):
+    import json
+    from datetime import date, timedelta
+    from types import SimpleNamespace
+
+    docs = prior_tree(tmp_path)
+    monkeypatch.setattr(P, "DOCUMENTS", docs)
+    for n in range(3, 14):
+        (docs / "pool" / f"batch-{n:02d}" / "failures").mkdir(parents=True)
+        (docs / "pool" / f"batch-{n:02d}" / "selection.json").write_text(json.dumps({"selected": []}))
+        (docs / "pool" / f"batch-{n:02d}" / "index.json").write_text(json.dumps({"documents": []}))
+    items = [portal_item(100 + i, f"Об утверждении СанПиН 2.6.1.{3200 + i}-15", "2015-07-14", 25)
+             for i in range(3)]
+    items += [portal_item(200 + i, f"Об утверждении СП 2.5.{3650 + i}-20", "2020-10-16", 25) for i in range(3)]
+
+    def fetch(page):
+        return json.dumps({"items": items, "itemsTotalCount": 6, "pagesTotalCount": 1}).encode()
+
+    sanpin = tmp_path / "sanpin" / "selection.json"
+    P.freeze_sanpin_candidates(fetch, sanpin)
+    days = [date(2016, 3, 1) + timedelta(days=i) for i in range(120)]
+    kinds = (["federal_law"] * 4 + ["presidential_decree"] * 2 + ["government_resolution"] * 4
+             + ["government_order"] * 2 + ["ministry_order"] * 4)
+    rows = [card(10 + i, kind, pages=25, date="2016-03-01") for i, kind in enumerate(kinds)]
+    batch = docs / "pool" / "batch-14"
+    batch.mkdir()
+    cache_path = batch / "feed-cache-b14.json"
+    cache = {d.isoformat(): [] for d in days}
+    cache["2016-03-01"] = {"candidates": rows, "feed_pages": []}
+    cache_path.write_text(json.dumps(cache), encoding="utf-8")
+    monkeypatch.setattr(P, "sample_days", lambda *args: days)
+    trees = {r["eo_number"] for r in rows[::2]}
+
+    def fake_tree(ips, row):
+        federal = row["act_type"] not in ("ministry_order", "sanpin_2010s", "sanpin_2020s")
+        return {"ips_found": federal, "ips_tree_nodes": 9 if row["eo_number"] in trees else 0}
+
+    monkeypatch.setattr(P, "tree_lookup", fake_tree)
+    monkeypatch.setattr(P, "lookup", lambda *args: {"in_official_tree": False, "official_found": False})
+    args = SimpleNamespace(output=batch / "selection.json", profile="batch-14", quota=[], code_candidates=None,
+                           sanpin_candidates=sanpin, seed=20261103, date_from="2011-01-01",
+                           date_to="2019-12-31", feed_cache=cache_path, min_days=120, partial_output=None,
+                           quota_change=None, pages_max=None, command="python select ... --profile batch-14")
+    assert P.run(args) == 0
+    selection = json.loads(Path(args.output).read_bytes())
+    assert selection["quotas_filled"] and selection["selected_per_category"] == P.BATCH14_QUOTAS
+    assert not {r["eo_number"] for r in selection["selected"]} & trees
+    assert selection["rejection_counts"].get("ips_tree_present", 0) >= 1
+    assert selection["sanpin_candidates"]["sha256"] == P.hashlib.sha256(sanpin.read_bytes()).hexdigest()
+    assert selection["require_no_ips_tree"] is True and selection["tree_reserve_per_category"] == 3
+    assert {r["eo_number"] for r in selection["selected"]} <= {r["eo_number"] for r in selection["tree_checked"]}
+    spare = [r for r in selection["tree_checked"] if r["act_type"] == "sanpin_2020s" and r["reason"] is None]
+    assert len(spare) == 3  # 2 selected + 1 checked reserve: only 3 candidates exist
+    (batch / "failures").mkdir()
+    failed = next(r for r in selection["selected"] if r["act_type"] == "sanpin_2020s")
+    (batch / "failures" / f"{failed['eo_number']}-test.json").write_text(json.dumps({"reason": "authored"}))
+    refill = P.refill_round(batch, cache_path)  # SanPiN candidates reach the refill pool too
+    assert refill["selected"][0]["act_type"] == "sanpin_2020s"
+    assert refill["selected"][0]["eo_number"] != failed["eo_number"]
+
+
+def test_sanpin_slug_uses_the_resolution_number():
+    acquire = load_script("acquire_m1_04a_pool")
+    assert acquire.slug({"act_type": "sanpin_2020s", "number": "32", "date": "2020-10-27"}) == "sanpin-32-2020"
+    assert acquire.slug({"act_type": "sanpin_2010s", "number": "7", "date": "2015-07-14"}) == "sanpin-7-2015"

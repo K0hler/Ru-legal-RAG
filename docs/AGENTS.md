@@ -131,6 +131,20 @@
   and `census.json` records every code with its reason. actual.pravo names code
   parts «<Кодекс>. Часть первая» (accepted only inside the census). `--previous`
   reuses recorded exact matches and empty feed days of an unfrozen earlier run.
+- Profile `batch-14` (owner go-ahead 28.10.2026, after the IPS tree-coverage estimate): batch-13 settings with
+  quotas `sanpin_2010s` 2, `sanpin_2020s` 2 (act date before 2020 / from 2020), law 1, decree 1, resolutions 2,
+  government order 1, ministry orders 2. `select_m1_04a_pool.py freeze-sanpin --output DIR/selection.json` freezes
+  every portal act of the Chief State Sanitary Doctor (`SignatoryAuthorityId` `SANPIN_SIGNATORY`, all pages, item
+  count must equal the portal total, other signatories refused) and keeps `sanpin_title` approvals of SanPiN or SP
+  (owner 21.10.2026: SP = SanPiN); ГН normatives, amendments and other resolutions are not candidates. The run takes
+  `--sanpin-candidates` (all dates; `--from/--to` bound only the day feed) and the IPS tree filter: in seeded order
+  each wanted card gets `ips_tree` (IPS search number+date, single exact match, card `actualrdk`,
+  `document_content` nodes); reasons `ips_tree_present`, `not_in_ips` (federal acts only: IPS holds them all),
+  `ips_identity_ambiguous`, `tree_lookup_error`; ministry orders and SanPiN qualify when IPS lacks them. After the
+  quotas fill, `tree_reserve` checks 3 more acts per category (selection must stay identical) and
+  `tree_checked` records every answer; a refill of such a selection draws only from checked acts without a tree.
+  Acquisition slugs: `sanpin-<resolution number>-<year>`. The portal day feed starts in December 2011 (empty
+  days in 2010 and early 2011), so 2010s scans are 2011-2019.
 
 - `milestones/m1/04a/M1_04A_LOGICAL_PARAGRAPHS_2026-10-17.md` records the
   logical-paragraph/depth-solver experiment (`assets/ocr_logical_structure.py`),

@@ -107,6 +107,18 @@ BATCH12_QUOTAS = {
 # Scan batch 13 (owner go-ahead 27.10.2026): checks П13 (step 13 worked on ministry orders again) with the batch-12
 # composition.
 BATCH13_QUOTAS = dict(BATCH12_QUOTAS)
+# Scan batch 14 (owner go-ahead 28.10.2026, IPS tree-coverage estimate): SanPiN/SP approvals by decade from the
+# frozen list of the Chief State Sanitary Doctor, and 2011-2019 acts without an IPS structure tree.
+BATCH14_QUOTAS = {
+    "sanpin_2010s": 2,
+    "sanpin_2020s": 2,
+    "federal_law": 1,
+    "presidential_decree": 1,
+    "government_resolution": 2,
+    "government_order": 1,
+    "ministry_order": 2,
+}
+SANPIN_TYPES = ("sanpin_2010s", "sanpin_2020s")
 PAGES_MIN, PAGES_MAX = 3, 60
 BATCH2_PAGES = (3, 200)
 BATCH2_LONG_MIN, LONG_PAGES = 4, 20
@@ -134,12 +146,21 @@ REASONS = (
     "edition_count_unknown",
     "edition_count_not_1",
     "quota_full",
+    # Batch 14 IPS tree filter: the actual edition has structure nodes; a federal act IPS does not find (IPS holds
+    # every federal act, so absence is unconfirmed); several exact matches; the lookup itself failed.
+    "ips_tree_present",
+    "not_in_ips",
+    "ips_identity_ambiguous",
+    "tree_lookup_error",
 )
 # Only metadata may reach a selected record.
 METADATA_FIELDS = (
     "eo_number", "act_type", "date", "number", "title", "pages", "edition_count",
     "official_found", "official_source", "official_hash",
+    "ips_found", "ips_hash", "ips_rdk", "ips_tree_nodes",
 )
+# Acts that IPS (base c000000000) never holds: ministry orders and SanPiN; their absence is the expected answer.
+OUTSIDE_IPS = ("ministry_order",) + SANPIN_TYPES
 
 # The feed item carries only documentTypeId/signatoryAuthorityId (no names), so the
 # type and signatory are read from the start of the feed `complexName`
@@ -165,6 +186,7 @@ ACT_PREFIX = re.compile(
     r"^(?:Федеральный (?:конституционный )?закон|Указ|Постановление|Распоряжение|Приказ)\b"
     r"[^\"«]*? от \d\d\.\d\d\.\d{4} № \S+\s*"
 )
+SANPIN_MARK = re.compile(r"санпин|\bсп\s*\d|санитарн\w*(?:-эпидемиологическ\w*)?\s+правил")
 CODE_TITLE = re.compile(
     r"^(?:[\w-]+\s+)*кодекс\s+(?:[\w-]+\s+)*Российской Федерации(?:\s+.*)?$", re.IGNORECASE,
 )
@@ -196,6 +218,14 @@ def _title(value):
 
 def is_amending(title):
     return _title(title).lower().startswith(AMENDING_PREFIXES)
+
+
+def sanpin_title(name):
+    """An approval of SanPiN or SP (owner 21.10.2026: SP = SanPiN by number); hygienic normatives (ГН tables),
+    amendments and other resolutions of the Chief State Sanitary Doctor are not."""
+    title = _title(name).lower()
+    return (title.startswith("об утверждении") and "изменени" not in title and not is_amending(name)
+            and SANPIN_MARK.search(title) is not None)
 
 
 def categorize(complex_name, name):
@@ -248,6 +278,22 @@ def official_reason(row):
         return "edition_count_unknown"
     if row["edition_count"] != 1:
         return "edition_count_not_1"
+    return None
+
+
+TREE_FIELDS = ("ips_found", "tree_lookup_error", "ips_detail")
+
+
+def tree_reason(row):
+    """Rejections of the batch-14 IPS tree filter: an act qualifies only without a tree in its actual edition."""
+    if row.get("tree_lookup_error"):
+        return "tree_lookup_error"
+    if row.get("ips_detail") == "ambiguous_ips_identity":
+        return "ips_identity_ambiguous"
+    if not row.get("ips_found") and row["act_type"] not in OUTSIDE_IPS:
+        return "not_in_ips"
+    if (row.get("ips_tree_nodes") or 0) > 0:
+        return "ips_tree_present"
     return None
 
 
@@ -324,16 +370,19 @@ class SoftPreferences:
 
 def select_pool(candidates, quotas, seed, *, require_single_edition=True, already_used=frozenset(),
                 pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
-                preferred_pages_min=None, one_per_issuer_day=False):
+                preferred_pages_min=None, one_per_issuer_day=False, require_no_ips_tree=False):
     """Seeded selection. With long_min, a first pass fills the share of acts with at
     least long_pages pages, then a second pass fills the remaining quotas. Soft
-    preferences (off by default) run those passes first with, then without them."""
+    preferences (off by default) run those passes first with, then without them.
+    With require_no_ips_tree, an act qualifies only after its IPS tree lookup found no tree."""
     rows = [row for row in ordered(candidates, seed) if row["act_type"] in quotas]
     reasons = {}
     for row in rows:
         reason = cheap_reason(row, already_used, pages_range, code_pages_max)
         if reason is None and require_single_edition:
             reason = official_reason(row)
+        if reason is None and require_no_ips_tree:
+            reason = tree_reason(row)
         reasons[row["eo_number"]] = reason
     counter, taken, selected = QuotaCounter(quotas, long_min, long_pages), set(), []
     soft, fallbacks = SoftPreferences(preferred_pages_min, one_per_issuer_day), []
@@ -361,6 +410,13 @@ def select_pool(candidates, quotas, seed, *, require_single_edition=True, alread
               "long_selected": counter.long, "selected": selected, "rejected": rejected}
     if code_pages_max:
         result["code_pages_max"] = code_pages_max
+    if require_no_ips_tree:
+        # Every looked-up act with its answer: the refill draws only from those found without a tree.
+        result["require_no_ips_tree"] = True
+        result["tree_checked"] = [
+            {"eo_number": row["eo_number"], "act_type": row["act_type"], "ips_found": row.get("ips_found"),
+             "ips_tree_nodes": row.get("ips_tree_nodes"), "reason": tree_reason(row)}
+            for row in rows if any(key in row for key in TREE_FIELDS)]
     if soft.active:
         result.update({
             "preferred_pages_min": preferred_pages_min, "one_per_issuer_day": one_per_issuer_day,
@@ -500,6 +556,36 @@ def lookup_official(actual, ips, number, iso):
             "detail": "ambiguous_official_identity" if docs else "not_found"}
 
 
+def ips_tree(ips, number, iso):
+    """IPS structure tree of one act: the single exact number+date match, its card's actual edition and the
+    `document_content` nodes of that edition (as in survey_ips_tree_coverage.py). No match: not in IPS."""
+    dmy = ".".join(reversed(iso.split("-")))
+    docs = [d for d in _retry(lambda: _ips_search(ips, number, dmy))
+            if d.get("docdate") == dmy and str(d.get("adoption", "")).upper().endswith("№ " + number.upper())]
+    if not docs:
+        return {"ips_found": False, "ips_tree_nodes": 0}
+    if len(docs) > 1:
+        return {"ips_found": None, "ips_detail": "ambiguous_ips_identity"}
+    h = docs[0]["hash"]
+    card_raw, _ = _retry(lambda: ips._get(ips._api_base + "/document_card.json?" + urlencode({"hash": h})))
+    card = json.loads(card_raw)
+    query = urlencode({"nd": card["nd"], "rdk": card["actualrdk"], "bpa": card["baseid"]})
+    content_raw, _ = _retry(lambda: ips._get(ips._api_base + "/document_content?" + query))
+    data = json.loads(content_raw).get("data")
+    return {"ips_found": True, "ips_hash": h, "ips_rdk": card["actualrdk"],
+            "ips_tree_nodes": len(data) if isinstance(data, list) else 0}
+
+
+def tree_lookup(ips, row):
+    """IPS tree answer for one card; a failing lookup is a distinct tree_lookup_error."""
+    try:
+        info = ips_tree(ips, row["number"], row["date"])
+    except Exception as error:  # network/parse failure, not a clean "no tree"
+        info = {"tree_lookup_error": f"{type(error).__name__}: {error}"}
+    print(row["act_type"], row["number"], row["date"], info, flush=True)
+    return info
+
+
 def feed_issuer(item):
     """Issuing body of a feed item: its `signatoryAuthorityId` (portal GUID); when absent,
     `name:` + the complexName text before « от dd.mm.yyyy» (type and issuer)."""
@@ -572,6 +658,86 @@ def load_code_candidates(path):
                 or not isinstance(row["number"], str) or not row["number"].strip()
                 or type(row["pages"]) is not int or row["pages"] <= 0):
             raise ValueError("invalid code candidate metadata")
+        date.fromisoformat(row["date"])
+        seen.add(eo)
+    return rows, digest
+
+
+SANPIN_CANDIDATES_SCHEMA = "m1-04a-sanpin-candidates/1"
+# Portal id of «Главный государственный санитарный врач Российской Федерации» (publication card of 0001202609240014).
+SANPIN_SIGNATORY = "23da7027-18b0-4740-b26d-93c453bb3e8c"
+PUBLICATION_API = "http://publication.pravo.gov.ru/api/Documents"
+
+
+def signatory_page_url(page, signatory=SANPIN_SIGNATORY):
+    return PUBLICATION_API + "?" + urlencode({"SignatoryAuthorityId": signatory, "PageSize": 200, "Index": page})
+
+
+def fetch_signatory_page(page):
+    """Raw portal listing page of every act of the Chief State Sanitary Doctor (1 s pause between pages)."""
+    from urllib.request import urlopen
+
+    time.sleep(1)
+    return _retry(lambda: urlopen(signatory_page_url(page), timeout=60).read())
+
+
+def freeze_sanpin_candidates(fetch_page, output):
+    """Freeze the SanPiN/SP approvals from the full portal listing of the signatory, before any body fetch.
+    The listing must be complete (all pages, item count equal to the portal total) and of that signatory only."""
+    if selection_pair_state(output) != "absent":
+        raise FileExistsError(f"SanPiN candidate selection already exists: {output}")
+    pages, items, page, total_pages, total = [], [], 1, 1, None
+    while page <= total_pages:
+        raw = fetch_page(page)
+        listing = json.loads(raw)
+        pages.append({"page": page, "url": signatory_page_url(page), "sha256": hashlib.sha256(raw).hexdigest(),
+                      "items": len(listing["items"])})
+        items += listing["items"]
+        total_pages, total = listing["pagesTotalCount"], listing["itemsTotalCount"]
+        page += 1
+    if len(items) != total or len({i["eoNumber"] for i in items}) != total:
+        raise ValueError(f"signatory listing incomplete: listed {len(items)} of {total}")
+    if any(i.get("signatoryAuthorityId") != SANPIN_SIGNATORY for i in items):
+        raise ValueError("signatory listing holds an act of another signatory")
+    candidates = []
+    for item in items:
+        if not sanpin_title(item["name"]):
+            continue
+        day = item["documentDate"][:10]
+        candidates.append({
+            "eo_number": item["eoNumber"], "act_type": "sanpin_2010s" if day < "2020" else "sanpin_2020s",
+            "date": day, "number": item["number"].strip(), "title": _norm(item["name"]),
+            "pages": item["pagesCount"], "issuer": item["signatoryAuthorityId"],
+            "publication_date": str(item.get("publishDateShort") or "")[:10] or None,
+        })
+    result = {"schema_version": SANPIN_CANDIDATES_SCHEMA, "signatory": SANPIN_SIGNATORY,
+              "scope": "Every portal act of the Chief State Sanitary Doctor; candidates are approvals of SanPiN or SP "
+                       "(sanpin_title); act type by the act date: before 2020 -> sanpin_2010s",
+              "listed": len(items), "list_pages": pages,
+              "candidates": sorted(candidates, key=lambda r: r["eo_number"])}
+    payload = (json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    write_selection_pair(output, payload)
+    return result
+
+
+def load_sanpin_candidates(path):
+    path = Path(path)
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != path.with_name("selection.sha256").read_text(encoding="utf-8").split()[0]:
+        raise ValueError("SanPiN candidates differ from recorded sha256")
+    result = json.loads(raw)
+    if result["schema_version"] != SANPIN_CANDIDATES_SCHEMA:
+        raise ValueError("unsupported SanPiN candidates schema")
+    rows, seen = result["candidates"], set()
+    for row in rows:
+        eo = row["eo_number"]
+        if (not isinstance(eo, str) or not re.fullmatch(r"[0-9]{16}", eo) or eo in seen
+                or row["act_type"] != ("sanpin_2010s" if str(row["date"]) < "2020" else "sanpin_2020s")
+                or not sanpin_title(row["title"])
+                or not isinstance(row["number"], str) or not row["number"].strip()
+                or type(row["pages"]) is not int or row["pages"] <= 0):
+            raise ValueError("invalid SanPiN candidate metadata")
         date.fromisoformat(row["date"])
         seen.add(eo)
     return rows, digest
@@ -825,9 +991,14 @@ def lookup(actual, ips, row):
 
 def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
            pages_range=(PAGES_MIN, PAGES_MAX), long_min=0, long_pages=LONG_PAGES, code_pages_max=None,
-           preferred_pages_min=None, one_per_issuer_day=False):
+           preferred_pages_min=None, one_per_issuer_day=False, mode="single_edition"):
     """Single-edition profile: look up candidates in selection order until the quotas are
-    filled. Counters are incremental (one pass per phase), mirroring select_pool."""
+    filled. Counters are incremental (one pass per phase), mirroring select_pool.
+    mode="no_ips_tree" (batch 14) looks up the IPS tree instead and keeps acts without one."""
+    if mode == "no_ips_tree":
+        look, reason = (lambda row: tree_lookup(ips, row)), tree_reason
+    else:
+        look, reason = (lambda row: lookup(actual, ips, row)), official_reason
     rows = [row for row in ordered(pool.values(), seed) if row["act_type"] in quotas]
     counter, taken = QuotaCounter(quotas, long_min, long_pages), set()
     soft = SoftPreferences(preferred_pages_min, one_per_issuer_day)
@@ -840,11 +1011,29 @@ def enrich(pool, enriched, actual, ips, quotas, seed, already_used=frozenset(),
                     or not counter.wants(row, long_phase) or (soft_pass and soft.misses(row))):
                 continue
             if eo not in enriched:
-                enriched[eo] = dict(row, **lookup(actual, ips, row))
-            if official_reason(enriched[eo]) is None:
+                enriched[eo] = dict(row, **look(row))
+            if reason(enriched[eo]) is None:
                 counter.take(row)
                 soft.take(row)
                 taken.add(eo)
+
+
+def tree_reserve(pool, enriched, ips, quotas, seed, already_used, pages_range, code_pages_max, reserve):
+    """After a no-tree selection, look up further candidates per category in seeded order until `reserve` acts
+    without a tree beyond the quota are known, so that a refill draws from checked acts only."""
+    for kind, quota in quotas.items():
+        passing = sum(1 for r in enriched.values() if r["act_type"] == kind and tree_reason(r) is None)
+        for row in ordered(pool.values(), seed):
+            if passing >= quota + reserve:
+                break
+            if (row["act_type"] != kind or row["eo_number"] in enriched
+                    or cheap_reason(row, already_used, pages_range, code_pages_max) is not None):
+                continue
+            enriched[row["eo_number"]] = dict(row, **tree_lookup(ips, row))
+            passing += tree_reason(enriched[row["eo_number"]]) is None
+
+
+TREE_RESERVE = 3  # = MAX_REFILL_ATTEMPTS: one checked act per possible refill of a slot
 
 
 PROFILES = {
@@ -910,6 +1099,15 @@ PROFILES = {
                  "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
                                    "batch-07", "batch-08", "batch-09", "batch-10", "batch-11", "batch-12"),
                  "preferred_pages_min": 5, "one_per_issuer_day": True},
+    # Scan batch 14: batch-13 settings with BATCH14_QUOTAS, frozen SanPiN candidates and the IPS tree filter,
+    # excluding batches 1-13.
+    "batch-14": {"quotas": BATCH14_QUOTAS, "pages_range": BATCH2_PAGES, "long_min": BATCH2_LONG_MIN,
+                 "require_single_edition": False, "exclude_used": True,
+                 "prior_batches": ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06",
+                                   "batch-07", "batch-08", "batch-09", "batch-10", "batch-11", "batch-12",
+                                   "batch-13"),
+                 "preferred_pages_min": 5, "one_per_issuer_day": True,
+                 "require_no_ips_tree": True, "sanpin_candidates": True},
 }
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
@@ -1009,6 +1207,7 @@ def run(args):
             raise ValueError("--pages-max must be at least the profile's minimum")
         pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
+    tree = profile.get("require_no_ips_tree", False)
     prior_days = set()
     if profile.get("prior_batches"):
         used, prior_days = prior_batch_exclusions(profile["prior_batches"])
@@ -1019,6 +1218,8 @@ def run(args):
     code_pages_max = CODE_PAGES_MAX if quotas.get("code", 0) else None
     options = {"require_single_edition": strict, "already_used": used, "pages_range": pages_range,
                "long_min": long_min, "long_pages": LONG_PAGES, "code_pages_max": code_pages_max}
+    if tree:
+        options["require_no_ips_tree"] = True
     soft_options = {key: profile[key] for key in ("preferred_pages_min", "one_per_issuer_day") if key in profile}
     options.update(soft_options)
     code_rows, code_reference = [], None
@@ -1030,6 +1231,14 @@ def run(args):
         code_reference = {"path": repo_relative(args.code_candidates), "sha256": digest}
         if profile.get("codes_from_census"):  # every census code, at most the profile bound
             quotas["code"] = min(quotas["code"], len(code_rows))
+    sanpin_reference = None
+    if profile.get("sanpin_candidates"):
+        sanpin_path = getattr(args, "sanpin_candidates", None)
+        if not sanpin_path:
+            raise ValueError("this profile requires --sanpin-candidates frozen by freeze-sanpin")
+        sanpin_rows, digest = load_sanpin_candidates(sanpin_path)
+        code_rows = code_rows + sanpin_rows  # every date: the decade quotas, not --from/--to, bound them
+        sanpin_reference = {"path": repo_relative(sanpin_path), "sha256": digest}
     publication = PublicationPoolConnector(timeout=25, request_interval=1)
     actual = ActualPravoConnector(timeout=25, request_interval=1)
     ips = LegislationRussiaConnector(timeout=25, request_interval=1)
@@ -1061,9 +1270,9 @@ def run(args):
         sampled = limit
         if args.feed_cache:
             Path(args.feed_cache).write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
-        if strict:
+        if strict or tree:
             enrich(pool, enriched, actual, ips, quotas, args.seed, used, pages_range, long_min, LONG_PAGES,
-                   code_pages_max, **soft_options)
+                   code_pages_max, **soft_options, mode="no_ips_tree" if tree else "single_edition")
             rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
                                               and cheap_reason(r, used, pages_range, code_pages_max) is not None]
         else:
@@ -1071,6 +1280,15 @@ def run(args):
         result = select_pool(rows, quotas, args.seed, **options)
         if quotas_full(result) and limit >= args.min_days:
             break
+    if tree and quotas_full(result):
+        picked = [r["eo_number"] for r in result["selected"]]
+        tree_reserve(pool, enriched, ips, quotas, args.seed, used, pages_range, code_pages_max, TREE_RESERVE)
+        rows = list(enriched.values()) + [r for r in pool.values() if r["eo_number"] not in enriched
+                                          and cheap_reason(r, used, pages_range, code_pages_max) is not None]
+        result = select_pool(rows, quotas, args.seed, **options)
+        if [r["eo_number"] for r in result["selected"]] != picked:
+            raise RuntimeError("tree reserve lookups changed the selection")
+        result["tree_reserve_per_category"] = TREE_RESERVE
     looked_up = len(enriched)
     if not strict:  # official lookup is metadata for the selected acts only, not a filter
         for row in result["selected"]:
@@ -1082,8 +1300,9 @@ def run(args):
         looked_up = len(result["selected"])
     for row in result["rejected"]:
         info = enriched.get(row["eo_number"], {})
-        if info.get("lookup_error") or info.get("detail"):
-            row["detail"] = info.get("lookup_error") or info.get("detail")
+        detail = info.get("lookup_error") or info.get("detail") or info.get("tree_lookup_error")
+        if detail:
+            row["detail"] = detail
     reasons = {}
     for row in result["rejected"]:
         reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
@@ -1113,6 +1332,13 @@ def run(args):
                                  "code = standalone code title, independent of the portal type; "
                                  "targeted code candidates frozen separately before selection",
     })
+    if sanpin_reference:
+        result["sanpin_candidates"] = sanpin_reference
+    if tree:
+        result["ips_tree_filter"] = (
+            "IPS search.json by number+date, the single exact match's document_card actual edition and its "
+            "document_content: an act with structure nodes is rejected (ips_tree_present); a federal act IPS does "
+            "not find is rejected (not_in_ips); ministry orders and SanPiN qualify when IPS does not hold them")
     if soft_options.get("one_per_issuer_day"):
         result["issuer_source"] = ("feed item signatoryAuthorityId (portal GUID); when absent, 'name:' + "
                                    "complexName text before the date; publication day = feed publishDateShort")
@@ -1141,6 +1367,10 @@ REFILL_PROCEDURE = (
     "and excluding every act selected or failed so far; the long-document share is kept at long_min "
     "(a long candidate is required only when the share is below it). Feed cache and seed are those of "
     "the frozen selection; nothing is looked up."
+)
+REFILL_TREE_PROCEDURE = (
+    " A selection with require_no_ips_tree takes only acts checked during its run and found without an IPS "
+    "tree (`tree_checked` with no reason)."
 )
 
 
@@ -1171,6 +1401,8 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
     long_min, long_pages = selection["long_min"], selection["long_pages"]
     by_eo = {row["eo_number"]: row for row in selection["selected"]}
     kept = [row for row in selection["selected"] if row["eo_number"] not in failures]
+    no_tree = selection.get("require_no_ips_tree", False)
+    checked = {r["eo_number"] for r in selection.get("tree_checked", ()) if r["reason"] is None}
     replaced, chosen = [], []
     for eo in sorted(failures, key=lambda e: order_key(seed, e)):
         failed = by_eo[eo]
@@ -1180,6 +1412,8 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
         need_long = sum(r["pages"] >= long_pages for r in kept + chosen) < long_min
         for row in ordered(pool.values(), seed):
             if row["act_type"] != failed["act_type"] or row["eo_number"] in used:
+                continue
+            if no_tree and row["eo_number"] not in checked:
                 continue
             if cheap_reason(row, frozenset(), pages_range, code_pages_max) is not None:
                 continue
@@ -1193,8 +1427,9 @@ def refill(selection, pool, failures, *, taken=(), attempts=None):
         chosen.append(new)
         replaced.append({"failed_eo_number": eo, "failed_reason": failures[eo], "act_type": failed["act_type"],
                          "attempt": attempt, "replacement": new})
+    procedure = REFILL_PROCEDURE + (REFILL_TREE_PROCEDURE if no_tree else "")
     result = {"schema_version": REFILL_SCHEMA, "seed": seed, "pages_range": list(pages_range),
-              "long_min": long_min, "long_pages": long_pages, "procedure": REFILL_PROCEDURE,
+              "long_min": long_min, "long_pages": long_pages, "procedure": procedure,
               "replaced": replaced, "selected": chosen,
               "long_selected_after": sum(r["pages"] >= long_pages for r in kept + chosen)}
     if code_pages_max:
@@ -1253,6 +1488,13 @@ def refill_round(batch_dir, feed_cache, expected_sha=None):
         for row in codes:
             if selection["date_range"][0] <= row["date"] <= selection["date_range"][1]:
                 pool.setdefault(row["eo_number"], row)
+    if selection.get("sanpin_candidates"):
+        reference = selection["sanpin_candidates"]
+        sanpin, sanpin_digest = load_sanpin_candidates(resolve_repo_path(reference["path"]))
+        if sanpin_digest != reference["sha256"]:
+            raise ValueError("SanPiN candidates differ from frozen selection sha256")
+        for row in sanpin:  # every date, as in the run
+            pool.setdefault(row["eo_number"], row)
     attempts = {r["eo_number"]: 0 for r in selection["selected"]}
     acts = list(selection["selected"])
     for record in prior:
@@ -1323,6 +1565,14 @@ def main(argv=None):
         args = parser.parse_args(argv[1:])
         freeze_code_candidates(PublicationPoolConnector(timeout=25, request_interval=1), args.day, args.output)
         return 0
+    if argv[:1] == ["freeze-sanpin"]:
+        parser = argparse.ArgumentParser(prog="select_m1_04a_pool.py freeze-sanpin")
+        parser.add_argument("--output", required=True, type=Path,
+                            help="new directory's selection.json; freezes metadata only")
+        args = parser.parse_args(argv[1:])
+        result = freeze_sanpin_candidates(fetch_signatory_page, args.output)
+        print("freeze-sanpin listed", result["listed"], "candidates", len(result["candidates"]), flush=True)
+        return 0
     if argv[:1] == ["census-codes"]:
         from legal_rag.sources.actual_pravo import ActualPravoConnector
         from legal_rag.sources.publication_pool import PublicationPoolConnector
@@ -1354,6 +1604,8 @@ def main(argv=None):
                         help="sample at least this many days even if quotas fill earlier")
     parser.add_argument("--quota-change", help="JSON file whose object is recorded as `quota_change`")
     parser.add_argument("--code-candidates", type=Path, help="freeze-codes selection.json (required for code quota)")
+    parser.add_argument("--sanpin-candidates", type=Path,
+                        help="freeze-sanpin selection.json (required by profiles with SanPiN quotas)")
     parser.add_argument("--pages-max", type=int, help="explicit page ceiling override (e.g. 500 for a 480-page code)")
     args = parser.parse_args(argv)
     import subprocess
