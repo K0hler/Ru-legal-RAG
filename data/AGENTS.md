@@ -162,6 +162,15 @@
   tree (decrees 14, resolutions 8, law 1), 4-5 checked reserves per category. Selected: 2 SP/SanPiN 2015, SP 2020,
   SP 2026 (93 p.), law 24-FZ/2013 (3 p., soft fallback), decree 225/2016, resolutions 469/2017 and 1250/2018,
   government order 774-r/2017, orders 1412/2015 and 134/2016; 6 long acts.
+  Acquired 11/11 `new` then `unchanged` (code 494c5c2 lists batch 14 in the catalog). OCR
+  `experiments/20261028-batch-14-ocr/` (summary.json, replays match): 10 acts complete; sanpin-20-2015 (SP 3.1.3263-15)
+  failed on p. 24 of 24 (two journal forms with vertical column headings: `length` after the rotation retry,
+  deterministic) -> `failures/0001201507240005-ocr-run-01.json`, refill 01 (4d55051d…, from the checked no-tree
+  reserve) -> sanpin-124-2017 (SanPiN 2.6.1.3488-17, `…-ocr-refill-01`, complete). The batch index was first
+  built before the refill: that 11-row file is kept as `batch-14/index.pre-refill-01.json`, `index.json` has 12
+  rows like batch 13. Build the catalog after refills. `-ReplayOnly` skips acts whose `run-01-replay` exists, so its
+  `summary.raw.replay-*.json` files here are empty; summaries use `--replay-raw summary.raw.json`. 11 measured acts,
+  292 pages, 2658 regions; sanpin-20-2026 93 p. / 851 regions / 33 tables.
 
 - Scan batch 13 (27.10.2026): `m1/m1-04a/documents/pool/batch-13/selection.json` (profile `batch-13`, seed 20261102, code
   6e90f50, sha 30d034fc…); acquired 11/11 `new` then `unchanged`. OCR `experiments/20261027-batch-13-ocr/` was stopped
