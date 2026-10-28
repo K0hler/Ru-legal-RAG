@@ -2413,3 +2413,57 @@ def test_genuine_letters_and_digits_keep_their_reading():
         "г) четвёртое;", "д) пятое;", "е) шестое;", "ж) седьмое;", "з) восьмое."]))))
     assert got["1.3"] == "A/2/б" and got["1.7"] == "A/3/3" and got["1.10"] == "A/3/6"
     assert got["1.13"] == "A/4/б" and got["1.19"] == "A/4/з"
+
+
+def test_paragraph_after_the_last_decimal_subpoint_returns_to_the_point():
+    # Step 14 C2 (batch 15): «7.1.5.» is the last subpoint of «7.1.»; the next capitalised sentence closes it, as
+    # after «1)» / «а)». A paragraph after a subpoint that the next marker continues («7.1.4.» -> «7.1.5.») stays.
+    pages = [[("Text", "УТВЕРЖДЕНЫ постановлением от 22.05.2020 № 15", 900),
+              ("Section-header", "VII. Требования к содержанию"),
+              ("Text", "7.1. Уборка проводится ежедневно."),
+              ("Text", "7.1.4. Инвентарь протирается влажной ветошью."),
+              ("Text", "Ковер очищается ежедневно."),
+              ("Text", "7.1.5. В медицинском пункте помещения дезинфицируются."),
+              ("Text", "Отходы класса Б обеззараживаются."),
+              ("Text", "7.2. Оконные стекла очищаются по мере загрязнения.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.4"] == "S/VII/7.1/7.1.4"
+    assert got["1.6"] == "S/VII/7.1"
+    assert got["1.7"] == "S/VII/7.2"
+
+
+def test_paragraph_after_a_nested_list_returns_to_the_owner_of_that_list():
+    # Step 14 C2 (batch 14): after the last «д)» of the list inside «2)» the paragraph belongs to «2)», the owner
+    # of the list, not to point 25 (convention v2: the point or part the list belongs to).
+    got = owners(S.build(extraction(subpoint_pages([
+        "25. К освещению предъявляются требования:", "1) показатели освещения соответствуют нормативам;",
+        "2) без естественного освещения допускается размещение:", "а) технических помещений;",
+        "б) помещений работников.", "Без естественного освещения допускается размещение операционных.",
+        "26. Мебель выполняется из материалов, допускающих обработку."]))))
+    assert got["1.5"] == "A/25/2/б"
+    assert got["1.6"] == "A/25/2"
+    assert got["1.7"] == "A/26"
+
+
+def test_sentence_after_an_unterminated_last_subpoint_on_the_same_page_returns_to_the_point():
+    # Step 14 C2 (batch 14): «19) … программой производственного контроля» lost its final «.»; the next
+    # capitalised sentence on the same page is the point's. On the next page it may be the cut sentence's
+    # end («Российской Федерации.»), so it stays in the subpoint.
+    head = ["74. При эксплуатации аквапарков:", "18) ванны обрабатываются дезинфицирующими препаратами;",
+            "19) осуществляется лабораторный контроль в соответствии с программой производственного контроля"]
+    tail = "Кратность лабораторных исследований изложена в приложении № 6 к правилам."
+    got = owners(S.build(extraction(subpoint_pages([*head, tail, "75. Размещение гостиниц не допускается."]))))
+    assert got["1.3"] == "A/74/19"
+    assert got["1.4"] == "A/74"
+    got = owners(S.build(extraction([subpoint_pages(head)[0], [("Text", tail), ("Text", "75. Следующий пункт.")]])))
+    assert got["2.0"] == "A/74/19"
+
+
+def test_unterminated_lines_inside_a_subpoint_do_not_close_it():
+    # Step 14 C2 negative (ukaz-410-2021): appointment lines without punctuation, then a long sentence ending «.»,
+    # stay in «а)»; only the subpoint's own marked paragraph that lost its «.» counts.
+    got = owners(S.build(extraction(subpoint_pages([
+        "1. Назначить:", "а) судьями:", "председателем Арбитражного суда Мурманской области",
+        "Драчена Артема Васильевича заместителем председателя Арбитражного суда города Москвы Китову Аллу.",
+        "2. Назначить:", "а) судьей Иванова."]))))
+    assert got["1.4"] == "A/1/а"

@@ -983,12 +983,24 @@ def continues_level(nxt: tuple, stack: tuple, level: int) -> bool:
             and not (nxt[level][1] < stack[level][1] and isinstance(nxt[level][1], int)))
 
 
+OWN_SENTENCE_MIN_WORDS = 8  # step 14 C2: a sentence after an unterminated subpoint, not the end of a cut one
+
+
+def subpoint_level(stack: tuple, level: int) -> bool:
+    """``stack[level]`` is a subpoint: «1)» / «а)», or (step 14 C2, batch 15) a dotted «7.1.5.» inside the
+    dotted point «7.1.» it extends."""
+    kind = stack[level][0]
+    return kind in SUBPOINT_KINDS or (kind == "decimal" and level > 0 and stack[level - 1][0] == "decimal"
+                                      and stack[level][1][:-1] == stack[level - 1][1])
+
+
 def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) -> None:
     """A paragraph after the last subpoint returns to the point. An unmarked paragraph inside a
-    «1)» / «а)» subpoint closes it when it starts with a capital letter and does not continue the
+    subpoint (``subpoint_level``) closes it when it starts with a capital letter and does not continue the
     enumeration: the previous paragraph ended with «.», or it ended with «;» and this paragraph is
-    a sentence of its own (final «.»). Only list levels that the next marked paragraph does not
-    continue are closed; later unmarked paragraphs up to the next marker follow the point. A
+    a sentence of its own (final «.»), or the subpoint lost its final «.» and this sentence is on its
+    page. Only the list of the last subpoint is closed, when the next marked
+    paragraph does not continue it; later unmarked paragraphs up to the next marker follow the point. A
     lowercase start, a «;» item, text after «:» or a list that goes on stay in the subpoint. Nothing
     closes inside a quotation: while a «…» opened in the subpoint (from its marked paragraph on) is
     unbalanced, or when the paragraph itself ends a quotation («…».» / «…»»), as in amending text
@@ -1008,7 +1020,7 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             stacks[k] = closed
             continue
         stack = stacks[k]
-        if not k or not stack or stack[-1][0] not in SUBPOINT_KINDS or not p.text[:1].isupper():
+        if not k or not stack or not subpoint_level(stack, len(stack) - 1) or not p.text[:1].isupper():
             continue
         if (inside_quote or strip_sup(p.text).rstrip(" .").endswith("»")
                 or any("quoted" in e or "in_quotation" in e for e in p.evidence)):
@@ -1017,14 +1029,19 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         while j > 0 and editorial_only(body[j]):
             j -= 1
         before, own = provision_final(body[j].text), provision_final(p.text)
-        if not (before == "." or (before == ";" and own == ".")):
+        # step 14 C2: the subpoint's marked paragraph lost its final «.» («19) … производственного контроля»),
+        # then a sentence of its own on the same page; a short line («Российской Федерации.»), one across a page
+        # break or after unmarked lines (a list of names) may end the cut sentence
+        cut = (before.isalnum() and own == "." and body[j].marker.kind not in {"none", "dash"}
+               and body[j].regions[-1].page == p.first.page
+               and len(p.text.split()) >= OWN_SENTENCE_MIN_WORDS)
+        if not (before == "." or (before == ";" and own == ".") or cut):
             continue
         nxt = next((stacks[j] for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), ())
-        depth = len(stack)
-        while depth and stack[depth - 1][0] in SUBPOINT_KINDS and not continues_level(nxt, stack, depth - 1):
-            depth -= 1
-        if depth < len(stack):
-            closed = stacks[k] = stack[:depth]
+        # step 14 C2: only the list of the last subpoint closes; the paragraph goes to the owner of that list
+        # («2)» for its «а)»-«д)»), not further up
+        if not continues_level(nxt, stack, len(stack) - 1):
+            closed = stacks[k] = stack[:-1]
             p.evidence.append({"subpoint_closed": "capitalised paragraph after the last subpoint -> the point"})
 
 

@@ -122,6 +122,15 @@
   document below baseline; error lists changed only by fixes: sanpin-19-2026 662 -> 685/685, fz-119-2016 350 -> 353,
   fz-15-2013 219 -> 221, prikaz-minselskogo-134-2016 392 -> 393; batch 15 2502/2513 (99.56%). The family gate exits
   1 for those fixes (laws, sanitary rules). JSON `s14-c1` equal to v12 per act on both stands.
+- Step 14 C2 (B4 `close_subpoints`, convention v2 «абзац после последнего подпункта принадлежит родителю»):
+  `subpoint_level` also counts a dotted «7.1.5.» inside the dotted point «7.1.» it extends; only the list of the last
+  subpoint closes (the paragraph after «д)» inside «2)» goes to «2)», not to the point); the subpoint's own marked
+  paragraph that lost its final «.» closes too when the next sentence is on the same page and has at least
+  `OWN_SENTENCE_MIN_WORDS` 8 words («Российской Федерации.» and lists of names stay). Regressions against
+  `…-step14-c1`: `…-c2` dotted (9d8901b5…, +2: sanpin-61-2015, sanpin-69-2016), `…-c2b` one level (cc83589f…, +1
+  sanpin-20-2026 15.3), `…-c2c` unterminated (23dd0d5d…, +1 sanpin-20-2026 38.16): 32555/32711, no document below;
+  batches 14/15 = 2292/2504. `…-c2c-failed-ukaz410` kept: without the marked-paragraph condition ukaz-410-2021 lost 2
+  (appointment lines). JSON `s14-c2`: v1 equal to v12 per act, v2 one code +1 (17813 -> 17814), nothing lower.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
