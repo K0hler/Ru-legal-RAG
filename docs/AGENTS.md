@@ -97,7 +97,8 @@
   sentence of point 74 left in subpoint 19), orders 614/616 (minobrazovaniya-1412 footer «ФГОС ВО …» given to a
   point; minselskogo-134 20.1 OCR «з)» read «3)» nested under «ж)» as `S/II/30/ж/3` — the batch-7 rule expects
   the digit at the subpoint's own level, so the classifier leaves it unclassified). rp-774-2017 approves changes
-  (empty feed title passed the amending filter). New class: none by reading, owner to confirm.
+  (empty feed title passed the amending filter). No new class (owner 28.10.2026: counter 5, batches 10-14; the nested «з)» -> «3)» is the batch-7 class).
+  SanPiN/SP: 1 of 3 batches, not ready by §7.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
