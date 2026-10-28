@@ -917,10 +917,13 @@ def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text
     (SUBHEADING_STYLED_MAX with ``long``), SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
     text = p.text
-    limit = SUBHEADING_HEADER_MAX if heading_evidence(p) else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
+    header = heading_evidence(p)
+    limit = SUBHEADING_HEADER_MAX if header else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
+    # step 14 C3: an OCR heading may end with «:» («## Проведение проверки:» over «### Документарная проверка»)
+    open_ = not terminated(text) or (header and final_char(text) == ":")
     return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
             and bool(text) and text[0].isupper()
-            and len(text) <= limit and not terminated(text) and final_char(text) not in ",-–—"
+            and len(text) <= limit and open_ and final_char(text) not in ",-–—"
             and not FIGURE_CAPTION.match(text) and not LABEL_LINE.match(text)
             and not requisite_like(text) and not signature_like(p.first) and not is_caption(text)
             and not is_project_caption(text))
@@ -951,7 +954,11 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
             end += 1
         prev = seq[k - 1] if k else None
         nxt = seq[end + 1] if end + 1 < len(seq) else None
-        if (prev is not None and id(prev) in index and final_char(prev.text) in ".;"
+        # step 14 C3: a run of OCR headings also follows a point that lost its final «.»
+        finished = final_char(prev.text) in ".;" if prev is not None else False
+        if prev is not None and not finished and prev.marker.kind in POINT_KINDS and final_char(prev.text).isalnum():
+            finished = all(heading_evidence(q) for q in seq[k:end + 1])
+        if (prev is not None and id(prev) in index and finished
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
             if parent and parent[-1][0] in UNIT_RANK:

@@ -131,6 +131,11 @@
   sanpin-20-2026 15.3), `…-c2c` unterminated (23dd0d5d…, +1 sanpin-20-2026 38.16): 32555/32711, no document below;
   batches 14/15 = 2292/2504. `…-c2c-failed-ukaz410` kept: without the marked-paragraph condition ukaz-410-2021 lost 2
   (appointment lines). JSON `s14-c2`: v1 equal to v12 per act, v2 one code +1 (17813 -> 17814), nothing lower.
+- Step 14 C3 (`subheading_candidate` / `subheading_stacks`): an OCR heading (Section-header/Title) may end with «:»
+  («## Проведение проверки:» over «### Документарная проверка»), and a run of OCR headings also follows a numbered
+  point that lost its final «.»; a body-text line there, a section heading or an editorial note before the run keep
+  the old reading. `…-step14-c3` (6bd14c7e…): 32558/32711 (+3, prikaz-minenergetiki-728-2015 212/216), nothing
+  else changed; JSON `s14-c3` equal to `s14-c2` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

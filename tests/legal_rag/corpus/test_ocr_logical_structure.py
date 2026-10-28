@@ -2467,3 +2467,24 @@ def test_unterminated_lines_inside_a_subpoint_do_not_close_it():
         "Драчена Артема Васильевича заместителем председателя Арбитражного суда города Москвы Китову Аллу.",
         "2. Назначить:", "а) судьей Иванова."]))))
     assert got["1.4"] == "A/1/а"
+
+
+def test_header_subheadings_with_a_colon_or_after_an_unterminated_point_belong_to_the_section():
+    # Step 14 C3 (batch 15): OCR Section-header subheadings «Проведение проверки:» / «Документарная проверка» and a
+    # Section-header after a point that lost its final «.» belong to the section, as other subheadings do.
+    got = owners(S.build(extraction(styled_regulation(
+        ("Text", "4. Результатом процедуры является регистрация приказа."),
+        ("Section-header", "## Проведение проверки:"), ("Section-header", "### Документарная проверка"),
+        ("Text", "5. Основанием для проверки является приказ."),
+        ("Text", "6. Заинтересованное лицо вправе обжаловать решения, принятые в ходе исполнения функции"),
+        ("Section-header", "### Предмет досудебного обжалования"),
+        ("Text", "7. Предметом обжалования являются действия должностных лиц.")))))
+    assert got["2.8"] == "S/I" and got["2.9"] == "S/I"
+    assert got["2.10"] == "S/I/5"
+    assert got["2.12"] == "S/I"
+    assert got["2.13"] == "S/I/7"
+    # a body-text line after the unterminated point is still its cut sentence
+    got = owners(S.build(extraction(styled_regulation(
+        ("Text", "6. Заинтересованное лицо вправе обжаловать решения, принятые в ходе исполнения"),
+        ("Text", "Государственной функции Министерства"), ("Text", "7. Предметом обжалования являются действия.")))))
+    assert got["2.8"] == "S/I/6"

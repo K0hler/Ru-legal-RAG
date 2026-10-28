@@ -35,6 +35,8 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 14 C3 test: Section-header subheadings ending «:» and after an unterminated point go to the section; a
+  body-text line after an unterminated point stays its cut sentence.
 - Step 14 C2 tests in `corpus/test_ocr_logical_structure.py`: a paragraph after the last dotted «7.1.5.» returns to
   «7.1.» (after «7.1.4.» followed by «7.1.5.» it stays); after a nested «а)»-«б)» list it goes to the list's owner
   «2)»; after an unterminated marked «19)» a same-page sentence goes to the point, on the next page it stays;
