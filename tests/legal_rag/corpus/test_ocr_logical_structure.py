@@ -2488,3 +2488,20 @@ def test_header_subheadings_with_a_colon_or_after_an_unterminated_point_belong_t
         ("Text", "6. Заинтересованное лицо вправе обжаловать решения, принятые в ходе исполнения"),
         ("Text", "Государственной функции Министерства"), ("Text", "7. Предметом обжалования являются действия.")))))
     assert got["2.8"] == "S/I/6"
+
+
+def test_rows_after_the_last_table_part_that_continue_the_row_numbers_are_annex_text():
+    # Step 14 C4 (batch 15, a subsidy calculation form): rows «1.», «2.» are cut out between the table parts and
+    # «3.»-«5.» after the last part; they continue the row numbers, so they are rows too. A marker that does not
+    # continue them («1.» again) is a point as before.
+    rows = (MEASURES, ("List-item", "1. Расходы на оплату труда"), ("List-item", "2. Расходы на общехозяйственные нужды"),
+            MEASURES, ("Text", "материальных запасов и оплату услуг связи"), ("List-item", "3. Расходы на сопровождение"),
+            ("List-item", "4. Прочие расходы"), ("List-item", "5. Итого затрат (строка 1 + строка 2)"))
+    result = S.build(extraction(program_with_table_annex(*rows)))
+    got = owners(result)
+    for index in range(0, 11):
+        assert got[f"3.{index}"] == "S/AN1", index
+    marked = [p["text_preview"][:2] for p in result["paragraphs"] if any("table_row" in e for e in p["evidence"])]
+    assert marked == ["1.", "2.", "3.", "4.", "5."]
+    got = owners(S.build(extraction(program_with_table_annex(*rows[:5], ("Text", "1. Средства уточняются ежегодно.")))))
+    assert got["3.8"] == "S/AN1/1"

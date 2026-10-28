@@ -136,6 +136,10 @@
   point that lost its final «.»; a body-text line there, a section heading or an editorial note before the run keep
   the old reading. `…-step14-c3` (6bd14c7e…): 32558/32711 (+3, prikaz-minenergetiki-728-2015 212/216), nothing
   else changed; JSON `s14-c3` equal to `s14-c2` per act.
+- Step 14 C4 (`table_rows`): in a table annex, «N.» rows after the last table part that go on by one from the last
+  row cut out between the parts («3.»-«5.» after «2.», a subsidy calculation form) are rows too; the first marker that
+  does not go on stops it. `…-step14-c4` (7b615357…): 32563/32711 (+5, pp-737-2019 144/144), nothing else changed;
+  batch 15 2512/2513. JSON `s14-c4` equal to `s14-c2` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

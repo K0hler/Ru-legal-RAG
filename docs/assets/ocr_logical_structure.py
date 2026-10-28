@@ -1361,16 +1361,27 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     parts. Such a marker between the first and the last table of the annex opens no section or point:
     it is text of the annex. Named units («Раздел», «Глава», «Статья», «§») keep their meaning. An
     annex whose first marker precedes its first table keeps ordinary numbering, markers after the last
-    table are unchanged, and an approved text that is itself a table (`S`) keeps the previous reading."""
+    table are unchanged unless they go on from the last row («3.» after «2.», step 14 C4), and an approved text that is itself a table (`S`) keeps the previous reading."""
     if not ANNEX_SCOPE.search(scope_path):
         return set()
     seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
     tables = [k for k, p in enumerate(seq) if p.kind == "table"]
     if not tables or any(p.marker.kind not in {"none", "dash"} for p in seq[:tables[0]] if p.kind != "table"):
         return set()
-    return {id(p) for p in seq[tables[0] + 1:tables[-1]]
+    rows = [p for p in seq[tables[0] + 1:tables[-1]]
             if p.kind in {"text", "heading"} and p.marker.kind not in {"none", "dash"}
-            and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")}
+            and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")]
+    # step 14 C4: after the last table part, «3.», «4.» … that go on from the last cut-out row «2.» are rows too
+    last = rows[-1].marker if rows else None
+    for p in seq[tables[-1] + 1:]:
+        if p.marker.kind in {"none", "dash"}:
+            continue
+        if not (last is not None and p.kind == "text" and p.marker.kind == last.kind == "int"
+                and p.marker.value == last.value + 1):
+            break
+        rows.append(p)
+        last = p.marker
+    return {id(p) for p in rows}
 
 
 def common_owner(owners: list[str]) -> str:
