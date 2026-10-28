@@ -145,6 +145,11 @@
   before. `…-step14-c5` (9c99cdc9…): 32567/32711 (+4: prikaz-minobrazovaniya-1412-2015, also pp-1327-2019 +2 and
   prikaz-minobrazovaniya-1126-2017 +1), nothing lower; batches 13/14/15 = 2424/2293/2512. JSON `s14-c5` equal to
   `s14-c2` per act.
+- Step 14 freeze (owner 28.10.2026 «Сделай все, не спрашивай у меня»): П14 = v13 `ocr-logical-structure/13-experiment`
+  (sha256 b2cee806…, LF) in `data/m1/m1-04a/experiments/20261028-prototype-v13-freeze/` (code hashes add
+  `derive_m1_04a_gold_footnotes.py`); regression `20261028-dev-regression-167-v13` 32567/32711 (errors equal to
+  `…-step14-c5`); JSON `v13-results.json` on both stands (v1 equal to v12 per act, v2 one code +1). Report
+  `milestones/m1/04a/M1_04A_CYCLE14_2026-10-28.md`. Measured on scan batch 16 (SanPiN reported separately).
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
