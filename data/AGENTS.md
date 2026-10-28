@@ -181,6 +181,16 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batches 17-19 (28.10.2026, the checks of П17 = v17, owner go-ahead «30 SanPiN at once»): profiles
+  `batch-17..19` (SanPiN only, 6+4 / 5+2 / 6+1, seeds 20261117-19, `--min-days 0`); the frozen SanPiN list of
+  batch 14 is now exhausted (left: 2 acts over 200 p. and sanpin-6-2025). A batch's `index.json` must exist before
+  the next batch is selected (build the catalog after acquiring). OCR `experiments/20261028-batch-17-ocr/`
+  (342cf9cf…): sanpin-6-2025 (144 p.) failed on p. 106 (native `length`), no reserve, batch 17 = 9 acts; the
+  partial first annotation input is kept as `…-batch-17-annotation-input.attempt-01-failed-ocr`. Batches 18
+  (658daac0…) and 19 (7231ee26…) complete. Gold: 6 / 4 / 5 Codex jobs (`.superpowers/sdd/2026-10-28-m1-04a-pool-
+  batch-17..19/`, batch-16 template), sanpin-81-2016 in 2 parts (1-28 / 29-72); freezes f535afc3… / 3ca56089… /
+  41e882a9… (addenda 7091bcce… / 4bb93fb5… / b0ecec3f…). Checks (v17 + v13, run once): 2466/2469, 1386/1395,
+  1346/2256 (sanpin-81-2016 14/914: the approval caption «Приложение ⏎ Утверждены …» in one region opens no `S`).
 - Scan batch 16 (28.10.2026, the check of П16 = v13): `m1/m1-04a/documents/pool/batch-16/selection.json`
   (186797b8…, profile `batch-16` = batch-15 excluding batches 1-15, seed 20261105, `--from 2011-01-01 --to
   2019-12-31`, code 961ab2e, SanPiN list reused from batch 14). 120 feed days; IPS tree filter: 32 acts checked, 2
