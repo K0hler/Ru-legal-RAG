@@ -1659,6 +1659,12 @@ def test_sanpin_slug_uses_the_resolution_number():
     assert acquire.slug({"act_type": "sanpin_2010s", "number": "7", "date": "2015-07-14"}) == "sanpin-7-2015"
 
 
+def test_catalog_lists_batch_15_before_its_check():
+    catalog = load_script("build_m1_04a_catalog")
+    assert catalog.POOL_BATCHES[-1] == "batch-15" and len(catalog.POOL_BATCHES) == 15
+    assert "batch-15" not in catalog.POOL_STATUS  # written only after the check
+
+
 # ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
 
 def test_batch_15_profile_takes_six_sanpin_and_requires_a_title():
