@@ -266,8 +266,12 @@
   `table_rubrics` — a short unterminated int-marked line between two table parts, numbered back from the open point
   by 2 or more («2. Учреждения общего образования» under point 87), is a table rubric (`table_row`), not a point.
   `…-step27-c` 45251, `…-step27-d` (54904b9a…) 45274/45354 (99.82%), nothing below; sanpin-2-2021 1765/1771, sanitary
-  rules 99.82%; JSON `step27-d`: v1 equal, v2 as s24b. Below 99% only the five gold questions: minzdrav-369,
-  minekon-37, minkultury-1321, rp-1431 / rp-2728.
+  rules 99.82%; JSON `step27-d`: v1 equal, v2 as s24b.
+- Step 27 D: the minzdrav-369 «gold question» was a prototype error — its annotator saw on the page images that
+  «1.1. Прием …», «2.1. …» sit in the tables' top grid rows (§6: no points). `TABLE_GRID_RUBRIC`: when a table of the
+  scope carries a dotted rubric as `<caption>2.2. …`, unterminated dotted lines right above a table are rubrics.
+  `…-step27-e` 45284/45354, minzdrav-369 47/47, nothing below; JSON `step27-e` as `step27-d`. Read annotation-notes.md
+  before calling a residual error a gold error. Below 99%: minekon-37, minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

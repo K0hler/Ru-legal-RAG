@@ -1658,6 +1658,7 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
 
 
 TABLE_RUBRIC_MAX = 200
+TABLE_GRID_RUBRIC = re.compile(r"<caption>\s*\d+\.\d+\.?\s")
 
 
 def table_rubrics(items: list[Paragraph]) -> set[int]:
@@ -1665,6 +1666,12 @@ def table_rubrics(items: list[Paragraph]) -> set[int]:
     two parts of one table, numbered back from the open point (87), is the table's rubric, not a point."""
     seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
     rubrics, last = set(), None
+    # step 27 D (prikaz-minzdravookhraneniya-369-2022): where OCR kept a dotted rubric inside a table's grid
+    # («<caption>2.2. Хирургические … методы лечения</caption>»), the dotted «1.1. Прием …» lines it cut out right
+    # above a table are rubrics of those tables too (convention v2 §6: rubrics inside a table make no points)
+    if any(q.kind == "table" and TABLE_GRID_RUBRIC.search(q.text) for q in seq):
+        rubrics |= {id(p) for k, p in enumerate(seq[:-1]) if p.marker.kind == "decimal" and seq[k + 1].kind == "table"
+                    and len(p.text.strip()) <= TABLE_RUBRIC_MAX and not terminated(p.text.strip())}
     for k, p in enumerate(seq):
         if p.kind == "table" or p.marker.kind != "int":
             continue

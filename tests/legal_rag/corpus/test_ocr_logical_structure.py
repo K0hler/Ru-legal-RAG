@@ -2712,6 +2712,24 @@ def test_a_numbered_rubric_between_table_parts_is_not_a_point():
     assert got["2.8"] == "S/I/88" and got["2.10"] == "S/I/89"
 
 
+def test_dotted_rubrics_cut_out_of_tables_whose_siblings_ocr_kept_inside_are_not_points():
+    # Step 27 D (prikaz-minzdravookhraneniya-369-2022): OCR kept «2.2. Хирургические …» as the table's <caption> and cut
+    # «1.1. Прием врача» and «2.1. …» out above their tables; all are rubrics in the table grid, the text stays in «1.»,
+    # «2.». Without a dotted caption inside a table «1.1.» over a table is a point («5.5. Номенклатура …», minekon-37).
+    T = ("Table", "<table><tr><td>B01.068.001</td><td>Прием</td></tr></table>")
+    C = ("Table", "<table><caption>2.2. Хирургические методы лечения</caption><tr><td>A16</td></tr></table>")
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить стандарт.")],
+             [("Text", "Приложение к приказу Министерства здравоохранения"), ("Text", "СТАНДАРТ МЕДИЦИНСКОЙ ПОМОЩИ"),
+              ("Text", "1. Медицинские услуги для диагностики"), ("Text", "1.1. Прием врача-специалиста"), T,
+              ("Text", "2. Медицинские услуги для лечения"), ("Text", "2.1. Прием и наблюдение врача"), T, C]]
+    got = owners(S.build(extraction(pages)))
+    assert [got[f"2.{index}"] for index in range(2, 5)] == ["A/AN/1"] * 3
+    assert [got[f"2.{index}"] for index in range(5, 9)] == ["A/AN/2"] * 4
+    pages[1][-1] = T
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "A/AN/1/1.1" and got["2.6"] == "A/AN/2/2.1"
+
+
 def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
     # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
     # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a
