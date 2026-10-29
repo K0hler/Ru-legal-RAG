@@ -186,6 +186,13 @@
   First attempt (signature by geometry, any page-first paragraph) broke 9 laws/resolutions: kept as
   `…-step20-b-failed-too-wide`; page-first-only variant `…-step20-b2-page-first`. `…-step20-b`
   (21e6fa86…): equal to A. JSON `s20-a`, `s20-b` equal to v17 per act.
+- Step 20 C (`article_notes`, `under_table_ids`): a singular «Примечание:» right under a table is that table's note and
+  keeps its owner; the plural «Примечания» after a form's last point still opens the document's notes (cycle 10 B5).
+  D (`table_references`): a caption «Таблица N» named by an earlier point («в таблицах 6.1, 6.2») but printed under
+  another point belongs, with what follows up to the next marker, to the latest naming point (evidence
+  `table_reference`). C alone dropped sanpin-110-2017 by 19 (its notes followed tables wrongly owned by 7.2): kept as
+  `…-step20-c-failed-without-d`. `…-step20-cd` (3a980c7d…): 43402/43583 (+20: sanpin-26-2015 +6, sanpin-110-2017
+  94/94, sanpin-81-2016 +4, sanpin-91-2014 221/221), nothing below. JSON `s20-cd` equal to v17 per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

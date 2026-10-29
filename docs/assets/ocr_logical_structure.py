@@ -1151,12 +1151,52 @@ ARTICLE_NOTE = re.compile(r"^Примечани[ея](?:\s*[.:]|$)")
 NOTES_HEADING = re.compile(r"Примечани[ея]\s*[.:]?")
 
 
-def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
+# Step 20 D (batch 19): «… представлены в таблицах 6.1, 6.2; … в таблице 6.3» names tables; a caption «Таблица 6.1».
+TABLE_REFERENCE = re.compile(r"таблиц\w*\s+((?:№\s*)?\d+(?:\.\d+)*(?:\s*(?:,|и)\s*(?:№\s*)?\d+(?:\.\d+)*)*)")
+TABLE_CAPTION = re.compile(r"^Таблица\s*(?:№\s*)?(\d+(?:\.\d+)*)\.?$")
+TABLE_REFERENCE_EVIDENCE = {"table_reference": "a table printed away from its reference belongs to the point naming it"}
+
+
+def referenced_tables(text: str) -> set[str]:
+    return {n for m in TABLE_REFERENCE.finditer(text) for n in re.findall(r"\d+(?:\.\d+)*", m.group(1))}
+
+
+def table_references(body: list[Paragraph], stacks: list[tuple]) -> None:
+    """Step 20 D: a caption «Таблица N» named by an earlier point («в таблицах N, M») but printed under another point
+    (the tables of section VI after section VII) belongs, with what follows it up to the next marker, to the latest
+    point that names it. A caption under the point naming it, or named by nobody, keeps its owner."""
+    named: dict[str, tuple] = {}  # table number -> stack of the latest marked paragraph naming it
+    owner: tuple | None = None
+    point: tuple = ()
+    for k, p in enumerate(body):
+        if p.marker.kind not in {"none", "dash"}:
+            owner = None
+            point = stacks[k]
+        m = TABLE_CAPTION.match(p.text.strip()) if p.marker.kind == "none" else None
+        if m and m.group(1) in named and named[m.group(1)] != point[:len(named[m.group(1)])]:
+            owner = named[m.group(1)]
+        elif m:
+            owner = None
+        if owner is not None:
+            stacks[k] = owner
+            p.evidence.append(dict(TABLE_REFERENCE_EVIDENCE))
+        for number in referenced_tables(p.text):
+            named[number] = point if p.marker.kind == "none" else stacks[k]
+
+
+def under_table_ids(items: list[Paragraph]) -> set[int]:
+    """Ids of body paragraphs whose previous body item (pictures aside) is a table."""
+    seq = [q for q in items if q.flow == "body" and q.kind != "picture"]
+    return {id(q) for prev, q in zip(seq, seq[1:]) if prev.kind == "table"}
+
+
+def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[int] = frozenset()) -> None:
     """A note «Примечание. …» or «Примечания:» after the parts of an article belongs to the article, not to
     its last part; so do the numbered notes «N.» under it and editorial notes after them, up to the next named
     unit or any other marker. Outside an article a note keeps its owner, and so does a note under a point «5)» of
     an article (an amending law quoting a new article with its note). Cycle 10 B5: outside an article a standalone
-    heading «Примечания» after the last point opens the notes of the document root, up to the next marker."""
+    heading «Примечания» after the last point opens the notes of the document root, up to the next marker; step 20 C:
+    not right under a table, where it starts the table's notes."""
     note = None  # the article's stack while inside its note block
     for k, p in enumerate(body):
         if note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
@@ -1167,7 +1207,10 @@ def article_notes(body: list[Paragraph], stacks: list[tuple]) -> None:
         if note is None and p.kind == "text" and unmarked and ARTICLE_NOTE.match(p.text) and not quoted:
             level = next((i for i, e in enumerate(stacks[k]) if e[0] == "article"), None)
             below = stacks[k][level + 1:level + 2] if level is not None else ()
-            if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()):
+            # step 20 C: a singular «Примечание:» right under a table is the note of that table and stays with the
+            # table's owner; the plural «Примечания» explains the whole form (cycle 10 B5)
+            under_table = id(p) in under_tables and p.text.strip().startswith("Примечание")
+            if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()) and not under_table:
                 # cycle 10 B5: outside an article a standalone «Примечания» heading after the last point opens the
                 # notes of the document (a form's explanations), not text of that point
                 note = ()
@@ -1644,7 +1687,8 @@ def build(extraction: dict) -> dict:
                 p.marker = replace(alt, restart=p.marker.restart)
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         editorial_note_owners(body, stacks, points_are_parts)
-        article_notes(body, stacks)
+        article_notes(body, stacks, under_table_ids(items))
+        table_references(body, stacks)
         for k, p in enumerate(body):
             if TOC_EVIDENCE in p.evidence:
                 stacks[k] = ()  # cycle 10 B4: a contents line belongs to the document root

@@ -37,6 +37,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 20 C/D: «Примечание:» under a table inside point 8.4 stays in 8.4 (the cycle-10 plural «Примечания» negative
+  stays); tables «Таблица 1.1/1.2» printed after section II belong to point 1.2 that names them, «Таблица 3.1» under
+  its own point keeps it.
 - Step 20 A/B: «Приложение ⏎ Утверждены …» in one region opens `S`; an approving act without a recognised caption
   opens `S` at the next page's heading after the signature; an annex caption there still opens `A/AN1`, and an act
   that approves nothing keeps its text. Dev regression lists 202 documents (batches 17-19 on `gold`, no

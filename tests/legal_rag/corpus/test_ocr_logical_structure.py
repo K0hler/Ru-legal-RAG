@@ -2600,3 +2600,36 @@ def test_approved_text_without_a_recognised_caption_opens_after_the_signature():
     pages = approving_act([("Text", "Лист рассылки: территориальные органы.")])
     pages[0][1] = ("Text", "1. Руководителям органов обеспечить контроль.")
     assert owners(S.build(extraction(pages)))["2.0"].startswith("A")
+
+
+def test_notes_heading_right_after_a_table_belongs_to_the_owner_of_the_table():
+    # Step 20 C (batches 18-19, three SanPiN): «Примечание:» right under a table inside point 8.4 and the lines under it
+    # are notes of that table, so of point 8.4, not notes of the whole document (cycle 10 B5 keeps that reading when
+    # no table precedes the heading).
+    got = owners(S.build(extraction(regulation(
+        ("Text", "8.4. Допустимые уровни приведены в таблице:"), ("Table", "<table><tr><td>Класс</td><td>5***</td></tr></table>"),
+        ("Section-header", "Примечание:"), ("Text", "* 5 класс - для работ с открытыми источниками."),
+        ("Text", "Лица, допущенные к работе, проходят инструктаж."),
+        ("Text", "8.5. Работы проводятся в спецодежде.")))))
+    for index in (2, 3, 4, 5, 6):
+        assert got[f"2.{index}"] == "S/I/8.4", index
+    assert got["2.7"] == "S/I/8.5"
+
+
+def test_a_table_printed_far_from_its_reference_belongs_to_the_point_that_refers_to_it():
+    # Step 20 D (batch 19, SanPiN 2.2.4.3483-17): point 6.2 says «представлены в таблицах 6.1, 6.2»; the tables are
+    # printed after section VII. «Таблица 6.1» and what follows it up to the next point belong to point 6.2. A table
+    # caption nobody refers to keeps the current point.
+    T = ("Table", "<table><tr><td>Участок</td><td>200</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "1.1. Контроль освещения обязателен."), ("Text", "1.2. Уровни освещения представлены в таблицах 1.1, 1.2."),
+        ("Section-header", "II. Аэроионный состав воздуха"), ("Text", "2.1. Контроль аэроионов не проводится."),
+        ("Text", "2.2. Аэроионификация рекомендована для бытовых помещений."),
+        ("Caption", "Таблица 1.1"), ("Text", "Уровни освещения на рабочих местах подземных объектов"), T,
+        ("Section-header", "Примечание:"), ("Text", "*Норма снижена на ступень."),
+        ("Caption", "Таблица 1.2"), T,
+        ("Section-header", "III. Шум"), ("Text", "3.1. Уровни шума нормируются."), ("Caption", "Таблица 3.1"), T))))
+    assert got["2.3"] == "S/I/1.2" and got["2.6"] == "S/II/2.2"
+    for index in range(7, 14):
+        assert got[f"2.{index}"] == "S/I/1.2", index
+    assert got["2.15"] == "S/III/3.1" and got["2.16"] == "S/III/3.1" and got["2.17"] == "S/III/3.1"
