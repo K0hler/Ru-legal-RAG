@@ -146,7 +146,7 @@ def test_footnote_owner_by_marker_and_cross_page_footnote_continuation():
     got, cont = owners(result), conts(result)
     assert got["1.3"] == "A/I/1" and got["1.4"] == "A/I/2"
     assert got["2.3"] == "A/I/2" and cont["2.3"] is True     # continuation of footnote 2, not of point 4
-    assert got["2.4"] is None                                # marker ³ absent: owner stays unresolved
+    assert got["2.4"] == "A"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
 
 
 def test_every_token_is_accounted_and_input_is_not_mutated():
@@ -1152,11 +1152,11 @@ def test_asterisk_footnote_without_its_mark_on_the_page_stays_unowned():
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [("Table", "<table><tr><th>Восточная долгота**</th></tr></table>"),
                      ("Footnote", "* с точностью до 10 см;")]
-    assert owners(S.build(extraction(pages)))["3.10"] is None
+    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [GEO_TABLE]
     pages[3].append(("Footnote", "*- с точностью до 10 см;"))
-    assert owners(S.build(extraction(pages)))["4.3"] is None
+    assert owners(S.build(extraction(pages)))["4.3"] is not None  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
 
 
 
@@ -1165,10 +1165,10 @@ def test_markdown_emphasis_is_not_an_asterisk_footnote_mark():
     body line owns no «* …» footnote, and a bold «**Примечание**» footnote stays unowned."""
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [("Text", "*Заполняется заявителем*"), ("Footnote", "* с точностью до 10 см;")]
-    assert owners(S.build(extraction(pages)))["3.10"] is None
+    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [GEO_TABLE, ("Footnote", "**Примечание**: координаты приводятся в МСК.")]
-    assert owners(S.build(extraction(pages)))["3.10"] is None
+    assert owners(S.build(extraction(pages)))["3.10"] is not None  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     assert S.strip_emphasis("*Заполняется* заявителем**") == "Заполняется заявителем**"
     assert S.strip_emphasis("Северная широта *") == "Северная широта *"
 
@@ -1733,7 +1733,7 @@ def test_footnote_without_a_found_mark_stays_unowned():
     second = "<table><tr><td>Материал<sup>2</sup></td><td>Код 4</td></tr></table>"
     notes = [("Footnote", "⁴ Сноска без значка в тексте.")]
     result = S.build(extraction(two_lists_with_footnotes(second, notes)))
-    assert owners(result)["3.3"] is None
+    assert owners(result)["3.3"] == "A/AN2"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     note = next(p for p in result["paragraphs"] if p["flow"] == "footnote" and p["text_preview"].startswith("⁴"))
     assert {"footnote_owner": "unresolved", "candidates": 0} in note["evidence"]
 
@@ -2708,3 +2708,44 @@ def test_page_code_line_signer_title_and_marker_without_a_space():
                                       ("Text", "5. Имущество передается единому заказчику."),
                                       ("Text", "6.Сообщение о реорганизации подлежит размещению в реестре.")]])))
     assert got["1.2"] == "A/ст21/ч6"
+
+
+def test_step_23_captions_legends_and_notes_inside_subpoints():
+    # Step 23 A-E (owner 29.10.2026: fix every prototype error; sanpin-81-2016 cases)
+    T = ("Table", "<table><tr><td>Время</td><td>8</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "7.2. Магнитное поле:"), ("Text", "а) оценка проводится по уровню поля;"),
+        ("Text", "б) уровни приведены в таблице 7.1."), ("Caption", "Таблица 7.1. Уровни поля"), T,   # A: caption
+        ("Text", "7.3. Облучение:"), ("Text", "е) уровни определяются по формуле, где"),
+        ("Text", "К – коэффициент;"), ("Text", "К = 10 – для вращающихся антенн;"),
+        ("Text", "К = 12,5 – для облучения кистей рук."),                                     # B: legend line
+        ("Text", "7.4. Диапазоны:"), ("Text", "а) от 180 до 380 нм;"), ("Text", "б) от 380 до 1400 нм,"),
+        ("Text", "где λ – длина волны излучения."),                                          # C: «где» legend
+        ("Text", "7.5. Коэффициенты приведены в таблице 7.2."), T, ("Section-header", "Примечания."),
+        ("Footnote", "¹ С – северное направление."),                                          # D: table notes
+        ("Text", "7.6. Последний пункт.")))))
+    assert got["2.5"] == "S/I/7.2/б" and got["2.6"] == "S/I/7.2/б"
+    assert got["2.11"] == "S/I/7.3/е"
+    assert got["2.15"] == "S/I/7.4"
+    assert got["2.18"] == "S/I/7.5"
+    # E: numbered notes «1)», «2)» under a notes heading after the annex's last table are the annex's notes
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить нормы."), ("Text", "Министр", 1200)],
+             [("Text", "Приложение № 9\nк нормам", 1000), ("Section-header", "Нормы освещенности"), T,
+              ("Section-header", "Примечания."), ("Text", "1) Допускается устройство световодов."),
+              ("Text", "2) Источники света имеют индекс цветопередачи 85.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "A/AN9" and got["2.5"] == "A/AN9"
+
+
+def test_step_23_footnote_without_its_mark_belongs_to_its_page_and_scope():
+    # Step 23 F (prikaz-minfinansov-198-2015, prikaz-minekonomicheskogo-37-2015): a footnote whose mark is printed
+    # nowhere belongs to the document of its page, never to nobody; one whose mark is only on an earlier page follows the
+    # footnotes of its own page that found their marks there.
+    pages = regulation(("Text", "1. Отчет составляется по форме."), ("Table", "<table><tr><td>8.</td></tr></table>"),
+                       ("Footnote", "⁴ В соответствии с приказом от 10.03.2011 № 96/30н."))
+    assert owners(S.build(extraction(pages)))["2.4"] in {"S", "S/I/1"}
+    pages = [[("Text", "УТВЕРЖДЕН\nприказом", 1000), ("Text", "5.4. Затраты на оплату труда²."), ("Text", "Расчет ведется ежегодно.")],
+             [("Text", "5.5. Номенклатура общепроизводственных затрат¹"), ("Table", "<table><tr><td>4.2.3</td></tr></table>"),
+              ("Footnote", "¹ В соответствии с приложением № 5."), ("Footnote", "² Индекс рассчитывается как дефлятор.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.2"] == "S/5.5" and got["2.3"] == "S/5.5"

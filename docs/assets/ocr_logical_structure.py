@@ -1061,8 +1061,12 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             stacks[k] = closed
             continue
         stack = stacks[k]
-        if not k or not stack or not subpoint_level(stack, len(stack) - 1) or not p.text[:1].isupper():
+        # step 23 C: a formula legend «где λ – …» after the list items closes like a sentence
+        legend = p.text.startswith("где ")
+        if not k or not stack or not subpoint_level(stack, len(stack) - 1) or not (p.text[:1].isupper() or legend):
             continue
+        if p.first.category == "Caption" or TABLE_NUMBER.match(p.text) or FIGURE_CAPTION.match(p.text):
+            continue  # step 23 A: «Таблица 7.1. …» under a subpoint is its table's caption, not a closing sentence
         if (inside_quote or strip_sup(p.text).rstrip(" .").endswith("»")
                 or any("quoted" in e or "in_quotation" in e for e in p.evidence)):
             continue  # cycle 9 B4 / 11 B1: a quoted heading or paragraph (straight quotes too) closes nothing
@@ -1073,10 +1077,14 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         # step 16 C2: the subpoint's marked paragraph lost its final «.» («19) … производственного контроля»),
         # then a sentence of its own on the same page; a short line («Российской Федерации.»), one across a page
         # break or after unmarked lines (a list of names) may end the cut sentence
+        # step 23 B: after an unmarked «;» line (a formula legend «К = 10 – …;») the last line closes nothing
+        semicolon = before == ";" and own == "." and (body[j].marker.kind not in {"none", "dash"}
+                                                       or not body[j].text[:1].isupper())
+        legend_close = legend and own == "." and before in ".;,"
         cut = (before.isalnum() and own == "." and body[j].marker.kind not in {"none", "dash"}
                and body[j].regions[-1].page == p.first.page
                and len(p.text.split()) >= OWN_SENTENCE_MIN_WORDS)
-        if not (before == "." or (before == ";" and own == ".") or cut):
+        if not (before == "." or semicolon or cut or legend_close):
             continue
         nxt = next((stacks[j] for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), ())
         # step 16 C2: only the list of the last subpoint closes; the paragraph goes to the owner of that list
@@ -1288,9 +1296,14 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
 
 
 def under_table_ids(items: list[Paragraph]) -> set[int]:
-    """Ids of body paragraphs whose previous body item (pictures aside) is a table."""
-    seq = [q for q in items if q.flow == "body" and q.kind != "picture"]
-    return {id(q) for prev, q in zip(seq, seq[1:]) if prev.kind == "table"}
+    """Ids of notes headings that start a table's notes: right under a table (pictures aside), a singular
+    «Примечание» (step 20 C) or any notes heading followed by footnote regions (step 23 D, «Примечания.» over
+    «¹ С – северное; …»)."""
+    seq = [q for q in items if q.kind != "picture"]
+    body = [q for q in seq if q.flow == "body"]
+    after = {id(a): b for a, b in zip(seq, seq[1:])}
+    return {id(q) for prev, q in zip(body, body[1:]) if prev.kind == "table"
+            and (q.text.strip().startswith("Примечание") or getattr(after.get(id(q)), "flow", None) == "footnote")}
 
 
 def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[int] = frozenset()) -> None:
@@ -1301,8 +1314,13 @@ def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[
     heading «Примечания» after the last point opens the notes of the document root, up to the next marker; step 20 C:
     not right under a table, where it starts the table's notes."""
     note = None  # the article's stack while inside its note block
+    note_number = 1  # step 23 E: the next number of a document's numbered notes «1)», «2)»
     for k, p in enumerate(body):
-        if note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
+        # «1)», «2)» notes stay notes; «1.», «2.» under «Примечания:» are points of the document (sanpin-31-2015 gold)
+        numbered_note = (note == () and p.marker.kind == "paren" and p.marker.value == note_number)
+        if numbered_note:
+            note_number += 1
+        elif note is not None and (p.marker.kind not in {"none", "int"} or (note == () and p.marker.kind != "none")):
             note = None
         quoted = any("quoted" in e or "in_quotation" in e for e in p.evidence)  # cycle 11 B4: a quoted form's notes
         # step 13 B2: «Примечания: 1. …» took the marker its label hid; in an article it still opens the note block
@@ -1312,11 +1330,12 @@ def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[
             below = stacks[k][level + 1:level + 2] if level is not None else ()
             # step 20 C: a singular «Примечание:» right under a table is the note of that table and stays with the
             # table's owner; the plural «Примечания» explains the whole form (cycle 10 B5)
-            under_table = id(p) in under_tables and p.text.strip().startswith("Примечание")
-            if level is None and stacks[k] and NOTES_HEADING.fullmatch(p.text.strip()) and not under_table:
+            under_table = id(p) in under_tables
+            if level is None and NOTES_HEADING.fullmatch(p.text.strip()) and not under_table:
                 # cycle 10 B5: outside an article a standalone «Примечания» heading after the last point opens the
                 # notes of the document (a form's explanations), not text of that point
                 note = ()
+                note_number = 1
                 p.evidence.append({"notes_heading": "notes of the document after its last point"})
             elif level is not None and all(e[2].startswith("ч") for e in below):
                 note = stacks[k][:level + 1]
@@ -1862,6 +1881,7 @@ def build(extraction: dict) -> dict:
     # more than once on the footnote's page (a point and its subpoint) refers to one footnote: it belongs to
     # their common owner when they are in one scope.
     scope_of = {id(q): scope_path for scope_path, items in scopes for q in items}
+    page_marked: dict[int, bool] = {}  # footnote id -> its mark found on its own page
     body_seen = []  # (region, paragraph) of body text seen so far
     for p in paragraphs:
         if p.flow == "body":
@@ -1872,6 +1892,7 @@ def build(extraction: dict) -> dict:
         if number is None and stars is None:
             p.owner = None
             p.evidence.append({"footnote_owner": "unnumbered"})
+            page_marked[id(p)] = False
             continue
         if number is None:
             # «*- с точностью до 10 см», «** …»: the same run of asterisks, only on the footnote's page
@@ -1890,6 +1911,20 @@ def build(extraction: dict) -> dict:
             p.owner = common_owner([q.owner for q in page_hits])
             p.evidence.append({"footnote_owner_common": "mark repeated on the footnote's page"})
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})
+        page_marked[id(p)] = bool(page_hits)
+    # step 23 F: a footnote whose mark is only on an earlier page follows the footnotes of its own page that found their
+    # marks there (one table's notes); a footnote whose mark is nowhere belongs to the document of its page
+    by_page: dict[int, list] = defaultdict(list)
+    for p in paragraphs:
+        if p.flow == "footnote":
+            by_page[p.first.page].append(p)
+    for notes in by_page.values():
+        local = [q.owner for q in notes if page_marked.get(id(q)) and q.owner]
+        one_table = len(set(local)) == 1  # the page's marked footnotes share one owner: the notes of one unit
+        for q in notes:
+            if q.owner is None or (one_table and not page_marked.get(id(q)) and q.footnote is not None):
+                q.owner = common_owner(local) if local else scope_of.get(id(q))
+                q.evidence.append({"footnote_owner_page": "the footnotes of its page, or the document of its page"})
 
     region_owner = {}
     region_cont = {}

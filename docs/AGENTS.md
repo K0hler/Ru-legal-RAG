@@ -217,6 +217,19 @@
   glued to a capitalised word («6.Сообщение»). E JOB_CODE allows a dot before the code («Н.П.Прир-К7552-3»).
   `…-step22-a` (32b138b3…): 44852/45354 (+25), nothing below; pp-931-2022, pp-996-2022, fz-435-2020,
   prikaz-minnauki-511-2019 and sanpin-44-2017 now at 99% or more. JSON `s22` equal to v20 per act.
+- Owner 29.10.2026: classify every residual error (prototype vs gold) and fix the prototype's, even one-off, never by
+  per-document patches; nothing may get worse. Owner decisions of 28.10 applied to earlier golds by hand-checked
+  maps: `GOLD_OVERRIDE` in the regression (prikaz-fns-815-2024 `gold-dotted`, prikaz-mintruda-141-2023
+  `gold-footnotes` on its forms copy); rebaseline `…-step22-b-golds` 44871.
+- Step 23 A-F (`close_subpoints`, `article_notes`, `under_table_ids`, footnote owners): a table caption under a
+  subpoint closes nothing; after an unmarked capitalised «;» line (formula legend «К = 10 – …;») the last line closes
+  nothing (a lowercase «;» list line still lets the closing sentence close); a «где λ – …» legend after the last list
+  item closes like a sentence; a notes heading under a table followed by footnotes is the table's notes; under a
+  document notes heading «1)», «2)» stay notes («1.», «2.» stay points, sanpin-31-2015 gold); a footnote with no mark
+  found belongs to the document of its page (never ownerless), and one whose mark is only on an earlier page follows
+  its page's marked footnotes when they share one owner. First attempt (int notes, any sibling owner) cost
+  sanpin-31-2015 10 and sanpin-61-2015 1: kept as `…-step23-a-failed-notes`. `…-step23-a`: 44887/45354 (+16),
+  nothing below; JSON `s23a`: v1 equal, v2 two acts +1 (fz 72 -> 73, rp 22 -> 23), nothing lower.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
