@@ -215,16 +215,16 @@ def test_dev_regression_records_repo_relative_paths():
     assert D.recorded_path(D.ROOT / "data" / "x" / ".." / "summary.json") == "data/summary.json"
 
 
-def test_dev_regression_179_documents_families_and_cross_scope_v2(tmp_path):
+def test_dev_regression_202_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
-    assert len(docs) == 179 and len({d["name"] for d in docs}) == 179
+    assert len(docs) == 202 and len({d["name"] for d in docs}) == 202
     sizes = {}
     for d in docs:
         sizes[d["group"]] = sizes.get(d["group"], 0) + 1
     assert sizes == {"old-8": 8, "batch-1": 8, "batch-2": 9, "batch-3": 9, "batch-4": 11, "batch-5": 11,
                      "batch-6": 11, "batch-7": 11, "batch-8": 11, "batch-9": 11,
                      "batch-10": 11, "batch-11": 11, "batch-12": 11, "batch-13": 11, "batch-14": 11,
-                     "batch-15": 12, "batch-16": 12}
+                     "batch-15": 12, "batch-16": 12, "batch-17": 9, "batch-18": 7, "batch-19": 7}
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs
                if d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6", "batch-7"))
@@ -273,7 +273,9 @@ def test_dev_regression_179_documents_families_and_cross_scope_v2(tmp_path):
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-13", "batch-14"))
     assert not {"prikaz-favt-150-2023", "sanpin-20-2015"} & {d["name"] for d in docs}
     assert all(d["gold"].name.endswith(".gold-dotted.txt") for d in docs if d["group"] == "batch-15")
-    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] == "batch-16")
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-16", "batch-17", "batch-18", "batch-19"))
+    assert all(D.family(d["name"]) == "санитарные правила" for d in docs if d["group"] in ("batch-17", "batch-18", "batch-19"))
+    assert "sanpin-6-2025" not in {d["name"] for d in docs}  # its OCR failed (batch 17)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-16") == sorted(
         ["законы", "постановления", "распоряжения", "указы", "приказы", "приказы"] + ["санитарные правила"] * 6)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-15") == sorted(

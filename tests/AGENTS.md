@@ -37,6 +37,10 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 20 A/B: «Приложение ⏎ Утверждены …» in one region opens `S`; an approving act without a recognised caption
+  opens `S` at the next page's heading after the signature; an annex caption there still opens `A/AN1`, and an act
+  that approves nothing keeps its text. Dev regression lists 202 documents (batches 17-19 on `gold`, no
+  sanpin-6-2025).
 - Step 17 B: point-reference lines inside «1.5.» are its text, a dotless capitalised «2.1.8 Организации …» and a
   dotless lowercase «12.1 принятие …» under «12.» keep their markers.
 - Step 17 A: the paragraph after the last dotted «7.1.5.» stays in it (owner 28.10.2026); dev regression lists 179

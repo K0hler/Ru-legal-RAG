@@ -2556,3 +2556,47 @@ def test_a_dotless_lowercase_subpoint_that_goes_on_keeps_its_marker():
         ("Text", "12.1 принятие решения о внесении сведений - не позднее 5 дней;"),
         ("Text", "12.2. принятие решения об отказе - не позднее 5 дней.")))))
     assert got["2.3"] == "S/I/12/12.1" and got["2.4"] == "S/I/12/12.2"
+
+
+def test_annex_word_before_the_approval_caption_in_one_region_opens_the_approved_document():
+    # Step 20 A (batch 19, SanPiN 2.2.4.3359-16): OCR printed «Приложение ⏎ Утверждены ⏎ постановлением …» as one
+    # region; the approved rules are `S`, not text of point 3 of the resolution.
+    pages = [[("Title", "ГЛАВНЫЙ ГОСУДАРСТВЕННЫЙ САНИТАРНЫЙ ВРАЧ РОССИЙСКОЙ ФЕДЕРАЦИИ\nПОСТАНОВЛЕНИЕ"),
+              ("Text", "1. Утвердить санитарно-эпидемиологические правила и нормативы СанПиН 2.2.4.3359-16."),
+              ("Text", "2. Признать утратившими силу постановление от 2003 г. № 1."),
+              ("Text", "3. Ввести в действие правила с 1 января 2017 года."),
+              ("Text", "А.Ю. Попова", 1200)],
+             [("Text", "Приложение\nУтверждены\nпостановлением\nГлавного государственного\nсанитарного врача\n"
+                       "Российской Федерации", 1000),
+              ("Text", "от 21.06.2016 № 81", 1000),
+              ("Section-header", "I. Общие положения"),
+              ("Text", "1.1. Правила устанавливают требования к физическим факторам.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.0"] == "S" and got["2.1"] == "S"
+    assert got["2.2"] == "S/I" and got["2.3"] == "S/I/1.1"
+
+
+def approving_act(second_page):
+    return [[("Title", "ГЛАВНЫЙ ГОСУДАРСТВЕННЫЙ САНИТАРНЫЙ ВРАЧ РОССИЙСКОЙ ФЕДЕРАЦИИ\nПОСТАНОВЛЕНИЕ"),
+             ("Text", "1. Утвердить санитарные правила СП 2.2.4285-26."),
+             ("Text", "2. Ввести в действие правила с 1 марта 2026 года."),
+             ("Text", "А.Ю. Попова", 1200)], second_page]
+
+
+def test_approved_text_without_a_recognised_caption_opens_after_the_signature():
+    # Step 20 B (safety net after batch 19): the act approves a document and is signed; the next page starts its text
+    # without a caption OCR kept. The approved document opens there, so one lost caption costs one line, not the tree.
+    got = owners(S.build(extraction(approving_act(
+        [("Title", "САНИТАРНЫЕ ПРАВИЛА"), ("Section-header", "I. Общие положения"),
+         ("Text", "1.1. Правила устанавливают требования.")]))))
+    assert got["1.3"] == "A"
+    assert got["2.0"] == "S" and got["2.1"] == "S/I" and got["2.2"] == "S/I/1.1"
+    # an annex caption on the next page still opens the act annex
+    got = owners(S.build(extraction(approving_act(
+        [("Text", "Приложение № 1\nк постановлению Главного государственного санитарного врача", 1000),
+         ("Text", "Перечень показателей.")]))))
+    assert got["2.0"] == "A/AN1" and got["2.1"] == "A/AN1"
+    # an act that approves nothing keeps its text after the signature in the act
+    pages = approving_act([("Text", "Лист рассылки: территориальные органы.")])
+    pages[0][1] = ("Text", "1. Руководителям органов обеспечить контроль.")
+    assert owners(S.build(extraction(pages)))["2.0"].startswith("A")

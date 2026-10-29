@@ -166,6 +166,19 @@ def load_regions(extraction: dict) -> list[Region]:
 # Case-sensitive capitalised word. «ОДОБРЕН распоряжением …» (an endorsed agreement) only in capitals: the law
 # requisite «Одобрен Советом Федерации» is no caption.
 APPROVAL = re.compile(r"^(УТВЕРЖДЕН[АЫО]?|Утвержден[аыо]?|ОДОБРЕН[АЫО]?)\b(?:\s|$)")
+# Step 20 A (batch 19): OCR may print the word «Приложение» (with or without a number) and the approval caption in
+# one region: «Приложение ⏎ Утверждены ⏎ постановлением …». The approval word right after it makes the caption.
+ANNEX_BEFORE_APPROVAL = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?:№|N)?\s*\d+)?\s+(?=(?:УТВЕРЖДЕН|Утвержден|ОДОБРЕН))")
+
+
+# Step 20 B: a point of the act that approves a document («1. Утвердить санитарные правила …»).
+APPROVE_CLAUSE = re.compile(r"^(?:\d{1,2}[.)]\s*)?Утвердить\b")
+UNCAPTIONED_EVIDENCE = {"approved_without_caption": "the act approves a document and is signed; its text starts on "
+                                                    "the next page without a recognised caption -> approved document"}
+
+
+def approval_caption(text: str) -> bool:
+    return bool(APPROVAL.match(ANNEX_BEFORE_APPROVAL.sub("", text, count=1)))
 # The number follows a number sign («№», Latin «N», Cyrillic «Н», OCR Greek «Ν») or a plain space:
 # «Приложение № 2», «Приложение N 2», «Приложение 2». A bare number needs more evidence (annex_caption).
 ANNEX = re.compile(r"^(?:ПРИЛОЖЕНИЕ|Приложение)(?:\s*(?P<sign>№|N|Н|Ν)?\s*(?P<number>\d+))?(?:\s+(?P<ref>к\s.+))?$")
@@ -188,7 +201,7 @@ PROJECT_MAX = 40
 
 
 def is_caption(text: str) -> bool:
-    return bool(APPROVAL.match(text)) or (bool(ANNEX.match(text)) and len(text) <= CAPTION_MAX)
+    return approval_caption(text) or (bool(ANNEX.match(text)) and len(text) <= CAPTION_MAX)
 
 
 def is_project_caption(text: str) -> bool:
@@ -1461,6 +1474,8 @@ def build(extraction: dict) -> dict:
     # … «…";»): annex captions inside it are quoted text, not annexes of the attached document.
     quote_open: int | None = None  # paragraphs since the quotation opened
     previous_text = ""
+    # step 20 B: the act approved a document and was signed (page of the signature), no approved text open yet
+    approves, signed_page = False, None
     for q in paragraphs:
         if q.flow == "body" and q.kind == "text":
             page_first.setdefault(q.first.page, q)
@@ -1490,7 +1505,7 @@ def build(extraction: dict) -> dict:
         running = p.first.category in NOISE_CATEGORIES and p.first.repeats >= REPEAT_THRESHOLD
         header_repeat = running and text in scope_captions
         caption_here = p.kind == "text" and not running_caption(p) and not header_repeat
-        approval = caption_here and bool(APPROVAL.match(text)) and len(text) < CAPTION_BLOCK_MAX and not text.endswith(".")
+        approval = caption_here and approval_caption(text) and len(text) < CAPTION_BLOCK_MAX and not text.endswith(".")
         project = caption_here and is_project_caption(text)
         if approval or project:
             p.kind = "approval"
@@ -1563,6 +1578,25 @@ def build(extraction: dict) -> dict:
             scopes.append((scope, [p]))
             scope_captions = {text}
             continue
+        if p.flow == "body" and p.kind == "text" and scopes[-1][0] == "A" and not approved_opened and not quoted_here:
+            if APPROVE_CLAUSE.match(text):
+                approves = True
+            elif approves and signed_page is None and requisite_like(text):
+                signed_page = p.first.page
+            elif approves and signed_page is not None and parse_marker(text, p.first.category).kind not in {"none", "roman"}:
+                approves = False  # a point or an article after the signature: the act goes on, nothing to open
+            elif (approves and signed_page is not None and p.first.page > signed_page and not is_caption(text)
+                  and heading_evidence(p) and parse_marker(text, p.first.category).kind in {"none", "roman"}):
+                # on a later page, before any point or article, an OCR heading («САНИТАРНЫЕ ПРАВИЛА», «I. Общие
+                # положения») starts the approved text; lines before it stay in the act
+                # step 20 B: one lost caption must not leave the whole approved document in the act
+                approved_count += 1
+                approved_opened = True
+                scope = approved_scope = "S" if approved_count == 1 else f"S{approved_count}"
+                act_annex_document = None
+                scopes.append((scope, []))
+                scope_captions = set()
+                p.evidence.append(dict(UNCAPTIONED_EVIDENCE))
         scopes[-1][1].append(p)
 
     for scope_path, items in scopes:

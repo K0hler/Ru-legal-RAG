@@ -176,6 +176,16 @@
   `data/m1/m1-04a/experiments/20261028-prototype-v17-freeze/`; regression `20261028-dev-regression-179-v17`
   37308/37463 (errors equal to `…-step15-b2`); JSON `v17-results.json` equal to v13 per act. Measured on scan
   batches 17, 18 and 19 (profiles `batch-17..19`: 6 SanPiN of 2011-2019 + 4 of 2020+ each, `long_min` 0).
+- Step 20 (after batch 19, owner «Да»): dev regression = 202 documents (`BATCH_17..19` on `gold`); frozen П17
+  baseline `20261029-dev-regression-202-v17` (02f34220…): 42506/43583, `cross_scope_v2` 918.
+  A (`ANNEX_BEFORE_APPROVAL`, `approval_caption`): «Приложение[ № N] ⏎ Утверждены …» in one region is an approval
+  caption. `…-step20-a` (bc1d8c98…): 43382/43583 (sanpin-81-2016 14 -> 890/914, `cross_scope_v2` back to 26), nothing
+  else changed. B (safety net, scope loop): the act has a point «Утвердить …», then a requisite line (text only), and
+  on a later page — before any point or article — an OCR heading without a marker or with a Roman one: the approved
+  document `S` opens there (evidence `approved_without_caption`). With A off it alone gives sanpin-81-2016 888/914.
+  First attempt (signature by geometry, any page-first paragraph) broke 9 laws/resolutions: kept as
+  `…-step20-b-failed-too-wide`; page-first-only variant `…-step20-b2-page-first`. `…-step20-b`
+  (21e6fa86…): equal to A. JSON `s20-a`, `s20-b` equal to v17 per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
