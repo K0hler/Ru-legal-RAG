@@ -111,6 +111,10 @@ BATCH_18 = ("sanpin-17-2026", "sanpin-19-2016", "sanpin-26-2015", "sanpin-44-201
 BATCH_19 = ("sanpin-110-2017", "sanpin-15-2019", "sanpin-15-2026", "sanpin-52-2018", "sanpin-81-2016", "sanpin-84-2017",
             "sanpin-91-2014")
 BATCH_20 = ("sanpin-2-2021",)
+# Step 22 (owner decisions of 28.10.2026 applied to earlier golds by hand-checked maps): a paragraph after the last
+# dotted subpoint stays in it (prikaz-fns-815-2024, 13 regions) and a footnote belongs to the point with its mark
+# (prikaz-mintruda-141-2023 endnotes, 8 regions, on top of its forms copy).
+GOLD_OVERRIDE = {"prikaz-fns-815-2024": "gold-dotted", "prikaz-mintruda-141-2023": "gold-footnotes"}
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -160,7 +164,7 @@ def development_documents() -> list[dict]:
                                  ("batch-19", BATCH_19, "gold"), ("batch-20", BATCH_20, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
-                         "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})
+                         "gold": POOL / "gold" / slug / f"agent-{slug}.{GOLD_OVERRIDE.get(slug, suffix)}.txt"})
     return docs
 
 

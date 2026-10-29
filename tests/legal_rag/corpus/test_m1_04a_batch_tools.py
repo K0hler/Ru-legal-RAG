@@ -245,12 +245,14 @@ def test_dev_regression_203_documents_families_and_cross_scope_v2(tmp_path):
         ["приказы", "законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы",
          "распоряжения", "распоряжения", "указы"])
     # Batch 8 is scored on the gold derived under convention v2 §6.1 (forms without own caption, 25.10.2026).
-    assert all(d["gold"].name.endswith(".gold-forms.txt") for d in docs if d["group"] == "batch-8")
+    assert all(d["gold"].name.endswith(".gold-forms.txt") for d in docs
+               if d["group"] == "batch-8" and d["name"] not in D.GOLD_OVERRIDE)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-8") == sorted(
         ["законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
          "распоряжения", "распоряжения", "указы"])
     # Batch 9 is scored on its frozen gold (no forms map needed).
-    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] == "batch-9")
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs
+               if d["group"] == "batch-9" and d["name"] not in D.GOLD_OVERRIDE)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-9") == sorted(
         ["законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
          "распоряжения", "распоряжения", "указы"])
@@ -276,6 +278,9 @@ def test_dev_regression_203_documents_families_and_cross_scope_v2(tmp_path):
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-16", "batch-17", "batch-18", "batch-19"))
     assert all(D.family(d["name"]) == "санитарные правила" for d in docs if d["group"] in ("batch-17", "batch-18", "batch-19"))
     assert "sanpin-6-2025" not in {d["name"] for d in docs}  # its OCR failed (batch 17)
+    gold = {d["name"]: d["gold"].name for d in docs}
+    assert gold["prikaz-fns-815-2024"].endswith(".gold-dotted.txt")  # owner 28.10.2026 decisions on earlier golds
+    assert gold["prikaz-mintruda-141-2023"].endswith(".gold-footnotes.txt")
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-16") == sorted(
         ["законы", "постановления", "распоряжения", "указы", "приказы", "приказы"] + ["санитарные правила"] * 6)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-15") == sorted(
