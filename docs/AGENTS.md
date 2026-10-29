@@ -260,9 +260,14 @@
   gold). The decision applied by hand-checked `tables-map` → `gold-tables` copies (`GOLD_OVERRIDE`): prikaz-minobrazovaniya
   1126-2017 and 1412-2015 on `gold`, 518-2017 on `gold-quoted` (3 regions each), sanpin-2-2021 91 regions (26 blocks its
   annotators gave to the point; figure caption 310.10 left out). `…-step27-b-golds`: 45154/45354, nothing below,
-  sanitary rules 99.0%; JSON `step27-a`: v1 equal, v2 as s24b. Still below 99%: sanpin-2-2021 (92.9%: 96 headed tables
-  after a table / formula / unfinished line not moved, 19 rubric numbers, 10 rule-D tables without own heading) and
-  the gold questions in minzdrav-369, minekon-37, minkultury-1321, rp-1431 / rp-2728.
+  sanitary rules 99.0%; JSON `step27-a`: v1 equal, v2 as s24b.
+- Step 27 B-C (sanpin-2-2021 to 99%): B `TABLE_TITLE_MAX` 300 -> 400 (a 307-character ПДК title before «Таблица
+  3.13», 94 regions) and `formula_body` — a point ending in a formula «$$ … загрязнения.} $$» is finished; C
+  `table_rubrics` — a short unterminated int-marked line between two table parts, numbered back from the open point
+  by 2 or more («2. Учреждения общего образования» under point 87), is a table rubric (`table_row`), not a point.
+  `…-step27-c` 45251, `…-step27-d` (54904b9a…) 45274/45354 (99.82%), nothing below; sanpin-2-2021 1765/1771, sanitary
+  rules 99.82%; JSON `step27-d`: v1 equal, v2 as s24b. Below 99% only the five gold questions: minzdrav-369,
+  minekon-37, minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

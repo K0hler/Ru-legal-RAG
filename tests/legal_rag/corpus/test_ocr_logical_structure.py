@@ -2680,6 +2680,38 @@ def test_a_title_caption_over_a_table_is_its_own_heading_but_a_numbered_caption_
     assert got["2.6"] == "S/I/6" and got["2.7"] == "S/I/6"
 
 
+def test_a_headed_table_after_a_formula_or_with_a_long_title_goes_to_the_section():
+    # Step 27 B (sanpin-2-2021): a point ending in a formula «$$ … загрязнения.} $$» is finished; a 307-character
+    # plain title before «Таблица 3.13» is still the table's title.
+    T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
+    title = "Предельно допустимые концентрации (ПДК) химических веществ в воде " + "питьевой, " * 26 + "аквапарков"
+    assert 300 < len(title) <= S.TABLE_TITLE_MAX
+    got = owners(S.build(extraction(regulation(
+        ("Text", "5. Суммарный показатель загрязнения равен сумме коэффициентов."),
+        ("Formula", "$$\nКсі - \\text{коэффициент концентрации і-го компонента загрязнения.}\n$$"),
+        ("Section-header", "Степени химического загрязнения почвы"), ("Caption", "Таблица 4.5"), T,
+        ("Text", "6. Оценка воды проводится по санитарному законодательству."),
+        ("Text", title), ("Caption", "Таблица 3.13"), T,
+        ("Text", "7. Контроль проводится лабораториями.")))))
+    assert [got[f"2.{index}"] for index in range(4, 7)] == ["S/I"] * 3
+    assert [got[f"2.{index}"] for index in range(8, 11)] == ["S/I"] * 3
+    assert got["2.11"] == "S/I/7"
+
+
+def test_a_numbered_rubric_between_table_parts_is_not_a_point():
+    # Step 27 C (sanpin-2-2021, table 5.25): «2. Учреждения общего образования» between two parts of one table, numbered
+    # back from the open point 87, is the table's rubric; a «88.» there going on from 87 is still a point.
+    T = ("Table", "<table><tr><td>11</td><td>Инструментальная</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "87. Требования к освещению приведены в таблице:"), T,
+        ("Section-header", "2. Учреждения общего образования"), T,
+        ("Section-header", "3. Дошкольные образовательные организации"), T,
+        ("Text", "88. Нормативы микроклимата установлены для помещений."), T,
+        ("Text", "89. Контроль проводится лабораториями.")))))
+    assert [got[f"2.{index}"] for index in range(2, 8)] == ["S/I/87"] * 6
+    assert got["2.8"] == "S/I/88" and got["2.10"] == "S/I/89"
+
+
 def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
     # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
     # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a

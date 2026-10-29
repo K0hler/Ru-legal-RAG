@@ -1260,7 +1260,7 @@ def table_head(q: Paragraph) -> bool:
                  or bool(FIGURE_CAPTION.match(text))))
 
 
-TABLE_TITLE_MAX = 300
+TABLE_TITLE_MAX = 400  # step 27 B: «Предельно допустимые концентрации (ПДК) … аквапарков» has 307
 
 
 def table_title(seq: list[Paragraph], k: int) -> bool:
@@ -1272,6 +1272,12 @@ def table_title(seq: list[Paragraph], k: int) -> bool:
     return (q.kind == "text" and q.marker.kind == "none" and bool(text) and text[:1].isupper()
             and len(text) <= TABLE_TITLE_MAX and not terminated(text) and final_char(text) not in ",-–—"
             and nxt is not None and nxt.kind == "text" and bool(TABLE_NUMBER.match(nxt.text.strip())))
+
+
+def formula_body(text: str) -> str:
+    """Step 27 B: a formula line «$$ Ксі - коэффициент … загрязнения. $$» ends where its body ends («.}» too)."""
+    t = text.strip()
+    return t.strip("$").strip().rstrip("}").rstrip() if t.startswith("$$") and t.endswith("$$") else text
 
 
 def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
@@ -1322,7 +1328,7 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
                                                    for h in heads)
             prev = seq[i - 1] if i else None
             finished = moved is not None or (prev is not None and prev.kind != "table" and last_text is not None
-                                             and final_char(last_text.text) in ".;")
+                                             and final_char(formula_body(last_text.text)) in ".;")
             if unit is not None and unit + 1 < len(stack) and finished and own_heading:
                 moved = stack[:unit + 1]
                 for h in heads:
@@ -1651,6 +1657,27 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     return {id(p) for p in rows}
 
 
+TABLE_RUBRIC_MAX = 200
+
+
+def table_rubrics(items: list[Paragraph]) -> set[int]:
+    """Step 27 C (sanpin-2-2021, table 5.25): a short unterminated «2. Учреждения общего образования …» printed between
+    two parts of one table, numbered back from the open point (87), is the table's rubric, not a point."""
+    seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
+    rubrics, last = set(), None
+    for k, p in enumerate(seq):
+        if p.kind == "table" or p.marker.kind != "int":
+            continue
+        text = p.text.strip()
+        between = 0 < k < len(seq) - 1 and seq[k - 1].kind == "table" and seq[k + 1].kind == "table"
+        if (between and last is not None and p.marker.value <= last - 2 and len(text) <= TABLE_RUBRIC_MAX
+                and not terminated(text)):
+            rubrics.add(id(p))
+            continue
+        last = p.marker.value
+    return rubrics
+
+
 def common_owner(owners: list[str]) -> str:
     """The longest common path prefix of owners in one scope («S/6» of «S/6» and «S/6/1»)."""
     parts = [o.split("/") for o in owners]
@@ -1876,7 +1903,7 @@ def build(extraction: dict) -> dict:
             if p.marker.kind in UNIT_RANK:
                 p.kind = "heading"
         point_references(body)
-        rows = table_rows(scope_path, items)
+        rows = table_rows(scope_path, items) | table_rubrics(items)
         for p in body:
             if id(p) in rows:
                 p.marker = Marker("none")
