@@ -1177,9 +1177,9 @@ PROFILES["batch-20"] = {**PROFILES["batch-19"], "quotas": {"sanpin_2020s": 1}, "
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 20))}
 # Scan batch 21 (owner 29.10.2026 «Да, П21»: the check of П21): the frozen SanPiN list is exhausted (SanPiN 3.3686-21
 # is not to be used), so batch-16 settings with acts of every other type and no SanPiN; orders, the weakest type
-# after step 21, get four.
-BATCH21_QUOTAS = {"federal_law": 2, "presidential_decree": 2, "government_resolution": 2, "government_order": 2,
-                  "ministry_order": 4}
+# after step 21, get four. No federal law: every 2011-2019 law the seed-20261121 feed sample offered has an IPS tree
+# (first run: quotas not filled, federal_law 0), and laws are at 100% in development.
+BATCH21_QUOTAS = {"presidential_decree": 2, "government_resolution": 2, "government_order": 2, "ministry_order": 4}
 PROFILES["batch-21"] = {**PROFILES["batch-16"], "quotas": BATCH21_QUOTAS, "sanpin_candidates": False,
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 21))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days

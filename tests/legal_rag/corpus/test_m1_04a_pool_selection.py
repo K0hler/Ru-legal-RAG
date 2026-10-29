@@ -1709,10 +1709,11 @@ def test_batch_20_takes_the_one_sanpin_up_to_500_pages():
 
 
 def test_batch_21_takes_twelve_acts_of_other_types_without_sanpin():
-    # Owner 29.10.2026 «Да, П21»: the SanPiN list is exhausted; batch-16 settings, 2+2+2+2 acts and 4 orders.
+    # Owner 29.10.2026 «Да, П21»: the SanPiN list is exhausted; batch-16 settings, 2+2+2 acts and 4 orders (no law
+    # without an IPS tree was offered).
     b16, b21 = P.PROFILES["batch-16"], P.PROFILES["batch-21"]
-    assert b21["quotas"] == {"federal_law": 2, "presidential_decree": 2, "government_resolution": 2,
-                             "government_order": 2, "ministry_order": 4}
+    assert b21["quotas"] == {"presidential_decree": 2, "government_resolution": 2, "government_order": 2,
+                             "ministry_order": 4}
     assert b21["sanpin_candidates"] is False and b21["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, 21))
     assert {k: v for k, v in b21.items() if k not in ("quotas", "sanpin_candidates", "prior_batches")} == {
         k: v for k, v in b16.items() if k not in ("quotas", "sanpin_candidates", "prior_batches")}

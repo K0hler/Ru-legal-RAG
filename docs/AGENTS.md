@@ -297,7 +297,8 @@
   97246c3e…, LF) in `data/m1/m1-04a/experiments/20261029-prototype-v21-freeze/`; regression
   `20261029-dev-regression-203-v21` 45300/45354 (equal to `…-step27-k`), JSON `v21-results.json` as `step27-k`.
   freeze.json quotes П20 44453 — that was on the golds before the 29.10 decisions. Checked on scan batch 21: profile
-  `batch-21` (no SanPiN left; 2 laws, 2 decrees, 2 resolutions, 2 government orders, 4 orders; batch-16 settings).
+  `batch-21` (no SanPiN left; 2 decrees, 2 resolutions, 2 government orders, 4 orders; batch-16 settings; no law: every
+  law offered had an IPS tree).
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
