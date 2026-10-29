@@ -2672,3 +2672,39 @@ def test_a_title_caption_over_a_table_is_its_own_heading_but_a_numbered_caption_
         ("Text", "7. Контроль проводится лабораториями.")))))
     assert got["2.3"] == "S/I" and got["2.4"] == "S/I"
     assert got["2.6"] == "S/I/6" and got["2.7"] == "S/I/6"
+
+
+def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
+    # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
+    # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a
+    # footnote ending «:» or «;» on the same page («а) 1 с – для локальной вибрации;») continues it.
+    pages = regulation(("Text", "4.4. Граждане вскрывают контейнеры с товарами¹⁵."),
+                       ("Text", "4.5. Шкуры животных проходят контроль⁸."),
+                       ("Footnote", "15 СП 3.4.2318-08 «Санитарная охрана территории Российской Федерации»."),
+                       ("Footnote", "⁸ Для измерений приняты следующие постоянные времени:"),
+                       ("Footnote", "а) 1 с – для локальной вибрации;"), ("Footnote", "б) 10 с – для общей вибрации."))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.4"] == "S/I/4.4"
+    assert got["2.5"] == "S/I/4.5" and got["2.6"] == "S/I/4.5" and got["2.7"] == "S/I/4.5"
+
+
+def test_page_code_line_signer_title_and_marker_without_a_space():
+    # Step 22 B (pp-931-2022, pp-996-2022): «5590030 (1.4)» — the document's page code printed as body text at the page
+    # foot — is a page mark of the scope root; point 2 goes on after it on the next page.
+    pages = [[("Text", "УТВЕРЖДЕНЫ\nпостановлением Правительства", 1000), ("Section-header", "ПРАВИЛА"),
+              ("Text", "1. Правила определяют порядок."), ("Text", "2. Понятия используются в"),
+              ("Text", "5590030 (1.4)")],
+             [("Text", "значении, определенном в Правилах перевозок."), ("Text", "3. Участники обмениваются файлами.")]]
+    result = S.build(extraction(pages))
+    got = owners(result)
+    assert got["1.4"] == "S" and got["2.0"] == "S/2" and conts(result)["2.0"] is True
+    # Step 22 C (prikaz-minnauki-511-2019, prikaz-minkultury-1321-2016): «Врио Министра» signs the act
+    got = owners(S.build(extraction([[("Title", "ПРИКАЗ"), ("Text", "1. Создать комиссию."),
+                                      ("Text", "2. Контроль возложить на заместителя Министра."),
+                                      ("Text", "Врио Министра"), ("Text", "А.В. Петров", 1200)]])))
+    assert got["1.3"] == "A"
+    # Step 22 D (fz-435-2020; the owner's known class «6.Сообщение»): a point number glued to a capitalised word
+    got = owners(S.build(extraction([[("Section-header", "Статья 21. Реорганизация"),
+                                      ("Text", "5. Имущество передается единому заказчику."),
+                                      ("Text", "6.Сообщение о реорганизации подлежит размещению в реестре.")]])))
+    assert got["1.2"] == "A/ст21/ч6"

@@ -37,6 +37,8 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 22: a plain-digit Footnote and its «а) …;» list continuation find the marked point; «5590030 (1.4)» is a page
+  mark and point 2 continues on the next page; «Врио Министра» is the act's signer; «6.Сообщение» is part 6.
 - Step 21: a headed table block after a finished point goes to the section (with lines under it), an introduced
   («… в таблице 1.1:», «ниже») or named table stays, no enclosing section keeps the point; a title Caption is a
   heading, «Таблица 2.1. …» alone is not. Dev regression lists 203 documents.

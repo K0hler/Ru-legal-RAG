@@ -210,6 +210,13 @@
   sanpin-81-2016 55 regions: kept as `…-step21-a-failed-sanpin81`. `…-step21-a` (heading lines only,
   083f5475…) 44718; `…-step21-b` (51a97e59…, title captions too): 44827/45354, batch 20 1425/1771, nothing below. JSON
   `s21` equal to v20 per act. Batch-20 annotators disagree in places (some blocks given to the point, e.g. 306.12).
+- Step 22 (owner 29.10.2026: «Все документы ниже 99% доводи до 99%», development): A `region_footnote_number` — a
+  Footnote region with a plain-digit number («15 СП …», `PLAIN_FOOTNOTE_NUMBER`) is that footnote; a numberless
+  Footnote right after a footnote ending «:» / «;» on the same page continues it. B `PAGE_CODE_LINE` «5590030 (1.4)»
+  is a page mark (scope root, no break of the open point). C SIGNER takes «Врио», «И.о.». D an int marker may be
+  glued to a capitalised word («6.Сообщение»). E JOB_CODE allows a dot before the code («Н.П.Прир-К7552-3»).
+  `…-step22-a` (32b138b3…): 44852/45354 (+25), nothing below; pp-931-2022, pp-996-2022, fz-435-2020,
+  prikaz-minnauki-511-2019 and sanpin-44-2017 now at 99% or more. JSON `s22` equal to v20 per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

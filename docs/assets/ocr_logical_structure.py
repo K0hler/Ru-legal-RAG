@@ -425,7 +425,8 @@ def parse_marker(text: str, category: str) -> Marker:
     if leading_zero_list(text):
         return Marker("none")  # «01. …», «02) …»: a list line of the current unit, not a point
     # An inserted unit carries a superscript after its number: «2¹.», «3²)», «е¹)».
-    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\.\s+\S", text)
+    # step 22 D (fz-435-2020, the owner's known class «6.Сообщение»): the number may be glued to a capitalised word
+    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\.(?:\s+\S|(?=[А-ЯЁ][а-яё]))", text)
     if m:
         return Marker("int", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
     m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\)\s+\S", text)
@@ -524,6 +525,18 @@ def footnote_number(text: str) -> int | None:
     return int("".join(SUP_DIGIT[c] for c in m.group(1))) if m else None
 
 
+# Step 22 A (sanpin-81-2016, sanpin-44-2017): a Footnote region whose number OCR printed as plain digits («15 СП …»).
+PLAIN_FOOTNOTE_NUMBER = re.compile(r"^(\d{1,3})\s+(?=[«\"А-ЯЁA-Z])")
+
+
+def region_footnote_number(region: "Region") -> int | None:
+    number = footnote_number(region.text)
+    if number is None and region.category == "Footnote":
+        m = PLAIN_FOOTNOTE_NUMBER.match(region.text)
+        number = int(m.group(1)) if m else None
+    return number
+
+
 def signature_like(region: Region) -> bool:
     text = region.text
     right = region.bbox[0] > region.page_size[0] * 0.55
@@ -558,7 +571,7 @@ REQUISITE_LINES = (
 # of a federal service signs as «Директор» («Директор» / «А.Бортников»)
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
                     r"|(?:Генеральный\s+)?Директор"
-                    r"|Временно исполняющий обязанности|Главный государственный санитарный врач"
+                    r"|Временно исполняющий обязанности|Врио|И\.\s?о\.|Главный государственный санитарный врач"
                     r"|(?:Высшее\s+должностное|Должностное)\s+лицо)\b"
                     r"|(?:За|От)\s+(?!Сторон(?![а-яё]))[А-ЯЁ][а-яё]+)")
 # the heading of an agreement's signature block: «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон»
@@ -583,8 +596,10 @@ PRINT_MARK = re.compile(r"^(?:[\d.:\s]+)?[\w.]+\s*/\s*[А-ЯЁA-Z]\.\s?(?:[А-Я
 # digits, maybe a sheet number («Прил-ГВ198-3», «Прим. 18198-7», «П-К7552», «Прип-СВ199 5»). Without the slash
 # («И.И. Прын-ТВ108-1», «(Прим-Г8198-2)») the code needs its hyphen and three digits («Стр. 12» is no job code).
 JOB_CODE = re.compile(r"/[^/]*?[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}\.?\s*-?\s*[А-ЯЁA-Z0-9]{0,3}\s?\d{2,5}(?:[-\s]\d)?$"
-                      r"|(?:^|[\s(])[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}-[А-ЯЁA-Z0-9]{0,3}\d{3,5}(?:-\d)?\)?$")
+                      r"|(?:^|[\s(.])[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}-[А-ЯЁA-Z0-9]{0,3}\d{3,5}(?:-\d)?\)?$")
 PAGE_MARK_EVIDENCE = {"page_mark": "file name printed in a page header/footer"}
+# Step 22 B (pp-931-2022, pp-996-2022): the document's page code printed as body text at the page foot, «5590030 (1.4)».
+PAGE_CODE_LINE = re.compile(r"\d{6,8}\s*\(\s*\d[\d.\s]*\)")
 BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
 PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 
@@ -692,10 +707,16 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
         page_content = by_page[r.page]
         first_on_page = page_content and page_content[0] is r
         if r.category == "Footnote" or footnote_number(r.text) is not None:
-            number = footnote_number(r.text)
+            number = region_footnote_number(r)
             if number is None and open_note and open_note.first.page < r.page and not terminated(open_note.text):
                 open_note.regions.append(r)
                 open_note.evidence.append({"join": "unnumbered_footnote_after_page_break", "region": r.region_id})
+                continue
+            if (number is None and r.category == "Footnote" and open_note and open_note.regions[-1].page == r.page
+                    and final_char(open_note.text) in ":;"):
+                # step 22 A: «⁸ … следующие постоянные времени:» then «а) 1 с …;» — the list goes on in the footnote
+                open_note.regions.append(r)
+                open_note.evidence.append({"join": "footnote_list_item", "region": r.region_id})
                 continue
             p = Paragraph("footnote", [r], kind="footnote", footnote=number)
             paragraphs.append(p)
@@ -722,7 +743,7 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 continue
         p = Paragraph("body", [r])
         paragraphs.append(p)
-        if page_mark(r):
+        if page_mark(r) or PAGE_CODE_LINE.fullmatch(r.text.strip()):
             # a file code in the footer belongs to the scope root and never opens a continuation
             p.evidence.append(dict(PAGE_MARK_EVIDENCE))
             continue
