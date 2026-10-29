@@ -249,6 +249,11 @@
   the scope root. A repeated-table-header rule (D) scattered XML-format tables (fns-93, fns-815, favt-547, mintruda-742,
   rp-2417): dropped, kept as `…-step25-b-failed-headers`. `…-step25-b`: 44935/45354 (+32), `cross_scope_v2` 26 -> 5,
   nothing below; JSON `s25` equal to `s24b` per act.
+- Step 26 (`table_title`): an unmarked unterminated line right before a «Таблица N» caption heading a table is that
+  table's title, so the block has its own heading (sanpin-2-2021 +68 -> 1494/1771). Attempts kept: headed blocks to
+  the scope root without a unit and after the point's own table (`…-step26-a-failed-after-table`: fns-93 -389,
+  fns-815 -87, Mintrud forms) and the same without the «after a table» part (`…-step26-a-no-effect`). `…-step26-b`:
+  45003/45354, nothing below; JSON `s26` equal to `s25` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

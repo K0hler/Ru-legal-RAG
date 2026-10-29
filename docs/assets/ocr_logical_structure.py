@@ -1261,6 +1261,20 @@ def table_head(q: Paragraph) -> bool:
                  or bool(FIGURE_CAPTION.match(text))))
 
 
+TABLE_TITLE_MAX = 300
+
+
+def table_title(seq: list[Paragraph], k: int) -> bool:
+    """Step 26 (sanpin-2-2021): an unmarked, unterminated body line right before a «Таблица N» caption that heads a
+    table is that table's title («Предельно допустимые концентрации (ПДК) химических веществ …» / «Таблица 3.13»)."""
+    q = seq[k]
+    text = q.text.strip()
+    nxt = seq[k + 1] if k + 1 < len(seq) else None
+    return (q.kind == "text" and q.marker.kind == "none" and bool(text) and text[:1].isupper()
+            and len(text) <= TABLE_TITLE_MAX and not terminated(text) and final_char(text) not in ",-–—"
+            and nxt is not None and nxt.kind == "text" and bool(TABLE_NUMBER.match(nxt.text.strip())))
+
+
 def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
     """Step 21 (owner 29.10.2026 «Разделу», batch 20): after a finished point («.» or «;»), a table with its own heading
     («Вещества, обладающие эффектом суммации», «Таблица 1.3.») belongs to the section: the heading lines and the
@@ -1294,7 +1308,10 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             i += 1
             continue
         end = i
-        while end < len(seq) and id(seq[end]) in index and table_head(seq[end]):
+        titles = set()  # step 26: a plain-text table title right before «Таблица N»
+        while end < len(seq) and id(seq[end]) in index and (table_head(seq[end]) or table_title(seq, end)):
+            if not table_head(seq[end]):
+                titles.add(id(seq[end]))
             end += 1
         if end > i and end < len(seq) and seq[end].kind == "table":
             heads = seq[i:end]
@@ -1308,8 +1325,9 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             named = named or any(TABLE_REFERENCE_EVIDENCE in h.evidence for h in heads)
             # its own heading: an OCR heading line over the caption («Вещества, обладающие эффектом суммации»), or the
             # next block of a moved run; a caption line alone («Таблица 2.1. Оптимальные величины …») stays with the point
-            own_heading = moved is not None or any(heading_evidence(h) or (h.first.category == "Caption"
-                                                                 and not TABLE_NUMBER.match(h.text.strip())) for h in heads)
+            own_heading = moved is not None or any(heading_evidence(h) or id(h) in titles
+                                                   or (h.first.category == "Caption" and not TABLE_NUMBER.match(h.text.strip()))
+                                                   for h in heads)
             prev = seq[i - 1] if i else None
             finished = moved is not None or (prev is not None and prev.kind != "table" and last_text is not None
                                              and final_char(last_text.text) in ".;")

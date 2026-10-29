@@ -2840,3 +2840,14 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
     got = owners(S.build(extraction(pages)))
     assert got["1.2"] == "A" and got["1.3"] == "A"
     assert all(got[f"2.{k}"] == "A/AN1" for k in range(4))
+
+
+def test_a_plain_text_title_before_a_numbered_caption_makes_a_headed_table():
+    # Step 26 (sanpin-2-2021): «Предельно допустимые концентрации (ПДК) химических веществ …» as plain text, then
+    # «Таблица 3.13» and the table, after a finished point: the table has its own heading -> the section.
+    T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "18. Оценка воды проводится по показателям."),
+        ("Text", "Предельно допустимые концентрации (ПДК) химических веществ в воде"), ("Text", "Таблица 3.13"), T,
+        ("Text", "19. Контроль проводится лабораториями.")))))
+    assert got["2.3"] == "S/I" and got["2.4"] == "S/I" and got["2.5"] == "S/I"
