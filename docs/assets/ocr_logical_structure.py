@@ -1280,6 +1280,20 @@ def formula_body(text: str) -> str:
     return t.strip("$").strip().rstrip("}").rstrip() if t.startswith("$$") and t.endswith("$$") else text
 
 
+def gap_sibling(stack: tuple, heads: list[Paragraph], rest: list[Paragraph]) -> bool:
+    """Step 27 E (prikaz-minekonomicheskogo-37-2015, annex 5): an unnumbered heading over a table between «5.1.» and the
+    next «5.3.» stands for the missing «5.2» («Пусковые расходы¹,²»): the block is a sibling of «5.1», not its text."""
+    if not stack or stack[-1][0] != "decimal" or not heads:
+        return False
+    text = heads[0].text.strip()
+    if len(text) > TABLE_RUBRIC_MAX or terminated(text):
+        return False
+    value = stack[-1][1]
+    nxt = next((q for q in rest if q.kind != "table" and q.marker.kind not in {"none", "dash"}), None)
+    return (nxt is not None and nxt.marker.kind == "decimal" and len(nxt.marker.value) == len(value)
+            and nxt.marker.value[:-1] == value[:-1] and nxt.marker.value[-1] == value[-1] + 2)
+
+
 def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
     """Step 21 (owner 29.10.2026 «Разделу», batch 20): after a finished point («.» or «;»), a table with its own heading
     («Вещества, обладающие эффектом суммации», «Таблица 1.3.») belongs to the section: the heading lines and the
@@ -1329,8 +1343,9 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             prev = seq[i - 1] if i else None
             finished = moved is not None or (prev is not None and prev.kind != "table" and last_text is not None
                                              and final_char(formula_body(last_text.text)) in ".;")
-            if unit is not None and unit + 1 < len(stack) and finished and own_heading:
-                moved = stack[:unit + 1]
+            gap = gap_sibling(stack, heads, seq[end:])
+            if gap or (unit is not None and unit + 1 < len(stack) and finished and own_heading):
+                moved = stack[:-1] if gap else stack[:unit + 1]
                 for h in heads:
                     stacks[index[id(h)]] = moved
                     h.evidence.append(dict(TABLE_BLOCK_EVIDENCE))

@@ -271,7 +271,13 @@
   «1.1. Прием …», «2.1. …» sit in the tables' top grid rows (§6: no points). `TABLE_GRID_RUBRIC`: when a table of the
   scope carries a dotted rubric as `<caption>2.2. …`, unterminated dotted lines right above a table are rubrics.
   `…-step27-e` 45284/45354, minzdrav-369 47/47, nothing below; JSON `step27-e` as `step27-d`. Read annotation-notes.md
-  before calling a residual error a gold error. Below 99%: minekon-37, minkultury-1321, rp-1431 / rp-2728.
+  before calling a residual error a gold error.
+- Step 27 E (`gap_sibling` in `table_block_sections`): an unterminated unnumbered heading over a table, when the
+  open point is decimal «5.1» and the next marker is «5.3», is the missing sibling «5.2» — the block goes to the
+  parent (minekon-37 «Пусковые расходы¹,²», gold `S/AN5|S/AN5/5.2`). `…-step27-f` 45293/45354, minekon-37 286/288,
+  nothing below; JSON `step27-f` as `step27-d`. Left there: 10.6, 17.4 — the annotator gave a capitalised paragraph
+  after the last list subpoint to that subpoint by meaning (convention: the point); owner question.
+  Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

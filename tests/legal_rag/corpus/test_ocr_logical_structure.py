@@ -2730,6 +2730,20 @@ def test_dotted_rubrics_cut_out_of_tables_whose_siblings_ocr_kept_inside_are_not
     assert got["2.3"] == "A/AN/1/1.1" and got["2.6"] == "A/AN/2/2.1"
 
 
+def test_an_unnumbered_table_heading_between_5_1_and_5_3_is_the_missing_sibling():
+    # Step 27 E (prikaz-minekonomicheskogo-37-2015): «Пусковые расходы¹,²» over a table after the table of «5.1.» and
+    # before «5.3.» stands for the unprinted «5.2»: the block leaves «5.1» for the annex root. Before «5.2.» it stays.
+    T = ("Table", "<table><tr><td>1</td><td>Затраты на сырье</td></tr></table>")
+    def build(following):
+        return owners(S.build(extraction([[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить номенклатуру.")],
+                                          [("Text", "Приложение № 5 к приказу"), ("Text", "5.1. Затраты на сырье"), T,
+                                           ("Section-header", "Пусковые расходы¹,²"), T, ("Text", following)]])))
+    got = build("5.3. Затраты на освоение производства")
+    assert got["2.1"] == "A/AN5/5.1" and got["2.3"] == "A/AN5" and got["2.4"] == "A/AN5"
+    got = build("5.2. Затраты на освоение производства")
+    assert got["2.3"] == "A/AN5/5.1"
+
+
 def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
     # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
     # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a
