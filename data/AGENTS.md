@@ -181,6 +181,11 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batch 20 (29.10.2026, the check of П20 = v20, owner «один документ на 469 страниц»): sanpin-2-2021 = SanPiN
+  1.2.3685-21, OCR `experiments/20261029-batch-20-ocr/` (42edfef8…, 469 p., 2243 regions, 582 tables); 1771 scored
+  (468 noise); 5 Codex jobs `.superpowers/sdd/2026-10-29-m1-04a-pool-batch-20/` by page range, stitched; gold freeze
+  1296d528… (addendum 10b1bf97…); check `…-batch-20-first-pass/` (fec6db9e…, summary 66b7b6c0…): 1051/1771, П17 1059;
+  both in `alarms`. Note: dated 20261029 folders (scripts that assume 20261028 need the date).
 - Scan batches 17-19 (28.10.2026, the checks of П17 = v17, owner go-ahead «30 SanPiN at once»): profiles
   `batch-17..19` (SanPiN only, 6+4 / 5+2 / 6+1, seeds 20261117-19, `--min-days 0`); the frozen SanPiN list of
   batch 14 is now exhausted (left: 2 acts over 200 p. and sanpin-6-2025). A batch's `index.json` must exist before
