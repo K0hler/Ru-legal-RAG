@@ -2639,7 +2639,8 @@ def test_a_table_printed_far_from_its_reference_belongs_to_the_point_that_refers
 def test_a_table_with_its_own_heading_between_points_belongs_to_the_section():
     # Step 21 (owner 29.10.2026 «Разделу», batch 20, SanPiN 1.2.3685-21): after a finished point a table heading
     # («Вещества, обладающие эффектом суммации», «Таблица 1.3.»), its table and the lines under it up to the next point
-    # are text of the section. A table the point introduces («… в таблице 1.1:») or names stays with the point.
+    # are text of the section. A table the point introduces («… в таблице 1.1:») stays with the point; one it only
+    # names («… приведены в таблице 1.3.») goes to the section too (owner 29.10.2026 «Разделу»).
     T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
     got = owners(S.build(extraction(regulation(
         ("Text", "4. Нормативы содержания веществ приведены в таблице 1.1:"), ("Caption", "Таблица 1.1."), T,
@@ -2653,6 +2654,11 @@ def test_a_table_with_its_own_heading_between_points_belongs_to_the_section():
     for index in range(6, 14):
         assert got[f"2.{index}"] == "S/I", index
     assert got["2.14"] == "S/I/6"
+    got = owners(S.build(extraction(regulation(
+        ("Text", "5. Вещества с эффектом суммации приведены в таблице 1.3."),
+        ("Section-header", "Вещества, обладающие эффектом суммации"), ("Caption", "Таблица 1.3."), T,
+        ("Text", "6. Контроль проводится лабораториями.")))))
+    assert [got[f"2.{index}"] for index in range(2, 7)] == ["S/I/5", "S/I", "S/I", "S/I", "S/I/6"]
     # without an enclosing section the table stays with the point
     got = owners(S.build(extraction([[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить нормативы."),
                                       ("Section-header", "Вещества"), ("Caption", "Таблица 1."), T]])))

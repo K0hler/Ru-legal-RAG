@@ -1249,7 +1249,6 @@ def table_references(body: list[Paragraph], stacks: list[tuple]) -> None:
 
 
 TABLE_NUMBER = re.compile(r"^Таблица\s*(?:№\s*)?(\d+(?:\.\d+)*)")  # «Таблица 2.1. Оптимальные величины …» too
-INTRODUCES_BELOW = re.compile(r"\b(?:ниже|следующ\w*)\b", re.IGNORECASE)
 TABLE_BLOCK_EVIDENCE = {"table_block": "a table with its own heading between points -> the section (owner 29.10.2026)"}
 
 
@@ -1279,13 +1278,12 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
     """Step 21 (owner 29.10.2026 «Разделу», batch 20): after a finished point («.» or «;»), a table with its own heading
     («Вещества, обладающие эффектом суммации», «Таблица 1.3.») belongs to the section: the heading lines and the
     unmarked lines after the table up to the next marker go to the enclosing named unit («II.», «Раздел 2»). The next
-    heading-and-table block right after such a table goes there too. A table the point introduces («… в таблице 1.1:»,
-    final «:») or names («Таблица 1.1» named in the point) stays with the point; without an enclosing unit it stays."""
+    heading-and-table block right after such a table goes there too, also when the point names it («приведены в таблице
+    3.13», owner 29.10.2026 «Разделу» again; rule D's displaced table too). A table the point introduces with a final
+    «:» stays with the point; without an enclosing unit it stays."""
     index = {id(q): k for k, q in enumerate(body)}
     seq = [q for q in items if q.flow == "body" and q.kind != "picture"]
     last_text = None  # the last body text before the current position (point or unmarked line)
-    last_point = None  # the last marked paragraph
-    since_point = ""  # the point's text and the unmarked lines after it (references to a table)
     moved: tuple | None = None  # the section of the block being moved
     i = 0
     while i < len(seq):
@@ -1298,7 +1296,7 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             continue
         k = index[id(q)]
         if q.marker.kind not in {"none", "dash"}:
-            moved, last_point, last_text, since_point = None, q, q, q.text
+            moved, last_text = None, q
             i += 1
             continue
         if moved is not None and not table_head(q):
@@ -1317,12 +1315,6 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             heads = seq[i:end]
             stack = stacks[k]
             unit = next((n for n in range(len(stack) - 1, -1, -1) if stack[n][0] in UNIT_RANK), None)
-            numbers = {m.group(1) for h in heads if (m := TABLE_NUMBER.match(h.text.strip()))}
-            # the point (or a line after it) names the table or introduces what follows («приведены ниже», «в следующей
-            # таблице»); a block rule D already gave to the point naming it is left alone
-            named = last_point is not None and (bool(numbers & referenced_tables(since_point))
-                                                or bool(INTRODUCES_BELOW.search(last_point.text)))
-            named = named or any(TABLE_REFERENCE_EVIDENCE in h.evidence for h in heads)
             # its own heading: an OCR heading line over the caption («Вещества, обладающие эффектом суммации»), or the
             # next block of a moved run; a caption line alone («Таблица 2.1. Оптимальные величины …») stays with the point
             own_heading = moved is not None or any(heading_evidence(h) or id(h) in titles
@@ -1331,7 +1323,7 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             prev = seq[i - 1] if i else None
             finished = moved is not None or (prev is not None and prev.kind != "table" and last_text is not None
                                              and final_char(last_text.text) in ".;")
-            if unit is not None and unit + 1 < len(stack) and finished and not named and own_heading:
+            if unit is not None and unit + 1 < len(stack) and finished and own_heading:
                 moved = stack[:unit + 1]
                 for h in heads:
                     stacks[index[id(h)]] = moved
@@ -1344,7 +1336,6 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             i = end
             continue
         last_text = q
-        since_point += " " + q.text
         i += 1
 
 

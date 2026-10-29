@@ -254,6 +254,15 @@
   the scope root without a unit and after the point's own table (`…-step26-a-failed-after-table`: fns-93 -389,
   fns-815 -87, Mintrud forms) and the same without the «after a table» part (`…-step26-a-no-effect`). `…-step26-b`:
   45003/45354, nothing below; JSON `s26` equal to `s25` per act.
+- Step 27 (owner 29.10.2026, second «Разделу»: a headed table a point names belongs to the section too):
+  `table_block_sections` no longer keeps named or «ниже» tables with the point (only a point ending «:» keeps its
+  table; `INTRODUCES_BELOW` removed). `…-step27-a` 45063 (sanpin-2-2021 +60; the three FGOS lose 3 each on the frozen
+  gold). The decision applied by hand-checked `tables-map` → `gold-tables` copies (`GOLD_OVERRIDE`): prikaz-minobrazovaniya
+  1126-2017 and 1412-2015 on `gold`, 518-2017 on `gold-quoted` (3 regions each), sanpin-2-2021 91 regions (26 blocks its
+  annotators gave to the point; figure caption 310.10 left out). `…-step27-b-golds`: 45154/45354, nothing below,
+  sanitary rules 99.0%; JSON `step27-a`: v1 equal, v2 as s24b. Still below 99%: sanpin-2-2021 (92.9%: 96 headed tables
+  after a table / formula / unfinished line not moved, 19 rubric numbers, 10 rule-D tables without own heading) and
+  the gold questions in minzdrav-369, minekon-37, minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

@@ -226,8 +226,12 @@ def test_dev_regression_203_documents_families_and_cross_scope_v2(tmp_path):
                      "batch-10": 11, "batch-11": 11, "batch-12": 11, "batch-13": 11, "batch-14": 11,
                      "batch-15": 12, "batch-16": 12, "batch-17": 9, "batch-18": 7, "batch-19": 7, "batch-20": 1}
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
-    assert all(d["gold"].name.endswith(".gold.txt") for d in docs
-               if d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6", "batch-7"))
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["name"] not in D.GOLD_OVERRIDE
+               and d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6", "batch-7"))
+    # Owner 29.10.2026 «Разделу»: three FGOS are scored on the copy with the named headed table given to the section.
+    assert sorted(d["name"] for d in docs if d["gold"].name.endswith(".gold-tables.txt")) == [
+        "prikaz-minobrazovaniya-1126-2017", "prikaz-minobrazovaniya-1412-2015", "prikaz-minobrazovaniya-518-2017",
+        "sanpin-2-2021"]
     # Batch 4 is scored on its frozen gold; families come from the slug prefix.
     assert [D.family(d["name"]) for d in docs if d["group"] == "batch-4"] == [
         "законы", "законы", "законы", "постановления", "постановления", "приказы", "приказы", "приказы",
@@ -261,7 +265,8 @@ def test_dev_regression_203_documents_families_and_cross_scope_v2(tmp_path):
         ["законы", "постановления", "постановления", "приказы", "приказы", "приказы", "приказы", "приказы",
          "распоряжения", "указы", "указы"])
     # Scan batch 11 is scored on the gold derived under §6.1 «a document quoted in an amendment» (27.10.2026).
-    assert all(d["gold"].name.endswith(".gold-quoted.txt") for d in docs if d["group"] == "batch-11")
+    assert all(d["gold"].name.endswith(".gold-quoted.txt") for d in docs
+               if d["group"] == "batch-11" and d["name"] not in D.GOLD_OVERRIDE)
     assert sorted(D.family(d["name"]) for d in docs if d["group"] == "batch-11") == sorted(
         ["законы", "законы", "постановления", "постановления", "постановления", "постановления", "приказы",
          "приказы", "приказы", "распоряжения", "указы"])
@@ -272,7 +277,8 @@ def test_dev_regression_203_documents_families_and_cross_scope_v2(tmp_path):
          "приказы", "распоряжения", "указы"])
     # Scan batches 13-14 on their frozen gold without the refilled acts; batch 15 on the footnote gold with the
     # dotted-subpoint decision (28.10.2026); batch 16 on its frozen gold (two SP stitched from parts).
-    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-13", "batch-14"))
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs
+               if d["group"] in ("batch-13", "batch-14") and d["name"] not in D.GOLD_OVERRIDE)
     assert not {"prikaz-favt-150-2023", "sanpin-20-2015"} & {d["name"] for d in docs}
     assert all(d["gold"].name.endswith(".gold-dotted.txt") for d in docs if d["group"] == "batch-15")
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] in ("batch-16", "batch-17", "batch-18", "batch-19"))

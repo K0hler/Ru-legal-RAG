@@ -37,6 +37,8 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 27: a headed table the point only names («… приведены в таблице 1.3.») goes to the section; one introduced
+  with «:» stays. The dev regression scores the three FGOS and sanpin-2-2021 on `gold-tables`.
 - Step 26: a plain-text title before «Таблица 3.13» makes a headed table that goes to the section.
 - Step 25: an approval sheet after the forms goes to the act; a field line with text and blanks, its caption and the
   form's sentence; a declaration page head, typist mark and time stamp are page marks carried into the form they head.
