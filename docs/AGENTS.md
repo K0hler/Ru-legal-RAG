@@ -195,6 +195,10 @@
   94/94, sanpin-81-2016 +4, sanpin-91-2014 221/221), nothing below. JSON `s20-cd` equal to v17 per act.
 - Step 20 E (`run_m1_04a_first_pass.py`): the check summary lists `alarms` — acts a prototype scores below
   `ALARM_SHARE` 0.9 of their regions — and prints each as `ALARM …`; report every alarm next to the batch total.
+- Step 20 freeze: П20 = v20 `ocr-logical-structure/20-experiment` (sha256 626cd8a7…, LF; no v18-v19) in
+  `data/m1/m1-04a/experiments/20261029-prototype-v20-freeze/`; regression `20261029-dev-regression-202-v20`
+  (8c602f1c…) 43402/43583, errors equal to `…-step20-cd`; JSON `v20-results.json` equal to v17 per act. Measured on
+  scan batch 20: profile `batch-20` (one SanPiN of 2020+, pages up to 500) = SanPiN 1.2.3685-21 (469 p.).
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
