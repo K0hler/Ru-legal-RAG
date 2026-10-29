@@ -181,6 +181,12 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batch 21 (29.10.2026, the check of П21 = v21): profile `batch-21` (seed 20261121, `--min-days 120`; the first
+  run with 2 laws left `quotas not filled`, log `b21-select.attempt1.log`), 10 acts without an IPS tree; acquired 10/10
+  `new` then `unchanged`; OCR `experiments/20261029-batch-21-ocr/` complete, replays equal; 6 Codex jobs
+  `.superpowers/sdd/2026-10-29-m1-04a-pool-batch-21/` (batch-16 template + the 29.10 decisions); gold 1834 regions,
+  frozen `…-batch-21-gold-freeze/` (9bf08be2…); check `…-batch-21-first-pass/` (fbc12889…, summary 8f71bcd9…), run
+  once: П21 1721/1834, П20 1711.
 - Scan batch 20 (29.10.2026, the check of П20 = v20, owner «один документ на 469 страниц»): sanpin-2-2021 = SanPiN
   1.2.3685-21, OCR `experiments/20261029-batch-20-ocr/` (42edfef8…, 469 p., 2243 regions, 582 tables); 1771 scored
   (468 noise); 5 Codex jobs `.superpowers/sdd/2026-10-29-m1-04a-pool-batch-20/` by page range, stitched; gold freeze
