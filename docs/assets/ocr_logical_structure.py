@@ -31,7 +31,7 @@ import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
 
-VERSION = "ocr-logical-structure/20-experiment"
+VERSION = "ocr-logical-structure/21-experiment"
 
 SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 SUP_DIGIT = {c: str(i) for i, c in enumerate(SUP)}
@@ -425,7 +425,7 @@ def parse_marker(text: str, category: str) -> Marker:
     if leading_zero_list(text):
         return Marker("none")  # «01. …», «02) …»: a list line of the current unit, not a point
     # An inserted unit carries a superscript after its number: «2¹.», «3²)», «е¹)».
-    # step 22 D (fz-435-2020, the owner's known class «6.Сообщение»): the number may be glued to a capitalised word
+    # step 21.2 D (fz-435-2020, the owner's known class «6.Сообщение»): the number may be glued to a capitalised word
     m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\.(?:\s+\S|(?=[А-ЯЁ][а-яё]))", text)
     if m:
         return Marker("int", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
@@ -525,7 +525,7 @@ def footnote_number(text: str) -> int | None:
     return int("".join(SUP_DIGIT[c] for c in m.group(1))) if m else None
 
 
-# Step 22 A (sanpin-81-2016, sanpin-44-2017): a Footnote region whose number OCR printed as plain digits («15 СП …»).
+# Step 21.2 A (sanpin-81-2016, sanpin-44-2017): a Footnote region whose number OCR printed as plain digits («15 СП …»).
 PLAIN_FOOTNOTE_NUMBER = re.compile(r"^(\d{1,3})\s+(?=[«\"А-ЯЁA-Z])")
 
 
@@ -584,7 +584,7 @@ FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:
 # Step 13 B3: the captions under a form's signature lines — «(подпись)», «(наименование должности», «(инициалы,
 # фамилия)» — and the seal place «М.П.» («М.П. (при наличии)»). Not «(фамилия, имя, отчество)»: that captions a
 # field of the form («Я, ______,»), not its signature.
-# step 24 D, E: «(место для подписи …)», «(фамилия, имя, отчество … должностного лица, заполнившего …)» and the date
+# step 21.4 D, E: «(место для подписи …)», «(фамилия, имя, отчество … должностного лица, заполнившего …)» and the date
 # line ««___» ______ 20__ г.» sign a form (the bare «(фамилия, имя, отчество)» of a field «Я, ___» does not)
 SIGNATURE_CAPTION = re.compile(r"^\((?:подпись|наименование\s+должности|инициалы|место\s+для\s+подписи"
                                r"|фамилия,\s+имя,\s+отчество.*?(?:должностного\s+лица|заполнившего|подписавшего))"
@@ -602,13 +602,13 @@ PRINT_MARK = re.compile(r"^(?:[\d.:\s]+)?[\w.]+\s*/\s*[А-ЯЁA-Z]\.\s?(?:[А-Я
 JOB_CODE = re.compile(r"/[^/]*?[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}\.?\s*-?\s*[А-ЯЁA-Z0-9]{0,3}\s?\d{2,5}(?:[-\s]\d)?$"
                       r"|(?:^|[\s(.])[А-ЯЁA-Z][А-Яа-яЁёA-Za-z]{0,4}-[А-ЯЁA-Z0-9]{0,3}\d{3,5}(?:-\d)?\)?$")
 PAGE_MARK_EVIDENCE = {"page_mark": "file name printed in a page header/footer"}
-# Step 22 B (pp-931-2022, pp-996-2022): the document's page code printed as body text at the page foot, «5590030 (1.4)».
+# Step 21.2 B (pp-931-2022, pp-996-2022): the document's page code printed as body text at the page foot, «5590030 (1.4)».
 PAGE_CODE_LINE = re.compile(r"\d{6,8}\s*\(\s*\d[\d.\s]*\)")
 BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
 PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 
 
-# Step 25 E (prikaz-fns-815-2024): a time stamp of the typist's mark, and the head of a declaration page — its page
+# Step 21.5 E (prikaz-fns-815-2024): a time stamp of the typist's mark, and the head of a declaration page — its page
 # barcode «1680 6016» and the fields «ИНН», «КПП», «Стр.» — printed as body text near the top of a page.
 TIME_STAMP = re.compile(r"\d{2}\.\d{2}\.\d{4}\s+\d{1,2}:\d{2}")
 FORM_PAGE_HEAD = re.compile(rf"\d{{4}}\s\d{{4}}|(?:ИНН|КПП)[{SUP}]*|ИНН\s+КПП\s+Стр\.|Стр\.(?:\s[\d\s]+)?")
@@ -684,7 +684,7 @@ def fill_in_line(text: str) -> bool:
     return bool(FILL_IN.match(text.strip()))
 
 
-# Step 25 C (prikaz-minkultury-1321-2016): a numbered field line with labels and blanks ending in a blank
+# Step 21.5 C (prikaz-minkultury-1321-2016): a numbered field line with labels and blanks ending in a blank
 # («20. Телефон/факс __________ Адрес электронной почты __________»): a sentence after it is the form's, the field's
 # caption «(…)» stays with the field.
 FIELD_LINE = re.compile(r"^\d{1,3}[.)]\s+\S.*_{5,}\s*$")
@@ -740,7 +740,7 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 continue
             if (number is None and r.category == "Footnote" and open_note and open_note.regions[-1].page == r.page
                     and final_char(open_note.text) in ":;"):
-                # step 22 A: «⁸ … следующие постоянные времени:» then «а) 1 с …;» — the list goes on in the footnote
+                # step 21.2 A: «⁸ … следующие постоянные времени:» then «а) 1 с …;» — the list goes on in the footnote
                 open_note.regions.append(r)
                 open_note.evidence.append({"join": "footnote_list_item", "region": r.region_id})
                 continue
@@ -1023,7 +1023,7 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
         if (prev is not None and id(prev) in index and finished
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
-            # step 24 B (pp-1521-2014): a run of OCR headings between points of the scope root is the root's heading
+            # step 21.4 B (pp-1521-2014): a run of OCR headings between points of the scope root is the root's heading
             if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(heading_evidence(q) for q in seq[k:end + 1])):
                 runs.append((seq[k:end + 1], parent))
         k = end + 1
@@ -1062,7 +1062,7 @@ def subpoint_level(stack: tuple, level: int) -> bool:
     return stack[level][0] in SUBPOINT_KINDS
 
 
-# Step 27 G (prikaz-minkultury-1321-2016): «документов, указанных в пунктах 15 и 15.1 …» names «15.1» as a peer of «15»
+# Step 21.7 G (prikaz-minkultury-1321-2016): «документов, указанных в пунктах 15 и 15.1 …» names «15.1» as a peer of «15»
 PEER_POINTS = re.compile(r"\bпункт(?:ах|ами|ов|ы)\s+(\d+)\s+и\s+(\d+)\.(\d+)(?!\.?\d)")
 
 
@@ -1097,7 +1097,7 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
     («а) пункт 3 изложить в следующей редакции: «3. …»»)."""
     closed = None
     opened = 0  # quotation balance since the last marked paragraph
-    dash_intro: tuple | None = None  # step 24 F: the stack of a dash item ending «:» that opened a letter list
+    dash_intro: tuple | None = None  # step 21.4 F: the stack of a dash item ending «:» that opened a letter list
     for k, p in enumerate(body):
         if p.marker.kind == "dash" and p.kind == "text":
             if (dash_intro is not None and len(stacks[k]) > len(dash_intro)
@@ -1117,12 +1117,12 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
             stacks[k] = closed
             continue
         stack = stacks[k]
-        # step 23 C: a formula legend «где λ – …» after the list items closes like a sentence
+        # step 21.3 C: a formula legend «где λ – …» after the list items closes like a sentence
         legend = p.text.startswith("где ")
         if not k or not stack or not subpoint_level(stack, len(stack) - 1) or not (p.text[:1].isupper() or legend):
             continue
         if p.first.category == "Caption" or TABLE_NUMBER.match(p.text) or FIGURE_CAPTION.match(p.text):
-            continue  # step 23 A: «Таблица 7.1. …» under a subpoint is its table's caption, not a closing sentence
+            continue  # step 21.3 A: «Таблица 7.1. …» under a subpoint is its table's caption, not a closing sentence
         if (inside_quote or strip_sup(p.text).rstrip(" .").endswith("»")
                 or any("quoted" in e or "in_quotation" in e for e in p.evidence)):
             continue  # cycle 9 B4 / 11 B1: a quoted heading or paragraph (straight quotes too) closes nothing
@@ -1133,7 +1133,7 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
         # step 16 C2: the subpoint's marked paragraph lost its final «.» («19) … производственного контроля»),
         # then a sentence of its own on the same page; a short line («Российской Федерации.»), one across a page
         # break or after unmarked lines (a list of names) may end the cut sentence
-        # step 23 B: after an unmarked «;» line (a formula legend «К = 10 – …;») the last line closes nothing
+        # step 21.3 B: after an unmarked «;» line (a formula legend «К = 10 – …;») the last line closes nothing
         semicolon = before == ";" and own == "." and (body[j].marker.kind not in {"none", "dash"}
                                                        or not body[j].text[:1].isupper())
         legend_close = legend and own == "." and before in ".;,"
@@ -1282,11 +1282,11 @@ def table_head(q: Paragraph) -> bool:
                  or bool(FIGURE_CAPTION.match(text))))
 
 
-TABLE_TITLE_MAX = 400  # step 27 B: «Предельно допустимые концентрации (ПДК) … аквапарков» has 307
+TABLE_TITLE_MAX = 400  # step 21.7 B: «Предельно допустимые концентрации (ПДК) … аквапарков» has 307
 
 
 def table_title(seq: list[Paragraph], k: int) -> bool:
-    """Step 26 (sanpin-2-2021): an unmarked, unterminated body line right before a «Таблица N» caption that heads a
+    """Step 21.6 (sanpin-2-2021): an unmarked, unterminated body line right before a «Таблица N» caption that heads a
     table is that table's title («Предельно допустимые концентрации (ПДК) химических веществ …» / «Таблица 3.13»)."""
     q = seq[k]
     text = q.text.strip()
@@ -1297,13 +1297,13 @@ def table_title(seq: list[Paragraph], k: int) -> bool:
 
 
 def formula_body(text: str) -> str:
-    """Step 27 B: a formula line «$$ Ксі - коэффициент … загрязнения. $$» ends where its body ends («.}» too)."""
+    """Step 21.7 B: a formula line «$$ Ксі - коэффициент … загрязнения. $$» ends where its body ends («.}» too)."""
     t = text.strip()
     return t.strip("$").strip().rstrip("}").rstrip() if t.startswith("$$") and t.endswith("$$") else text
 
 
 def gap_sibling(stack: tuple, heads: list[Paragraph], rest: list[Paragraph]) -> bool:
-    """Step 27 E (prikaz-minekonomicheskogo-37-2015, annex 5): an unnumbered heading over a table between «5.1.» and the
+    """Step 21.7 E (prikaz-minekonomicheskogo-37-2015, annex 5): an unnumbered heading over a table between «5.1.» and the
     next «5.3.» stands for the missing «5.2» («Пусковые расходы¹,²»): the block is a sibling of «5.1», not its text."""
     if not stack or stack[-1][0] != "decimal" or not heads:
         return False
@@ -1348,7 +1348,7 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             i += 1
             continue
         end = i
-        titles = set()  # step 26: a plain-text table title right before «Таблица N»
+        titles = set()  # step 21.6: a plain-text table title right before «Таблица N»
         while end < len(seq) and id(seq[end]) in index and (table_head(seq[end]) or table_title(seq, end)):
             if not table_head(seq[end]):
                 titles.add(id(seq[end]))
@@ -1384,7 +1384,7 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
 
 def under_table_ids(items: list[Paragraph]) -> set[int]:
     """Ids of notes headings that start a table's notes: right under a table (pictures aside), a singular
-    «Примечание» (step 20 C) or any notes heading followed by footnote regions (step 23 D, «Примечания.» over
+    «Примечание» (step 20 C) or any notes heading followed by footnote regions (step 21.3 D, «Примечания.» over
     «¹ С – северное; …»)."""
     seq = [q for q in items if q.kind != "picture"]
     body = [q for q in seq if q.flow == "body"]
@@ -1401,7 +1401,7 @@ def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[
     heading «Примечания» after the last point opens the notes of the document root, up to the next marker; step 20 C:
     not right under a table, where it starts the table's notes."""
     note = None  # the article's stack while inside its note block
-    note_number = 1  # step 23 E: the next number of a document's numbered notes «1)», «2)»
+    note_number = 1  # step 21.3 E: the next number of a document's numbered notes «1)», «2)»
     for k, p in enumerate(body):
         # «1)», «2)» notes stay notes; «1.», «2.» under «Примечания:» are points of the document (sanpin-31-2015 gold)
         numbered_note = (note == () and p.marker.kind == "paren" and p.marker.value == note_number)
@@ -1425,7 +1425,7 @@ def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[
                 note_number = 1
                 p.evidence.append({"notes_heading": "notes of the document after its last point"})
             elif level is None and DOCUMENT_NOTE.search(p.text):
-                stacks[k] = ()  # step 24 C: «Примечание. … включенных в настоящий перечень …» is the document's note
+                stacks[k] = ()  # step 21.4 C: «Примечание. … включенных в настоящий перечень …» is the document's note
                 p.evidence.append({"document_note": "a note about the whole document"})
             elif level is not None and all(e[2].startswith("ч") for e in below):
                 note = stacks[k][:level + 1]
@@ -1469,7 +1469,7 @@ def self_closing(text: str) -> bool:
     quote («"1. … программы "Развитие образования".») ends a quoted title inside the still open quotation."""
     if not QUOTE_CLOSE.search(text):
         return False
-    # step 24 G (fz-119-2016): a quoted article, chapter or section heading whose last «»» closes an inner title
+    # step 21.4 G (fz-119-2016): a quoted article, chapter or section heading whose last «»» closes an inner title
     # («… Федеральным законом «Об особенностях …»») and no «.;,» follows it opens the quoted unit, it closes nothing
     if QUOTED_UNIT_HEADING.match(text) and not re.search(r"[»\"“”][.;,)]+$", text):
         return False
@@ -1626,13 +1626,13 @@ def between_tables(items: list[Paragraph]) -> set[int]:
 
 TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens the annex; text of the annex"}
 ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
-TABLE_DOCUMENT_SCOPE = re.compile(r"S\d*$")  # step 27 H: an approved text, read as a table annex when it opens with one
+TABLE_DOCUMENT_SCOPE = re.compile(r"S\d*$")  # step 21.7 H: an approved text, read as a table annex when it opens with one
 
 
 # Step 17 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
 # вкладных резервуаров;», «2.1.34, 4.1.4, 4.3.11 в части …»): a dotted number without its final dot, then «,», «и» and
 # another number, or a lowercase word.
-POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё]|\s*[-–—]\s*\d)")  # step 24 A: «10.10 - 10.17)»
+POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё]|\s*[-–—]\s*\d)")  # step 21.4 A: «10.10 - 10.17)»
 POINT_REFERENCES_EVIDENCE = {"point_references": "numbers of points referred to, not a point of its own"}
 
 
@@ -1672,7 +1672,7 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     parts. Such a marker between the first and the last table of the annex opens no section or point:
     it is text of the annex. Named units («Раздел», «Глава», «Статья», «§») keep their meaning. An
     annex whose first marker precedes its first table keeps ordinary numbering, markers after the last
-    table are unchanged unless they go on from the last row («3.» after «2.», step 16 C4). Step 27 H (owner 29.10.2026
+    table are unchanged unless they go on from the last row («3.» after «2.», step 16 C4). Step 21.7 H (owner 29.10.2026
     «Часть таблицы»): an approved text that is itself a table (`S`, `S2`) is read the same way, and there a first marker
     after the last table that starts no numbering («4.15. Контрольное событие 4.15. …», not «1.») is its last row."""
     if not (ANNEX_SCOPE.search(scope_path) or TABLE_DOCUMENT_SCOPE.match(scope_path)):
@@ -1709,11 +1709,11 @@ TABLE_GRID_RUBRIC = re.compile(r"<caption>\s*\d+\.\d+\.?\s")
 
 
 def table_rubrics(items: list[Paragraph]) -> set[int]:
-    """Step 27 C (sanpin-2-2021, table 5.25): a short unterminated «2. Учреждения общего образования …» printed between
+    """Step 21.7 C (sanpin-2-2021, table 5.25): a short unterminated «2. Учреждения общего образования …» printed between
     two parts of one table, numbered back from the open point (87), is the table's rubric, not a point."""
     seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
     rubrics, last = set(), None
-    # step 27 D (prikaz-minzdravookhraneniya-369-2022): where OCR kept a dotted rubric inside a table's grid
+    # step 21.7 D (prikaz-minzdravookhraneniya-369-2022): where OCR kept a dotted rubric inside a table's grid
     # («<caption>2.2. Хирургические … методы лечения</caption>»), the dotted «1.1. Прием …» lines it cut out right
     # above a table are rubrics of those tables too (convention v2 §6: rubrics inside a table make no points)
     if any(q.kind == "table" and TABLE_GRID_RUBRIC.search(q.text) for q in seq):
@@ -1747,7 +1747,7 @@ def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
 
-# Step 25 B (prikaz-fas-553-2015): an approval sheet printed after the act's documents is a service tail of the act.
+# Step 21.5 B (prikaz-fas-553-2015): an approval sheet printed after the act's documents is a service tail of the act.
 SERVICE_TAIL = re.compile(r"^Лист\s+согласования\b", re.IGNORECASE)
 SERVICE_TAIL_EVIDENCE = {"service_tail": "the act's approval sheet after its documents"}
 
@@ -1757,7 +1757,7 @@ STAMP_TABLE_MAX = 400
 
 
 def carry_page_head(scopes: list, caption: "Paragraph") -> None:
-    """Step 25 E: page marks at the end of the previous scope, printed on the caption's page before it (a declaration
+    """Step 21.5 E: page marks at the end of the previous scope, printed on the caption's page before it (a declaration
     page head «1680 6016», «ИНН», «КПП»), belong to the scope the caption opens."""
     previous, current = scopes[-2][1], scopes[-1][1]
     moved = []
@@ -1795,13 +1795,13 @@ def build(extraction: dict) -> dict:
     previous_text = ""
     # step 20 B: the act approved a document and was signed (page of the signature), no approved text open yet
     approves, signed_page = False, None
-    service_tail = False  # step 25 B: «Лист согласования …» seen
+    service_tail = False  # step 21.5 B: «Лист согласования …» seen
     for q in paragraphs:
         if q.flow == "body" and q.kind == "text":
             page_first.setdefault(q.first.page, q)
     for i, p in enumerate(paragraphs):
         if service_tail:
-            scopes[0][1].append(p)  # step 25 B: the act's approval sheet and everything after it
+            scopes[0][1].append(p)  # step 21.5 B: the act's approval sheet and everything after it
             if p.flow == "body":
                 p.evidence.append(dict(SERVICE_TAIL_EVIDENCE))
             continue
@@ -2003,7 +2003,7 @@ def build(extraction: dict) -> dict:
                                and body[k].first.category not in NOISE_CATEGORIES
                                and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)))), None)
         if block is not None and block.text.startswith("(") and not signature_caption(block.text):
-            # step 25 C: a field caption «(серия, номер, дата выдачи …)» stays with its field; the block opens after it
+            # step 21.5 C: a field caption «(серия, номер, дата выдачи …)» stays with its field; the block opens after it
             after = body.index(block) + 1
             block = body[after] if after < len(body) else None
         in_block = False
@@ -2044,7 +2044,7 @@ def build(extraction: dict) -> dict:
             elif p.flow == "body":
                 p.owner = current
                 if p.kind == "table" and len(p.text) <= STAMP_TABLE_MAX and STAMP_TABLE.search(p.text):
-                    p.owner = scope_path  # step 25 E: a registration stamp belongs to the scope root
+                    p.owner = scope_path  # step 21.5 E: a registration stamp belongs to the scope root
         for p in items:
             if p.kind in {"approval", "annex"}:
                 p.owner = scope_path
@@ -2088,7 +2088,7 @@ def build(extraction: dict) -> dict:
             p.evidence.append({"footnote_owner_common": "mark repeated on the footnote's page"})
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})
         page_marked[id(p)] = bool(page_hits)
-    # step 23 F: a footnote whose mark is only on an earlier page follows the footnotes of its own page that found their
+    # step 21.3 F: a footnote whose mark is only on an earlier page follows the footnotes of its own page that found their
     # marks there (one table's notes); a footnote whose mark is nowhere belongs to the document of its page
     by_page: dict[int, list] = defaultdict(list)
     for p in paragraphs:

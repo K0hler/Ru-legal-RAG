@@ -210,7 +210,7 @@
   sanpin-81-2016 55 regions: kept as `…-step21-a-failed-sanpin81`. `…-step21-a` (heading lines only,
   083f5475…) 44718; `…-step21-b` (51a97e59…, title captions too): 44827/45354, batch 20 1425/1771, nothing below. JSON
   `s21` equal to v20 per act. Batch-20 annotators disagree in places (some blocks given to the point, e.g. 306.12).
-- Step 22 (owner 29.10.2026: «Все документы ниже 99% доводи до 99%», development): A `region_footnote_number` — a
+- Step 21.2 (owner 29.10.2026: «Все документы ниже 99% доводи до 99%», development): A `region_footnote_number` — a
   Footnote region with a plain-digit number («15 СП …», `PLAIN_FOOTNOTE_NUMBER`) is that footnote; a numberless
   Footnote right after a footnote ending «:» / «;» on the same page continues it. B `PAGE_CODE_LINE` «5590030 (1.4)»
   is a page mark (scope root, no break of the open point). C SIGNER takes «Врио», «И.о.». D an int marker may be
@@ -221,7 +221,7 @@
   per-document patches; nothing may get worse. Owner decisions of 28.10 applied to earlier golds by hand-checked
   maps: `GOLD_OVERRIDE` in the regression (prikaz-fns-815-2024 `gold-dotted`, prikaz-mintruda-141-2023
   `gold-footnotes` on its forms copy); rebaseline `…-step22-b-golds` 44871.
-- Step 23 A-F (`close_subpoints`, `article_notes`, `under_table_ids`, footnote owners): a table caption under a
+- Step 21.3 A-F (`close_subpoints`, `article_notes`, `under_table_ids`, footnote owners): a table caption under a
   subpoint closes nothing; after an unmarked capitalised «;» line (formula legend «К = 10 – …;») the last line closes
   nothing (a lowercase «;» list line still lets the closing sentence close); a «где λ – …» legend after the last list
   item closes like a sentence; a notes heading under a table followed by footnotes is the table's notes; under a
@@ -230,7 +230,7 @@
   its page's marked footnotes when they share one owner. First attempt (int notes, any sibling owner) cost
   sanpin-31-2015 10 and sanpin-61-2015 1: kept as `…-step23-a-failed-notes`. `…-step23-a`: 44887/45354 (+16),
   nothing below; JSON `s23a`: v1 equal, v2 two acts +1 (fz 72 -> 73, rp 22 -> 23), nothing lower.
-- Step 24 A-G: `POINT_REFERENCES` takes ranges («10.10 - 10.17), 11 …»); a run of OCR headings between points of the
+- Step 21.4 A-G: `POINT_REFERENCES` takes ranges («10.10 - 10.17), 11 …»); a run of OCR headings between points of the
   scope root is the root's heading; «Примечание. … настоящий перечень/Правила/Порядок …» outside an article is the
   document's note (`DOCUMENT_NOTE`); SIGNATURE_CAPTION takes «(место для подписи …)», «(фамилия, имя, отчество …
   должностного лица / заполнившего / подписавшего …)» and ««___» ______ 20__ г.»; a dash item after the letter list
@@ -238,7 +238,7 @@
   «»» closes an inner title (no «.;,» after it) keeps the quotation open (`QUOTED_UNIT_HEADING`). `…-step24-a`
   44897, `…-step24-b` 44903/45354, nothing below (pp-1521-2014, prikaz-fsvfn-1310-2025, fz-119-2016 at 100%).
   JSON `s24a`/`s24b`: v1 equal, v2 as s23a plus one act strict 354 -> 355; nothing lower.
-- Step 25 (after the step 25 A attempt — headed tables to the scope root without a unit — cost pp-728-2020 8 and
+- Step 21.5 (after the step 21.5 A attempt — headed tables to the scope root without a unit — cost pp-728-2020 8 and
   sanpin-81-2016 2: reverted, kept as `…-step25-a-failed-root-tables`): B `SERVICE_TAIL` «Лист согласования …» after
   the act's documents goes, with the rest, to the act's requisite tail; C `field_line` «20. Телефон/факс ___ Адрес ___»
   — a sentence after it is the form's, captions «(…)» / «*…» stay with the field; a field caption «(серия, номер …)»
@@ -249,30 +249,30 @@
   the scope root. A repeated-table-header rule (D) scattered XML-format tables (fns-93, fns-815, favt-547, mintruda-742,
   rp-2417): dropped, kept as `…-step25-b-failed-headers`. `…-step25-b`: 44935/45354 (+32), `cross_scope_v2` 26 -> 5,
   nothing below; JSON `s25` equal to `s24b` per act.
-- Step 26 (`table_title`): an unmarked unterminated line right before a «Таблица N» caption heading a table is that
+- Step 21.6 (`table_title`): an unmarked unterminated line right before a «Таблица N» caption heading a table is that
   table's title, so the block has its own heading (sanpin-2-2021 +68 -> 1494/1771). Attempts kept: headed blocks to
   the scope root without a unit and after the point's own table (`…-step26-a-failed-after-table`: fns-93 -389,
   fns-815 -87, Mintrud forms) and the same without the «after a table» part (`…-step26-a-no-effect`). `…-step26-b`:
   45003/45354, nothing below; JSON `s26` equal to `s25` per act.
-- Step 27 (owner 29.10.2026, second «Разделу»: a headed table a point names belongs to the section too):
+- Step 21.7 (owner 29.10.2026, second «Разделу»: a headed table a point names belongs to the section too):
   `table_block_sections` no longer keeps named or «ниже» tables with the point (only a point ending «:» keeps its
   table; `INTRODUCES_BELOW` removed). `…-step27-a` 45063 (sanpin-2-2021 +60; the three FGOS lose 3 each on the frozen
   gold). The decision applied by hand-checked `tables-map` → `gold-tables` copies (`GOLD_OVERRIDE`): prikaz-minobrazovaniya
   1126-2017 and 1412-2015 on `gold`, 518-2017 on `gold-quoted` (3 regions each), sanpin-2-2021 91 regions (26 blocks its
   annotators gave to the point; figure caption 310.10 left out). `…-step27-b-golds`: 45154/45354, nothing below,
   sanitary rules 99.0%; JSON `step27-a`: v1 equal, v2 as s24b.
-- Step 27 B-C (sanpin-2-2021 to 99%): B `TABLE_TITLE_MAX` 300 -> 400 (a 307-character ПДК title before «Таблица
+- Step 21.7 B-C (sanpin-2-2021 to 99%): B `TABLE_TITLE_MAX` 300 -> 400 (a 307-character ПДК title before «Таблица
   3.13», 94 regions) and `formula_body` — a point ending in a formula «$$ … загрязнения.} $$» is finished; C
   `table_rubrics` — a short unterminated int-marked line between two table parts, numbered back from the open point
   by 2 or more («2. Учреждения общего образования» under point 87), is a table rubric (`table_row`), not a point.
   `…-step27-c` 45251, `…-step27-d` (54904b9a…) 45274/45354 (99.82%), nothing below; sanpin-2-2021 1765/1771, sanitary
   rules 99.82%; JSON `step27-d`: v1 equal, v2 as s24b.
-- Step 27 D: the minzdrav-369 «gold question» was a prototype error — its annotator saw on the page images that
+- Step 21.7 D: the minzdrav-369 «gold question» was a prototype error — its annotator saw on the page images that
   «1.1. Прием …», «2.1. …» sit in the tables' top grid rows (§6: no points). `TABLE_GRID_RUBRIC`: when a table of the
   scope carries a dotted rubric as `<caption>2.2. …`, unterminated dotted lines right above a table are rubrics.
   `…-step27-e` 45284/45354, minzdrav-369 47/47, nothing below; JSON `step27-e` as `step27-d`. Read annotation-notes.md
   before calling a residual error a gold error.
-- Step 27 E (`gap_sibling` in `table_block_sections`): an unterminated unnumbered heading over a table, when the
+- Step 21.7 E (`gap_sibling` in `table_block_sections`): an unterminated unnumbered heading over a table, when the
   open point is decimal «5.1» and the next marker is «5.3», is the missing sibling «5.2» — the block goes to the
   parent (minekon-37 «Пусковые расходы¹,²», gold `S/AN5|S/AN5/5.2`). `…-step27-f` 45293/45354, minekon-37 286/288,
   nothing below; JSON `step27-f` as `step27-d`. Left there: 10.6, 17.4 — the annotator gave a capitalised paragraph
@@ -280,13 +280,13 @@
   paragraph keeping its subpoint (for 17.4) broke 10.4, 12.6, 13.3 of the same act and sanpin-20-2026 36.9 (gold gives
   those to the point): reverted, kept as `…-step27-g-failed-semicolon`. Owner 29.10.2026 «Пункту»: `closing-map` →
   `gold-closing` (10.6 → S/5, 17.4 → S/8/1); `…-step27-h-golds` 45295/45354, minekon-37 288/288.
-- Step 27 G (`peer_points`, before `close_subpoints`): «в пунктах 15 и 15.1» in the act makes «15.1» a peer of «15»
+- Step 21.7 G (`peer_points`, before `close_subpoints`): «в пунктах 15 и 15.1» in the act makes «15.1» a peer of «15»
   (the minkultury-1321 annotator's §5 `exceptions.json` exception, grounded on that reference); «15.1» and its list
   move up a level. `…-step27-i` (lookahead too strict for «15.1.» in the test) and `…-step27-j` 45298/45354,
   minkultury-1321 458/461, nothing below; JSON `step27-j` as `step27-d`. Its other exception «8.1» has no text
   ground (a meaning exception the convention allows): stays a prototype miss. `…-step27-i-broken-regex`: a run with
   a heredoc backspace in the regex (no effect) — write regexes through a file, never a bash heredoc.
-- Step 27 H (owner 29.10.2026 «Часть таблицы»): `table_rows` also reads an approved text (`TABLE_DOCUMENT_SCOPE`
+- Step 21.7 H (owner 29.10.2026 «Часть таблицы»): `table_rows` also reads an approved text (`TABLE_DOCUMENT_SCOPE`
   `S\d*`) that opens with a table and has no sections/named units; there a first int/decimal marker after the last
   table that starts no numbering («4.15.», not «1.») is the last row. rp-2728 gold → `rows-map`/`gold-rows` (2.6, 2.7
   → S). First attempt without the no-sections guard cost the Mintrud professional standards (S opens with a table,

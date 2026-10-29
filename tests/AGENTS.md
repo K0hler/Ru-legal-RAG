@@ -37,26 +37,26 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
-- Step 27 H: an approved text that is a table reads its cut-out row «1.» and a last «4.15. …» as text (`S`), a «1.»
+- Step 21.7 H: an approved text that is a table reads its cut-out row «1.» and a last «4.15. …» as text (`S`), a «1.»
   after the last table is a point, and one with «I.» sections keeps its points (the old «keeps its row numbers» test
   and the step-25 `S/1` expectation changed by the owner decision).
-- Step 27 G: «в пунктах 15 и 15.1» makes «15.1» with its «1)», «2)» a peer of «15»; without it «15.1» nests.
-- Step 27 E: an unnumbered heading and table between «5.1.» and «5.3.» go to the annex root; before «5.2.» they stay.
-- Step 27 D: dotted «1.1.», «2.1.» over tables are rubrics when another table keeps «2.2. …» as its caption;
+- Step 21.7 G: «в пунктах 15 и 15.1» makes «15.1» with its «1)», «2)» a peer of «15»; without it «15.1» nests.
+- Step 21.7 E: an unnumbered heading and table between «5.1.» and «5.3.» go to the annex root; before «5.2.» they stay.
+- Step 21.7 D: dotted «1.1.», «2.1.» over tables are rubrics when another table keeps «2.2. …» as its caption;
   without such a caption they stay points.
-- Step 27 B-C: a headed table after a formula line and one with a 307-character plain title go to the section; a
+- Step 21.7 B-C: a headed table after a formula line and one with a 307-character plain title go to the section; a
   «2. …» rubric between table parts numbered back from point 87 is not a point («88.» there still is).
-- Step 27: a headed table the point only names («… приведены в таблице 1.3.») goes to the section; one introduced
+- Step 21.7: a headed table the point only names («… приведены в таблице 1.3.») goes to the section; one introduced
   with «:» stays. The dev regression scores the three FGOS and sanpin-2-2021 on `gold-tables`.
-- Step 26: a plain-text title before «Таблица 3.13» makes a headed table that goes to the section.
-- Step 25: an approval sheet after the forms goes to the act; a field line with text and blanks, its caption and the
+- Step 21.6: a plain-text title before «Таблица 3.13» makes a headed table that goes to the section.
+- Step 21.5: an approval sheet after the forms goes to the act; a field line with text and blanks, its caption and the
   form's sentence; a declaration page head, typist mark and time stamp are page marks carried into the form they head.
-- Step 24: reference ranges, a root heading between root points, a note about «настоящий перечень», a form's
+- Step 21.4: reference ranges, a root heading between root points, a note about «настоящий перечень», a form's
   signer captions and date line, a dash item closing its sibling's letter list, a quoted «Статья 25⁸ …» heading
   ending with an inner title quote.
-- Step 23: caption, legend, «где» and table-notes cases under subpoints; numbered «1)» notes under an annex notes
+- Step 21.3: caption, legend, «где» and table-notes cases under subpoints; numbered «1)» notes under an annex notes
   heading; footnotes without a mark get the page's document (the cycle 5/6 «stays unowned» expectations changed to it).
-- Step 22: a plain-digit Footnote and its «а) …;» list continuation find the marked point; «5590030 (1.4)» is a page
+- Step 21.2: a plain-digit Footnote and its «а) …;» list continuation find the marked point; «5590030 (1.4)» is a page
   mark and point 2 continues on the next page; «Врио Министра» is the act's signer; «6.Сообщение» is part 6.
 - Step 21: a headed table block after a finished point goes to the section (with lines under it), an introduced
   («… в таблице 1.1:», «ниже») or named table stays, no enclosing section keeps the point; a title Caption is a

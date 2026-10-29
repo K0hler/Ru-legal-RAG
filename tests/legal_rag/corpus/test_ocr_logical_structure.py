@@ -146,7 +146,7 @@ def test_footnote_owner_by_marker_and_cross_page_footnote_continuation():
     got, cont = owners(result), conts(result)
     assert got["1.3"] == "A/I/1" and got["1.4"] == "A/I/2"
     assert got["2.3"] == "A/I/2" and cont["2.3"] is True     # continuation of footnote 2, not of point 4
-    assert got["2.4"] == "A"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert got["2.4"] == "A"  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
 
 
 def test_every_token_is_accounted_and_input_is_not_mutated():
@@ -1152,11 +1152,11 @@ def test_asterisk_footnote_without_its_mark_on_the_page_stays_unowned():
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [("Table", "<table><tr><th>Восточная долгота**</th></tr></table>"),
                      ("Footnote", "* с точностью до 10 см;")]
-    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [GEO_TABLE]
     pages[3].append(("Footnote", "*- с точностью до 10 см;"))
-    assert owners(S.build(extraction(pages)))["4.3"] is not None  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert owners(S.build(extraction(pages)))["4.3"] is not None  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
 
 
 
@@ -1165,10 +1165,10 @@ def test_markdown_emphasis_is_not_an_asterisk_footnote_mark():
     body line owns no «* …» footnote, and a bold «**Примечание**» footnote stays unowned."""
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [("Text", "*Заполняется заявителем*"), ("Footnote", "* с точностью до 10 см;")]
-    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert owners(S.build(extraction(pages)))["3.10"] == "S/AN1"  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     pages = form_with_numbered_lines(("Text", "1. __________"))
     pages[2][-1:] = [GEO_TABLE, ("Footnote", "**Примечание**: координаты приводятся в МСК.")]
-    assert owners(S.build(extraction(pages)))["3.10"] is not None  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert owners(S.build(extraction(pages)))["3.10"] is not None  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     assert S.strip_emphasis("*Заполняется* заявителем**") == "Заполняется заявителем**"
     assert S.strip_emphasis("Северная широта *") == "Северная широта *"
 
@@ -1689,7 +1689,7 @@ def test_points_around_a_table_keep_their_numbering():
 
 
 def test_approved_text_opening_with_a_table_reads_its_row_numbers_as_rows():
-    """Step 27 H (owner 29.10.2026 «Часть таблицы», rp-2728-2020 and rp-1431-2014): an approved text that is itself a
+    """Step 21.7 H (owner 29.10.2026 «Часть таблицы», rp-2728-2020 and rp-1431-2014): an approved text that is itself a
     table (an address distribution of subsidies under «УТВЕРЖДЕНО») is read like a table annex: the row «1.» cut out
     between the table parts is text of the document (`S`); so is a last row «4.15. Контрольное событие 4.15.» after
     the last table, while a «1.» there still opens a point."""
@@ -1743,7 +1743,7 @@ def test_footnote_without_a_found_mark_stays_unowned():
     second = "<table><tr><td>Материал<sup>2</sup></td><td>Код 4</td></tr></table>"
     notes = [("Footnote", "⁴ Сноска без значка в тексте.")]
     result = S.build(extraction(two_lists_with_footnotes(second, notes)))
-    assert owners(result)["3.3"] == "A/AN2"  # step 23 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
+    assert owners(result)["3.3"] == "A/AN2"  # step 21.3 F: no mark -> the document of its page (gold never leaves a footnote ownerless)
     note = next(p for p in result["paragraphs"] if p["flow"] == "footnote" and p["text_preview"].startswith("⁴"))
     assert {"footnote_owner": "unresolved", "candidates": 0} in note["evidence"]
 
@@ -2691,7 +2691,7 @@ def test_a_title_caption_over_a_table_is_its_own_heading_but_a_numbered_caption_
 
 
 def test_a_headed_table_after_a_formula_or_with_a_long_title_goes_to_the_section():
-    # Step 27 B (sanpin-2-2021): a point ending in a formula «$$ … загрязнения.} $$» is finished; a 307-character
+    # Step 21.7 B (sanpin-2-2021): a point ending in a formula «$$ … загрязнения.} $$» is finished; a 307-character
     # plain title before «Таблица 3.13» is still the table's title.
     T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
     title = "Предельно допустимые концентрации (ПДК) химических веществ в воде " + "питьевой, " * 26 + "аквапарков"
@@ -2709,7 +2709,7 @@ def test_a_headed_table_after_a_formula_or_with_a_long_title_goes_to_the_section
 
 
 def test_a_numbered_rubric_between_table_parts_is_not_a_point():
-    # Step 27 C (sanpin-2-2021, table 5.25): «2. Учреждения общего образования» between two parts of one table, numbered
+    # Step 21.7 C (sanpin-2-2021, table 5.25): «2. Учреждения общего образования» between two parts of one table, numbered
     # back from the open point 87, is the table's rubric; a «88.» there going on from 87 is still a point.
     T = ("Table", "<table><tr><td>11</td><td>Инструментальная</td></tr></table>")
     got = owners(S.build(extraction(regulation(
@@ -2723,7 +2723,7 @@ def test_a_numbered_rubric_between_table_parts_is_not_a_point():
 
 
 def test_dotted_rubrics_cut_out_of_tables_whose_siblings_ocr_kept_inside_are_not_points():
-    # Step 27 D (prikaz-minzdravookhraneniya-369-2022): OCR kept «2.2. Хирургические …» as the table's <caption> and cut
+    # Step 21.7 D (prikaz-minzdravookhraneniya-369-2022): OCR kept «2.2. Хирургические …» as the table's <caption> and cut
     # «1.1. Прием врача» and «2.1. …» out above their tables; all are rubrics in the table grid, the text stays in «1.»,
     # «2.». Without a dotted caption inside a table «1.1.» over a table is a point («5.5. Номенклатура …», minekon-37).
     T = ("Table", "<table><tr><td>B01.068.001</td><td>Прием</td></tr></table>")
@@ -2741,7 +2741,7 @@ def test_dotted_rubrics_cut_out_of_tables_whose_siblings_ocr_kept_inside_are_not
 
 
 def test_an_unnumbered_table_heading_between_5_1_and_5_3_is_the_missing_sibling():
-    # Step 27 E (prikaz-minekonomicheskogo-37-2015): «Пусковые расходы¹,²» over a table after the table of «5.1.» and
+    # Step 21.7 E (prikaz-minekonomicheskogo-37-2015): «Пусковые расходы¹,²» over a table after the table of «5.1.» and
     # before «5.3.» stands for the unprinted «5.2»: the block leaves «5.1» for the annex root. Before «5.2.» it stays.
     T = ("Table", "<table><tr><td>1</td><td>Затраты на сырье</td></tr></table>")
     def build(following):
@@ -2755,7 +2755,7 @@ def test_an_unnumbered_table_heading_between_5_1_and_5_3_is_the_missing_sibling(
 
 
 def test_a_dotted_point_the_act_names_together_with_its_number_is_a_peer():
-    # Step 27 G (prikaz-minkultury-1321-2016): «документы, указанные в пунктах 15 и 15.1» makes «15.1» a peer of «15»
+    # Step 21.7 G (prikaz-minkultury-1321-2016): «документы, указанные в пунктах 15 и 15.1» makes «15.1» a peer of «15»
     # (convention v2 §5 exception), with its own «1)», «2)»; without such a reference «15.1» nests in «15».
     def build(reference):
         return owners(S.build(extraction(regulation(
@@ -2769,7 +2769,7 @@ def test_a_dotted_point_the_act_names_together_with_its_number_is_a_peer():
 
 
 def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
-    # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
+    # Step 21.2 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
     # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a
     # footnote ending «:» or «;» on the same page («а) 1 с – для локальной вибрации;») continues it.
     pages = regulation(("Text", "4.4. Граждане вскрывают контейнеры с товарами¹⁵."),
@@ -2783,7 +2783,7 @@ def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_o
 
 
 def test_page_code_line_signer_title_and_marker_without_a_space():
-    # Step 22 B (pp-931-2022, pp-996-2022): «5590030 (1.4)» — the document's page code printed as body text at the page
+    # Step 21.2 B (pp-931-2022, pp-996-2022): «5590030 (1.4)» — the document's page code printed as body text at the page
     # foot — is a page mark of the scope root; point 2 goes on after it on the next page.
     pages = [[("Text", "УТВЕРЖДЕНЫ\nпостановлением Правительства", 1000), ("Section-header", "ПРАВИЛА"),
               ("Text", "1. Правила определяют порядок."), ("Text", "2. Понятия используются в"),
@@ -2792,20 +2792,20 @@ def test_page_code_line_signer_title_and_marker_without_a_space():
     result = S.build(extraction(pages))
     got = owners(result)
     assert got["1.4"] == "S" and got["2.0"] == "S/2" and conts(result)["2.0"] is True
-    # Step 22 C (prikaz-minnauki-511-2019, prikaz-minkultury-1321-2016): «Врио Министра» signs the act
+    # Step 21.2 C (prikaz-minnauki-511-2019, prikaz-minkultury-1321-2016): «Врио Министра» signs the act
     got = owners(S.build(extraction([[("Title", "ПРИКАЗ"), ("Text", "1. Создать комиссию."),
                                       ("Text", "2. Контроль возложить на заместителя Министра."),
                                       ("Text", "Врио Министра"), ("Text", "А.В. Петров", 1200)]])))
     assert got["1.3"] == "A"
-    # Step 22 D (fz-435-2020; the owner's known class «6.Сообщение»): a point number glued to a capitalised word
+    # Step 21.2 D (fz-435-2020; the owner's known class «6.Сообщение»): a point number glued to a capitalised word
     got = owners(S.build(extraction([[("Section-header", "Статья 21. Реорганизация"),
                                       ("Text", "5. Имущество передается единому заказчику."),
                                       ("Text", "6.Сообщение о реорганизации подлежит размещению в реестре.")]])))
     assert got["1.2"] == "A/ст21/ч6"
 
 
-def test_step_23_captions_legends_and_notes_inside_subpoints():
-    # Step 23 A-E (owner 29.10.2026: fix every prototype error; sanpin-81-2016 cases)
+def test_step_21_3_captions_legends_and_notes_inside_subpoints():
+    # Step 21.3 A-E (owner 29.10.2026: fix every prototype error; sanpin-81-2016 cases)
     T = ("Table", "<table><tr><td>Время</td><td>8</td></tr></table>")
     got = owners(S.build(extraction(regulation(
         ("Text", "7.2. Магнитное поле:"), ("Text", "а) оценка проводится по уровню поля;"),
@@ -2831,8 +2831,8 @@ def test_step_23_captions_legends_and_notes_inside_subpoints():
     assert got["2.4"] == "A/AN9" and got["2.5"] == "A/AN9"
 
 
-def test_step_23_footnote_without_its_mark_belongs_to_its_page_and_scope():
-    # Step 23 F (prikaz-minfinansov-198-2015, prikaz-minekonomicheskogo-37-2015): a footnote whose mark is printed
+def test_step_21_3_footnote_without_its_mark_belongs_to_its_page_and_scope():
+    # Step 21.3 F (prikaz-minfinansov-198-2015, prikaz-minekonomicheskogo-37-2015): a footnote whose mark is printed
     # nowhere belongs to the document of its page, never to nobody; one whose mark is only on an earlier page follows the
     # footnotes of its own page that found their marks there.
     pages = regulation(("Text", "1. Отчет составляется по форме."), ("Table", "<table><tr><td>8.</td></tr></table>"),
@@ -2845,8 +2845,8 @@ def test_step_23_footnote_without_its_mark_belongs_to_its_page_and_scope():
     assert got["2.2"] == "S/5.5" and got["2.3"] == "S/5.5"
 
 
-def test_step_24_reference_ranges_root_headings_document_notes_signature_lines_and_dash_items():
-    # Step 24 A (pp-1521-2014): «10.10 - 10.17), 11 (пункты …» continues item 11, it is no point 10.10
+def test_step_21_4_reference_ranges_root_headings_document_notes_signature_lines_and_dash_items():
+    # Step 21.4 A (pp-1521-2014): «10.10 - 10.17), 11 (пункты …» continues item 11, it is no point 10.10
     pages = [[("Text", "УТВЕРЖДЕН\nпостановлением", 1000), ("Section-header", "ПЕРЕЧЕНЬ"),
               ("Section-header", "Национальные стандарты"), ("List-item", "1. ГОСТ Р 54257-2010. Разделы 1, 4."),
               ("List-item", "2. ГОСТ 31937-2011. Разделы 1, 6."),
@@ -2878,7 +2878,7 @@ def test_step_24_reference_ranges_root_headings_document_notes_signature_lines_a
 
 
 def test_quoted_article_heading_ending_with_an_inner_title_quote_keeps_the_quotation_open():
-    # Step 24 G (fz-119-2016): «Статья 25⁸. Особенности … в соответствии с Федеральным законом «Об особенностях …»» ends
+    # Step 21.4 G (fz-119-2016): «Статья 25⁸. Особенности … в соответствии с Федеральным законом «Об особенностях …»» ends
     # with the inner title's quote; the quoted article's parts «1.», «2.» are text of article 12 that quotes them.
     pages = [[("Section-header", "Статья 12. О внесении изменения в Федеральный закон"),
               ("Text", "Федеральный закон от 21 июля 1997 года № 122-ФЗ дополнить статьей 25⁸ следующего содержания:"),
@@ -2892,8 +2892,8 @@ def test_quoted_article_heading_ending_with_an_inner_title_quote_keeps_the_quota
     assert got["1.5"] == "A/ст13"
 
 
-def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page_heads():
-    # Step 25 B (prikaz-fas-553-2015): «Лист согласования к проекту документа …» after the act's forms is the act's
+def test_step_21_5_approval_sheet_form_fields_repeated_table_headers_and_form_page_heads():
+    # Step 21.5 B (prikaz-fas-553-2015): «Лист согласования к проекту документа …» after the act's forms is the act's
     # service tail, not text of the last form's point.
     pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму представления."), ("Text", "Руководитель И.Ю. Артемьев", 1200)],
              [("Text", "Приложение № 13\nк приказу", 1000), ("Section-header", "ПРЕДСТАВЛЕНИЕ"),
@@ -2902,7 +2902,7 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
               ("Text", "Инициатор согласования:"), ("Table", "<table><tr><td>№ п/п</td><td>Согласующий</td></tr></table>")]]
     got = owners(S.build(extraction(pages)))
     assert got["2.3"] == "A" and got["2.4"] == "A" and got["2.5"] == "A"
-    # Step 25 C (prikaz-minkultury-1321-2016): after a field line with text and blanks the form's sentence is the form's,
+    # Step 21.5 C (prikaz-minkultury-1321-2016): after a field line with text and blanks the form's sentence is the form's,
     # the field's caption «(…)» stays with the field and opens no requisite block
     form = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму."), ("Text", "Министр", 1200)],
             [("Text", "Приложение № 1\nк Регламенту", 1000), ("Section-header", "ЗАЯВЛЕНИЕ"),
@@ -2915,7 +2915,7 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
     got = owners(S.build(extraction(form)))
     assert got["2.3"] == "A/AN1/19" and got["2.5"] == "A/AN1"
     assert got["2.7"] == "A/AN1/21"
-    # Step 25 D (rp-2728-2020) not kept: a table part repeating a header stays with the current owner
+    # Step 21.5 D (rp-2728-2020) not kept: a table part repeating a header stays with the current owner
     H = "<table><thead><tr><th>Наименование мероприятия</th><th>Параметры объекта</th></tr></thead>"
     pages = [[("Text", "1. Утвердить распределение."), ("Text", "Председатель Правительства", 1100)],
              [("Text", "УТВЕРЖДЕНО\nраспоряжением", 1000), ("Section-header", "РАСПРЕДЕЛЕНИЕ"),
@@ -2923,10 +2923,10 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
               ("Text", "мощность - 4,68 км")],
              [("Table", H + "<tbody><tr><td>б</td></tr></tbody></table>")]]
     got = owners(S.build(extraction(pages)))
-    # step 25 D (repeated header -> previous table) was dropped: it scattered XML-format tables; since step 27 H the
+    # step 21.5 D (repeated header -> previous table) was dropped: it scattered XML-format tables; since step 21.7 H the
     # cut-out row «1.» of a table document is no point, so the table part after it is the document's (`S`)
     assert got["2.3"] == "S"
-    # Step 25 E (prikaz-fns-815-2024): a declaration page head «1680 6016», «ИНН», «КПП», «Стр.» and a typist mark or
+    # Step 21.5 E (prikaz-fns-815-2024): a declaration page head «1680 6016», «ИНН», «КПП», «Стр.» and a typist mark or
     # time stamp in the text are page marks; a head printed before the form's caption on its page goes to the form
     pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму декларации."),
               ("Text", "21.08.2024 15:44"), ("Text", "компьютер / Н.И. / П-К7552"), ("Text", "Руководитель Д.В. Егоров", 1200)],
@@ -2939,7 +2939,7 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
 
 
 def test_a_plain_text_title_before_a_numbered_caption_makes_a_headed_table():
-    # Step 26 (sanpin-2-2021): «Предельно допустимые концентрации (ПДК) химических веществ …» as plain text, then
+    # Step 21.6 (sanpin-2-2021): «Предельно допустимые концентрации (ПДК) химических веществ …» as plain text, then
     # «Таблица 3.13» and the table, after a finished point: the table has its own heading -> the section.
     T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
     got = owners(S.build(extraction(regulation(

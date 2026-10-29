@@ -111,7 +111,7 @@ BATCH_18 = ("sanpin-17-2026", "sanpin-19-2016", "sanpin-26-2015", "sanpin-44-201
 BATCH_19 = ("sanpin-110-2017", "sanpin-15-2019", "sanpin-15-2026", "sanpin-52-2018", "sanpin-81-2016", "sanpin-84-2017",
             "sanpin-91-2014")
 BATCH_20 = ("sanpin-2-2021",)
-# Step 22 (owner decisions of 28.10.2026 applied to earlier golds by hand-checked maps): a paragraph after the last
+# Step 21.2 (owner decisions of 28.10.2026 applied to earlier golds by hand-checked maps): a paragraph after the last
 # dotted subpoint stays in it (prikaz-fns-815-2024, 13 regions) and a footnote belongs to the point with its mark
 # (prikaz-mintruda-141-2023 endnotes, 8 regions, on top of its forms copy).
 # Owner 29.10.2026 «Разделу»: a headed table named by a point belongs to the section (three FGOS, 3 regions each;
