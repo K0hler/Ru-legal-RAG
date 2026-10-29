@@ -280,6 +280,12 @@
   paragraph keeping its subpoint (for 17.4) broke 10.4, 12.6, 13.3 of the same act and sanpin-20-2026 36.9 (gold gives
   those to the point): reverted, kept as `…-step27-g-failed-semicolon`. Owner 29.10.2026 «Пункту»: `closing-map` →
   `gold-closing` (10.6 → S/5, 17.4 → S/8/1); `…-step27-h-golds` 45295/45354, minekon-37 288/288.
+- Step 27 G (`peer_points`, before `close_subpoints`): «в пунктах 15 и 15.1» in the act makes «15.1» a peer of «15»
+  (the minkultury-1321 annotator's §5 `exceptions.json` exception, grounded on that reference); «15.1» and its list
+  move up a level. `…-step27-i` (lookahead too strict for «15.1.» in the test) and `…-step27-j` 45298/45354,
+  minkultury-1321 458/461, nothing below; JSON `step27-j` as `step27-d`. Its other exception «8.1» has no text
+  ground (a meaning exception the convention allows): stays a prototype miss. `…-step27-i-broken-regex`: a run with
+  a heredoc backspace in the regex (no effect) — write regexes through a file, never a bash heredoc.
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),

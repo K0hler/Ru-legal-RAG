@@ -2744,6 +2744,20 @@ def test_an_unnumbered_table_heading_between_5_1_and_5_3_is_the_missing_sibling(
     assert got["2.3"] == "A/AN5/5.1"
 
 
+def test_a_dotted_point_the_act_names_together_with_its_number_is_a_peer():
+    # Step 27 G (prikaz-minkultury-1321-2016): «документы, указанные в пунктах 15 и 15.1» makes «15.1» a peer of «15»
+    # (convention v2 §5 exception), with its own «1)», «2)»; without such a reference «15.1» nests in «15».
+    def build(reference):
+        return owners(S.build(extraction(regulation(
+            ("Text", "15. Для получения услуги заявитель представляет заявление."),
+            ("Text", "15.1. Для внесения изменений заявитель представляет:"), ("Text", "1) заявление;"),
+            ("Text", "2) договор страхования."), ("Text", f"16. Специалист проверяет документы, {reference}.")))))
+    got = build("указанные в пунктах 15 и 15.1")
+    assert [got[f"2.{index}"] for index in range(3, 6)] == ["S/I/15.1", "S/I/15.1/1", "S/I/15.1/2"]
+    got = build("указанные в пункте 15")
+    assert got["2.3"] == "S/I/15/15.1" and got["2.5"] == "S/I/15/15.1/2"
+
+
 def test_footnote_with_a_lost_superscript_and_its_list_continuation_find_their_owner():
     # Step 22 A (sanpin-81-2016, sanpin-44-2017): OCR printed the footnote number as plain digits («15 СП 3.4.2318-08 …»)
     # in a Footnote region; it is footnote 15 owned by the point with «¹⁵». A numberless Footnote region right after a

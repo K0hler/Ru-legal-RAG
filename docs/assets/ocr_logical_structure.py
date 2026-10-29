@@ -1062,6 +1062,28 @@ def subpoint_level(stack: tuple, level: int) -> bool:
     return stack[level][0] in SUBPOINT_KINDS
 
 
+# Step 27 G (prikaz-minkultury-1321-2016): «документов, указанных в пунктах 15 и 15.1 …» names «15.1» as a peer of «15»
+PEER_POINTS = re.compile(r"\bпункт(?:ах|ами|ов|ы)\s+(\d+)\s+и\s+(\d+)\.(\d+)(?!\.?\d)")
+
+
+def peer_points(body: list[Paragraph], stacks: list[tuple]) -> None:
+    """A dotted point «N.M» the act itself names together with «N» as its peer («в пунктах 15 и 15.1») is not nested
+    in «N» (convention v2 §5 exception, as the annotator recorded it): «N.M» and what lies under it move up a level."""
+    peers = {(int(m.group(2)), int(m.group(3))) for p in body for m in PEER_POINTS.finditer(p.text)
+             if m.group(1) == m.group(2)}
+    if not peers:
+        return
+    for k, p in enumerate(body):
+        stack = stacks[k]
+        for i in range(1, len(stack)):
+            if (stack[i][0] == "decimal" and tuple(stack[i][1]) in peers and stack[i - 1][0] == "int"
+                    and stack[i - 1][1] == stack[i][1][0]):
+                stacks[k] = stack[:i - 1] + stack[i:]
+                if p.marker.kind == "decimal" and i == len(stack) - 1:
+                    p.evidence.append({"peer_point": "«N.M» named together with «N» is its peer, not its subpoint"})
+                break
+
+
 def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) -> None:
     """A paragraph after the last subpoint returns to the point. An unmarked paragraph inside a
     subpoint (``subpoint_level``) closes it when it starts with a capital letter and does not continue the
@@ -1941,6 +1963,7 @@ def build(extraction: dict) -> dict:
             if alt is not None and stack and stack[-1][:2] == (alt.kind, alt.value) and stack[-1][0] != p.marker.kind:
                 p.evidence.append({"ocr_marker": f"«{p.marker.label})» read as «{alt.label})» by the sequence"})
                 p.marker = replace(alt, restart=p.marker.restart)
+        peer_points(body, stacks)
         close_subpoints(body, stacks, subheading_stacks(items, body, stacks))
         editorial_note_owners(body, stacks, points_are_parts)
         article_notes(body, stacks, under_table_ids(items))
