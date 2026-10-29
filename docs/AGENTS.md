@@ -199,6 +199,17 @@
   `data/m1/m1-04a/experiments/20261029-prototype-v20-freeze/`; regression `20261029-dev-regression-202-v20`
   (8c602f1c…) 43402/43583, errors equal to `…-step20-cd`; JSON `v20-results.json` equal to v17 per act. Measured on
   scan batch 20: profile `batch-20` (one SanPiN of 2020+, pages up to 500) = SanPiN 1.2.3685-21 (469 p.).
+- Owner 29.10.2026 «Разделу»: a table with its own heading between points belongs to the section (convention v2
+  §6.1). Dev regression = 203 documents (`BATCH_20` on `gold`); frozen П20 baseline `20261029-dev-regression-203-v20`
+  (0a94c8aa…): 44453/45354. Step 21 (`table_block_sections`, after `table_references`): after a finished point,
+  a block of unmarked table heads (`table_head`) followed by a table goes to the enclosing named unit, with the
+  unmarked lines after the table up to the next marker; the next head-and-table block right after a moved table goes
+  too. Only with its own heading: an OCR heading line or a Caption that is not «Таблица N…» (`TABLE_NUMBER`); a caption
+  «Таблица 2.1. Оптимальные …» alone, a point that names the table (in its text or lines after it) or introduces it
+  («ниже», «следующ…», final «:»), and a block rule D moved stay with the point. First attempt (any head) cost
+  sanpin-81-2016 55 regions: kept as `…-step21-a-failed-sanpin81`. `…-step21-a` (heading lines only,
+  083f5475…) 44718; `…-step21-b` (51a97e59…, title captions too): 44827/45354, batch 20 1425/1771, nothing below. JSON
+  `s21` equal to v20 per act. Batch-20 annotators disagree in places (some blocks given to the point, e.g. 306.12).
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

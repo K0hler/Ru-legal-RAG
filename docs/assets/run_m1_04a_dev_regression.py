@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 202 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 203 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -40,7 +40,8 @@ with source footnotes given to the point carrying their mark by ``derive_m1_04a_
 step 17 ``gold-dotted``: that copy with a paragraph after the last dotted subpoint given to the subpoint, owner
 28.10.2026) and the 12 of scan batch 16 (gold as frozen in ``20261028-batch-16-gold-freeze``; sanpin-16-2026 and
 sanpin-30-2020 stitched from two parts, step 17) and the 9 + 7 + 7 SanPiN of scan batches 17-19 (gold as frozen;
-sanpin-81-2016 stitched from two parts, step 20); all are development since their first pass. Only gold keys are scored, so a gold that covers a
+sanpin-81-2016 stitched from two parts, step 20) and SanPiN 1.2.3685-21 of scan batch 20 (gold as frozen, stitched from
+five parts, step 21); all are development since their first pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
@@ -109,6 +110,7 @@ BATCH_18 = ("sanpin-17-2026", "sanpin-19-2016", "sanpin-26-2015", "sanpin-44-201
             "sanpin-78-2015")
 BATCH_19 = ("sanpin-110-2017", "sanpin-15-2019", "sanpin-15-2026", "sanpin-52-2018", "sanpin-81-2016", "sanpin-84-2017",
             "sanpin-91-2014")
+BATCH_20 = ("sanpin-2-2021",)
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
@@ -155,7 +157,7 @@ def development_documents() -> list[dict]:
                                  ("batch-13", BATCH_13, "gold"), ("batch-14", BATCH_14, "gold"),
                                  ("batch-15", BATCH_15, "gold-dotted"), ("batch-16", BATCH_16, "gold"),
                                  ("batch-17", BATCH_17, "gold"), ("batch-18", BATCH_18, "gold"),
-                                 ("batch-19", BATCH_19, "gold")):
+                                 ("batch-19", BATCH_19, "gold"), ("batch-20", BATCH_20, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{suffix}.txt"})

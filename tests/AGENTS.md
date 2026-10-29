@@ -37,6 +37,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 21: a headed table block after a finished point goes to the section (with lines under it), an introduced
+  («… в таблице 1.1:», «ниже») or named table stays, no enclosing section keeps the point; a title Caption is a
+  heading, «Таблица 2.1. …» alone is not. Dev regression lists 203 documents.
 - Step 20 E: `test_first_pass_alarms_name_acts_a_prototype_mostly_misses` (only prototypes, below 0.9 of regions).
 - Step 20 C/D: «Примечание:» under a table inside point 8.4 stays in 8.4 (the cycle-10 plural «Примечания» negative
   stays); tables «Таблица 1.1/1.2» printed after section II belong to point 1.2 that names them, «Таблица 3.1» under

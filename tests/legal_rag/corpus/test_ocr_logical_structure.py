@@ -2632,4 +2632,43 @@ def test_a_table_printed_far_from_its_reference_belongs_to_the_point_that_refers
     assert got["2.3"] == "S/I/1.2" and got["2.6"] == "S/II/2.2"
     for index in range(7, 14):
         assert got[f"2.{index}"] == "S/I/1.2", index
+    # a caption line alone («Таблица 3.1») under its point stays with it (step 21 moves only tables with own headings)
     assert got["2.15"] == "S/III/3.1" and got["2.16"] == "S/III/3.1" and got["2.17"] == "S/III/3.1"
+
+
+def test_a_table_with_its_own_heading_between_points_belongs_to_the_section():
+    # Step 21 (owner 29.10.2026 «Разделу», batch 20, SanPiN 1.2.3685-21): after a finished point a table heading
+    # («Вещества, обладающие эффектом суммации», «Таблица 1.3.»), its table and the lines under it up to the next point
+    # are text of the section. A table the point introduces («… в таблице 1.1:») or names stays with the point.
+    T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "4. Нормативы содержания веществ приведены в таблице 1.1:"), ("Caption", "Таблица 1.1."), T,
+        ("Text", "5. Эффектом суммации обладают вещества однонаправленного действия."),
+        ("Section-header", "Вещества, обладающие эффектом суммации"), ("Caption", "Таблица 1.3."), T, T,
+        ("Section-header", "Вещества, обладающие эффектом неполной суммации"), ("Caption", "Таблица 1.4."), T,
+        ("Text", "Коэффициент неполной суммации принимается равным 1,5."),
+        ("Text", "6. Контроль проводится лабораториями.")))))
+    assert got["2.3"] == "S/I/4" and got["2.4"] == "S/I/4"      # introduced by «… в таблице 1.1:»
+    assert got["2.5"] == "S/I/5"
+    for index in range(6, 14):
+        assert got[f"2.{index}"] == "S/I", index
+    assert got["2.14"] == "S/I/6"
+    # without an enclosing section the table stays with the point
+    got = owners(S.build(extraction([[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить нормативы."),
+                                      ("Section-header", "Вещества"), ("Caption", "Таблица 1."), T]])))
+    assert got["1.2"] == "A/1" and got["1.4"] == "A/1"
+
+
+def test_a_title_caption_over_a_table_is_its_own_heading_but_a_numbered_caption_is_not():
+    # Step 21: OCR may give the table title the Caption category («Вещества, обладающие эффектом суммации.»); that is a
+    # heading of its own -> section. A caption that is the table number with its name («Таблица 2.1. Оптимальные
+    # величины …», SanPiN 2.2.4.3359-16 gold) stays with the point.
+    T = ("Table", "<table><tr><td>Азота диоксид</td><td>0,2</td></tr></table>")
+    got = owners(S.build(extraction(regulation(
+        ("Text", "5. Эффектом суммации обладают вещества однонаправленного действия."),
+        ("Caption", "Вещества, обладающие эффектом суммации."), T,
+        ("Text", "6. Перепады температуры воздуха не должны превышать 3 °С."),
+        ("Caption", "Таблица 2.1. Оптимальные величины параметров микроклимата"), T,
+        ("Text", "7. Контроль проводится лабораториями.")))))
+    assert got["2.3"] == "S/I" and got["2.4"] == "S/I"
+    assert got["2.6"] == "S/I/6" and got["2.7"] == "S/I/6"
