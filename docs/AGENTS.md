@@ -278,7 +278,8 @@
   nothing below; JSON `step27-f` as `step27-d`. Left there: 10.6, 17.4 — the annotator gave a capitalised paragraph
   after the last list subpoint to that subpoint by meaning (convention: the point); owner question. A «;»-final
   paragraph keeping its subpoint (for 17.4) broke 10.4, 12.6, 13.3 of the same act and sanpin-20-2026 36.9 (gold gives
-  those to the point): reverted, kept as `…-step27-g-failed-semicolon`.
+  those to the point): reverted, kept as `…-step27-g-failed-semicolon`. Owner 29.10.2026 «Пункту»: `closing-map` →
+  `gold-closing` (10.6 → S/5, 17.4 → S/8/1); `…-step27-h-golds` 45295/45354, minekon-37 288/288.
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),

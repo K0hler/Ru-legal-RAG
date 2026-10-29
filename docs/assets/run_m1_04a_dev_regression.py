@@ -115,10 +115,12 @@ BATCH_20 = ("sanpin-2-2021",)
 # dotted subpoint stays in it (prikaz-fns-815-2024, 13 regions) and a footnote belongs to the point with its mark
 # (prikaz-mintruda-141-2023 endnotes, 8 regions, on top of its forms copy).
 # Owner 29.10.2026 «Разделу»: a headed table named by a point belongs to the section (three FGOS, 3 regions each;
-# sanpin-2-2021, 91 regions of 26 blocks its annotators gave to the point).
+# sanpin-2-2021, 91 regions of 26 blocks its annotators gave to the point). Owner 29.10.2026 «Пункту»: a capitalised
+# paragraph after the last list subpoint belongs to the point (prikaz-minekonomicheskogo-37-2015 10.6, 17.4).
 GOLD_OVERRIDE = {"prikaz-fns-815-2024": "gold-dotted", "prikaz-mintruda-141-2023": "gold-footnotes",
                  "prikaz-minobrazovaniya-1126-2017": "gold-tables", "prikaz-minobrazovaniya-518-2017": "gold-tables",
-                 "prikaz-minobrazovaniya-1412-2015": "gold-tables", "sanpin-2-2021": "gold-tables"}
+                 "prikaz-minobrazovaniya-1412-2015": "gold-tables", "sanpin-2-2021": "gold-tables",
+                 "prikaz-minekonomicheskogo-37-2015": "gold-closing"}
 METRICS = ("strict", "no_section", "numbers")
 # Family = document type, from the slug prefix; the old 8 are named by content, so they are listed.
 FAMILIES = ("законы", "кодексы", "постановления", "распоряжения", "приказы", "указы", "санитарные правила")
