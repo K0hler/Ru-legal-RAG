@@ -608,14 +608,26 @@ BARCODE_EVIDENCE = {"barcode": "last body line on its page"}
 PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 
 
+# Step 25 E (prikaz-fns-815-2024): a time stamp of the typist's mark, and the head of a declaration page — its page
+# barcode «1680 6016» and the fields «ИНН», «КПП», «Стр.» — printed as body text near the top of a page.
+TIME_STAMP = re.compile(r"\d{2}\.\d{2}\.\d{4}\s+\d{1,2}:\d{2}")
+FORM_PAGE_HEAD = re.compile(rf"\d{{4}}\s\d{{4}}|(?:ИНН|КПП)[{SUP}]*|ИНН\s+КПП\s+Стр\.|Стр\.(?:\s[\d\s]+)?")
+FORM_HEAD_ZONE = 8  # the first regions of a page
+
+
 def page_mark(region: Region) -> bool:
     """A service file code printed in a page header/footer («200716A9.doc») or a typist's mark
     («Компьютер /Н.Н./При-К7552-3»), not repeated often enough to be running noise: a mark of the page,
     never text of the unit it happens to follow. Step 16 C5: also a footer line printed on two pages («ФГОС ВО
     культурология -05»; on three it is running noise)."""
+    text = region.text.strip()
+    if region.category == "Text":
+        return bool(PRINT_MARK.match(text) or TIME_STAMP.fullmatch(text)
+                    or (region.index <= FORM_HEAD_ZONE and FORM_PAGE_HEAD.fullmatch(text)))
     return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text)
                                                         or (len(region.text) <= 100 and JOB_CODE.search(region.text))
-                                                        or (region.category == "Page-footer" and region.repeats == 2))
+                                                        or (region.category == "Page-footer" and region.repeats == 2)
+                                                        or "компьют" in text.lower() or 0 < len(text) <= 2)
 
 
 def barcode_like(text: str) -> bool:
@@ -670,6 +682,16 @@ FILL_IN_EVIDENCE = {"fill_in_line": "after a numbered fill-in line of a form: it
 
 def fill_in_line(text: str) -> bool:
     return bool(FILL_IN.match(text.strip()))
+
+
+# Step 25 C (prikaz-minkultury-1321-2016): a numbered field line with labels and blanks ending in a blank
+# («20. Телефон/факс __________ Адрес электронной почты __________»): a sentence after it is the form's, the field's
+# caption «(…)» stays with the field.
+FIELD_LINE = re.compile(r"^\d{1,3}[.)]\s+\S.*_{5,}\s*$")
+
+
+def field_line(text: str) -> bool:
+    return bool(FIELD_LINE.match(text.strip()))
 
 
 # --------------------------------------------------------------------------- pass 2
@@ -1635,6 +1657,25 @@ def path_of(scope: str, stack: tuple) -> str:
     return "/".join([scope] + [entry[2] for entry in stack])
 
 
+# Step 25 B (prikaz-fas-553-2015): an approval sheet printed after the act's documents is a service tail of the act.
+SERVICE_TAIL = re.compile(r"^Лист\s+согласования\b", re.IGNORECASE)
+SERVICE_TAIL_EVIDENCE = {"service_tail": "the act's approval sheet after its documents"}
+
+
+STAMP_TABLE = re.compile(r"ГОСУДАРСТВЕННОЙ\s+РЕГИСТРАЦИИ|ЗАРЕГИСТРИРОВАН")  # upper case: a stamp, not a reference
+STAMP_TABLE_MAX = 400
+
+
+def carry_page_head(scopes: list, caption: "Paragraph") -> None:
+    """Step 25 E: page marks at the end of the previous scope, printed on the caption's page before it (a declaration
+    page head «1680 6016», «ИНН», «КПП»), belong to the scope the caption opens."""
+    previous, current = scopes[-2][1], scopes[-1][1]
+    moved = []
+    while previous and PAGE_MARK_EVIDENCE in previous[-1].evidence and previous[-1].first.page == caption.first.page:
+        moved.insert(0, previous.pop())
+    current[0:0] = moved
+
+
 def build(extraction: dict) -> dict:
     regions = load_regions(extraction)
     points_are_parts = points_are_article_parts([r.text for r in regions])
@@ -1664,10 +1705,21 @@ def build(extraction: dict) -> dict:
     previous_text = ""
     # step 20 B: the act approved a document and was signed (page of the signature), no approved text open yet
     approves, signed_page = False, None
+    service_tail = False  # step 25 B: «Лист согласования …» seen
     for q in paragraphs:
         if q.flow == "body" and q.kind == "text":
             page_first.setdefault(q.first.page, q)
     for i, p in enumerate(paragraphs):
+        if service_tail:
+            scopes[0][1].append(p)  # step 25 B: the act's approval sheet and everything after it
+            if p.flow == "body":
+                p.evidence.append(dict(SERVICE_TAIL_EVIDENCE))
+            continue
+        if p.flow == "body" and p.kind == "text" and SERVICE_TAIL.match(p.text) and len(scopes) > 1:
+            service_tail = True
+            scopes[0][1].append(p)
+            p.evidence.append(dict(SERVICE_TAIL_EVIDENCE))
+            continue
         if p.flow == "footnote" or p.kind in {"picture"}:
             scopes[-1][1].append(p)
             continue
@@ -1765,6 +1817,7 @@ def build(extraction: dict) -> dict:
                 act_annex_document = scope if base == "A" and to_act and not approved_opened else None
             scopes.append((scope, [p]))
             scope_captions = {text}
+            carry_page_head(scopes, p)
             continue
         if p.flow == "body" and p.kind == "text" and scopes[-1][0] == "A" and not approved_opened and not quoted_here:
             if APPROVE_CLAUSE.match(text):
@@ -1858,13 +1911,18 @@ def build(extraction: dict) -> dict:
                            or (signature_like(body[k].first) and id(body[k]) not in framed
                                and body[k].first.category not in NOISE_CATEGORIES
                                and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)))), None)
+        if block is not None and block.text.startswith("(") and not signature_caption(block.text):
+            # step 25 C: a field caption «(серия, номер, дата выдачи …)» stays with its field; the block opens after it
+            after = body.index(block) + 1
+            block = body[after] if after < len(body) else None
         in_block = False
         blank = None  # (stack, parent path) of the last marked paragraph when it is a fill-in line «2. ___»
         fill_parent: dict[int, str] = {}
         for p, stack in zip(body, stacks):
-            in_block = in_block or p is block
+            in_block = in_block or p is block or SERVICE_TAIL_EVIDENCE in p.evidence
             if p.marker.kind not in {"none", "dash"}:
-                blank = (stack, path_of(scope_path, stack[:-1])) if fill_in_line(p.text) else None
+                blank = (stack, path_of(scope_path, stack[:-1]), False) if fill_in_line(p.text) else (
+                    (stack, path_of(scope_path, stack[:-1]), True) if field_line(p.text) else None)
                 if blank is not None:
                     fill_parent[id(p)] = blank[1]
             if in_block:
@@ -1872,11 +1930,13 @@ def build(extraction: dict) -> dict:
                 p.owner = scope_path
                 p.evidence.append({"requisite_block": "after the last numbered or named element"})
             elif p.marker.kind == "none" and ((signature_like(p.first) and id(p) not in framed
+                                               and not (p.text.startswith("(") and not signature_caption(p.text))
                                                and not any("in_quotation" in e for e in p.evidence))
                                               or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence):
                 p.kind = "signature"
                 p.owner = scope_path
-            elif p.marker.kind == "none" and blank is not None and stack == blank[0]:
+            elif (p.marker.kind == "none" and blank is not None and stack == blank[0]
+                  and not (blank[2] and p.text.startswith(("(", "*")))):
                 p.owner = blank[1]  # a fill-in line holds no text: what follows it belongs to its parent
                 p.evidence.append(dict(FILL_IN_EVIDENCE))
             else:
@@ -1892,6 +1952,8 @@ def build(extraction: dict) -> dict:
                 continue
             elif p.flow == "body":
                 p.owner = current
+                if p.kind == "table" and len(p.text) <= STAMP_TABLE_MAX and STAMP_TABLE.search(p.text):
+                    p.owner = scope_path  # step 25 E: a registration stamp belongs to the scope root
         for p in items:
             if p.kind in {"approval", "annex"}:
                 p.owner = scope_path

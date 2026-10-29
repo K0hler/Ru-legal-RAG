@@ -37,6 +37,8 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 25: an approval sheet after the forms goes to the act; a field line with text and blanks, its caption and the
+  form's sentence; a declaration page head, typist mark and time stamp are page marks carried into the form they head.
 - Step 24: reference ranges, a root heading between root points, a note about «настоящий перечень», a form's
   signer captions and date line, a dash item closing its sibling's letter list, a quoted «Статья 25⁸ …» heading
   ending with an inner title quote.

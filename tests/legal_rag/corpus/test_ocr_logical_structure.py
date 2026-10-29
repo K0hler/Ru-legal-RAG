@@ -2796,3 +2796,47 @@ def test_quoted_article_heading_ending_with_an_inner_title_quote_keeps_the_quota
     got = owners(S.build(extraction(pages)))
     assert got["1.3"] == "A/ст12" and got["1.4"] == "A/ст12"
     assert got["1.5"] == "A/ст13"
+
+
+def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page_heads():
+    # Step 25 B (prikaz-fas-553-2015): «Лист согласования к проекту документа …» after the act's forms is the act's
+    # service tail, not text of the last form's point.
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму представления."), ("Text", "Руководитель И.Ю. Артемьев", 1200)],
+             [("Text", "Приложение № 13\nк приказу", 1000), ("Section-header", "ПРЕДСТАВЛЕНИЕ"),
+              ("Text", "11. Краткая характеристика деятельности кандидата"),
+              ("Section-header", "Лист согласования к проекту документа №2015-50720 от 04.06.2015"),
+              ("Text", "Инициатор согласования:"), ("Table", "<table><tr><td>№ п/п</td><td>Согласующий</td></tr></table>")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "A" and got["2.4"] == "A" and got["2.5"] == "A"
+    # Step 25 C (prikaz-minkultury-1321-2016): after a field line with text and blanks the form's sentence is the form's,
+    # the field's caption «(…)» stays with the field and opens no requisite block
+    form = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму."), ("Text", "Министр", 1200)],
+            [("Text", "Приложение № 1\nк Регламенту", 1000), ("Section-header", "ЗАЯВЛЕНИЕ"),
+             ("Text", "19. Размер взноса __________"), ("Text", "(тыс. руб. цифрами и прописью)"),
+             ("Text", "20. Телефон/факс __________ Адрес электронной почты __________"),
+             ("Text", "Прошу внести соответствующие сведения в единый федеральный реестр туроператоров."),
+             ("Text", "21. Данные документа, удостоверяющего личность руководителя"),
+             ("Text", "(серия, номер, дата выдачи, кем выдан)", 900),
+             ("Text", "Телефон/факс ______ Адрес электронной почты ______")]]
+    got = owners(S.build(extraction(form)))
+    assert got["2.3"] == "A/AN1/19" and got["2.5"] == "A/AN1"
+    assert got["2.7"] == "A/AN1/21"
+    # Step 25 D (rp-2728-2020) not kept: a table part repeating a header stays with the current owner
+    H = "<table><thead><tr><th>Наименование мероприятия</th><th>Параметры объекта</th></tr></thead>"
+    pages = [[("Text", "1. Утвердить распределение."), ("Text", "Председатель Правительства", 1100)],
+             [("Text", "УТВЕРЖДЕНО\nраспоряжением", 1000), ("Section-header", "РАСПРЕДЕЛЕНИЕ"),
+              ("Table", H + "<tbody><tr><td>а</td></tr></tbody></table>"), ("List-item", "1. Реконструкция маршрута"),
+              ("Text", "мощность - 4,68 км")],
+             [("Table", H + "<tbody><tr><td>б</td></tr></tbody></table>")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "S/1"  # step 25 D (repeated header -> previous table) was dropped: it scattered XML-format tables
+    # Step 25 E (prikaz-fns-815-2024): a declaration page head «1680 6016», «ИНН», «КПП», «Стр.» and a typist mark or
+    # time stamp in the text are page marks; a head printed before the form's caption on its page goes to the form
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму декларации."),
+              ("Text", "21.08.2024 15:44"), ("Text", "компьютер / Н.И. / П-К7552"), ("Text", "Руководитель Д.В. Егоров", 1200)],
+             [("Text", "1680 6016"), ("Text", "ИНН¹"), ("Text", "КПП²"), ("Text", "Стр. 0 0 1"),
+              ("Text", "Приложение № 1\nк приказу ФНС России", 1000), ("Section-header", "Налоговая декларация"),
+              ("Text", "Раздел 1. Сумма акциза")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.2"] == "A" and got["1.3"] == "A"
+    assert all(got[f"2.{k}"] == "A/AN1" for k in range(4))

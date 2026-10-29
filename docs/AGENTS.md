@@ -238,6 +238,17 @@
   «»» closes an inner title (no «.;,» after it) keeps the quotation open (`QUOTED_UNIT_HEADING`). `…-step24-a`
   44897, `…-step24-b` 44903/45354, nothing below (pp-1521-2014, prikaz-fsvfn-1310-2025, fz-119-2016 at 100%).
   JSON `s24a`/`s24b`: v1 equal, v2 as s23a plus one act strict 354 -> 355; nothing lower.
+- Step 25 (after the step 25 A attempt — headed tables to the scope root without a unit — cost pp-728-2020 8 and
+  sanpin-81-2016 2: reverted, kept as `…-step25-a-failed-root-tables`): B `SERVICE_TAIL` «Лист согласования …» after
+  the act's documents goes, with the rest, to the act's requisite tail; C `field_line` «20. Телефон/факс ___ Адрес ___»
+  — a sentence after it is the form's, captions «(…)» / «*…» stay with the field; a field caption «(серия, номер …)»
+  is never a signature by position and the requisite block opens after it; E `page_mark` also takes Text lines:
+  typist marks, time stamps `TIME_STAMP`, a declaration page head near the page top `FORM_PAGE_HEAD` («1680 6016»,
+  «ИНН», «КПП», «Стр.»), and footers with «компьют…» or one or two characters; `carry_page_head` moves a page head
+  printed before a scope caption on its page into that scope; a short upper-case registration stamp table belongs to
+  the scope root. A repeated-table-header rule (D) scattered XML-format tables (fns-93, fns-815, favt-547, mintruda-742,
+  rp-2417): dropped, kept as `…-step25-b-failed-headers`. `…-step25-b`: 44935/45354 (+32), `cross_scope_v2` 26 -> 5,
+  nothing below; JSON `s25` equal to `s24b` per act.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
