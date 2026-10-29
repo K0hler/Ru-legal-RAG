@@ -1688,18 +1688,28 @@ def test_points_around_a_table_keep_their_numbering():
     assert not any("table_row" in e for p in result["paragraphs"] for e in p["evidence"])
 
 
-def test_approved_text_opening_with_a_table_keeps_its_row_numbers():
-    """B1 narrowing: the decision covers table annexes (`…/AN<n>`). An approved text that is itself a table
-    (an address distribution of subsidies under «УТВЕРЖДЕНО») keeps the previous reading: its batch-4 gold
-    gives the row «1.» its own owner (`S/1`)."""
+def test_approved_text_opening_with_a_table_reads_its_row_numbers_as_rows():
+    """Step 27 H (owner 29.10.2026 «Часть таблицы», rp-2728-2020 and rp-1431-2014): an approved text that is itself a
+    table (an address distribution of subsidies under «УТВЕРЖДЕНО») is read like a table annex: the row «1.» cut out
+    between the table parts is text of the document (`S`); so is a last row «4.15. Контрольное событие 4.15.» after
+    the last table, while a «1.» there still opens a point."""
     pages = [[("Text", "1. Утвердить прилагаемое распределение."), ("Text", "Председатель Правительства", 1100)],
              [("Text", "УТВЕРЖДЕНО\nраспоряжением Правительства", 1000), ("Section-header", "РАСПРЕДЕЛЕНИЕ"),
               MEASURES, ("Text", 'Подпрограмма "Создание условий"'), ("List-item", "1. Реконструкция маршрута"),
               ("Text", "мощность - 4,68 км; 2319900 83700"), MEASURES]]
     result = S.build(extraction(pages))
     got = owners(result)
-    assert got["2.4"] == "S/1" and got["2.5"] == "S/1"
-    assert not any("table_row" in e for p in result["paragraphs"] for e in p["evidence"])
+    assert got["2.4"] == "S" and got["2.5"] == "S" and got["2.6"] == "S"
+    head = [[("Text", "1. Утвердить прилагаемый план."), ("Text", "Председатель Правительства", 1100)],
+            [("Text", "УТВЕРЖДЕН\nраспоряжением Правительства", 1000), ("Section-header", "ПЛАН"), MEASURES]]
+    got = owners(S.build(extraction(head[:1] + [head[1] + [("List-item", "4.15. Контрольное событие 4.15. Субсидии")]])))
+    assert got["2.3"] == "S"
+    got = owners(S.build(extraction(head[:1] + [head[1] + [("Text", "1. Средства уточняются ежегодно.")]])))
+    assert got["2.3"] == "S/1"
+    # an approved text with sections after its opening table (a Mintrud professional standard) keeps its points
+    got = owners(S.build(extraction(head[:1] + [head[1] + [("Section-header", "I. Общие сведения"), MEASURES,
+                                                           ("Text", "3.1. Обобщенная трудовая функция"), MEASURES]])))
+    assert got["2.3"] == "S/I" and got["2.5"] == "S/I/3.1"
 
 
 def two_lists_with_footnotes(second_table, notes):
@@ -2913,7 +2923,9 @@ def test_step_25_approval_sheet_form_fields_repeated_table_headers_and_form_page
               ("Text", "мощность - 4,68 км")],
              [("Table", H + "<tbody><tr><td>б</td></tr></tbody></table>")]]
     got = owners(S.build(extraction(pages)))
-    assert got["2.3"] == "S/1"  # step 25 D (repeated header -> previous table) was dropped: it scattered XML-format tables
+    # step 25 D (repeated header -> previous table) was dropped: it scattered XML-format tables; since step 27 H the
+    # cut-out row «1.» of a table document is no point, so the table part after it is the document's (`S`)
+    assert got["2.3"] == "S"
     # Step 25 E (prikaz-fns-815-2024): a declaration page head «1680 6016», «ИНН», «КПП», «Стр.» and a typist mark or
     # time stamp in the text are page marks; a head printed before the form's caption on its page goes to the form
     pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить форму декларации."),

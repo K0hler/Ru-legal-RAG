@@ -1626,6 +1626,7 @@ def between_tables(items: list[Paragraph]) -> set[int]:
 
 TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens the annex; text of the annex"}
 ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
+TABLE_DOCUMENT_SCOPE = re.compile(r"S\d*$")  # step 27 H: an approved text, read as a table annex when it opens with one
 
 
 # Step 17 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
@@ -1671,13 +1672,17 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     parts. Such a marker between the first and the last table of the annex opens no section or point:
     it is text of the annex. Named units («Раздел», «Глава», «Статья», «§») keep their meaning. An
     annex whose first marker precedes its first table keeps ordinary numbering, markers after the last
-    table are unchanged unless they go on from the last row («3.» after «2.», step 16 C4), and an approved text that is itself a table (`S`) keeps the previous reading."""
-    if not ANNEX_SCOPE.search(scope_path):
+    table are unchanged unless they go on from the last row («3.» after «2.», step 16 C4). Step 27 H (owner 29.10.2026
+    «Часть таблицы»): an approved text that is itself a table (`S`, `S2`) is read the same way, and there a first marker
+    after the last table that starts no numbering («4.15. Контрольное событие 4.15. …», not «1.») is its last row."""
+    if not (ANNEX_SCOPE.search(scope_path) or TABLE_DOCUMENT_SCOPE.match(scope_path)):
         return set()
     seq = [p for p in items if p.flow == "body" and p.kind not in {"picture", "approval", "annex"}]
     tables = [k for k, p in enumerate(seq) if p.kind == "table"]
     if not tables or any(p.marker.kind not in {"none", "dash"} for p in seq[:tables[0]] if p.kind != "table"):
         return set()
+    if not ANNEX_SCOPE.search(scope_path) and any(p.marker.kind in UNIT_RANK for p in seq):
+        return set()  # an approved text with sections («I. Общие сведения», Mintrud standards) is no table document
     rows = [p for p in seq[tables[0] + 1:tables[-1]]
             if p.kind in {"text", "heading"} and p.marker.kind not in {"none", "dash"}
             and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")]
@@ -1691,6 +1696,11 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
             break
         rows.append(p)
         last = p.marker
+    if not rows and TABLE_DOCUMENT_SCOPE.match(scope_path):
+        first = next((p for p in seq[tables[-1] + 1:] if p.marker.kind not in {"none", "dash"}), None)
+        if (first is not None and first.kind == "text" and first.marker.kind in {"int", "decimal"}
+                and first.marker.value not in {1, (1,), (1, 1)}):
+            rows.append(first)
     return {id(p) for p in rows}
 
 

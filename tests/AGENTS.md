@@ -37,6 +37,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 27 H: an approved text that is a table reads its cut-out row «1.» and a last «4.15. …» as text (`S`), a «1.»
+  after the last table is a point, and one with «I.» sections keeps its points (the old «keeps its row numbers» test
+  and the step-25 `S/1` expectation changed by the owner decision).
 - Step 27 G: «в пунктах 15 и 15.1» makes «15.1» with its «1)», «2)» a peer of «15»; without it «15.1» nests.
 - Step 27 E: an unnumbered heading and table between «5.1.» and «5.3.» go to the annex root; before «5.2.» they stay.
 - Step 27 D: dotted «1.1.», «2.1.» over tables are rubrics when another table keeps «2.2. …» as its caption;

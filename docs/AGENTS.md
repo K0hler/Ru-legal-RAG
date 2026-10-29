@@ -286,6 +286,12 @@
   minkultury-1321 458/461, nothing below; JSON `step27-j` as `step27-d`. Its other exception «8.1» has no text
   ground (a meaning exception the convention allows): stays a prototype miss. `…-step27-i-broken-regex`: a run with
   a heredoc backspace in the regex (no effect) — write regexes through a file, never a bash heredoc.
+- Step 27 H (owner 29.10.2026 «Часть таблицы»): `table_rows` also reads an approved text (`TABLE_DOCUMENT_SCOPE`
+  `S\d*`) that opens with a table and has no sections/named units; there a first int/decimal marker after the last
+  table that starts no numbering («4.15.», not «1.») is the last row. rp-2728 gold → `rows-map`/`gold-rows` (2.6, 2.7
+  → S). First attempt without the no-sections guard cost the Mintrud professional standards (S opens with a table,
+  then «I.»): kept as `…-step27-k-failed-mintruda`. `…-step27-k` (2d2c770e…) 45300/45354 (99.88%), nothing below;
+  rp-1431 and rp-2728 100%; JSON `step27-k` as `step27-d`. Now every document is at 99% or more.
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
