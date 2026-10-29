@@ -37,6 +37,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 24: reference ranges, a root heading between root points, a note about «настоящий перечень», a form's
+  signer captions and date line, a dash item closing its sibling's letter list, a quoted «Статья 25⁸ …» heading
+  ending with an inner title quote.
 - Step 23: caption, legend, «где» and table-notes cases under subpoints; numbered «1)» notes under an annex notes
   heading; footnotes without a mark get the page's document (the cycle 5/6 «stays unowned» expectations changed to it).
 - Step 22: a plain-digit Footnote and its «а) …;» list continuation find the marked point; «5590030 (1.4)» is a page

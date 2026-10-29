@@ -584,7 +584,11 @@ FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:
 # Step 13 B3: the captions under a form's signature lines — «(подпись)», «(наименование должности», «(инициалы,
 # фамилия)» — and the seal place «М.П.» («М.П. (при наличии)»). Not «(фамилия, имя, отчество)»: that captions a
 # field of the form («Я, ______,»), not its signature.
-SIGNATURE_CAPTION = re.compile(r"^\((?:подпись|наименование\s+должности|инициалы)|^М\.\s?П\.(?:\s|$)", re.IGNORECASE)
+# step 24 D, E: «(место для подписи …)», «(фамилия, имя, отчество … должностного лица, заполнившего …)» and the date
+# line ««___» ______ 20__ г.» sign a form (the bare «(фамилия, имя, отчество)» of a field «Я, ___» does not)
+SIGNATURE_CAPTION = re.compile(r"^\((?:подпись|наименование\s+должности|инициалы|место\s+для\s+подписи"
+                               r"|фамилия,\s+имя,\s+отчество.*?(?:должностного\s+лица|заполнившего|подписавшего))"
+                               r"|^М\.\s?П\.(?:\s|$)|^«\s*_{2,}\s*»\s*_{2,}", re.IGNORECASE)
 
 
 PAGE_MARK = re.compile(r"[\w-]+(?:\.[\w-]+)*\.(?:docx?|rtf|odt)", re.IGNORECASE)
@@ -997,7 +1001,8 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
         if (prev is not None and id(prev) in index and finished
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
-            if parent and parent[-1][0] in UNIT_RANK:
+            # step 24 B (pp-1521-2014): a run of OCR headings between points of the scope root is the root's heading
+            if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(heading_evidence(q) for q in seq[k:end + 1])):
                 runs.append((seq[k:end + 1], parent))
         k = end + 1
     styled = sum(any(heading_evidence(q) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
@@ -1048,7 +1053,14 @@ def close_subpoints(body: list[Paragraph], stacks: list[tuple], keep: set[int]) 
     («а) пункт 3 изложить в следующей редакции: «3. …»»)."""
     closed = None
     opened = 0  # quotation balance since the last marked paragraph
+    dash_intro: tuple | None = None  # step 24 F: the stack of a dash item ending «:» that opened a letter list
     for k, p in enumerate(body):
+        if p.marker.kind == "dash" and p.kind == "text":
+            if (dash_intro is not None and len(stacks[k]) > len(dash_intro)
+                    and stacks[k][:len(dash_intro)] == dash_intro):
+                stacks[k] = dash_intro  # «- на долгосрочный период …» after «а)», «б)» opened by «- на очередной …:»
+                p.evidence.append({"dash_sibling": "a dash item after the list its dash sibling opened"})
+            dash_intro = stacks[k] if final_char(p.text) == ":" else None
         if p.marker.kind not in {"none", "dash"}:
             closed = None
             opened = quote_balance(p.text)
@@ -1175,6 +1187,7 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are
 
 
 # Cycle 9 B2: a code's article note «Примечание. Положение части 3 …» / «Примечания:» followed by «1. …», «2¹. …».
+DOCUMENT_NOTE = re.compile(r"\bнастоящ\w*\s+(?:переч[её]?н|правил|порядк|положени|требовани|стандарт)", re.IGNORECASE)
 ARTICLE_NOTE = re.compile(r"^Примечани[ея](?:\s*[.:]|$)")
 # Cycle 10 B5: a standalone heading «Примечания» / «Примечание:» (nothing else on the line)
 NOTES_HEADING = re.compile(r"Примечани[ея]\s*[.:]?")
@@ -1337,6 +1350,9 @@ def article_notes(body: list[Paragraph], stacks: list[tuple], under_tables: set[
                 note = ()
                 note_number = 1
                 p.evidence.append({"notes_heading": "notes of the document after its last point"})
+            elif level is None and DOCUMENT_NOTE.search(p.text):
+                stacks[k] = ()  # step 24 C: «Примечание. … включенных в настоящий перечень …» is the document's note
+                p.evidence.append({"document_note": "a note about the whole document"})
             elif level is not None and all(e[2].startswith("ч") for e in below):
                 note = stacks[k][:level + 1]
                 p.evidence.append({"article_note": "note block of the article"})
@@ -1370,11 +1386,18 @@ def unbalanced_quotes(text: str) -> int:
 IN_QUOTATION_EVIDENCE = {"in_quotation": "unmarked paragraph inside an amending quotation"}
 
 
+QUOTED_UNIT_HEADING = re.compile(r"^[«\"„“]\s*(?:Статья|Глава|Раздел)\s+\d")
+
+
 def self_closing(text: str) -> bool:
     """An opener that also ends the quotation. With «…» it is the final closing mark (OCR merges or drops nested
     closing marks, cycle 8 C9); cycle 11: with straight quotes only an even count closes — an odd count with a final
     quote («"1. … программы "Развитие образования".») ends a quoted title inside the still open quotation."""
     if not QUOTE_CLOSE.search(text):
+        return False
+    # step 24 G (fz-119-2016): a quoted article, chapter or section heading whose last «»» closes an inner title
+    # («… Федеральным законом «Об особенностях …»») and no «.;,» follows it opens the quoted unit, it closes nothing
+    if QUOTED_UNIT_HEADING.match(text) and not re.search(r"[»\"“”][.;,)]+$", text):
         return False
     if '"' in text and not any(mark in text for mark in "«»„“"):
         return text.count('"') % 2 == 0
@@ -1534,7 +1557,7 @@ ANNEX_SCOPE = re.compile(r"(?:^|/)AN\d*$")
 # Step 17 B (owner 28.10.2026, batch 16): a line of point references inside a point («2.1.42 и 2.2.7 в части наличия
 # вкладных резервуаров;», «2.1.34, 4.1.4, 4.3.11 в части …»): a dotted number without its final dot, then «,», «и» and
 # another number, or a lowercase word.
-POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё])")
+POINT_REFERENCES = re.compile(r"^\d{1,3}(?:\.\d{1,3})+(?:,\s*\d|\s+и\s+\d|\s+[а-яё]|\s*[-–—]\s*\d)")  # step 24 A: «10.10 - 10.17)»
 POINT_REFERENCES_EVIDENCE = {"point_references": "numbers of points referred to, not a point of its own"}
 
 

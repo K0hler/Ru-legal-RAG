@@ -230,6 +230,14 @@
   its page's marked footnotes when they share one owner. First attempt (int notes, any sibling owner) cost
   sanpin-31-2015 10 and sanpin-61-2015 1: kept as `…-step23-a-failed-notes`. `…-step23-a`: 44887/45354 (+16),
   nothing below; JSON `s23a`: v1 equal, v2 two acts +1 (fz 72 -> 73, rp 22 -> 23), nothing lower.
+- Step 24 A-G: `POINT_REFERENCES` takes ranges («10.10 - 10.17), 11 …»); a run of OCR headings between points of the
+  scope root is the root's heading; «Примечание. … настоящий перечень/Правила/Порядок …» outside an article is the
+  document's note (`DOCUMENT_NOTE`); SIGNATURE_CAPTION takes «(место для подписи …)», «(фамилия, имя, отчество …
+  должностного лица / заполнившего / подписавшего …)» and ««___» ______ 20__ г.»; a dash item after the letter list
+  a dash item ending «:» opened goes back to that dash's owner; a quoted article/chapter/section heading whose final
+  «»» closes an inner title (no «.;,» after it) keeps the quotation open (`QUOTED_UNIT_HEADING`). `…-step24-a`
+  44897, `…-step24-b` 44903/45354, nothing below (pp-1521-2014, prikaz-fsvfn-1310-2025, fz-119-2016 at 100%).
+  JSON `s24a`/`s24b`: v1 equal, v2 as s23a plus one act strict 354 -> 355; nothing lower.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded
