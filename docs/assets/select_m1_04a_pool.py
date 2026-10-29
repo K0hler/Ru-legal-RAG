@@ -1175,6 +1175,13 @@ for _number in (17, 18, 19):
 # pages; with the bound at 500 the one left is SanPiN 1.2.3685-21 (469 p.), not SanPiN 3.3686-21 (1092 p.).
 PROFILES["batch-20"] = {**PROFILES["batch-19"], "quotas": {"sanpin_2020s": 1}, "pages_range": (3, 500),
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 20))}
+# Scan batch 21 (owner 29.10.2026 «Да, П21»: the check of П21): the frozen SanPiN list is exhausted (SanPiN 3.3686-21
+# is not to be used), so batch-16 settings with acts of every other type and no SanPiN; orders, the weakest type
+# after step 21, get four.
+BATCH21_QUOTAS = {"federal_law": 2, "presidential_decree": 2, "government_resolution": 2, "government_order": 2,
+                  "ministry_order": 4}
+PROFILES["batch-21"] = {**PROFILES["batch-16"], "quotas": BATCH21_QUOTAS, "sanpin_candidates": False,
+                        "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 21))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")

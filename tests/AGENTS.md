@@ -25,6 +25,8 @@
   judged by `ips_title` (missing / amending / ok), also inside tree `enrich`.
   Batch-16: profile = batch-15 + prior batch 15; the catalog lists batch 16 and records batches 14 and 15 measured
   then development (step 16, 28.10.2026).
+  Batch-21: batch-16 settings without SanPiN (2+2+2+2 acts, 4 orders), prior batches 1-20; the catalog lists batch 21
+  and records batch 20 measured then development.
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

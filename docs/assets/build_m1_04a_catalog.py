@@ -34,7 +34,7 @@ SANPIN = M1 / "inputs" / "m1-04" / "sanpin-original-amendments.json"
 # rows go to the batch's own index so the frozen `documents/index.json` stays unchanged.
 POOL_BATCHES = ("batch-01", "batch-02", "batch-03", "batch-04", "batch-05", "batch-06", "batch-07",
                 "batch-08", "batch-09", "batch-10", "batch-11", "batch-12", "batch-13",
-                "batch-14", "batch-15", "batch-16", "batch-17", "batch-18", "batch-19", "batch-20")
+                "batch-14", "batch-15", "batch-16", "batch-17", "batch-18", "batch-19", "batch-20", "batch-21")
 # Protocol life cycle of a pool batch: measured once on frozen code, then it joins
 # development. Recorded in `<batch>/status.json` (write-once) because the indexes are frozen.
 POOL_STATUS = {
@@ -117,6 +117,10 @@ POOL_STATUS = {
         {"status": "measured", "date": "2026-10-28", "evidence": f"experiments/20261028-batch-{n}-first-pass"},
         {"status": "development", "date": "2026-10-29", "report": "docs/milestones/m1/04a/M1_04A_POOL_BATCH_17_19_2026-10-28.md"},
     ] for n in (17, 18, 19)},
+    "batch-20": [
+        {"status": "measured", "date": "2026-10-29", "evidence": "experiments/20261029-batch-20-first-pass"},
+        {"status": "development", "date": "2026-10-29", "report": "docs/milestones/m1/04a/M1_04A_POOL_BATCH_20_2026-10-29.md"},
+    ],
 }
 # SanPiN 2.1.3684-21 bundle: original resolution No. 3 plus nine amending resolutions.
 SANPIN_SLUGS = {
