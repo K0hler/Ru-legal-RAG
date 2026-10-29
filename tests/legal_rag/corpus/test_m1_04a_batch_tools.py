@@ -769,3 +769,13 @@ def test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document():
     assert ev.evaluate(two, {**predicted, "5.1": "A/AN2/AN2"}, ordinal_single_annex=True,
                        **kwargs)["no_section"]["correct"] == 4
     assert [R.default_ordinal_single_annex(b) for b in ("batch-01", "batch-12", "batch-13")] == [False, False, True]
+
+
+def test_first_pass_alarms_name_acts_a_prototype_mostly_misses():
+    # Step 20 E (after batch 19): one act at 14/914 hid inside a 59.66% batch total; acts under ALARM_SHARE of their
+    # regions are listed by system so a collapse is seen at once. `current` is not a prototype and is not listed.
+    rows = [{"slug": "sanpin-81-2016", "regions": 914, "prototype-v17": {"no_section": 14}, "current": {"no_section": 0}},
+            {"slug": "sanpin-15-2026", "regions": 658, "prototype-v17": {"no_section": 658}, "current": {"no_section": 0}},
+            {"slug": "sanpin-91-2014", "regions": 221, "prototype-v17": {"no_section": 199}, "current": {"no_section": 0}}]
+    assert R.ALARM_SHARE == 0.9
+    assert R.alarms(rows) == [{"system": "prototype-v17", "slug": "sanpin-81-2016", "regions": 914, "no_section": 14}]

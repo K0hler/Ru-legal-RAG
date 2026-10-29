@@ -189,6 +189,17 @@ def systems(rows: list[dict]) -> list[str]:
     return [k for k in rows[0] if k == "current" or k.startswith("prototype")] if rows else []
 
 
+ALARM_SHARE = 0.9  # step 20 E: an act a prototype scores below this share of its regions is listed as an alarm
+
+
+def alarms(rows: list[dict]) -> list[dict]:
+    """Acts a prototype mostly misses (``no_section`` below ``ALARM_SHARE`` of the regions): one collapsed act must
+    not hide inside a batch total."""
+    return [{"system": system, "slug": r["slug"], "regions": r["regions"], "no_section": r[system]["no_section"]}
+            for system in systems(rows) if system.startswith("prototype")
+            for r in rows if r[system]["no_section"] < ALARM_SHARE * r["regions"]]
+
+
 def totals(rows: list[dict]) -> dict:
     total = {"regions": sum(r["regions"] for r in rows)}
     for system in systems(rows):
@@ -356,7 +367,9 @@ def do_run(out: Path) -> None:
     summary = {"schema_version": "m1-04a-first-pass-summary/2", "convention": convention,
                "freeze_sha256": sha(freeze_path),
                "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-               "rows": rows, "total": totals(rows)}
+               "rows": rows, "total": totals(rows), "alarms": alarms(rows)}
+    for alarm in summary["alarms"]:
+        print("ALARM", json.dumps(alarm, ensure_ascii=False))
     if single_annex:
         summary["single_annex_equivalence"] = True
     if ordinal:
