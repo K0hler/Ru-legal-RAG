@@ -2991,3 +2991,61 @@ def test_step_22_table_document_with_skipped_rubric_numbers_reads_them_as_rows()
         ("Text", '2. Дата уплаты процентов по кредиту "__" __________ 20__ г.'), MEASURES,
         ("Text", "Размер субсидии __________ рублей")))))
     assert got["2.4"] == "A/AN1" and got["2.5"] == "A/AN1"
+
+
+def protocol(*body):
+    """An order approving a protocol to an international agreement (rp-1622-2020)."""
+    return [[("Text", "1. Одобрить проект Протокола."), ("Text", "Председатель Правительства", 1100)],
+            [("Page-header", "Проект", 900), ("Section-header", "ПРОТОКОЛ"),
+             ("Text", "Стороны согласились о нижеследующем:"), *body]]
+
+
+def test_step_23_roman_articles_and_a_quotation_across_a_page_footer():
+    # Step 23 A: «Статья I», «Статья II» of a treaty are articles 1, 2 with their own points; B: a page footer
+    # «4557147.doc» between «… в следующей редакции:» and «"Статья VI» does not break the quotation.
+    got = owners(S.build(extraction(protocol(
+        ("Section-header", "Статья I"), ("Text", "1. В подпункте b слово исключить."), ("Text", "2. Слова заменить."),
+        ("Section-header", "Статья II"), ("Text", "Статью VI Соглашения изложить в следующей редакции:"),
+        ("Page-footer", "4557147.doc"), ("Section-header", '"Статья VI'),
+        ("Text", "1. Стороны будут обеспечивать извещения."), ("Text", '2. Каждая из Сторон предпримет меры."')))))
+    assert got["2.3"] == "S/ст1" and got["2.4"] == "S/ст1/1" and got["2.5"] == "S/ст1/2"
+    assert got["2.6"] == "S/ст2" and [got[f"2.{index}"] for index in (7, 9, 10, 11)] == ["S/ст2"] * 4
+
+
+def test_step_23_an_annex_of_a_form_inside_an_attached_document():
+    # Step 23 C, E (prikaz-minprirodnykh-955-2021, prikaz-fns-269-2020): «Приложение 1 к акту патрулирования лесов» after
+    # the Order's annex 3 «АКТ патрулирования лесов» is that form's annex (`…/AN3/AN1`); «Приложение 4 к Порядку» goes
+    # on with the Order's annexes.
+    def caption(text):
+        return ("Text", text, 900)
+    pages = [[("Title", "ПРИКАЗ"), ("Text", "1. Утвердить Порядок.")],
+             [caption("Приложение 1 к приказу Минприроды России"), ("Section-header", "Порядок осуществления лесной охраны"),
+              ("Text", "1. Лесная охрана осуществляется органами власти.")],
+             [caption("Приложение 3 к Порядку осуществления лесной охраны"), ("Section-header", "АКТ патрулирования лесов"),
+              ("Text", "Дата патрулирования ______")],
+             [caption("Приложение 1 к акту патрулирования лесов"), ("Text", "ФОТО № ______")],
+             [caption("Приложение 4 к Порядку осуществления лесной охраны"), ("Text", "Рекомендуемый образец")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["3.0"] == "A/AN1/AN3" and got["4.0"] == "A/AN1/AN3/AN1" and got["4.1"] == "A/AN1/AN3/AN1"
+    assert got["5.0"] == "A/AN1/AN4"
+    # a form caption with its long tail (date, number, title, «Форма») still opens the form's annex 1
+    pages[3] = [caption("Приложение к акту патрулирования лесов от «21» 04 2020г. № 48-7-15/2692 о проведении "
+                        "патрулирования лесов на территории лесничества в границах лесного участка Форма"),
+                ("Text", "ФОТО № ______")]
+    got = owners(S.build(extraction(pages)))
+    assert got["4.0"] == "A/AN1/AN3/AN1"
+
+
+def test_step_23_subheading_after_a_page_mark_and_a_second_fill_in_list():
+    # Step 23 D: a typist's mark at the page foot does not hide a subheading's finished point; F: «1. ______;» after a
+    # fill-in «2. ______;» starts a second list of the form, not a subpoint.
+    got = owners(S.build(extraction(regulation(
+        ("Text", "13. Услуга называется выдачей свидетельства."), ("Page-footer", "компьютер /Ю.Р. /Прил-И301-1"),
+        ("Section-header", "Наименование органа, предоставляющего услугу"), ("Text", "14. Услугу предоставляет ФНС России."),
+        ("Section-header", "Порядок обжалования решений"), ("Text", "15. Жалоба подается в письменной форме.")))))
+    assert got["2.4"] == "S/I"
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "Адрес:"), ("Text", "1. __________;"), ("Text", "2. __________;"), ("Text", "ИНН организации:"),
+        ("Text", "Реквизиты документов:"), ("Text", "1. __________;"), ("Text", "2. __________;")))))
+    assert got["2.3"] == "A/AN1/1" and got["2.4"] == "A/AN1/2" and got["2.5"] == "A/AN1"
+    assert got["2.7"] == "A/AN1/1" and got["2.8"] == "A/AN1/2"

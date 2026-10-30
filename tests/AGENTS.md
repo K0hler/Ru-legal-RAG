@@ -41,6 +41,9 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 23: Roman treaty articles and a quotation across a page footer; an annex of a form inside the attached
+  document (also with a long caption tail); a subheading after a page mark; a second fill-in list of a form. Dev
+  regression lists 225 documents (batch 22 on `gold`).
 - Step 22: form parts «А.», «Б.», «В.» with their own points, blanks under a field or a part heading, «Подпись
   представителя …» to the form root, a lone «А. …» opens nothing; a table plan whose rubrics skip numbers («I.», «III.»,
   «1.», «32.») reads them as rows; a field ending «20__ г.» hands the table under it to the form. Dev regression lists

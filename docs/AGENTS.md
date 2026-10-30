@@ -311,10 +311,22 @@
   the next page's text), rp-22 235/235, pp-648 158/158.
 - Step 22 freeze (owner 30.10.2026 «Заморозь»): П22 = v22 `ocr-logical-structure/22-experiment` (sha256 80436fd7…, LF)
   in `data/m1/m1-04a/experiments/20261030-prototype-v22-freeze/`; regression `20261030-dev-regression-213-v22`
-  47133/47188 (equal to `…-step22-e`), JSON `v22-results.json` equal to v21 per act. Checked on scan batch 22: profile
+  47133/47188 (equal to `…-step22-e`), JSON `v22-results.json` equal to v21 per act. Checked on scan batch 22 (1893/2019,
+  report `M1_04A_POOL_BATCH_22_2026-10-30.md`): profile
   `batch-22` (owner 30.10.2026: acts of 2020-2026, types with the most first-check errors of batches 1-21 —
   resolutions 25%, orders 15%, government orders 13% of regions wrong; decrees 0%: 4 + 5 + 3, no decrees or laws);
   `tree_allowed` lets resolutions in with an IPS tree (the first run found all 93 2020+ resolutions with one).
+- Step 23 (owner 30.10.2026 «Да, шаг 23»; batch 22 in development, regression = 225 documents, baseline
+  `20261030-dev-regression-225-v22` 49026/49207): A `ARTICLE` takes Roman figures («Статья IV» = `ст4`, a treaty
+  protocol); B `quoted_markers` skips page marks (a footer «4557147.doc» between «… редакции:» and «"Статья VI»);
+  C `form_annex_owner` / `FORM_REFERENT` — «Приложение 1 к акту патрулирования лесов», «Приложение к форме заявления …»
+  nest under the attached document's annex just printed when the referent's next word is in its text and the number
+  does not go on the document's annexes (unnumbered -> `AN1`); the first attempt (any lowercase referent, any number)
+  broke 7 acts with «Приложение 2 к санитарным правилам»: kept as `…-step23-c-failed-too-wide`; D `subheading_stacks`
+  skips page marks, `FILL_IN` takes a final «;»/«.»; E `annex_caption` takes a long form caption (`FORM_REFERENT`); F
+  `mark_restarts`: «1.» after a fill-in «2. ___;» restarts. `…-step23-g` (c4cb1f3d…) 49150/49207 (99.88%), every
+  document at 99% or more, nothing below; JSON `step23-g` equal to v22 per act. rp-1622 71/71, minprirodnykh-955
+  196/196, fns-269 506/508 (left: two Text subheadings after a page-foot stamp picture).
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),

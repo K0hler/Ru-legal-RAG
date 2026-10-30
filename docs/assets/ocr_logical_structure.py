@@ -298,8 +298,11 @@ def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Mat
                              and APPROVED_DOCUMENT.search(text))
     long_allowed = text.startswith("ПРИЛОЖЕНИЕ") or DOCUMENT_REFERENT.match(reference) or approved_document
     limit = CAPTION_UPPER_MAX if m.group("sign") and long_allowed else CAPTION_BLOCK_MAX
+    # step 23 E (prikaz-fns-269-2020): «Приложение к форме свидетельства от «21» 04 2020г. № … о регистрации … Форма» —
+    # a caption naming a form (FORM_REFERENT) whose long tail is the form's own date, number and title
     if len(text) < limit and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
-                              or DOCUMENT_REFERENT.match(reference) or approved_document):
+                              or DOCUMENT_REFERENT.match(reference) or approved_document
+                              or FORM_REFERENT.match(reference)):
         return m
     return None
 
@@ -332,7 +335,8 @@ class Marker:
 # section (named or Roman) > chapter > paragraph § > article.
 # Uppercase «СТАТЬЯ»/«ГЛАВА» as in codes; chapter numbers may carry OCR Cyrillic Х / Ukrainian І.
 # «Статья 5¹», «Статья 12.1», and a compound inserted number «Статья 115¹⁻¹» (superscript minus).
-ARTICLE = re.compile(r"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)*)\.?(?=\s|$)")
+# step 23 A (rp-1622-2020): an international treaty numbers its articles in Roman figures («Статья I» … «Статья VIII»)
+ARTICLE = re.compile(rf"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)*|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
 # An inserted chapter/section/§ carries a superscript like an article: «Глава 24¹», «Раздел I¹».
 CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
 # «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman
@@ -365,6 +369,11 @@ def named_unit(text: str, category: str) -> Marker | None:
             return None
         number = m.group(1).rstrip(".")
         if kind == "article":
+            if not number[0].isdigit():
+                value = roman_value(number)
+                if not value:
+                    return None
+                number = str(value)  # «Статья IV» is article 4 (`ст4`)
             return Marker(kind, number, f"ст{number}")
         if kind == "code_part":
             value = CODE_PART_ORDINALS[number]
@@ -717,7 +726,7 @@ def toc_line(text: str) -> bool:
 
 
 # A numbered fill-in line of a form: the marker and only a blank («2. __________», «3) .......»).
-FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}$")
+FILL_IN = re.compile(r"^\d{1,3}[.)]\s*(?=[_.…])[_.…\s]{3,}[;.]?$")  # step 23 D: «1. ______;» (fns-269 form)
 FILL_IN_EVIDENCE = {"fill_in_line": "after a numbered fill-in line of a form: its parent (the line holds no text)"}
 
 
@@ -1046,7 +1055,8 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
     corroborated body-text run may also be longer than SUBHEADING_MAX, up to SUBHEADING_STYLED_MAX.
     Returns the changed body indices."""
     index = {id(p): k for k, p in enumerate(body)}
-    seq = [p for p in items if p.flow == "body"]  # a table or picture in between blocks the rule
+    # a table or picture in between blocks the rule; step 23 D: a page mark («компьютер /Ю.Р. /Прил-И301-1») does not
+    seq = [p for p in items if p.flow == "body" and PAGE_MARK_EVIDENCE not in p.evidence]
     runs = []  # (run paragraphs, parent stack)
     k = 0
     while k < len(seq):
@@ -1358,6 +1368,32 @@ def gap_sibling(stack: tuple, heads: list[Paragraph], rest: list[Paragraph]) -> 
             and nxt.marker.value[:-1] == value[:-1] and nxt.marker.value[-1] == value[-1] + 2)
 
 
+FORM_REFERENT_STEM = 6  # «патрулирования» -> «патрул», «заявления» -> «заявле»
+
+
+FORM_REFERENT = re.compile(r"^к\s+(?:акту|форме|заявлению|протоколу|свидетельству|справке|журналу|отчету|отчёту)\s")
+
+
+def form_annex_owner(reference: str, base: str, scopes: list, number: str | None) -> str | None:
+    """Step 23 C: the annex of ``base`` printed last (``base/AN<k>``, or the one an annex of it was nested in) when the
+    caption names a form «к акту патрулирования лесов» / «к форме заявления о выдаче …» whose next word (5+ letters) is
+    in that annex's text, and its number does not go on the annexes of ``base`` (unnumbered or from 1 again; «Приложение
+    2 к санитарным правилам» after «Приложение 1» is no such annex). None otherwise."""
+    if not FORM_REFERENT.match(reference):
+        return None
+    siblings = [int(m.group(1)) for path, _ in scopes if (m := re.match(rf"^{re.escape(base)}/AN(\d+)$", path))]
+    if number is not None and (not siblings or int(number) > max(siblings)):
+        return None
+    current = scopes[-1][0]
+    m = re.match(rf"^{re.escape(base)}/AN\d*(?=/|$)", current)
+    if m is None:
+        return None
+    owner = m.group(0)
+    words = [w for w in re.findall(r"[а-яё]+", reference.lower())[2:] if len(w) >= 5]
+    text = " ".join(q.text for path, members in scopes if path == owner for q in members).lower()
+    return owner if words and words[0][:FORM_REFERENT_STEM] in text else None
+
+
 def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
     """Step 21 (owner 29.10.2026 «Разделу», batch 20): after a finished point («.» or «;»), a table with its own heading
     («Вещества, обладающие эффектом суммации», «Таблица 1.3.») belongs to the section: the heading lines and the
@@ -1543,8 +1579,8 @@ def quoted_markers(items: list[Paragraph]) -> None:
     introducer, formish = None, False
     inner = {}  # marker kind -> value of the quotation's own numbered lines
     for p in items:
-        if p.flow != "body":
-            continue
+        if p.flow != "body" or PAGE_MARK_EVIDENCE in p.evidence:
+            continue  # step 23 B: a page footer «4557147.doc» between «… в следующей редакции:» and «"Статья VI» splits nothing
         heading = p.kind == "heading"
         if p.kind != "text" and not heading:
             formish = formish or open_from is not None
@@ -1621,6 +1657,7 @@ def mark_restarts(items: list[Paragraph]) -> None:
     «а)» subpoints and «1.1», nothing changes."""
     broken = False
     last = None  # value of the previous «N.» in the scope
+    last_blank = False  # the previous «N.» is a fill-in line
     # A «1)»/«а)» list closed by a sentence of its own: after the last item ended with «.», an unmarked
     # paragraph starting with a capital letter (outside a quotation) ends the list, so a later «1)»/«а)»
     # starts a new list at the level of the old one instead of nesting into its last item.
@@ -1634,11 +1671,14 @@ def mark_restarts(items: list[Paragraph]) -> None:
         if p.kind == "table" or (p.kind == "text" and p.marker.kind == "none" and heading_evidence(p)):
             broken = True
         elif p.kind == "text" and p.marker.kind == "int":
-            if p.marker.value == 1 and broken and last is not None and last > 1:
+            # step 23 F (prikaz-fns-269-2020): a fill-in line «2. ______;» holds no text, so a later «1. ______;» is
+            # never its subpoint — a second fill-in list of the form
+            if p.marker.value == 1 and (broken or last_blank) and last is not None and last > 1:
                 p.marker.restart = True
                 p.evidence.append({"restart": "«1.» after a table or heading; may take the level of the last «N.»"})
             broken = False
             last = p.marker.value
+            last_blank = fill_in_line(p.text)
         if p.kind == "text" and p.marker.kind in SUBPOINT_KINDS:
             if (p.marker.value == 1 and sub_closed and (last_sub.get(p.marker.kind) or 0) > 1):
                 p.marker.restart = True
@@ -1947,6 +1987,13 @@ def build(extraction: dict) -> dict:
                 DOCUMENT_REFERENT.match(reference) or LOWERCASE_DOCUMENT_REFERENT.match(reference))
             if nested:
                 base = act_annex_document
+            # step 23 C: «Приложение 1 к акту патрулирования лесов», «Приложение к форме заявления о выдаче …» name the
+            # form just printed as an annex of the attached document (its «АКТ патрулирования лесов», «ЗАЯВЛЕНИЕ о
+            # выдаче …»): an annex of that annex
+            owner_annex = None if to_act else form_annex_owner(reference, base, scopes, number)
+            if owner_annex is not None:
+                base, nested = owner_annex, True
+                label = label if number else "AN1"  # the form's only annex «Приложение к форме …» is its annex 1
             if running and f"{base}/{label}" == scopes[-1][0]:
                 p.kind = "text"  # the current annex's caption repeated in a header: no new scope
                 scopes[-1][1].append(p)
