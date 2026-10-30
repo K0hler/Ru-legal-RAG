@@ -192,7 +192,10 @@
   `…-step24-a/` retains the failed broad bare-number attempt; final `…-step24-c/` scores 51624/51704 (batch 23 2474/2497,
   99.08%, strict equal, cross_scope_v2 0 there), all previous 225 error lists unchanged. Official-tree outputs
   `20261026-json-all-proj6/step24-c-results.json` and `20261027-json-v2-all-proj6/step24-c-results.json` equal v23
-  per document. No new scan batch, prototype freeze or gold derivation.
+  per document. Owner clarified EACH act >99%: continuation `…-step24-f/` scores 51640/51704 (batch 23 2490/2497,
+  99.72%; MVD 915/921, RP-1301 24/24; all 12 >99% strict/no_section). Previous 225 error lists exact; official-tree
+  `step24-f-results.json` equal v23 per document. `acceptance.json` pins per-document counts, prototype and checks.
+  No new scan batch, prototype freeze or gold derivation.
 - Scan batch 22 (30.10.2026, the check of П22 = v22): profile `batch-22` (seed 20261122, `--from 2020-01-01 --to
   2026-10-29`, `tree_allowed` for resolutions; first run without it: `b22-select.attempt1.log`), 12 acts; OCR
   `experiments/20261030-batch-22-ocr/` (first start failed: Docker Desktop was not running, log

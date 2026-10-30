@@ -3108,3 +3108,49 @@ def test_step_24_form_completion_and_reply_address_start_the_requisite_tail(clos
         ("Text", "(указывается полный почтовый адрес)"), ("Text", "Начальник __________")))))
     assert all(got[f"2.{i}"] == "A/AN1" for i in (3, 4, 5))
     assert got["2.2"] == "A/AN1/6"
+
+
+def test_step_24_acting_signer_title_before_initials_belongs_to_the_act():
+    pages = [[("Text", "5. Росимуществу:"),
+              ("Text", "обеспечить заключение договора аренды земельного участка."),
+              ("Text", "Исполняющий обязанности Председателя Правительства Российской Федерации"),
+              ("Picture", "подпись"), ("Text", "А.Белоусов")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["1.1"] == "A/5"
+    assert got["1.2"] == got["1.4"] == "A"
+
+
+def test_step_24_receipt_field_caption_run_between_tables_stays_in_the_field():
+    table = ("Table", "<table><tr><td></td></tr></table>")
+    got = owners(S.build(extraction(readmission_form(
+        ("Section-header", "6. Сведения о приеме и получении документов"), table,
+        ("Text", "(номер)"), ("Text", "(серия)"), ("Text", "(номер бланка)", 1200),
+        ("Text", "получил:"), ("Text", "подпись", 1200),
+        ("Table", "<table><tr><td>фамилия, инициалы</td></tr></table>"),
+        table, ("Text", "Дата получения"), table))))
+    assert all(got[f"2.{i}"] == "A/AN1/6" for i in range(3, 13))
+
+
+@pytest.mark.parametrize("name_as_table", [False, True])
+def test_step_24_form_signature_before_a_numbered_receipt_field_belongs_to_the_form(name_as_table):
+    table = ("Table", "<table><tr><td></td></tr></table>")
+    name = "фамилия, инициалы уполномоченного лица"
+    signature = ([("Table", f"<table><tr><td>{name}</td></tr></table>"), table, ("Text", "подпись")]
+                 if name_as_table else [("Text", name), ("Text", "подпись"), table])
+    pages = readmission_form(("Section-header", "4. Сведения о сопровождаемых лицах"), table,
+                             *signature, table,
+                             ("Section-header", "5. Сведения о приеме и получении документов"), table)
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == "A/AN1/4"
+    assert all(got[f"2.{i}"] == "A/AN1" for i in range(4, 8))
+    assert got["2.8"] == got["2.9"] == "A/AN1/5"
+
+
+def test_step_24_explicit_numbered_signature_field_keeps_its_captions():
+    table = ("Table", "<table><tr><td></td></tr></table>")
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "4. Подпись заявителя"), table,
+        ("Text", "фамилия, инициалы заявителя"), ("Text", "подпись"), table,
+        ("Text", "5. Сведения о приеме и получении документов"), table))))
+    assert all(got[f"2.{i}"] == "A/AN1/4" for i in range(3, 7))
+    assert got["2.7"] == got["2.8"] == "A/AN1/5"

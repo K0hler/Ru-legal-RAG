@@ -615,7 +615,7 @@ REQUISITE_LINES = (
 # of a federal service signs as «Директор» («Директор» / «А.Бортников»)
 SIGNER = re.compile(r"^(?:(?:Президент|Председатель|Заместитель Председателя|Первый заместитель|Руководитель|Министр"
                     r"|(?:Генеральный\s+)?Директор"
-                    r"|Временно исполняющий обязанности|Врио|И\.\s?о\.|Главный государственный санитарный врач"
+                    r"|Временно исполняющий обязанности|Исполняющий обязанности|Врио|И\.\s?о\.|Главный государственный санитарный врач"
                     r"|(?:Высшее\s+должностное|Должностное)\s+лицо)\b"
                     r"|(?:За|От)\s+(?!Сторон(?![а-яё]))[А-ЯЁ][а-яё]+)")
 # the heading of an agreement's signature block: «Подписи и реквизиты Сторон», «Адреса и реквизиты сторон»
@@ -1704,12 +1704,46 @@ def mark_restarts(items: list[Paragraph]) -> None:
 
 
 def between_tables(items: list[Paragraph]) -> set[int]:
-    """Ids of text paragraphs whose neighbouring body items on both sides are tables: a short line
-    there («Стоимостные показатели», «Норма расхода ресурсов») labels the table part, so its right
-    position is no signature evidence."""
+    """Short unmarked caption runs between tables on one page are table fields, not positional signatures."""
     seq = [p for p in items if p.flow == "body" and p.kind != "picture"]
-    return {id(p) for k, p in enumerate(seq)
-            if p.kind == "text" and 0 < k < len(seq) - 1 and seq[k - 1].kind == "table" and seq[k + 1].kind == "table"}
+    framed, pending, previous = set(), [], None
+    for p in seq:
+        if p.kind == "table":
+            if previous is not None and previous.regions[-1].page == p.first.page:
+                framed.update(id(q) for q in pending)
+            previous, pending = p, []
+        elif p.kind == "text" and p.marker.kind == "none" and len(p.text) < 120:
+            pending.append(p)
+        else:
+            previous, pending = None, []
+    return framed
+
+
+def form_signature_blocks(items: list[Paragraph]) -> set[int]:
+    """Step 24 E: a name/signature block before a numbered document-receipt field signs the whole form.
+    OCR can keep the name caption and blank signature boxes as separate tables."""
+    seq = [p for p in items if p.flow == "body" and p.kind != "picture" and PAGE_MARK_EVIDENCE not in p.evidence]
+    signatures, previous = set(), None
+    for k, p in enumerate(seq):
+        if p.marker.kind == "none":
+            continue
+        parent, previous = previous, p
+        if p.marker.kind not in POINT_KINDS or not re.search(r"\b(?:при[её]м[а-яё]*|получени[а-яё]*)\s+документ", p.text):
+            continue
+        if parent is not None and re.search(r"\bподпис[ьи]\b", parent.text, re.IGNORECASE):
+            continue  # an explicitly numbered signature position keeps its own name and signature captions
+        j, signed = k - 1, False
+        while j >= 0 and seq[j].first.page == p.first.page and seq[j].marker.kind == "none":
+            q = seq[j]
+            text = view(re.sub(r"<[^>]*>", " ", q.text))  # matching view only
+            if q.kind not in {"text", "table"} or len(text) >= 120:
+                break
+            signed = signed or text.casefold() == "подпись"
+            if signed and re.match(r"^фамилия,\s+инициалы(?:\s|$)", text, re.IGNORECASE):
+                signatures.update(id(s) for s in seq[j:k])
+                break
+            j -= 1
+    return signatures
 
 
 TABLE_ROW_EVIDENCE = {"table_row": "marker between parts of the table that opens the annex; text of the annex"}
@@ -2102,6 +2136,7 @@ def build(extraction: dict) -> dict:
             if TOC_EVIDENCE in p.evidence:
                 stacks[k] = ()  # cycle 10 B4: a contents line belongs to the document root
         framed = between_tables(items)
+        signatures = form_signature_blocks(items)
         # The requisite block: after the last numbered or named element of the scope, the
         # first unmarked paragraph that looks like a requisite (or a signature) opens it, and
         # everything from there to the end of the scope belongs to the scope root. Unmarked
@@ -2171,6 +2206,9 @@ def build(extraction: dict) -> dict:
         for p in items:
             if p.kind in {"approval", "annex"}:
                 p.owner = scope_path
+            if id(p) in signatures:
+                p.owner = scope_path
+                p.evidence.append({"form_signature": "name and signature before the numbered document-receipt field"})
 
     # footnotes: owner = latest preceding body paragraph carrying the same superscript marker; a table
     # may print the mark as HTML «<sup>1</sup>» instead of «¹» (Review Focus 2: two lists numbering

@@ -342,8 +342,14 @@
   retaining source text. Form completion / reply-address blanks open the requisite tail. `…-step24-c` (76e5b151…)
   51624/51704; batch 23 2474/2497 (99.08%, strict equal),
   cross_scope_v2 0 there; previous 225 error lists exact, other families exact. Official trees 100 + 146 documents
-  `step24-c-results.json` equal v23 per act. Aggregate target, not every-document 99%; 23 errors remain. VERSION is
-  still 23-experiment; frozen П23 untouched, no П24 freeze. Report `milestones/m1/04a/M1_04A_STEP24_2026-10-31.md`.
+  `step24-c-results.json` equal v23 per act. Owner clarification: EACH batch-23 document must be strictly above 99%.
+  Continuation E: short unmarked same-page caption runs between tables are fields; the name/signature suffix before
+  a numbered document-receipt position signs the whole form, unless the preceding numbered position explicitly
+  names a signature. F: SIGNER takes «Исполняющий обязанности» without «Временно». Final `…-step24-f` (ea7f4d95…)
+  51640/51704, batch 23 2490/2497 (99.72%), every act >99% in strict/no_section (MVD 915/921, RP-1301 24/24).
+  Previous 225 error lists exact, no drops against step24-c; official trees `step24-f-results.json` equal v23 per act.
+  Seven errors remain. VERSION still 23-experiment; frozen П23 untouched, no П24 freeze.
+  Report `milestones/m1/04a/M1_04A_STEP24_2026-10-31.md`.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

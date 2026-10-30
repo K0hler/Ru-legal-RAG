@@ -49,6 +49,10 @@
   sentence stays in the point and opens no attached document after a signer; building leaves extraction text
   unchanged. Form completion / reply-address blanks
   open the requisite tail. Dev regression lists 237 documents (batch 23 on frozen `gold`).
+  Continuation E-F: short caption runs between tables stay in the form's receipt position; a standalone name/signature
+  block before that numbered position belongs to the form (name caption as Text or Table), while an explicitly
+  numbered signature position keeps its captions. «Исполняющий обязанности …» before initials is an act requisite.
+  Batch-23 acceptance compares integer counts for EACH document, strictly >99% in both strict and no_section.
 - Step 23: Roman treaty articles and a quotation across a page footer; an annex of a form inside the attached
   document (also with a long caption tail); a subheading after a page mark; a second fill-in list of a form. Dev
   regression lists 225 documents (batch 22 on `gold`).
