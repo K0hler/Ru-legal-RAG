@@ -1182,6 +1182,12 @@ PROFILES["batch-20"] = {**PROFILES["batch-19"], "quotas": {"sanpin_2020s": 1}, "
 BATCH21_QUOTAS = {"presidential_decree": 2, "government_resolution": 2, "government_order": 2, "ministry_order": 4}
 PROFILES["batch-21"] = {**PROFILES["batch-16"], "quotas": BATCH21_QUOTAS, "sanpin_candidates": False,
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 21))}
+# Scan batch 22 (owner 30.10.2026: «бери новые за 2020-2026 года … акты такого типа, в которых у нас было больше всего
+# проблем»): acts of 2020+ (run with --from 2020-01-01), weighted by the first-check error share of batches 1-21 —
+# resolutions 25%, orders 15%, government orders 13%; no decrees (0%) and no laws (every one offered had an IPS tree).
+BATCH22_QUOTAS = {"government_resolution": 4, "ministry_order": 5, "government_order": 3}
+PROFILES["batch-22"] = {**PROFILES["batch-21"], "quotas": BATCH22_QUOTAS,
+                        "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 22))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")

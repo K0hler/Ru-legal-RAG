@@ -1661,7 +1661,7 @@ def test_sanpin_slug_uses_the_resolution_number():
 def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_16():
     # Step 14 (28.10.2026) took batches 14 and 15 into development; batch 16 checks П14.
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[15] == "batch-16" and catalog.POOL_BATCHES[-1] == "batch-21"
+    assert catalog.POOL_BATCHES[15] == "batch-16" and catalog.POOL_BATCHES[-1] == "batch-22"
     for batch, report in (("batch-14", "M1_04A_POOL_BATCH_14_2026-10-28.md"), ("batch-15", "M1_04A_POOL_BATCH_15_2026-10-28.md")):
         history = catalog.POOL_STATUS[batch]
         assert [h["status"] for h in history] == ["measured", "development"]
@@ -1671,7 +1671,8 @@ def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_1
     for n in (17, 18, 19):
         assert [h["status"] for h in catalog.POOL_STATUS[f"batch-{n}"]] == ["measured", "development"]
     assert [h["status"] for h in catalog.POOL_STATUS["batch-20"]] == ["measured", "development"]
-    assert "batch-21" not in catalog.POOL_STATUS  # written only after the check
+    assert [h["status"] for h in catalog.POOL_STATUS["batch-21"]] == ["measured", "development"]
+    assert "batch-22" not in catalog.POOL_STATUS  # written only after the check
 
 
 # ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
@@ -1717,6 +1718,16 @@ def test_batch_21_takes_twelve_acts_of_other_types_without_sanpin():
     assert b21["sanpin_candidates"] is False and b21["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, 21))
     assert {k: v for k, v in b21.items() if k not in ("quotas", "sanpin_candidates", "prior_batches")} == {
         k: v for k, v in b16.items() if k not in ("quotas", "sanpin_candidates", "prior_batches")}
+
+
+def test_batch_22_weights_the_types_with_most_first_check_errors():
+    # Owner 30.10.2026: acts of 2020-2026 of the types with the most problems — 4 resolutions, 5 orders, 3 government
+    # orders; otherwise batch-21 settings, excluding batches 1-21.
+    b21, b22 = P.PROFILES["batch-21"], P.PROFILES["batch-22"]
+    assert b22["quotas"] == {"government_resolution": 4, "ministry_order": 5, "government_order": 3}
+    assert b22["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, 22))
+    assert {k: v for k, v in b22.items() if k not in ("quotas", "prior_batches")} == {
+        k: v for k, v in b21.items() if k not in ("quotas", "prior_batches")}
 
 
 def test_batch_16_profile_is_batch_15_excluding_batch_15():
