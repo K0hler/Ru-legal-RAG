@@ -1726,8 +1726,18 @@ def test_batch_22_weights_the_types_with_most_first_check_errors():
     b21, b22 = P.PROFILES["batch-21"], P.PROFILES["batch-22"]
     assert b22["quotas"] == {"government_resolution": 4, "ministry_order": 5, "government_order": 3}
     assert b22["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, 22))
-    assert {k: v for k, v in b22.items() if k not in ("quotas", "prior_batches")} == {
+    assert b22["tree_allowed"] == ("government_resolution",) and "tree_allowed" not in b21
+    assert {k: v for k, v in b22.items() if k not in ("quotas", "prior_batches", "tree_allowed")} == {
         k: v for k, v in b21.items() if k not in ("quotas", "prior_batches")}
+
+
+def test_tree_allowed_types_pass_the_ips_tree_filter(monkeypatch):
+    # Every 2020+ resolution has an IPS tree; batch 22 takes them anyway, other types still need no tree.
+    resolution = {"act_type": "government_resolution", "ips_found": True, "ips_tree_nodes": 34}
+    order = {"act_type": "ministry_order", "ips_found": True, "ips_tree_nodes": 12}
+    assert P.tree_reason(resolution) == "ips_tree_present"
+    monkeypatch.setattr(P, "TREE_ALLOWED", frozenset({"government_resolution"}))
+    assert P.tree_reason(resolution) is None and P.tree_reason(order) == "ips_tree_present"
 
 
 def test_batch_16_profile_is_batch_15_excluding_batch_15():

@@ -305,6 +305,9 @@ def official_reason(row):
 
 
 TREE_FIELDS = ("ips_found", "tree_lookup_error", "ips_detail")
+# Batch 22 (owner 30.10.2026): act types taken even with an IPS tree — every 2020+ government resolution has one, and
+# resolutions are the most error-prone type; a profile's `tree_allowed` sets it in `main`.
+TREE_ALLOWED = frozenset()
 
 
 def tree_reason(row, require_title=False):
@@ -317,7 +320,7 @@ def tree_reason(row, require_title=False):
         return "ips_identity_ambiguous"
     if not row.get("ips_found") and row["act_type"] not in OUTSIDE_IPS:
         return "not_in_ips"
-    if (row.get("ips_tree_nodes") or 0) > 0:
+    if (row.get("ips_tree_nodes") or 0) > 0 and row["act_type"] not in TREE_ALLOWED:
         return "ips_tree_present"
     if require_title and not _title(row.get("title", "")):
         title = row.get("ips_title", "")
@@ -1186,7 +1189,7 @@ PROFILES["batch-21"] = {**PROFILES["batch-16"], "quotas": BATCH21_QUOTAS, "sanpi
 # проблем»): acts of 2020+ (run with --from 2020-01-01), weighted by the first-check error share of batches 1-21 —
 # resolutions 25%, orders 15%, government orders 13%; no decrees (0%) and no laws (every one offered had an IPS tree).
 BATCH22_QUOTAS = {"government_resolution": 4, "ministry_order": 5, "government_order": 3}
-PROFILES["batch-22"] = {**PROFILES["batch-21"], "quotas": BATCH22_QUOTAS,
+PROFILES["batch-22"] = {**PROFILES["batch-21"], "quotas": BATCH22_QUOTAS, "tree_allowed": ("government_resolution",),
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 22))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
@@ -1287,6 +1290,8 @@ def run(args):
         pages_range = (pages_range[0], args.pages_max)
     strict = profile["require_single_edition"]
     tree = profile.get("require_no_ips_tree", False)
+    global TREE_ALLOWED
+    TREE_ALLOWED = frozenset(profile.get("tree_allowed", ()))
     titled = profile.get("require_title", False)
     prior_days = set()
     if profile.get("prior_batches"):
