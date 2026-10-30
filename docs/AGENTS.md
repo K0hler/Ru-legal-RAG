@@ -309,6 +309,9 @@
   narrowed in `…-step22-e`). `…-step22-e` (a4bcf79a…) 47133/47188 (99.88%), every document at 99% or more, nothing
   below; JSON `step22-e` equal to `v21` per act. rp-1829-2015 318/319 (left: a page footer «250826a2 …» repeating
   the next page's text), rp-22 235/235, pp-648 158/158.
+- Step 22 freeze (owner 30.10.2026 «Заморозь»): П22 = v22 `ocr-logical-structure/22-experiment` (sha256 80436fd7…, LF)
+  in `data/m1/m1-04a/experiments/20261030-prototype-v22-freeze/`; regression `20261030-dev-regression-213-v22`
+  47133/47188 (equal to `…-step22-e`), JSON `v22-results.json` equal to v21 per act. To be checked on scan batch 22.
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
