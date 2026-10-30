@@ -56,7 +56,129 @@ def rotated_result(attempts=(("cw90", TURNED),)):
     return document, run
 
 
+UPRIGHT = [{"category": "Caption", "bbox": [10, 5, 90, 15], "text": "Форма журнала"},
+           {"category": "Table", "bbox": [10, 20, 90, 60], "text": "<table><tr><th>Дата</th></tr><tr><td></td></tr></table>"}]
+LOOPED = [{"category": "Table", "bbox": [10, 20, 90, 60], "text": "<table><tr><th>Дата</th></tr><tr><td></td></tr></table>"}] * 2
+
+
+def looped_result(attempts=(LOOPED, UPRIGHT), primary="length", turns=True):
+    """Page 1 looped (token limit or client timeout), both turns failed, the upright retry finished."""
+    document, run = saved_result()
+    page = document["pages"][0]
+    native = page["native"]
+    native["choices"][0]["message"]["content"] = '[{"bbox": [10, 20, 90, 60], "category": "Table", "text": "<tr><td></td>'
+    if primary == "length":
+        native["choices"][0]["finish_reason"] = "length"
+    else:
+        native["choices"][0].update(finish_reason=None, message={"role": "assistant", "content": None})
+        native.update(client_error="TimeoutError: timed out", client_timeout_seconds=900)
+    if turns:
+        native["orientation_retry"] = {"trigger": "length", "selected": None, "attempts": [
+            {"rotation": rotation, "image_size": [100, 100],
+             "native": {"choices": [{"finish_reason": "length", "message": {"content": "[{"}}]}}
+            for rotation in pdf.ROTATIONS]}
+    native["loop_retry"] = {"trigger": primary, "selected": len(attempts) - 1, "attempts": [
+        {"penalties": settings, "native": {"choices": [{"finish_reason": "stop", "message": {
+            "content": json.dumps(cells, ensure_ascii=False)}}]}}
+        for settings, cells in zip(pdf.LOOP_SETTINGS, attempts)]}
+    page["layout"] = copy.deepcopy(list(attempts[-1]))
+    return document, run
+
+
 class PdfExtractionTest(unittest.TestCase):
+    def test_loop_retry_layout_is_accepted_only_from_its_retained_attempt(self):
+        # Observed: blank form rows (sanpin-20-2015 p. 24) and repeated last regions (sanpin-6-2025 p. 106).
+        for primary, attempts, turns in (("length", (LOOPED, UPRIGHT), True), ("timeout", (UPRIGHT,), True),
+                                          ("length", (UPRIGHT,), False)):
+            with self.subTest(primary=primary, attempts=len(attempts), turns=turns):
+                document, run = looped_result(attempts, primary, turns)
+                extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+                page = extraction["pages"][0]
+                self.assertEqual(page["loop_retry"], pdf.LOOP_SETTINGS[len(attempts) - 1])
+                self.assertEqual([r["category"] for r in page["regions"]], ["Caption", "Table"])
+                self.assertIn("page_loop_retry", extraction["uncertainties"])
+                self.assertNotIn("loop_retry", extraction["pages"][1])
+                tree = pdf.pdf_tree(extraction, "Неустановленный акт", "original")
+                self.assertTrue(tree["accounting"]["exactly_once"])
+
+    def test_loop_retry_mutations_are_rejected(self):
+        sideways = [{"category": "Text", "bbox": [10, 10, 20, 90], "text": "боком"}]
+        for mutation in ("text", "bbox", "extra_region", "rotated_bbox", "settings", "order", "no_selection",
+                         "not_last", "earlier_accepted", "duplicate_regions", "sideways", "unfinished_attempt",
+                         "primary_stop", "turn_accepted", "turn_missing", "third_attempt", "page_error"):
+            with self.subTest(mutation=mutation):
+                document, run = looped_result()
+                page = document["pages"][0]
+                retry = page["native"]["loop_retry"]
+                last = retry["attempts"][-1]["native"]["choices"][0]
+                if mutation == "text":
+                    page["layout"][0]["text"] = "Иная форма"
+                elif mutation == "bbox":
+                    page["layout"][0]["bbox"] = [10, 5, 90, 16]
+                elif mutation == "extra_region":
+                    page["layout"].append({"category": "Text", "bbox": [1, 1, 2, 2], "text": "x"})
+                elif mutation == "rotated_bbox":
+                    page["layout"][0]["rotated_bbox"] = [5, 10, 15, 90]
+                elif mutation == "settings":
+                    retry["attempts"][-1]["penalties"] = {"frequency_penalty": 1.0}
+                elif mutation == "order":
+                    retry["attempts"].reverse()
+                elif mutation == "no_selection":
+                    retry["selected"] = None
+                elif mutation == "not_last":
+                    retry["selected"] = 0
+                elif mutation == "earlier_accepted":
+                    retry["attempts"][0]["native"] = copy.deepcopy(retry["attempts"][1]["native"])
+                elif mutation == "duplicate_regions":
+                    last["message"]["content"] = json.dumps(UPRIGHT + UPRIGHT[1:], ensure_ascii=False)
+                    page["layout"] = copy.deepcopy(UPRIGHT + UPRIGHT[1:])
+                elif mutation == "sideways":
+                    last["message"]["content"] = json.dumps(sideways, ensure_ascii=False)
+                    page["layout"] = copy.deepcopy(sideways)
+                elif mutation == "unfinished_attempt":
+                    last["finish_reason"] = "length"
+                elif mutation == "primary_stop":
+                    page["native"]["choices"][0]["finish_reason"] = "stop"
+                elif mutation == "turn_accepted":
+                    page["native"]["orientation_retry"]["attempts"][1]["native"] = {"choices": [{
+                        "finish_reason": "stop", "message": {"content": json.dumps(UPRIGHT, ensure_ascii=False)}}]}
+                elif mutation == "turn_missing":
+                    del page["native"]["orientation_retry"]["attempts"][1]
+                elif mutation == "third_attempt":
+                    retry["attempts"].append(copy.deepcopy(retry["attempts"][-1]) | {"penalties": {"seed": 2}})
+                    retry["selected"] = 2
+                else:
+                    page["error"] = "ValueError: incomplete"
+                with self.assertRaises(ValueError):
+                    pdf.normalize_dotsmocr(document, run, DIGEST)
+
+    def test_turns_are_skipped_only_after_an_upright_partial_answer(self):
+        upright = '[{"bbox": [10, 5, 90, 15], "category": "Text", "text": "1. Форма"}, {"bbox": [10, 20, 90, 60], "category": "Table", "text": "<tr>'
+        sideways = '[{"bbox": [10, 5, 20, 90], "category": "Text", "text": "1. Форма"}, {"bbox": [10, 20, 90, 60], "category": "Table", "text": "<tr>'
+        for partial, skipped, rotation_on, accepted in ((upright, True, True, True), (sideways, True, True, False),
+                                                        (upright, True, False, False), (upright, False, True, False),
+                                                        ('[{"bbox": [10, 20, 90, 60], "category": "Table"', True, True, False)):
+            with self.subTest(partial=partial[:40], skipped=skipped, rotation_on=rotation_on):
+                document, run = looped_result(turns=False)
+                native = document["pages"][0]["native"]
+                native["choices"][0]["message"]["content"] = partial
+                if skipped:
+                    native["loop_retry"]["turns_skipped"] = "upright_partial"
+                if rotation_on:
+                    run["config"]["rotation_retry"] = {"trigger": "length", "rotations": list(pdf.ROTATIONS)}
+                if accepted:
+                    self.assertIn("page_loop_retry", pdf.normalize_dotsmocr(document, run, DIGEST)["uncertainties"])
+                else:
+                    with self.assertRaises(ValueError):
+                        pdf.normalize_dotsmocr(document, run, DIGEST)
+
+    def test_timeout_without_loop_retry_fails(self):
+        document, run = looped_result()
+        del document["pages"][0]["native"]["loop_retry"]
+        document["pages"][0]["native"].update(client_error="TimeoutError: timed out")
+        with self.assertRaises(ValueError):
+            pdf.normalize_dotsmocr(document, run, DIGEST)
+
     def test_rotated_retry_layout_is_accepted_only_from_its_retained_attempt(self):
         document, run = rotated_result()
         extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
@@ -221,6 +343,36 @@ class PdfExtractionTest(unittest.TestCase):
                     self.assertIn(cell["text"], block["text"])
                 tree = pdf.pdf_tree(extraction, "Неустановленный акт", "original")
                 self.assertTrue(tree["accounting"]["exactly_once"])
+
+    def test_table_nested_in_a_cell_keeps_both_topologies_and_text_once(self):
+        # Observed in batch 13 (favt-150-2023 p. 63): a sector table inside a cell of the requirements table.
+        html = ('<table><thead><tr><th>Ограничения</th><th>Обоснование</th></tr></thead><tbody><tr>'
+                '<td>2. Запрещается:<br><table><tr><th>Сектор</th><th>Высота</th></tr>'
+                '<tr><td>A1</td><td>174,93</td></tr></table>после</td><td>Пункт 3</td></tr></tbody></table>')
+        document, run = saved_result()
+        document["pages"][1]["layout"][0]["text"] = html
+        extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+        table = extraction["pages"][1]["regions"][0]["table"]
+        self.assertNotIn("grid", table)
+        self.assertEqual((table["rows"], table["columns"]), (2, 2))
+        outer = table["cells"][2]
+        self.assertEqual(outer["text"], "2. Запрещается:\nСектор\nВысота\nA1\n174,93\nпосле")
+        inner = outer["tables"][0]
+        self.assertEqual((inner["rows"], inner["columns"]), (2, 2))
+        self.assertEqual([c["text"] for c in inner["cells"]], ["Сектор", "Высота", "A1", "174,93"])
+        self.assertEqual(table["text"].count("174,93"), 1)
+        self.assertIn("table_nested", extraction["uncertainties"])
+        tree = pdf.pdf_tree(extraction, "Неустановленный акт", "original")
+        self.assertTrue(tree["accounting"]["exactly_once"])
+        for broken in ('<table><tr><td>1</td></tr></table><table><tr><td>2</td></tr></table>',
+                       '<table><tr><table><tr><td>1</td></tr></table></tr></table>',
+                       '<table><tr><td><table></table></td></tr></table>',
+                       '<table><tr><td><table><tr><td>1</td></tr></td></tr></table>'):
+            with self.subTest(html=broken):
+                document, run = saved_result()
+                document["pages"][1]["layout"][0]["text"] = broken
+                with self.assertRaises(ValueError):
+                    pdf.normalize_dotsmocr(document, run, DIGEST)
 
     def test_resolved_table_output_is_unchanged_by_grid_degradation(self):
         document, run = saved_result()

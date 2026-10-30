@@ -13,6 +13,8 @@ param(
     [int]$HealthTimeoutSeconds = 600,
     # Owner decision 23.10.2026: batches after batch 5 use the opt-in rotation retry.
     [string]$OcrConfig = "data/m1/ocr.rotation-retry.local.json",
+    # Re-runs of acts that already have ocr/<slug>/run-01 (e.g. data/m1/m1-04a/experiments/<date>-ocr-fix-loop).
+    [string]$OcrRoot = "",
     [switch]$ReplayOnly   # skip Docker/extraction; only replay saved results
 )
 $ErrorActionPreference = "Stop"
@@ -20,6 +22,7 @@ $env:PYTHONPATH = "src"
 $python = ".venv\Scripts\python.exe"
 $base = "data/m1/m1-04a"
 $experimentDir = "$base/experiments/$Experiment"
+$ocrRoot = if ($OcrRoot) { $OcrRoot } else { "$base/ocr" }
 New-Item -ItemType Directory -Force -Path $experimentDir | Out-Null
 
 $summary = [ordered]@{ acts = [ordered]@{} }
@@ -56,16 +59,18 @@ Write-Host "dotsmocr healthy after $healthWait s"
 
 $summary.health_wait_seconds = $healthWait
 try {
-    foreach ($slug in $Slugs) {
-        $inputJson = "$base/documents/pool/$Batch/$slug/input.json"
-        $run = "$base/ocr/$slug/run-01"
+    foreach ($item in $Slugs) {
+        # "batch-NN/<slug>" takes the act from another batch than -Batch (re-runs across batches).
+        $actBatch, $slug = if ($item -like "*/*") { $item -split "/", 2 } else { $Batch, $item }
+        $inputJson = "$base/documents/pool/$actBatch/$slug/input.json"
+        $run = "$ocrRoot/$slug/run-01"
         if (Test-Path $run) { Write-Host "skip $slug (run-01 exists)"; continue }
         $watch = [Diagnostics.Stopwatch]::StartNew()
         $out = & $python -m legal_rag.corpus extract --input $inputJson --ocr-config $OcrConfig --output-dir $run
         if ($LASTEXITCODE) { $summary.acts[$slug] = @{ status = "failed" }; Write-Host "FAILED $slug"; continue }
         $seconds = [math]::Round($watch.Elapsed.TotalSeconds, 1)
         $result = ($out | Select-Object -Last 1) | ConvertFrom-Json
-        Save-Json $result "$base/ocr/$slug/run-01-extract-result.json"
+        Save-Json $result "$ocrRoot/$slug/run-01-extract-result.json"
         $digest = @($result.extractions.PSObject.Properties.Name)[0]
         $entry = $result.extractions.$digest
         $extraction = "$run/extractions/$($entry.path)"
@@ -85,16 +90,17 @@ try {
 
 # 3. Replay saved native results (no Docker needed) and compare extraction ids.
 $replays = [ordered]@{}
-foreach ($slug in $Slugs) {
-    $resultFile = "$base/ocr/$slug/run-01-extract-result.json"
-    $replay = "$base/ocr/$slug/run-01-replay"
+foreach ($item in $Slugs) {
+    $actBatch, $slug = if ($item -like "*/*") { $item -split "/", 2 } else { $Batch, $item }
+    $resultFile = "$ocrRoot/$slug/run-01-extract-result.json"
+    $replay = "$ocrRoot/$slug/run-01-replay"
     if (-not (Test-Path $resultFile) -or (Test-Path $replay)) { continue }
     $first = Get-Content -Raw -Encoding utf8 $resultFile | ConvertFrom-Json
     $digest = @($first.extractions.PSObject.Properties.Name)[0]
     $evidence = Split-Path $first.native_evidence.$digest -Leaf
-    $map = "$base/ocr/$slug/run-01-results.json"
+    $map = "$ocrRoot/$slug/run-01-results.json"
     Save-Json @{ schema_version = "ocr-results/1"; results = @{ $digest = "run-01/ocr-evidence/$evidence" } } $map
-    $out = & $python -m legal_rag.corpus extract --input "$base/documents/pool/$Batch/$slug/input.json" --ocr-results $map --output-dir $replay
+    $out = & $python -m legal_rag.corpus extract --input "$base/documents/pool/$actBatch/$slug/input.json" --ocr-results $map --output-dir $replay
     if ($LASTEXITCODE) { $replays[$slug] = @{ replay_match = $false }; continue }
     $again = ($out | Select-Object -Last 1) | ConvertFrom-Json
     $replayId = $again.extractions.$digest.extraction_id

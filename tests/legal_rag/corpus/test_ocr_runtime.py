@@ -260,10 +260,22 @@ class OcrRuntimeTest(unittest.TestCase):
                 runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
                                      "rotation_retry": True}, b"%PDF-fixture", "a" * 64, turned)
             self.assertIn("--rotation-retry", commands[-1])
+            self.assertNotIn("--loop-retry", commands[-1])
             self.assertTrue(json.loads((turned / "runtime.json").read_bytes())["rotation_retry"])
+            self.assertNotIn("loop_retry", json.loads((turned / "runtime.json").read_bytes()))
             with self.assertRaises(ValueError):
                 runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
                                      "rotation_retry": "yes"}, b"%PDF-fixture", "a" * 64, turned)
+            looped = Path(temporary) / "run-looped"
+            looped.mkdir()
+            with patch.object(runtime.subprocess, "run", side_effect=execute):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "rotation_retry": True, "loop_retry": True}, b"%PDF-fixture", "a" * 64, looped)
+            self.assertEqual(commands[-1][-2:], ["--rotation-retry", "--loop-retry"])
+            self.assertTrue(json.loads((looped / "runtime.json").read_bytes())["loop_retry"])
+            with self.assertRaises(ValueError):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "loop_retry": 1}, b"%PDF-fixture", "a" * 64, looped)
 
     def test_output_subdirectory_symlink_cannot_write_into_raw_archive(self):
         with tempfile.TemporaryDirectory() as temporary:

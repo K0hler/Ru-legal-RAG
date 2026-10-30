@@ -25,10 +25,16 @@ class _Table(HTMLParser):
         self.closed = False
         self.events = []
         self.outside = []
+        # Enclosing tables of a table nested in a cell (observed: favt-150-2023 p. 63).
+        self.parents = []
+        self.after_table = False
 
     def handle_starttag(self, tag, attrs):
         if tag == "table":
-            if self.inside or self.closed:
+            if self.inside and self.cell is not None:
+                self.parents.append((self.rows, self.cell, self.events, self.outside))
+                self.rows, self.cell, self.events, self.outside = [], None, [], []
+            elif self.inside or self.closed:
                 raise ValueError("nested or multiple OCR tables")
             self.inside = True
         elif tag == "tr":
@@ -49,6 +55,9 @@ class _Table(HTMLParser):
 
     def handle_data(self, data):
         if self.cell is not None:
+            if self.after_table and data.strip():
+                self.cell["parts"].append("\n")
+            self.after_table = False
             self.cell["parts"].append(data)
         elif data.strip():
             self.outside.append(data)
@@ -60,29 +69,51 @@ class _Table(HTMLParser):
                 raise ValueError("unbalanced OCR table cell")
             self.rows[-1].append(self.cell)
             self.events.append("".join(self.cell["parts"]))
-            self.cell = None
+            self.cell, self.after_table = None, False
         elif tag == "table":
             if not self.inside or self.cell is not None:
                 raise ValueError("unbalanced OCR table")
-            self.inside, self.closed = False, True
+            if self.parents:
+                # The nested table keeps its own topology; its text stays in the enclosing cell once.
+                nested = self._finish()
+                self.rows, self.cell, self.events, self.outside = self.parents.pop()
+                before = "".join(self.cell["parts"])
+                self.cell.setdefault("tables", []).append(nested)
+                self.cell["parts"].append(("\n" if before.strip() and not before.endswith("\n") else "")
+                                          + nested["text"])
+                self.after_table = True
+            else:
+                self.inside, self.closed = False, True
 
     def topology(self, html):
         self.feed(html)
         self.close()
-        if not self.closed or self.inside or self.cell is not None or not self.rows:
+        if not self.closed or self.inside or self.cell is not None:
+            raise ValueError("incomplete OCR table")
+        return self._finish()
+
+    def _finish(self):
+        if not self.rows:
             raise ValueError("incomplete OCR table")
         try:
             return self._grid()
         except _GridError as error:
             # Well-formed HTML with an impossible grid: keep every source cell and its text,
             # but claim no column positions instead of failing the whole document.
-            cells = [{"row": row, "column": None, "rowspan": source["rowspan"],
-                      "colspan": source["colspan"], "header": source["header"],
-                      "text": "".join(source["parts"]), "bbox": None}
+            cells = [self._cell(source, row, None)
                      for row, source_cells in enumerate(self.rows) for source in source_cells]
             return {"rows": len(self.rows), "columns": None, "cells": cells, "rectangular": False,
                     "grid": "unresolved", "grid_error": str(error),
                     "outside_cell_text": self.outside, "text": "\n".join(self.events)}
+
+    @staticmethod
+    def _cell(source, row, column):
+        cell = {"row": row, "column": column, "rowspan": source["rowspan"],
+                "colspan": source["colspan"], "header": source["header"],
+                "text": "".join(source["parts"]), "bbox": None}
+        if "tables" in source:
+            cell["tables"] = source["tables"]
+        return cell
 
     def _grid(self):
         occupied, cells = set(), []
@@ -98,9 +129,7 @@ class _Table(HTMLParser):
                 if occupied & footprint:
                     raise _GridError("overlapping OCR table cells")
                 occupied.update(footprint)
-                cells.append({"row": row, "column": column, "rowspan": source["rowspan"],
-                              "colspan": source["colspan"], "header": source["header"],
-                              "text": "".join(source["parts"]), "bbox": None})
+                cells.append(self._cell(source, row, column))
                 column += source["colspan"]
         columns = max((c for _, c in occupied), default=-1) + 1
         return {"rows": len(self.rows), "columns": columns, "cells": cells,
@@ -167,6 +196,81 @@ def _check_rotated_layout(native, dimensions, layout):
     return rotation
 
 
+# The OCR-Lab loop retry: upright re-reads of an unfinished page with these settings, in this order.
+LOOP_SETTINGS = ({"repetition_penalty": 1.1}, {"frequency_penalty": 0.3})
+
+
+def _unfinished(native, choice):
+    """The primary hit the token limit or the client abandoned it after its timeout."""
+    return choice.get("finish_reason") == "length" or bool(native.get("client_error"))
+
+
+def _loop_cells(native):
+    """Return a finished upright retry layout without repeated regions, otherwise None."""
+    choices = native.get("choices") if isinstance(native, dict) else None
+    if (not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict)
+            or choices[0].get("finish_reason") != "stop" or native.get("local_stop_reason")
+            or native.get("client_error") or not isinstance(choices[0].get("message"), dict)):
+        return None
+    try:
+        cells = json.loads(choices[0]["message"].get("content") or "")
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(cells, list) or not cells or any(
+            not isinstance(c, dict) or not isinstance(c.get("bbox"), list) or len(c["bbox"]) != 4
+            or any(type(n) not in {int, float} for n in c["bbox"]) or "category" not in c for c in cells):
+        return None
+    if any(b[3] - b[1] >= 3 * (b[2] - b[0]) for b in (c["bbox"] for c in cells if c["category"] in UPRIGHT_TEXT)):
+        return None
+    keys = [json.dumps([c["category"], c["bbox"], c.get("text")], ensure_ascii=False) for c in cells]
+    return cells if len(set(keys)) == len(keys) else None
+
+
+PARTIAL_REGION = re.compile(r'\{"bbox": \[(\d+), (\d+), (\d+), (\d+)\], "category": "([A-Za-z-]+)"')
+
+
+def _upright_partial(native, choice):
+    """The unfinished primary already read text regions upright, so the client skipped the turns."""
+    content = choice["message"].get("content")
+    text = [[int(n) for n in m[:4]] for m in PARTIAL_REGION.findall(content if isinstance(content, str) else "")
+            if m[4] in UPRIGHT_TEXT]
+    return bool(text) and not any(b[3] - b[1] >= 3 * (b[2] - b[0]) for b in text)
+
+
+def _check_loop_layout(native, dimensions, layout, turns_expected):
+    """An unfinished page may use the first accepted upright retry, re-derived from its evidence."""
+    retry = native.get("loop_retry")
+    attempts = retry.get("attempts") if isinstance(retry, dict) else None
+    if (not isinstance(attempts, list) or not 1 <= len(attempts) <= len(LOOP_SETTINGS)
+            or any(not isinstance(a, dict) for a in attempts)
+            or [a.get("penalties") for a in attempts] != list(LOOP_SETTINGS[:len(attempts)])
+            or retry.get("selected") != len(attempts) - 1
+            or any(_loop_cells(a.get("native")) is not None for a in attempts[:-1])):
+        raise ValueError("invalid OCR loop retry record")
+    turned = native.get("orientation_retry")
+    if "turns_skipped" in retry:
+        if (retry["turns_skipped"] != "upright_partial" or turned is not None or not turns_expected
+                or not _upright_partial(native, native["choices"][0])):
+            raise ValueError("invalid OCR loop retry record")
+    elif turns_expected and turned is None:
+        raise ValueError("invalid OCR loop retry record")
+    if turned is not None:
+        # The turns come first; the loop retry runs only after both were rejected.
+        turns = turned.get("attempts") if isinstance(turned, dict) else None
+        if (not isinstance(turns, list) or [t.get("rotation") if isinstance(t, dict) else None for t in turns]
+                != list(ROTATIONS) or turned.get("selected") is not None
+                or any(t.get("image_size") != dimensions[::-1] or _upright_cells(t) is not None for t in turns)):
+            raise ValueError("invalid OCR rotation retry record")
+    cells = _loop_cells(attempts[-1]["native"])
+    if cells is None or not isinstance(layout, list) or len(layout) != len(cells) or any(
+            not isinstance(region, dict) or region.get("category") != cell["category"]
+            or region.get("bbox") != cell["bbox"] or "rotated_bbox" in region
+            or (region.get("text") != cell.get("text") and region.get("text_source") != "picture_ocr")
+            for region, cell in zip(layout, cells)):
+        raise ValueError("loop-retry OCR layout does not match its retained attempt")
+    return attempts[-1]["penalties"]
+
+
 def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
     """Keep native layout claims, exact OCR-string locators and all physical pages."""
     if not isinstance(document, dict) or not isinstance(run, dict):
@@ -206,12 +310,17 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
             raise ValueError("native OCR choice/message must be objects")
         content = choices[0]["message"].get("content")
         layout = source_page.get("layout")
-        rotation = None
-        if "orientation_retry" in native and choices[0].get("finish_reason") == "length":
+        rotation = loop = None
+        if source_page.get("error"):
+            raise ValueError("failed or truncated native OCR response")
+        if "loop_retry" in native and _unfinished(native, choices[0]):
+            loop = _check_loop_layout(native, dimensions, layout, "rotation_retry" in (run.get("config") or {}))
+            uncertainties.add("page_loop_retry")
+        elif "orientation_retry" in native and _unfinished(native, choices[0]):
             rotation = _check_rotated_layout(native, dimensions, layout)
             uncertainties.add("page_orientation_retry")
-        elif (source_page.get("error") or choices[0].get("finish_reason") != "stop"
-                or "orientation_retry" in native or not isinstance(content, str) or not content.strip()):
+        elif (choices[0].get("finish_reason") != "stop" or "orientation_retry" in native or "loop_retry" in native
+                or native.get("client_error") or not isinstance(content, str) or not content.strip()):
             raise ValueError("failed or truncated native OCR response")
         if not isinstance(layout, list) or not layout:
             raise ValueError("empty OCR layout requires explicit page review")
@@ -220,6 +329,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                 "regions": [], "blocks": []}
         if rotation is not None:
             page["orientation_retry"] = rotation
+        if loop is not None:
+            page["loop_retry"] = loop
         for region_index, source_region in enumerate(layout):
             if not isinstance(source_region, dict):
                 raise ValueError("OCR regions must be objects")
@@ -247,6 +358,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
                     uncertainties.add("nonrectangular_table")
                 if region["table"].get("grid") == "unresolved":
                     uncertainties.add("table_grid_unresolved")
+                if any("tables" in cell for cell in region["table"]["cells"]):
+                    uncertainties.add("table_nested")
                 pieces = [region["table"]["text"]]
                 if region["table"]["outside_cell_text"]:
                     uncertainties.add("table_text_outside_cells")
