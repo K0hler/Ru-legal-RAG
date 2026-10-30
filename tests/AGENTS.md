@@ -43,6 +43,12 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 24: bare decimal form positions require an immediately following same-page parenthesised field caption;
+  a bare decimal over a table opens no point. Sheet-side marks (Text/Page-header) and service-stamp places belong
+  to the form, without joining a previous page's field. Bold Text subheadings use the section; a bold terminated
+  sentence stays in the point and opens no attached document after a signer; building leaves extraction text
+  unchanged. Form completion / reply-address blanks
+  open the requisite tail. Dev regression lists 237 documents (batch 23 on frozen `gold`).
 - Step 23: Roman treaty articles and a quotation across a page footer; an annex of a form inside the attached
   document (also with a long caption tail); a subheading after a page mark; a second fill-in list of a form. Dev
   regression lists 225 documents (batch 22 on `gold`).

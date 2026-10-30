@@ -187,6 +187,12 @@
   `index.pre-refill-01.json` kept. 5 Codex jobs `.superpowers/sdd/2026-10-30-m1-04a-pool-batch-23/`; gold 2497 regions
   frozen `…-batch-23-gold-freeze/` (427b9535…); check `…-batch-23-first-pass/` (49223697…, summary c2ee2852…), run once:
   П23 2450/2497, П22 2450.
+- Step 24 development (31.10.2026): batch 23 is now development; frozen inputs/gold/П23 and first-pass outputs stay
+  intact. `experiments/20261031-dev-regression-237-v23/` reproduces 51600/51704 (batch 23 2450/2497);
+  `…-step24-a/` retains the failed broad bare-number attempt; final `…-step24-c/` scores 51624/51704 (batch 23 2474/2497,
+  99.08%, strict equal, cross_scope_v2 0 there), all previous 225 error lists unchanged. Official-tree outputs
+  `20261026-json-all-proj6/step24-c-results.json` and `20261027-json-v2-all-proj6/step24-c-results.json` equal v23
+  per document. No new scan batch, prototype freeze or gold derivation.
 - Scan batch 22 (30.10.2026, the check of П22 = v22): profile `batch-22` (seed 20261122, `--from 2020-01-01 --to
   2026-10-29`, `tree_allowed` for resolutions; first run without it: `b22-select.attempt1.log`), 12 acts; OCR
   `experiments/20261030-batch-22-ocr/` (first start failed: Docker Desktop was not running, log

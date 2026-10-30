@@ -215,9 +215,9 @@ def test_dev_regression_records_repo_relative_paths():
     assert D.recorded_path(D.ROOT / "data" / "x" / ".." / "summary.json") == "data/summary.json"
 
 
-def test_dev_regression_225_documents_families_and_cross_scope_v2(tmp_path):
+def test_dev_regression_237_documents_families_and_cross_scope_v2(tmp_path):
     docs = D.development_documents()
-    assert len(docs) == 225 and len({d["name"] for d in docs}) == 225
+    assert len(docs) == 237 and len({d["name"] for d in docs}) == 237
     sizes = {}
     for d in docs:
         sizes[d["group"]] = sizes.get(d["group"], 0) + 1
@@ -225,7 +225,8 @@ def test_dev_regression_225_documents_families_and_cross_scope_v2(tmp_path):
                      "batch-6": 11, "batch-7": 11, "batch-8": 11, "batch-9": 11,
                      "batch-10": 11, "batch-11": 11, "batch-12": 11, "batch-13": 11, "batch-14": 11,
                      "batch-15": 12, "batch-16": 12, "batch-17": 9, "batch-18": 7, "batch-19": 7, "batch-20": 1,
-                     "batch-21": 10, "batch-22": 12}
+                     "batch-21": 10, "batch-22": 12, "batch-23": 12}
+    assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["group"] == "batch-23")
     assert all(d["gold"].name.endswith(".gold-v2.txt") for d in docs if d["group"] == "batch-2")
     assert all(d["gold"].name.endswith(".gold.txt") for d in docs if d["name"] not in D.GOLD_OVERRIDE
                and d["group"] in ("batch-1", "batch-3", "batch-4", "batch-5", "batch-6", "batch-7"))

@@ -333,6 +333,17 @@
   `batch-23` (acts of 2020+, first-check error share since batch 16: government orders 16.3%, orders 2.9%,
   resolutions 0.3% -> 5 + 5 + 2).
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
+- Step 24 (owner 31.10.2026: improve after П23 to above 99% on scan batch 23): regression = 237 documents
+  (+ `BATCH_23` on frozen `gold`), baseline `20261031-dev-regression-237-v23` 51600/51704. A bare decimal «1.1.»
+  opens a form position only with its immediately following same-page parenthesised field caption; bare numbers
+  over tables must stay unmarked (the broad attempt `…-step24-a` broke seven professional standards). Form sheet-side
+  and service-stamp marks bypass cross-page joining and belong to the form root. Whole bold lines give heading
+  evidence only for subheadings (`bold=True`, never document opening); tests use the emphasis-stripped view,
+  retaining source text. Form completion / reply-address blanks open the requisite tail. `…-step24-c` (76e5b151…)
+  51624/51704; batch 23 2474/2497 (99.08%, strict equal),
+  cross_scope_v2 0 there; previous 225 error lists exact, other families exact. Official trees 100 + 146 documents
+  `step24-c-results.json` equal v23 per act. Aggregate target, not every-document 99%; 23 errors remain. VERSION is
+  still 23-experiment; frozen П23 untouched, no П24 freeze. Report `milestones/m1/04a/M1_04A_STEP24_2026-10-31.md`.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),
   `plan` (strata type × organ × decade, organs read from `adoption`, groups under 200 merged into «прочие»; seeded

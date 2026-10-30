@@ -606,6 +606,7 @@ REQUISITE_LINES = (
     re.compile(rf"^(?:г\.\s*)?(?:Москва|МОСКВА)(?:,\s*Кремль)?(?:\s+{DATE})?(?:\s+{NUMBER})?$"),
     re.compile(r"^Зарегистрирован[оа]?\s+в\s+Мин"),  # «Зарегистрировано в Минюсте России ...»
     re.compile(r"^Совершено\s+в\b"),  # closing formula of an agreement
+    re.compile(r"^(?:Составлен[ао]?|Ответ\s+на\s+запрос\s+прошу\s+направить)\s+_{2,}"),  # step 24 D: form tail
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )
 # signer title or agreement signature place («За Правительство ...», «От Правительства ...»): a short
@@ -661,6 +662,8 @@ PAGE_BAND_EVIDENCE = {"page_band": "a page header/footer opens no unit"}
 TIME_STAMP = re.compile(r"\d{2}\.\d{2}\.\d{4}\s+\d{1,2}:\d{2}")
 FORM_PAGE_HEAD = re.compile(rf"\d{{4}}\s\d{{4}}|(?:ИНН|КПП)[{SUP}]*|ИНН\s+КПП\s+Стр\.|Стр\.(?:\s[\d\s]+)?")
 FORM_HEAD_ZONE = 8  # the first regions of a page
+FORM_SERVICE_MARK = re.compile(r"(?:(?:лицевая|оборотная)\s+сторона\s+листа\s+№\s*\d+"
+                               r"|Место\s+для\s+служебных\s+отметок(?:\s+.+)?)", re.IGNORECASE)
 
 
 def page_mark(region: Region) -> bool:
@@ -669,6 +672,8 @@ def page_mark(region: Region) -> bool:
     never text of the unit it happens to follow. Step 16 C5: also a footer line printed on two pages («ФГОС ВО
     культурология -05»; on three it is running noise)."""
     text = region.text.strip()
+    if FORM_SERVICE_MARK.fullmatch(text):
+        return True  # step 24 B: a sheet side or service-stamp place is not text of the preceding form field
     if region.category == "Text":
         return bool(PRINT_MARK.match(text) or TIME_STAMP.fullmatch(text)
                     or (region.index <= FORM_HEAD_ZONE and FORM_PAGE_HEAD.fullmatch(text)))
@@ -801,7 +806,7 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
             continue
         # Body text. Join a continuation only with an unterminated open paragraph
         # across a page break, never on the same page (OCR keeps those together).
-        if starts_continuation(r.text) and parse_marker(r.text, r.category).kind == "none":
+        if starts_continuation(r.text) and parse_marker(r.text, r.category).kind == "none" and not page_mark(r):
             # A footnote continued on the next page, mislabelled as Text: it sits
             # after the page body, directly before the page's footnotes (or at the end),
             # the previous page's last footnote is unterminated, and it cannot be a
@@ -1019,8 +1024,9 @@ def editorial_only(p: "Paragraph") -> bool:
         not EDITORIAL_TAIL.sub("", p.text).strip() or editorial_note_unit(p.text) is not None)
 
 
-def heading_evidence(p: Paragraph) -> bool:
-    return p.first.category in HEADING_CATEGORIES
+def heading_evidence(p: Paragraph, bold: bool = False) -> bool:
+    emphasis = EMPHASIS.fullmatch(p.text) if bold else None
+    return p.first.category in HEADING_CATEGORIES or bool(emphasis and len(emphasis.group(1)) >= 2)
 
 
 def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
@@ -1029,8 +1035,8 @@ def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     1 - …», «Таблица 2», «Форма N 3»), a labelled value («Адрес: …»), a requisite or signature line,
     or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text
     (SUBHEADING_STYLED_MAX with ``long``), SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
-    text = p.text
-    header = heading_evidence(p)
+    text = strip_emphasis(p.text)  # step 24 C: a whole bold line can be a subheading even in a Text region
+    header = heading_evidence(p, bold=True)
     limit = SUBHEADING_HEADER_MAX if header else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
     # step 16 C3: an OCR heading may end with «:» («## Проведение проверки:» over «### Документарная проверка»)
     open_ = not terminated(text) or (header and final_char(text) == ":")
@@ -1071,18 +1077,18 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
         # step 16 C3: a run of OCR headings also follows a point that lost its final «.»
         finished = final_char(prev.text) in ".;" if prev is not None else False
         if prev is not None and not finished and prev.marker.kind in POINT_KINDS and final_char(prev.text).isalnum():
-            finished = all(heading_evidence(q) for q in seq[k:end + 1])
+            finished = all(heading_evidence(q, bold=True) for q in seq[k:end + 1])
         if (prev is not None and id(prev) in index and finished
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
             # step 21.4 B (pp-1521-2014): a run of OCR headings between points of the scope root is the root's heading
-            if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(heading_evidence(q) for q in seq[k:end + 1])):
+            if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(heading_evidence(q, bold=True) for q in seq[k:end + 1])):
                 runs.append((seq[k:end + 1], parent))
         k = end + 1
-    styled = sum(any(heading_evidence(q) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
+    styled = sum(any(heading_evidence(q, bold=True) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
     changed: set[int] = set()
     for run, parent in runs:
-        if not styled and (not any(heading_evidence(q) for q in run)
+        if not styled and (not any(heading_evidence(q, bold=True) for q in run)
                            or not all(subheading_candidate(q) for q in run)):
             continue
         for q in run:
@@ -2037,8 +2043,16 @@ def build(extraction: dict) -> dict:
     for scope_path, items in scopes:
         body = [p for p in items if p.flow == "body" and p.kind == "text"]
         list_prev = None  # (delimiter, value, rolled over) when the previous body paragraph is a list line
-        for p in body:
-            p.marker = parse_marker(p.text, p.first.category)
+        for k, p in enumerate(body):
+            marker_text = p.text
+            # Step 24 A: «1.1.» followed immediately by its parenthesised field caption is a form position;
+            # a bare number over a table (professional standards) is not enough evidence to open a point.
+            if re.fullmatch(r"\d{1,3}(?:\.\d{1,3})+\.", marker_text) and k + 1 < len(body):
+                caption = body[k + 1]
+                if (caption.first.page == p.regions[-1].page and caption.first.index == p.regions[-1].index + 1
+                        and caption.text.startswith("(") and not signature_caption(caption.text)):
+                    marker_text += " " + caption.text  # matching view only; source regions stay separate
+            p.marker = parse_marker(marker_text, p.first.category)
             if p.first.category in NOISE_CATEGORIES and p.marker.kind != "none":
                 # step 12 B1: a page header/footer is outside the text flow and never opens a unit («1. Коприво …»)
                 p.marker = Marker("none")

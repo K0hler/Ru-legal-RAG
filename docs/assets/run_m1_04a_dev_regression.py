@@ -1,4 +1,4 @@
-"""M1-04A regression runner: a prototype snapshot over the 203 development documents.
+"""M1-04A regression runner: a prototype snapshot over the 237 development documents.
 
 Scoring is convention v1 (Picture and running-noise regions are not scored) with the
 ``owner-path/2`` evaluator; ``no_section`` is the main metric. Cycle 3 (owner decision
@@ -42,7 +42,8 @@ step 17 ``gold-dotted``: that copy with a paragraph after the last dotted subpoi
 sanpin-30-2020 stitched from two parts, step 17) and the 9 + 7 + 7 SanPiN of scan batches 17-19 (gold as frozen;
 sanpin-81-2016 stitched from two parts, step 20) and SanPiN 1.2.3685-21 of scan batch 20 (gold as frozen, stitched from
 five parts, step 21) and the 10 acts of scan batch 21 (gold as frozen, step 22) and the 12 acts of 2020-2026 of scan batch 22 (gold as
-frozen, step 23); all are development since their first pass. Only gold keys are scored, so a gold that covers a
+frozen, step 23) and the 12 acts of scan batch 23 (gold as frozen, step 24); all are development since their first pass.
+Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
@@ -118,6 +119,9 @@ BATCH_21 = ("pp-547-2017", "pp-648-2016", "prikaz-fano-29-2017", "prikaz-minekon
 BATCH_22 = ("pp-1590-2021", "pp-1684-2024", "pp-6-2023", "pp-963-2021", "prikaz-fns-269-2020", "prikaz-fsin-447-2023",
             "prikaz-fsis-136-2026", "prikaz-minfinansov-143-2026", "prikaz-minprirodnykh-955-2021", "rp-1622-2020",
             "rp-2139-2020", "rp-599-2023")
+BATCH_23 = ("pp-167-2024", "pp-857-2023", "prikaz-fskatr-14-2026", "prikaz-minselskogo-83-2020",
+            "prikaz-minsporta-1074-2025", "prikaz-mintruda-71-2026", "prikaz-minvnutrennikh-677-2020",
+            "rp-1301-2020", "rp-2694-2022", "rp-3160-2020", "rp-3262-2020", "rp-3906-2023")
 # Step 21.2 (owner decisions of 28.10.2026 applied to earlier golds by hand-checked maps): a paragraph after the last
 # dotted subpoint stays in it (prikaz-fns-815-2024, 13 regions) and a footnote belongs to the point with its mark
 # (prikaz-mintruda-141-2023 endnotes, 8 regions, on top of its forms copy).
@@ -176,7 +180,8 @@ def development_documents() -> list[dict]:
                                  ("batch-15", BATCH_15, "gold-dotted"), ("batch-16", BATCH_16, "gold"),
                                  ("batch-17", BATCH_17, "gold"), ("batch-18", BATCH_18, "gold"),
                                  ("batch-19", BATCH_19, "gold"), ("batch-20", BATCH_20, "gold"),
-                                 ("batch-21", BATCH_21, "gold"), ("batch-22", BATCH_22, "gold")):
+                                 ("batch-21", BATCH_21, "gold"), ("batch-22", BATCH_22, "gold"),
+                                 ("batch-23", BATCH_23, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{GOLD_OVERRIDE.get(slug, suffix)}.txt"})

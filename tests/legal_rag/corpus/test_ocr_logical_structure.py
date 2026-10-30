@@ -3049,3 +3049,62 @@ def test_step_23_subheading_after_a_page_mark_and_a_second_fill_in_list():
         ("Text", "Реквизиты документов:"), ("Text", "1. __________;"), ("Text", "2. __________;")))))
     assert got["2.3"] == "A/AN1/1" and got["2.4"] == "A/AN1/2" and got["2.5"] == "A/AN1"
     assert got["2.7"] == "A/AN1/1" and got["2.8"] == "A/AN1/2"
+
+
+def test_step_24_bare_decimal_form_positions_keep_their_field_captions():
+    pages = readmission_form(
+        ("Text", "1. Сведения о территории"), ("Text", "1.1."),
+        ("Text", "(наименование субъекта Российской Федерации)"), ("Text", "1.2."),
+        ("Text", "(перечень муниципальных образований)"), ("Text", "2. Обоснование создания территории"))
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == got["2.4"] == "A/AN1/1/1.1"
+    assert got["2.5"] == got["2.6"] == "A/AN1/1/1.2"
+    assert S.parse_marker("12.02.2026", "Text").kind == "none"
+
+
+def test_step_24_bare_decimal_table_rubric_without_a_field_caption_opens_no_point():
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "1. Сведения о трудовой функции"), ("Text", "1.1."),
+        ("Table", "<table><tr><td>Наименование</td><td>Код</td></tr></table>"),
+        ("Text", "Уровень квалификации")))))
+    assert got["2.3"] == got["2.4"] == "A/AN1/1"
+
+
+@pytest.mark.parametrize("category", ["Text", "Page-header"])
+def test_step_24_form_sheet_marks_are_separate_from_the_field_across_pages(category):
+    pages = readmission_form(
+        ("Text", "2. Сведения о лицах"), ("Text", "Место для служебных отметок регистрирующего органа"))
+    pages.append([(category, "оборотная сторона листа № 1"), ("Text", "продолжение сведений о лицах.")])
+    got = owners(S.build(extraction(pages)))
+    assert got["2.3"] == got["3.0"] == "A/AN1"
+    assert got["2.2"] == got["3.1"] == "A/AN1/2"
+
+
+def test_step_24_bold_body_subheadings_use_the_section_without_rewriting_the_text():
+    heading = "**Порядок предоставления государственной услуги**"
+    ext = extraction(regulation(("Text", "46. Государственная пошлина возвращается."),
+                                ("Text", heading), ("Text", "47. Плата за услугу не предусмотрена.")))
+    before = copy.deepcopy(ext)
+    got = owners(S.build(ext))
+    assert got["2.3"] == "S/I"
+    assert ext == before
+    # A bold sentence with a final period is still text of the point.
+    got = owners(S.build(extraction(regulation(
+        ("Text", "46. Государственная пошлина возвращается."),
+        ("Text", "**Плата за услугу не предусмотрена.**"), ("Text", "47. Заявитель подает запрос.")))))
+    assert got["2.3"] == "S/I/46"
+
+
+def test_step_24_bold_sentence_after_a_signer_opens_no_attached_document():
+    pages = [[("Text", "1. Утвердить прилагаемый Регламент."), ("Text", "Министр", 1200)],
+             [("Text", "**Документы направляются по почте.**")]]
+    assert owners(S.build(extraction(pages)))["2.0"] == "A"
+
+
+@pytest.mark.parametrize("closing", ["Составлен ______ 20______.", "Ответ на запрос прошу направить __________"])
+def test_step_24_form_completion_and_reply_address_start_the_requisite_tail(closing):
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "6. Срок действия ______ (лет)"), ("Text", closing),
+        ("Text", "(указывается полный почтовый адрес)"), ("Text", "Начальник __________")))))
+    assert all(got[f"2.{i}"] == "A/AN1" for i in (3, 4, 5))
+    assert got["2.2"] == "A/AN1/6"
