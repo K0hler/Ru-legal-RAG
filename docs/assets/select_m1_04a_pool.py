@@ -1191,6 +1191,11 @@ PROFILES["batch-21"] = {**PROFILES["batch-16"], "quotas": BATCH21_QUOTAS, "sanpi
 BATCH22_QUOTAS = {"government_resolution": 4, "ministry_order": 5, "government_order": 3}
 PROFILES["batch-22"] = {**PROFILES["batch-21"], "quotas": BATCH22_QUOTAS, "tree_allowed": ("government_resolution",),
                         "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 22))}
+# Scan batch 23 (owner 30.10.2026 «Да, П23», same rule as batch 22): first-check error share since batch 16 — government
+# orders 16.3%, orders 2.9%, resolutions 0.3% (SanPiN 14.8% has no candidates left) — so 5 + 5 + 2, acts of 2020+.
+BATCH23_QUOTAS = {"government_order": 5, "ministry_order": 5, "government_resolution": 2}
+PROFILES["batch-23"] = {**PROFILES["batch-22"], "quotas": BATCH23_QUOTAS,
+                        "prior_batches": tuple(f"batch-{k:02d}" for k in range(1, 23))}
 MIN_DAYS_CHOICES = (0, 60, 120)  # the run checks quotas only after 60 and 120 days
 DOCUMENTS = PROJECT / "data/m1/m1-04a/documents"
 USED_INDEXES = (DOCUMENTS / "index.json", DOCUMENTS / "pool/batch-01/index.json")

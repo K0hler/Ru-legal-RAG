@@ -29,6 +29,8 @@
   and records batch 20 measured then development.
   Batch-22: batch-21 settings with 4 resolutions, 5 orders, 3 government orders (types with the most first-check
   errors), prior batches 1-21; the catalog lists batch 22 and records batch 21 measured then development.
+  Batch-23: batch-22 settings with 5 government orders, 5 orders, 2 resolutions, prior batches 1-22; the catalog lists
+  batch 23 and records batch 22 measured then development.
 
 - Cycle 8 C1-C3 tests in `corpus/test_ocr_logical_structure.py` (inserted chapter/section/§ numbers, editorial
   notes owned by the named unit with negatives, list restarted after a closing sentence with «;»/quotation

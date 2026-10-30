@@ -327,6 +327,11 @@
   `mark_restarts`: «1.» after a fill-in «2. ___;» restarts. `…-step23-g` (c4cb1f3d…) 49150/49207 (99.88%), every
   document at 99% or more, nothing below; JSON `step23-g` equal to v22 per act. rp-1622 71/71, minprirodnykh-955
   196/196, fns-269 506/508 (left: two Text subheadings after a page-foot stamp picture).
+- Step 23 freeze (owner 30.10.2026 «Да, П23»): П23 = v23 `ocr-logical-structure/23-experiment` in
+  `data/m1/m1-04a/experiments/20261030-prototype-v23-freeze/`; regression `20261030-dev-regression-225-v23`
+  49150/49207 (equal to `…-step23-g`), JSON `v23-results.json` equal to v22 per act. Checked on scan batch 23: profile
+  `batch-23` (acts of 2020+, first-check error share since batch 16: government orders 16.3%, orders 2.9%,
+  resolutions 0.3% -> 5 + 5 + 2).
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),

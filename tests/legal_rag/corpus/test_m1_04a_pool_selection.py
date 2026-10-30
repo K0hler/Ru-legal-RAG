@@ -1661,7 +1661,7 @@ def test_sanpin_slug_uses_the_resolution_number():
 def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_16():
     # Step 14 (28.10.2026) took batches 14 and 15 into development; batch 16 checks П14.
     catalog = load_script("build_m1_04a_catalog")
-    assert catalog.POOL_BATCHES[15] == "batch-16" and catalog.POOL_BATCHES[-1] == "batch-22"
+    assert catalog.POOL_BATCHES[15] == "batch-16" and catalog.POOL_BATCHES[-1] == "batch-23"
     for batch, report in (("batch-14", "M1_04A_POOL_BATCH_14_2026-10-28.md"), ("batch-15", "M1_04A_POOL_BATCH_15_2026-10-28.md")):
         history = catalog.POOL_STATUS[batch]
         assert [h["status"] for h in history] == ["measured", "development"]
@@ -1672,7 +1672,8 @@ def test_catalog_records_batches_14_and_15_checked_then_rework_and_lists_batch_1
         assert [h["status"] for h in catalog.POOL_STATUS[f"batch-{n}"]] == ["measured", "development"]
     assert [h["status"] for h in catalog.POOL_STATUS["batch-20"]] == ["measured", "development"]
     assert [h["status"] for h in catalog.POOL_STATUS["batch-21"]] == ["measured", "development"]
-    assert "batch-22" not in catalog.POOL_STATUS  # written only after the check
+    assert [h["status"] for h in catalog.POOL_STATUS["batch-22"]] == ["measured", "development"]
+    assert "batch-23" not in catalog.POOL_STATUS  # written only after the check
 
 
 # ---------------------------------------------------------------- scan batch 15: more SanPiN, titled acts only
@@ -1729,6 +1730,15 @@ def test_batch_22_weights_the_types_with_most_first_check_errors():
     assert b22["tree_allowed"] == ("government_resolution",) and "tree_allowed" not in b21
     assert {k: v for k, v in b22.items() if k not in ("quotas", "prior_batches", "tree_allowed")} == {
         k: v for k, v in b21.items() if k not in ("quotas", "prior_batches")}
+
+
+def test_batch_23_weights_the_types_with_most_recent_first_check_errors():
+    # Owner 30.10.2026 «Да, П23»: batch-22 settings, 5 government orders, 5 orders, 2 resolutions, excluding 1-22.
+    b22, b23 = P.PROFILES["batch-22"], P.PROFILES["batch-23"]
+    assert b23["quotas"] == {"government_order": 5, "ministry_order": 5, "government_resolution": 2}
+    assert b23["prior_batches"] == tuple(f"batch-{k:02d}" for k in range(1, 23))
+    assert {k: v for k, v in b23.items() if k not in ("quotas", "prior_batches")} == {
+        k: v for k, v in b22.items() if k not in ("quotas", "prior_batches")}
 
 
 def test_tree_allowed_types_pass_the_ips_tree_filter(monkeypatch):
