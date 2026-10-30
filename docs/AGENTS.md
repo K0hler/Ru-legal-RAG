@@ -299,6 +299,16 @@
   freeze.json quotes П20 44453 — that was on the golds before the 29.10 decisions. Checked on scan batch 21: profile
   `batch-21` (no SanPiN left; 2 decrees, 2 resolutions, 2 government orders, 4 orders; batch-16 settings; no law: every
   law offered had an IPS tree).
+- Step 22 (owner 30.10.2026 «Да, шаг 22»; batch 21 in development, regression = 213 documents, baseline
+  `20261030-dev-regression-213-v21` 47021/47188): A `letter_part` — «А. Персональные данные», «Б. …» heading lines
+  (`UNIT_RANK` 0, label lowercase «а») are parts of a form only as a run «А.», «Б.» … (`letter_parts`; a lone «А. …»
+  is text); B `numbering_gaps` — an approved text with sections is still a table document when the markers between
+  its tables skip numbers («I.» then «III.», «1.» then «32.», rp-22-2015); C `FIELD_LINE` takes a trailing date blank
+  «"__" ______ 20__ г.»; D `FORM_SIGNER_LINE` «Подпись представителя …» opens the requisite block, `BLANK_LINE` under
+  a field or right under a letter part stays there (first under any heading: cost JSON pp-…102369318 one strict region,
+  narrowed in `…-step22-e`). `…-step22-e` (a4bcf79a…) 47133/47188 (99.88%), every document at 99% or more, nothing
+  below; JSON `step22-e` equal to `v21` per act. rp-1829-2015 318/319 (left: a page footer «250826a2 …» repeating
+  the next page's text), rp-22 235/235, pp-648 158/158.
   Below 99%: minkultury-1321, rp-1431 / rp-2728.
 - `assets/survey_ips_tree_coverage.py` (owner request 28.10.2026): sample estimate of which IPS acts have an official
   structure tree. Phases `frame` (every search page per act type of the owner's 32-type list, base c000000000),

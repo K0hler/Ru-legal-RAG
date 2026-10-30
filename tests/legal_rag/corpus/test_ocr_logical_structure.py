@@ -2947,3 +2947,47 @@ def test_a_plain_text_title_before_a_numbered_caption_makes_a_headed_table():
         ("Text", "Предельно допустимые концентрации (ПДК) химических веществ в воде"), ("Text", "Таблица 3.13"), T,
         ("Text", "19. Контроль проводится лабораториями.")))))
     assert got["2.3"] == "S/I" and got["2.4"] == "S/I" and got["2.5"] == "S/I"
+
+
+def readmission_form(*parts):
+    """An order with one annex form whose parts are «А.», «Б.» … (rp-1829-2015 readmission forms)."""
+    return [[("Text", "1. Утвердить прилагаемую форму."), ("Text", "Председатель Правительства", 1100)],
+            [("Text", "Приложение № 1 к распоряжению", 900), ("Text", "ЗАПРОС О РЕАДМИССИИ"), *parts]]
+
+
+def test_step_22_letter_parts_of_a_form_and_their_fields():
+    # Step 22 A: «А. Персональные данные», «Б. Особые обстоятельства» open parts with their own points 1, 2 …; D: a blank
+    # under a part heading and under a field «2. … ______» stays with them; «Подпись представителя …» opens the
+    # form's requisite block.
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "А. Персональные данные"), ("Text", "1. Фамилия, имя, отчество ______"),
+        ("Text", "2. Документы, дающие основание предполагать гражданство, __________"), ("Text", "__________"),
+        ("Text", "Б. Особые обстоятельства"), ("Text", "1. Состояние здоровья"),
+        ("Text", "В. Примечания"), ("Text", "__________"),
+        ("Text", "Подпись представителя компетентного органа запрашивающей Стороны"), ("Text", "М.П.")))))
+    assert [got[f"2.{index}"] for index in range(2, 6)] == ["A/AN1/а", "A/AN1/а/1", "A/AN1/а/2", "A/AN1/а/2"]
+    assert got["2.6"] == "A/AN1/б" and got["2.7"] == "A/AN1/б/1"
+    assert got["2.8"] == "A/AN1/в" and got["2.9"] == "A/AN1/в"
+    assert got["2.10"] == "A/AN1" and got["2.11"] == "A/AN1"
+    # a lone «А. …» line (no «Б.» after it) opens no part
+    got = owners(S.build(extraction(readmission_form(("Text", "А. Персональные данные"),
+                                                     ("Text", "1. Фамилия, имя, отчество ______")))))
+    assert got["2.3"] == "A/AN1/1"
+
+
+def test_step_22_table_document_with_skipped_rubric_numbers_reads_them_as_rows():
+    # Step 22 B (rp-22-2015): a plan under «УТВЕРЖДЕН» that is one table; the rubrics «I.», «III.» and rows «1.», «32.»
+    # cut out between its parts skip numbers, so they are rows: text of the document (`S`). A standard whose «I.»,
+    # «II.» go on without gaps keeps its sections (Mintrud, step 21.7 H).
+    head = [[("Text", "1. Утвердить прилагаемый план."), ("Text", "Председатель Правительства", 1100)],
+            [("Text", "УТВЕРЖДЕН\nраспоряжением Правительства", 1000), ("Section-header", "ПЛАН"), MEASURES]]
+    got = owners(S.build(extraction(head[:1] + [head[1] + [
+        ("Section-header", "I. Общие мероприятия"), ("Text", "1. Разработка документации"), MEASURES,
+        ("Text", "32. Реализация мероприятий"), ("Section-header", "III. Наука и образование"), MEASURES]])))
+    assert [got[f"2.{index}"] for index in range(3, 9)] == ["S"] * 6
+    # Step 22 C (pp-648-2016): a field ending in a date blank «"__" ______ 20__ г.» hands the table under it to the form
+    got = owners(S.build(extraction(readmission_form(
+        ("Text", "1. Дата предоставления кредита __________"),
+        ("Text", '2. Дата уплаты процентов по кредиту "__" __________ 20__ г.'), MEASURES,
+        ("Text", "Размер субсидии __________ рублей")))))
+    assert got["2.4"] == "A/AN1" and got["2.5"] == "A/AN1"

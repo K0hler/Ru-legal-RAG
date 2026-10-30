@@ -345,7 +345,7 @@ CODE_PART_ORDINALS = {"ПЕРВАЯ": 1, "ВТОРАЯ": 2, "ТРЕТЬЯ": 3, "
                       "ШЕСТАЯ": 6, "СЕДЬМАЯ": 7, "ВОСЬМАЯ": 8, "ДЕВЯТАЯ": 9, "ДЕСЯТАЯ": 10}
 CODE_PART = re.compile(rf"^ЧАСТЬ\s+({'|'.join(CODE_PART_ORDINALS)})\.?(?=\s|$)")
 SUBSECTION = re.compile(rf"^(?:ПОДРАЗДЕЛ|Подраздел)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
-UNIT_RANK = {"code_part": -1, "roman": 0, "section_named": 0, "subsection": 0.5, "chapter": 1,
+UNIT_RANK = {"code_part": -1, "roman": 0, "section_named": 0, "letter_part": 0, "subsection": 0.5, "chapter": 1,
              "paragraph_sign": 2, "article": 3}
 
 
@@ -416,6 +416,11 @@ def parse_marker(text: str, category: str) -> Marker:
     if m and roman_value(m.group(1)) and heading_like(text, category):
         v = roman_value(m.group(1))
         return Marker("roman", v, to_roman(v))
+    # step 22 A (rp-1829-2015): a form's part «А. Персональные данные», «Б. Примечание» (kept by ``letter_parts``)
+    m = re.match(r"^([А-ЯЁ])\.\s+[А-ЯЁ][а-яё]", text)
+    if m and m.group(1).lower() in LETTERS and heading_like(text, category):
+        letter = m.group(1).lower()
+        return Marker("letter_part", LETTERS.index(letter) + 1, letter)
     m = re.match(r"^(\d{1,3}(?:\.\d{1,3})+)\.?\s+\S", text)
     if m:
         parts = tuple(int(p) for p in m.group(1).split("."))
@@ -480,6 +485,35 @@ def next_roman_section(text: str, romans: set[int]) -> int | None:
 
 
 ROMAN_SEQUENCE_EVIDENCE = {"roman_sequence": "«N.» after sections I to N-1 of the scope opens section N"}
+
+
+LETTER_PART_EVIDENCE = {"letter_part": "«А.», «Б.» … in sequence: parts of the document, each with its own points"}
+
+
+def letter_parts(body: list[Paragraph]) -> None:
+    """Step 22 A: «А. …», «Б. …», «В. …» heading lines are parts of a form (rp-1829-2015 readmission forms: «А.
+    Персональные данные» with points 1-12, «Б. Особые обстоятельства …» with its own 1, 2) only as a run that starts
+    at «А.» and goes on with «Б.»; any other such line («А. Иванов» under a signature) is text."""
+    marks = [k for k, p in enumerate(body) if p.marker.kind == "letter_part"]
+    keep, expected = set(), 1
+    run: list[int] = []
+    for k in marks:
+        value = body[k].marker.value
+        if value == expected:
+            run.append(k)
+            expected += 1
+            continue
+        if len(run) >= 2:
+            keep.update(run)
+        run, expected = ([k], 2) if value == 1 else ([], 1)
+    if len(run) >= 2:
+        keep.update(run)
+    for k in marks:
+        if k in keep:
+            body[k].kind = "heading"
+            body[k].evidence.append(dict(LETTER_PART_EVIDENCE))
+        else:
+            body[k].marker = Marker("none")
 
 
 def roman_sequence(items: list[Paragraph], rows: set[int]) -> None:
@@ -581,6 +615,11 @@ SIGNATURE_HEADING = re.compile(r"^(?:(?:юридические\s+)?адреса|
 INITIALS = r"[А-ЯЁ]\.\s?(?:[А-ЯЁ]\.\s?)?[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?"
 # the signature heading of a form: «Подписи членов рабочей комиссии:», «Подпись руководителя:» (a few words, a colon)
 FORM_SIGNATURE_HEADING = re.compile(r"^Подпис[иь](?:\s+[а-яё]+){1,5}:$")
+# step 22 D (rp-1829-2015 readmission forms): the signature line «Подпись представителя центрального компетентного органа
+# государства запрашивающей Стороны» under a form's last part
+FORM_SIGNER_LINE = re.compile(r"^Подпись\s+[а-яё]+(?:\s+\S+){0,15}$")
+FORM_SIGNER_LINE_MAX = 200
+BLANK_LINE = re.compile(r"^[_\s]{3,}$")
 # Step 13 B3: the captions under a form's signature lines — «(подпись)», «(наименование должности», «(инициалы,
 # фамилия)» — and the seal place «М.П.» («М.П. (при наличии)»). Not «(фамилия, имя, отчество)»: that captions a
 # field of the form («Я, ______,»), not its signature.
@@ -648,6 +687,8 @@ def requisite_like(text: str) -> bool:
         return True
     if SIGNATURE_HEADING.match(text) or FORM_SIGNATURE_HEADING.match(text):
         return True
+    if FORM_SIGNER_LINE.match(text) and len(text) <= FORM_SIGNER_LINE_MAX and not terminated(text):
+        return True
     return bool(SIGNER.match(text)) and len(text) < 120 and not terminated(text)
 
 
@@ -687,7 +728,8 @@ def fill_in_line(text: str) -> bool:
 # Step 21.5 C (prikaz-minkultury-1321-2016): a numbered field line with labels and blanks ending in a blank
 # («20. Телефон/факс __________ Адрес электронной почты __________»): a sentence after it is the form's, the field's
 # caption «(…)» stays with the field.
-FIELD_LINE = re.compile(r"^\d{1,3}[.)]\s+\S.*_{5,}\s*$")
+# step 22 C (pp-648-2016): a field may end with a date blank «"__" __________ 20__ г.»
+FIELD_LINE = re.compile(r"^\d{1,3}[.)]\s+\S.*_{5,}\s*(?:\d{2}_{2}\s*г\.?)?\s*$")
 
 
 def field_line(text: str) -> bool:
@@ -1664,6 +1706,17 @@ def point_references(body: list[Paragraph]) -> None:
         prev = p.marker
 
 
+def numbering_gaps(markers: list[Marker]) -> bool:
+    """Step 22 B: two successive «I.»-sections or «N.» points of the list skip a number (III after I, 32 after 1)."""
+    last: dict[str, int] = {}
+    for m in markers:
+        if m.kind in {"roman", "int"}:
+            if m.kind in last and m.value > last[m.kind] + 1:
+                return True
+            last[m.kind] = m.value
+    return False
+
+
 def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     """Ids of marked body paragraphs that are rows of a table annex (owner decision 23.10.2026,
     convention v2 §6). When an annex scope (`…/AN<n>`) opens with a table (no marked paragraph before
@@ -1681,8 +1734,12 @@ def table_rows(scope_path: str, items: list[Paragraph]) -> set[int]:
     tables = [k for k, p in enumerate(seq) if p.kind == "table"]
     if not tables or any(p.marker.kind not in {"none", "dash"} for p in seq[:tables[0]] if p.kind != "table"):
         return set()
-    if not ANNEX_SCOPE.search(scope_path) and any(p.marker.kind in UNIT_RANK for p in seq):
-        return set()  # an approved text with sections («I. Общие сведения», Mintrud standards) is no table document
+    if not ANNEX_SCOPE.search(scope_path) and any(p.marker.kind in UNIT_RANK for p in seq) and not numbering_gaps(
+            [p.marker for p in seq[tables[0] + 1:tables[-1]] if p.kind != "table"]):
+        # an approved text with sections («I. Общие сведения», Mintrud standards) is no table document; step 22 B: it
+        # is one when the markers between its tables skip numbers («I.» then «III.», row «1.» then «32.», rp-22-2015):
+        # the rows in between stayed inside the table cells
+        return set()
     rows = [p for p in seq[tables[0] + 1:tables[-1]]
             if p.kind in {"text", "heading"} and p.marker.kind not in {"none", "dash"}
             and (p.marker.kind not in UNIT_RANK or p.marker.kind == "roman")]
@@ -1966,6 +2023,7 @@ def build(extraction: dict) -> dict:
         labelled_first_items(items)
         quoted_markers(items)
         roman_sequence(items, rows)
+        letter_parts(body)
         mark_restarts(items)
         stacks = solve_depths([p.marker for p in body], article_parts=scope_path == "A")
         for p, stack in zip(body, stacks):
@@ -1994,7 +2052,10 @@ def build(extraction: dict) -> dict:
         # position either; by its text (a closing rule «____» after a quotation whose quote mark was lost) it still does
         # step 13 B3: a form's signature caption («(подпись)», «М.П.») opens it, but not inside an amending quotation
         # (a quoted form ends «М.П. (при наличии)".»)
+        # step 22 D: a blank line right under a part heading («Г. Примечания» / «__________») is that part's field
         block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
+                      and not (k == last_marked + 1 and body[last_marked].marker.kind == "letter_part"
+                               and BLANK_LINE.match(body[k].text))
                       and PAGE_MARK_EVIDENCE not in body[k].evidence and not body[k].text[0].islower()
                       and (requisite_like(body[k].text)
                            or (signature_caption(body[k].text)
@@ -2027,7 +2088,8 @@ def build(extraction: dict) -> dict:
                 p.kind = "signature"
                 p.owner = scope_path
             elif (p.marker.kind == "none" and blank is not None and stack == blank[0]
-                  and not (blank[2] and p.text.startswith(("(", "*")))):
+                  and not (blank[2] and (p.text.startswith(("(", "*")) or BLANK_LINE.match(p.text)))):
+                # step 22 D: a blank line under a field «2. Документы …, ______» is more room of that field
                 p.owner = blank[1]  # a fill-in line holds no text: what follows it belongs to its parent
                 p.evidence.append(dict(FILL_IN_EVIDENCE))
             else:

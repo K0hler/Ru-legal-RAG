@@ -41,7 +41,8 @@ step 17 ``gold-dotted``: that copy with a paragraph after the last dotted subpoi
 28.10.2026) and the 12 of scan batch 16 (gold as frozen in ``20261028-batch-16-gold-freeze``; sanpin-16-2026 and
 sanpin-30-2020 stitched from two parts, step 17) and the 9 + 7 + 7 SanPiN of scan batches 17-19 (gold as frozen;
 sanpin-81-2016 stitched from two parts, step 20) and SanPiN 1.2.3685-21 of scan batch 20 (gold as frozen, stitched from
-five parts, step 21); all are development since their first pass. Only gold keys are scored, so a gold that covers a
+five parts, step 21) and the 10 acts of scan batch 21 (gold as frozen, step 22); all are development since their first
+pass. Only gold keys are scored, so a gold that covers a
 sample of regions (sanpin-3684) is scored on that sample.
 """
 
@@ -111,6 +112,9 @@ BATCH_18 = ("sanpin-17-2026", "sanpin-19-2016", "sanpin-26-2015", "sanpin-44-201
 BATCH_19 = ("sanpin-110-2017", "sanpin-15-2019", "sanpin-15-2026", "sanpin-52-2018", "sanpin-81-2016", "sanpin-84-2017",
             "sanpin-91-2014")
 BATCH_20 = ("sanpin-2-2021",)
+BATCH_21 = ("pp-547-2017", "pp-648-2016", "prikaz-fano-29-2017", "prikaz-minekonomicheskogo-3-2018",
+            "prikaz-minprirodnykh-362-2016", "prikaz-minvnutrennikh-247-2016", "rp-1829-2015", "rp-22-2015",
+            "ukaz-233-2016", "ukaz-403-2013")
 # Step 21.2 (owner decisions of 28.10.2026 applied to earlier golds by hand-checked maps): a paragraph after the last
 # dotted subpoint stays in it (prikaz-fns-815-2024, 13 regions) and a footnote belongs to the point with its mark
 # (prikaz-mintruda-141-2023 endnotes, 8 regions, on top of its forms copy).
@@ -168,7 +172,8 @@ def development_documents() -> list[dict]:
                                  ("batch-13", BATCH_13, "gold"), ("batch-14", BATCH_14, "gold"),
                                  ("batch-15", BATCH_15, "gold-dotted"), ("batch-16", BATCH_16, "gold"),
                                  ("batch-17", BATCH_17, "gold"), ("batch-18", BATCH_18, "gold"),
-                                 ("batch-19", BATCH_19, "gold"), ("batch-20", BATCH_20, "gold")):
+                                 ("batch-19", BATCH_19, "gold"), ("batch-20", BATCH_20, "gold"),
+                                 ("batch-21", BATCH_21, "gold")):
         for slug in slugs:
             docs.append({"name": slug, "group": group, "extraction": extraction_path(slug),
                          "gold": POOL / "gold" / slug / f"agent-{slug}.{GOLD_OVERRIDE.get(slug, suffix)}.txt"})

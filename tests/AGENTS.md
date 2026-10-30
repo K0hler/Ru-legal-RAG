@@ -39,6 +39,10 @@
 - `corpus/test_m1_04a_gold_forms.py` covers the §6.1 forms derivation: mapped roots (owners and alternatives, tails
   kept), exact copies without a map, a map not pinned to the frozen gold refused, write-once outputs and receipt rows.
 
+- Step 22: form parts «А.», «Б.», «В.» with their own points, blanks under a field or a part heading, «Подпись
+  представителя …» to the form root, a lone «А. …» opens nothing; a table plan whose rubrics skip numbers («I.», «III.»,
+  «1.», «32.») reads them as rows; a field ending «20__ г.» hands the table under it to the form. Dev regression lists
+  213 documents (batch 21 on `gold`).
 - Step 21.7 H: an approved text that is a table reads its cut-out row «1.» and a last «4.15. …» as text (`S`), a «1.»
   after the last table is a point, and one with «I.» sections keeps its points (the old «keeps its row numbers» test
   and the step-25 `S/1` expectation changed by the owner decision).
