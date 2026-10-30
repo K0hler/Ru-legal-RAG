@@ -181,6 +181,14 @@
   error classes v12 8715c086… / v11 d375154b…, sample-30 702872b5… (seed 20261103, 30/30). Pass the 11 slugs
   explicitly.
 
+- Scan batch 22 (30.10.2026, the check of П22 = v22): profile `batch-22` (seed 20261122, `--from 2020-01-01 --to
+  2026-10-29`, `tree_allowed` for resolutions; first run without it: `b22-select.attempt1.log`), 12 acts; OCR
+  `experiments/20261030-batch-22-ocr/` (first start failed: Docker Desktop was not running, log
+  `b22-ocr.attempt1-no-docker.log`): prikaz-minkultury-1928-2025 (189 p.) timed out on p. 19 -> failure record,
+  refill 01 (71e76a9d…) -> prikaz-fsin-447-2023 (`…-ocr-refill-01`); `index.pre-refill-01.json` kept. 5 Codex jobs
+  `.superpowers/sdd/2026-10-30-m1-04a-pool-batch-22/`; gold 2019 regions frozen `…-batch-22-gold-freeze/`
+  (d9d55a46…); check `…-batch-22-first-pass/` (cd7575b3…, summary 78d60150…), run once: П22 1893/2019, П21 1893.
+  Scripts with dated paths need 20261030 (scratchpad `gcheck30.py`, `gfreeze30.py`, `gpass22.sh`).
 - Scan batch 21 (29.10.2026, the check of П21 = v21): profile `batch-21` (seed 20261121, `--min-days 120`; the first
   run with 2 laws left `quotas not filled`, log `b21-select.attempt1.log`), 10 acts without an IPS tree; acquired 10/10
   `new` then `unchanged`; OCR `experiments/20261029-batch-21-ocr/` complete, replays equal; 6 Codex jobs
