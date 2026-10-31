@@ -79,6 +79,8 @@ development failures, experiments and superseded approaches.
 
 ### M1-04A: universal OCR structure parser
 
+- [Source requisites metadata research](milestones/m1/04a/M1_04A_REQUISITES_METADATA_2026-10-31.md) — empty titles versus absent cards, bounded counts, live examples and current adapter rejection; identity behavior remains unchanged.
+
 **Naming (owner decision 27.10.2026) — read first:** [M1-04A task map](milestones/m1/04a/M1_04A_MAP_2026-10-25.md),
 section 0. Step N (old word «цикл») freezes prototype **П<N>**, which is checked on scan **batch N**: one number for
 all three. Old names stay in old reports and in data paths; the map's section 3 maps them (П8 = v7, П9 = v8,

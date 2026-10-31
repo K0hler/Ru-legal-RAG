@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261031-requisites-metadata-research-01/` contains the
+  metadata-only audit of saved publication cards/feed cache, two complete live
+  day listings, targeted card responses and old native-card observations.
+  Frozen inputs remain unchanged; this is not OCR, parser qualification or a
+  portal-wide missing-card census. The audit refuses to overwrite its summary.
+
 - `m1/m1-04a/experiments/20261031-owner-organization-01/` retains the organized
   parser's 237 full output comparisons, identical baseline metrics/errors,
   original function/stage AST checks, CLI checks and a final code-hash manifest.

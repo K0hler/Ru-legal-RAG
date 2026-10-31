@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- Requisites metadata research, 31.10.2026:
+  `milestones/m1/04a/M1_04A_REQUISITES_METADATA_2026-10-31.md` distinguishes absent
+  cards, empty titles, optional fields and adapter rejection. The 2369-row cache
+  is already filtered (195 separate rejects), not a portal-wide completeness
+  sample. Archived cards and old IPS/actual pilot snapshots likewise cannot
+  establish an overall missing-card rate. No identity behavior was changed.
+
 - Compiler connection, 31.10.2026: maintain post-П23 rules in
   `src/legal_rag/corpus/ocr_owner_structure.py` and its private `_ocr_owner/`
   package; the experimental
