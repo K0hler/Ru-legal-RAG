@@ -1,7 +1,8 @@
 # Corpus compilation module
 
 - Since 31.10.2026 the compiler's PDF route uses `ocr_owner_ast.build_owner_tree`
-  over the maintained `ocr_owner_structure.py` rules developed after П23.
+  over the maintained `ocr_owner_structure.py` entry point and `_ocr_owner/`
+  rules developed after П23.
   `ocr_structure.py` / `pdf_tree` remain historical diagnostic entry points and
   supply the existing identity check, not the compiler's legal hierarchy.
   Empty owner containers carry anchors/numbers; only content leaves own source
@@ -13,6 +14,14 @@
   retains `pdf_structure_unqualified`; this connection does not pass Task 3.
   HTML rows use physical `block_id` order for these trees, since multi-region
   paragraphs have separate source spans and intentionally no aggregate span.
+- The owner parser's private `_ocr_owner/` package separates source records
+  (`model`), matching predicates (`text`), markers/depth solving (`markers`),
+  regions/joins (`paragraphs`), document scopes (`scopes`), tables/forms (`tables`)
+  and owner refinement (`ownership`). The public module keeps `build`, `VERSION`,
+  CLI and explicit compatibility helpers used by the authored checks. Its three
+  extracted stages preserve rule/evidence order. Dependencies must remain acyclic;
+  the entry-point hash alone does not freeze the private rules. Full-output parity
+  and every error/metric stayed unchanged on 237 development scans after this split.
 - The authored owner-rule suite now targets the maintained production module.
   Keep `docs/assets/ocr_logical_structure.py` and frozen prototypes as historical
   references; make future rule changes in the production module. The initial

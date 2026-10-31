@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261031-owner-organization-01/` retains the organized
+  parser's 237 full output comparisons, identical baseline metrics/errors,
+  original function/stage AST checks, CLI checks and a final code-hash manifest.
+  These are existing development scans only; no new OCR, compiler triple replay,
+  prototype freeze or independent qualification was performed.
+
 - Compiler connection, 31.10.2026: `experiments/20261031-owner-production-regression/`
   retains the 237-scan rule comparison. `20261031-owner-compiler-integration-03/`
   is the final compiler/adapter replay after review corrections; partial `-01/`

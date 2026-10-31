@@ -1,7 +1,8 @@
 # Documentation instructions
 
 - Compiler connection, 31.10.2026: maintain post-П23 rules in
-  `src/legal_rag/corpus/ocr_owner_structure.py`; the experimental
+  `src/legal_rag/corpus/ocr_owner_structure.py` and its private `_ocr_owner/`
+  package; the experimental
   `assets/ocr_logical_structure.py` and frozen prototypes remain historical.
   `assets/export_owner_maps.py` / the first-pass `current` route now use the
   actual compiler adapter `ocr_owner_ast.build_owner_tree`, exporting only
@@ -13,6 +14,12 @@
   maintained module (or an approved frozen copy); the runner's historical
   no-argument prototype default still names the retained experiment.
   Connection report: `milestones/m1/04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md`.
+- Owner-parser organization, 31.10.2026: `run_m1_04a_first_pass.tracked()`
+  recursively hashes corpus Python files so nested rule modules remain in every
+  new first-pass freeze. A dev-regression `prototype_sha256` identifies only its
+  entry file; it is not a complete rule freeze. Keep a full code-hash manifest
+  with parity evidence. Historical prototype/freeze outputs stay unchanged.
+  Report: `milestones/m1/04a/M1_04A_OWNER_ORGANIZATION_2026-10-31.md`.
 
 - `research/ZAKON_LEGAL_AI_TAKEAWAYS_2026-10-23.md` retains the Zakon.ru
   article takeaways and two primary texts read on 22 October 2026. Keep verified

@@ -163,6 +163,7 @@ unseen data, old «мера») and **доработка** (everything else, old 
 
 ## Individual plans
 
+- [Maintained owner-parser organization](plans/2026-10-31-m1-04a-owner-organization.md) — behavior-preserving module split and full development-output checks; [Russian result report](milestones/m1/04a/M1_04A_OWNER_ORGANIZATION_2026-10-31.md).
 - [Housing Code HTML parser](plans/2026-10-13-housing-html-parser.md)
 - [Independent structure audit](plans/2026-10-15-independent-structure-audit.md)
 - [Official structure integration](plans/2026-10-15-official-structure-integration.md)

@@ -7,6 +7,9 @@
   table preservation, explicit unit kinds, superscript number metadata and
   rejection of changed source/bindings/parents/anchors. The repeated-parser
   validator checks conversion consistency; it is not independent qualification.
+- `corpus/test_m1_04a_batch_tools.py` keeps nested production parser modules in
+  the first-pass freeze and verifies that modifying one fails before run outputs
+  are created. Use synthetic files only; do not alter saved freezes for this test.
 
 - `corpus/test_m1_04a_pool_selection.py` covers targeted code metadata freezes,
   checksum refusal, standalone code titles across portal types, code slugs and

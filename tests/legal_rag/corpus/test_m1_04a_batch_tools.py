@@ -513,6 +513,33 @@ def test_classifier_reads_single_annex_paths_before_evidence_rules():
 # ---- cycle 3 / A2: freeze coverage and single-annex defaults for new batches
 
 
+def test_first_pass_freeze_tracks_nested_parser_modules_and_rejects_changes(monkeypatch, tmp_path):
+    monkeypatch.setattr(R, "ROOT", tmp_path)
+    script = tmp_path / "runner.py"
+    script.write_text("# test runner\n", encoding="utf-8")
+    for name in ("PROTOTYPE", "EVALUATOR", "EXPORTER", "__file__"):
+        monkeypatch.setattr(R, name, script)
+    package = tmp_path / "src/legal_rag/corpus/_ocr_owner"
+    package.mkdir(parents=True)
+    nested = package / "markers.py"
+    nested.write_text("VALUE = 1\n", encoding="utf-8")
+    top_level = package.parent / "ocr_owner_structure.py"
+    top_level.write_text("# entry point\n", encoding="utf-8")
+    gold_freeze = tmp_path / "gold-freeze.json"
+    gold_freeze.write_text('{"files": {}}', encoding="utf-8")
+
+    files = R.tracked("batch-24", [], gold_freeze)
+    assert files["src/legal_rag/corpus/ocr_owner_structure.py"] == R.sha(top_level)
+    assert files["src/legal_rag/corpus/_ocr_owner/markers.py"] == R.sha(nested)
+    output = tmp_path / "first-pass"
+    output.mkdir()
+    (output / "freeze.json").write_text(json.dumps({"files": files}), encoding="utf-8")
+    nested.write_text("VALUE = 2\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="changed after freeze: src/legal_rag/corpus/_ocr_owner/markers.py"):
+        R.do_run(output)
+    assert sorted(p.name for p in output.iterdir()) == ["freeze.json"]
+
+
 def _stub_freeze_world(monkeypatch, tmp_path):
     """Run do_freeze / do_run on a throw-away root with a fake prototype and no git."""
     import types

@@ -210,7 +210,7 @@ def totals(rows: list[dict]) -> dict:
 
 def tracked(batch: str, slugs: list[str], gold_freeze: Path, extra: tuple[Path, ...] = ()) -> dict:
     files = [PROTOTYPE, EVALUATOR, EXPORTER, Path(__file__).resolve(), gold_freeze, *extra]
-    files += sorted((ROOT / "src" / "legal_rag" / "corpus").glob("*.py"))
+    files += sorted((ROOT / "src" / "legal_rag" / "corpus").rglob("*.py"))
     for slug in slugs:
         files += [extraction(slug), gold(slug), M / "gold" / slug / "annotation-notes.md", source(batch, slug)]
     return {rel(p): sha(p) for p in files}
