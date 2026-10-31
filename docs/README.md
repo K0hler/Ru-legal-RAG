@@ -90,6 +90,7 @@ unseen data, old «мера») and **доработка** (everything else, old 
 
 - [Plain-language problem brief](milestones/m1/04a/M1_04A_PROBLEM_BRIEF_2026-10-19.md) — standalone Russian explanation for readers outside the project: purpose, failure causes, tool results and remaining work.
 - [Task and experiment plan](plans/2026-10-17-m1-04a-ocr-structure.md) — in progress: existing OCR files, additional official documents, reusable legal hierarchy and independent transfer checks. M1-06 consumes the resulting parser for full SanPiN coverage.
+- [Compiler connection](milestones/m1/04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md) — post-П23 rules in ordinary PDF compilation, source preservation and saved-input replay; Task 3 remains pending. [Integration plan](plans/2026-10-31-m1-04a-compiler-integration.md).
 - Data layout: new M1-04A originals, OCR, gold and experiments live under local `data/m1/m1-04a/` (see `data/AGENTS.md`); `assets/build_m1_04a_catalog.py` rebuilds the hash-verified document copies.
 - [Cycle 3 plan](plans/2026-10-22-m1-04a-cycle-3.md) — single-annex equivalence (owner 22.10.2026), scope-transfer check, provenance/freeze coverage, then prototype v2 (law and document annexes, «Раздел» level, subheadings, subpoint closing) with regression over 34 development documents.
 - [Pool batch 4 plan](plans/2026-10-23-m1-04a-pool-batch-4.md) — first measure of frozen prototype v2 on 11 unseen acts (no codes left in the census), blind gold under convention v2, single-annex and `cross_scope_v2` by default, v1 for comparison.

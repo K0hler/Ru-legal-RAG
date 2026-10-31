@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_ocr_logical_structure.py` now exercises maintained production
+  `ocr_owner_structure.py`, not the retained experimental copy.
+  `corpus/test_ocr_owner_ast.py` covers actual compiler dispatch, deterministic
+  compilation/replay, source accounting/locators, unresolved identity/owners,
+  table preservation, explicit unit kinds, superscript number metadata and
+  rejection of changed source/bindings/parents/anchors. The repeated-parser
+  validator checks conversion consistency; it is not independent qualification.
+
 - `corpus/test_m1_04a_pool_selection.py` covers targeted code metadata freezes,
   checksum refusal, standalone code titles across portal types, code slugs and
   selection/refill from the same frozen candidate list. Include an authored

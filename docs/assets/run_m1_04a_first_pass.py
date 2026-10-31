@@ -1,9 +1,9 @@
-"""M1-04A check-pool first pass: frozen prototype and current /7 against frozen agent gold.
+"""M1-04A check-pool first pass: frozen prototype and current compiler against frozen agent gold.
 
 Committed port of ``experiments/20261021-batch-01-first-pass/code/run_first_pass.py``
-(sha256 ``62f34f25…``, the copy that produced batch 1). Behaviour of ``freeze`` and
-``run`` is unchanged except that paths are arguments and a scoring convention is
-applied. Every phase writes once into a new directory and never overwrites.
+(sha256 ``62f34f25…``, the copy that produced batch 1). Freezing and scoring retain
+the historical protocol; the ``current`` route follows production compilation.
+Every phase writes once into a new directory and never overwrites.
 
 Phases:
   freeze   --out DIR --gold-freeze F --batch B --slugs ... [--prototype LABEL=PATH ...]
@@ -41,12 +41,10 @@ Scoring conventions (``docs/milestones/m1/04a/M1_04A_ANNOTATION_CONVENTION_v1.md
   v1           regions whose OCR category is ``Picture`` and running noise are
                not scored, as in the earlier logical-paragraph gold.
 
-Current /7 export: ``export_owner_maps.export_current`` for families that
-``build_ocr_structure`` supports; otherwise the production fallback
-``pdf_extraction.pdf_tree`` (generic ``build_structure``) with region keys taken
-from the extraction's block -> source_region_id map. Generic typed kinds get
-the gold prefixes (article->ст, part->ч, chapter->гл, subchapter->§); no parent
-is inferred. No system code is changed.
+Current export (31.10.2026): ``export_owner_maps.export_current`` uses the same
+``ocr_owner_ast.build_owner_tree`` adapter as the compiler. Only parsed bindings
+are exported; unresolved identity/ownership remains null. Retained old runs and
+their frozen runner copies are unchanged.
 """
 
 from __future__ import annotations
@@ -299,23 +297,8 @@ def typed(address: str | None) -> str | None:
 
 
 def export_current(exporter, ext: dict, claim: str) -> tuple[dict, dict]:
-    from legal_rag.corpus.ocr_structure import build_ocr_structure
-    from legal_rag.corpus.pdf_extraction import pdf_tree
-
-    if build_ocr_structure(ext, claim, "original") is not None:
-        owners, meta = exporter.export_current(ext, claim, "original")
-        return owners, {**meta, "route": "build_ocr_structure"}
-    keys = exporter.region_keys(ext)
-    tree = pdf_tree(ext, claim, "original")
-    region_of = {b["block_id"]: b["source_region_id"] for b in ext["blocks"]}
-    owners = {key: None for key in keys.values()}
-    for entry in [*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]]:
-        region = region_of.get(entry.get("block_id"))
-        if region in keys and entry.get("address"):
-            owners[keys[region]] = exporter.current_path(typed(entry["address"]), tree["namespace"])
-    return owners, {"route": "pdf_tree_fallback_build_structure", "nodes": len(tree["nodes"]),
-                    "unresolved_blocks": len(tree["unresolved_blocks"]),
-                    "parser_version": tree["parser_version"], "identity": tree["identity_decision"]["status"]}
+    owners, meta = exporter.export_current(ext, claim, "original")
+    return owners, {**meta, "route": "build_owner_tree"}
 
 
 def do_run(out: Path) -> None:

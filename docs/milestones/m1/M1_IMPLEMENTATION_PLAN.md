@@ -303,6 +303,10 @@ The first shared OCR adapter now compiles/replays all 205 development pages;
 [its report](04a/M1_04A_STRUCTURE_2026-10-17.md) preserves remaining critical
 failures. This is diagnostic implementation, not closure or G13 qualification.
 
+On 31 October, the owner rules developed after П23 were connected to ordinary PDF compilation through a
+source-preserving `legal-ast/2` adapter. [Connection report](04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md).
+Unknown identity/owners remain unresolved and every PDF retains `pdf_structure_unqualified`; Task 3 is still pending.
+
 Build reusable legal hierarchy reconstruction over `text-extraction/1`: approving act, approved text, section/chapter/article/point/subpoint, annex, table and footnote ownership where supported. Inspect all retained M1-04 files and current diagnostic parser failures before extending the shared engine. Keep physical structure, exact text/source spans and unresolved findings; OCR field names and individual act identities must not drive legal rules. Detailed task and execution checks: [M1-04A plan](../../plans/2026-10-17-m1-04a-ocr-structure.md).
 
 Acceptance:

@@ -1,5 +1,23 @@
 # Corpus compilation module
 
+- Since 31.10.2026 the compiler's PDF route uses `ocr_owner_ast.build_owner_tree`
+  over the maintained `ocr_owner_structure.py` rules developed after П23.
+  `ocr_structure.py` / `pdf_tree` remain historical diagnostic entry points and
+  supply the existing identity check, not the compiler's legal hierarchy.
+  Empty owner containers carry anchors/numbers; only content leaves own source
+  text. Keep exact raw text, separate source spans across regions, table topology,
+  physical regions and explicit unresolved owners. Display whitespace is a view.
+  Unknown identity keeps all content unresolved even when owner proposals exist;
+  region bindings distinguish proposals from parsed content. Repeated printed
+  owner paths and missing marker evidence stay structural issues. Every PDF
+  retains `pdf_structure_unqualified`; this connection does not pass Task 3.
+  HTML rows use physical `block_id` order for these trees, since multi-region
+  paragraphs have separate source spans and intentionally no aggregate span.
+- The authored owner-rule suite now targets the maintained production module.
+  Keep `docs/assets/ocr_logical_structure.py` and frozen prototypes as historical
+  references; make future rule changes in the production module. The initial
+  promotion produced identical results on all 237 known development scans.
+
 - M1-04A adds diagnostic `ocr_structure.py` (`ocr-layout-structure/7`) before
   the shared grammar for government/sanitary resolutions. Group only physical
   OCR paragraphs, retaining source block IDs, every token/span and region binding;

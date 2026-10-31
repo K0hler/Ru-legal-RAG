@@ -17,7 +17,7 @@ def load_script(name):
     return module
 
 
-S = load_script("ocr_logical_structure")
+from legal_rag.corpus import ocr_owner_structure as S  # noqa: E402
 EVAL = load_script("evaluate_ocr_owner_gold")
 
 

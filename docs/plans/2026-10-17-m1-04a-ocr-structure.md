@@ -4,6 +4,10 @@
 
 **Status:** in progress from 17 October 2026. Tasks 1–2 have diagnostic implementation/evidence in [the initial report](../milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) and [the shared OCR report](../milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md). Critical development structure remains unresolved; Task 3 qualification is pending, not passed.
 
+**31 October connection:** ordinary PDF compilation now uses the owner rules developed after П23 through a
+source-preserving `legal-ast/2` adapter. [Integration report](../milestones/m1/04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md).
+This is an engineering connection; the reserved Task 3 qualification has not been performed.
+
 **Task board:** [M1-04A: Универсальный структурный парсер OCR](https://trello.com/c/fX6dQ9HM), ready for work with eight incomplete acceptance items.
 
 **Goal:** Turn normalized OCR output into a reusable, source-bound legal hierarchy and demonstrate its transfer to additional official documents.

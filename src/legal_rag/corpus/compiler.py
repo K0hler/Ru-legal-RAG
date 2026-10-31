@@ -370,13 +370,13 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extra
                 trees.append(native_tree(asset, extraction))
             continue
         if asset["metadata"]["media_type"] == "application/pdf":
-            from .pdf_extraction import pdf_tree
+            from .ocr_owner_ast import build_owner_tree
 
             if asset["sha256"] not in pdf_extractions:
                 raise ValueError("PDF requires an extraction index; run corpus extract first")
             extraction = pdf_extractions[asset["sha256"]]
             extractions.append(extraction)
-            trees.append(pdf_tree(extraction, asset["declared_identity"], asset["role"]))
+            trees.append(build_owner_tree(extraction, asset["declared_identity"], asset["role"]))
             blockers.add("ocr_review_required")
             continue
         if asset["metadata"]["media_type"] != "text/plain; charset=utf-8":
@@ -471,15 +471,21 @@ def _report(manifest: dict, draft: dict) -> str:
     sections = []
     for tree in draft["content"]["trees"]:
         asset = next(asset for asset in manifest["assets"] if asset["sha256"] == tree["source_asset_sha256"])
-        blocks = sorted([*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]],
-                        key=lambda block: (block.get("source_span") or {}).get("char_start", -1))
+        blocks = [*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]]
+        if tree.get("owner_parser"):
+            blocks.sort(key=lambda block: block["block_id"] if block["block_id"] is not None else -1)
+        else:
+            blocks.sort(key=lambda block: (block.get("source_span") or {}).get("char_start", -1))
         document_rows, excluded_rows = [], []
         excluded_ids = {block["block_id"] for block in tree["excluded_blocks"] if "block_id" in block}
         for block in blocks:
             label = block.get("caption", "")
-            row = ("<tr><td>" + escape(block.get("address", block.get("reason", "")))
+            locator = escape((block.get("source_span") or {}).get("locator", "Границы источника не разрешены"))
+            if tree.get("owner_parser") and not block.get("source_span") and block.get("source_spans"):
+                locator = "<br>".join(escape(s["locator"]) for s in block["source_spans"])
+            row = ("<tr><td>" + escape(block.get("address") or block.get("reason", ""))
                    + ("<pre>" + escape(label) + "</pre>" if label else "") + "</td><td>"
-                   + escape((block.get("source_span") or {}).get("locator", "Границы источника не разрешены")) + "</td><td><pre>" + escape(block["text"])
+                   + locator + "</td><td><pre>" + escape(block["text"])
                    + "</pre>" + ("<details><summary>Original source text and HTML</summary><pre>"
                      + escape(block["original_text"]) + "</pre><pre>" + escape(block["original_html"])
                      + "</pre></details>" if "original_html" in block else "") + "</td></tr>")

@@ -3,7 +3,7 @@
 The paths use the gold syntax of ``evaluate_ocr_owner_gold.py``. Adapters only
 rename existing addresses/tree nodes; they never infer a new parent.
 
-* current: ``legal_rag.corpus.ocr_structure.build_ocr_structure`` region bindings;
+* current: the compiler's ``legal_rag.corpus.ocr_owner_ast.build_owner_tree`` region bindings;
   unresolved/excluded regions map to ``null``.
 * dedoc: retained ``parsed-1.json`` API tree; a region belongs to the nearest
   numbered node (item/subitem/chapter/application) that carries its source uid.
@@ -71,11 +71,12 @@ def current_path(address, namespace="act"):
 
 
 def export_current(extraction, claim, role):
-    from legal_rag.corpus.ocr_structure import build_ocr_structure
+    from legal_rag.corpus.ocr_owner_ast import build_owner_tree
 
-    tree = build_ocr_structure(extraction, claim, role)
+    tree = build_owner_tree(extraction, claim, role)
     keys = region_keys(extraction)
-    return {keys[b["region_id"]]: current_path(b["address"], tree["namespace"]) for b in tree["region_bindings"]}, {
+    return {keys[b["region_id"]]: b["owner_path"] if b["disposition"] == "parsed" else None
+            for b in tree["region_bindings"]}, {
         "nodes": len(tree["nodes"]), "unresolved_blocks": len(tree["unresolved_blocks"]),
         "parser_version": tree["parser_version"], "identity": tree["identity_decision"]["status"]}
 

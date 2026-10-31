@@ -1,5 +1,16 @@
 # Local data instructions
 
+- Compiler connection, 31.10.2026: `experiments/20261031-owner-production-regression/`
+  retains the 237-scan rule comparison. `20261031-owner-compiler-integration-03/`
+  is the final compiler/adapter replay after review corrections; partial `-01/`
+  and `-02/` are superseded and retained. Logs are under
+  `20261031-step24-diagnostics/`. These use existing development extractions and
+  permissions, never reserved bodies or fresh OCR. Unconfirmed source identity
+  keeps content unresolved; matching owner proposals alone is not qualification.
+  After the final HTML-only source-order correction, all 229 compiled drafts
+  were rendered/replayed under `20261031-owner-compiler-reports-01/`, with source
+  order/locators checked; reports in `-integration-03/` retain the previous layout.
+
 - Since 21.10.2026 all new M1-04A work lives under `m1/m1-04a/`:
   `documents/{development,reserved,pool/<batch>}/<slug>/` hold hash-verified
   copies of originals (`document.pdf` + `source.json`) built by
