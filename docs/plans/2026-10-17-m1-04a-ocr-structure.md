@@ -8,6 +8,10 @@
 source-preserving `legal-ast/2` adapter. [Integration report](../milestones/m1/04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md).
 This is an engineering connection; the reserved Task 3 qualification has not been performed.
 
+**31 October scope decision:** the owner moved requisites discussion/expansion and the empty-title loader fix
+to a [separate deferred task](2026-10-31-npa-requisites-task.md), to work on after M1-04A. Keep current identity
+behavior and source/provenance checks; resume structural completion under the existing Task 3 protocol.
+
 **Task board:** [M1-04A: Универсальный структурный парсер OCR](https://trello.com/c/fX6dQ9HM), ready for work with eight incomplete acceptance items.
 
 **Goal:** Turn normalized OCR output into a reusable, source-bound legal hierarchy and demonstrate its transfer to additional official documents.

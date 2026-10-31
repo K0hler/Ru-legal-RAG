@@ -79,6 +79,8 @@ development failures, experiments and superseded approaches.
 
 ### M1-04A: universal OCR structure parser
 
+- [Deferred requisites task](plans/2026-10-31-npa-requisites-task.md) — separate follow-up after M1-04A, including the recorded empty-title loader fix; not started.
+
 - [Source requisites metadata research](milestones/m1/04a/M1_04A_REQUISITES_METADATA_2026-10-31.md) — empty titles versus absent cards, bounded counts, live examples and current adapter rejection; identity behavior remains unchanged.
 
 **Naming (owner decision 27.10.2026) — read first:** [M1-04A task map](milestones/m1/04a/M1_04A_MAP_2026-10-25.md),

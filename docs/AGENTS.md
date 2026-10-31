@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- Owner decision, 31.10.2026: requisites discussion/expansion and the empty-title
+  loader fix are deferred to `plans/2026-10-31-npa-requisites-task.md`, Trello
+  `https://trello.com/c/UdIdY6We`, after M1-04A. Record the loader defect; do not
+  implement it while completing M1-04A. The identity-presentation decision stays
+  open. This split does not waive source provenance or structural qualification.
+
 - Requisites metadata research, 31.10.2026:
   `milestones/m1/04a/M1_04A_REQUISITES_METADATA_2026-10-31.md` distinguishes absent
   cards, empty titles, optional fields and adapter rejection. The 2369-row cache
