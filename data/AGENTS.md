@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261031-closure-preflight-02/` retains diagnostic adapter
+  results for the known ten-PDF/103-page baseline and 112 matching control text
+  anchors. Semantic legacy-address comparison and independent qualification are
+  not performed. `-01/` is superseded (wrong text-hash view), preserved as history.
+  Reserved metadata only was inventoried; reserved bodies remain unopened.
+
 - `m1/m1-04a/experiments/20261031-requisites-metadata-research-01/` contains the
   metadata-only audit of saved publication cards/feed cache, two complete live
   day listings, targeted card responses and old native-card observations.

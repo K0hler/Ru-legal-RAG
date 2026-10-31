@@ -1,5 +1,10 @@
 # Documentation instructions
 
+- M1-04A closure resumes under `plans/2026-10-31-m1-04a-closure.md`. Its baseline
+  preflight verifies source/control text anchors, not semantic parent correctness.
+  Never report 112 matching text hashes as 112 passed structural relations, or
+  treat the retained legacy prefix scanner as independent exhaustive gold.
+
 - Owner decision, 31.10.2026: requisites discussion/expansion and the empty-title
   loader fix are deferred to `plans/2026-10-31-npa-requisites-task.md`, Trello
   `https://trello.com/c/UdIdY6We`, after M1-04A. Record the loader defect; do not

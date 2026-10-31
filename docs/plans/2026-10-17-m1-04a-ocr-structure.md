@@ -11,6 +11,7 @@ This is an engineering connection; the reserved Task 3 qualification has not bee
 **31 October scope decision:** the owner moved requisites discussion/expansion and the empty-title loader fix
 to a [separate deferred task](2026-10-31-npa-requisites-task.md), to work on after M1-04A. Keep current identity
 behavior and source/provenance checks; resume structural completion under the existing Task 3 protocol.
+Current evidence and remaining execution checks: [closure checklist](2026-10-31-m1-04a-closure.md).
 
 **Task board:** [M1-04A: Универсальный структурный парсер OCR](https://trello.com/c/fX6dQ9HM), ready for work with eight incomplete acceptance items.
 
