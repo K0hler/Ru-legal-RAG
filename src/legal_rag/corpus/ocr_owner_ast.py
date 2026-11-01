@@ -9,7 +9,7 @@ from ._ocr_owner.text import ANNEX
 from .ocr_structure import _identity, prepare
 from .structure import _number_fields
 
-VERSION = "ocr-owner-ast/2"
+VERSION = "ocr-owner-ast/3"
 KINDS = {"int": "point", "decimal": "point", "paren": "subitem", "letter": "subitem",
          "article": "article", "chapter": "chapter", "roman": "section", "letter_part": "part",
          "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter",
@@ -103,7 +103,6 @@ def build_owner_tree(extraction, declared_identity, role):
     namespace = "amendment/" + extraction["source_asset_sha256"] if role == "amendment" else "act"
     version = VERSION + "+" + result["parser_version"]
     identity = _identity(prepare(extraction)["blocks"], declared_identity)
-    identity_unresolved = identity["status"] == "unresolved"
     nodes, unresolved, excluded, containers, entries = [], [], [], {}, {}
     issues = {"pdf_structure_unqualified"}
     markers = _unit_markers(result, tokens, token_ids)
@@ -143,8 +142,8 @@ def build_owner_tree(extraction, declared_identity, role):
         ids = [r["region_id"] for r in paragraph["regions"]]
         entry = _entry(ids, tokens, regions, token_ids)
         entry.update(kind=paragraph["kind"], owner_path=paragraph["owner"], evidence=deepcopy(paragraph["evidence"]))
-        if identity_unresolved or _unresolved(paragraph):
-            entry.update(kind="unresolved_block", reason="identity_unresolved" if identity_unresolved else "owner_unresolved", address=None)
+        if _unresolved(paragraph):
+            entry.update(kind="unresolved_block", reason="owner_unresolved", address=None)
             unresolved.append(entry)
         else:
             parent = owner_node(paragraph["owner"])
@@ -202,7 +201,6 @@ def validate_owner_tree(extraction, tree):
     identity = _identity(prepare(extraction)["blocks"], tree["identity_decision"]["declared_identity"])
     if tree["identity_decision"] != identity:
         raise ValueError("changed OCR identity decision")
-    identity_unresolved = identity["status"] == "unresolved"
     if (tree["source_asset_sha256"] != extraction["source_asset_sha256"]
             or tree["extraction_id"] != extraction.get("extraction_id")
             or tree["document_tree"] != extraction["document_tree"]
@@ -272,7 +270,7 @@ def validate_owner_tree(extraction, tree):
     for binding in bindings:
         rid = binding["region_id"]
         paragraph = paragraphs.get(rid)
-        disposition = "excluded" if paragraph is None else "unresolved" if identity_unresolved or _unresolved(paragraph) else "parsed"
+        disposition = "excluded" if paragraph is None else "unresolved" if _unresolved(paragraph) else "parsed"
         actual = "excluded" if id(leaf_regions[rid]) in excluded_ids else (
             "unresolved" if id(leaf_regions[rid]) in unresolved_ids else "parsed")
         entry = leaf_regions[rid]

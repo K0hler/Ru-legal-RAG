@@ -104,14 +104,67 @@ def test_wrong_number_parent_and_missing_units_are_reported():
     assert set(error["failures"]) == {"number", "parent"}
 
 
-def test_unconfirmed_canonical_content_never_passes_from_matching_proposals():
+def test_unconfirmed_requisites_do_not_block_source_structure_controls():
     from legal_rag.corpus.ocr_owner_ast import build_owner_tree
     source, _, packet, controls = source_case()
     tree = build_owner_tree(source, "a different act", "original")
-    report = checker().compare_controls(source, tree, packet, controls)
+    report = checker().validate_controls(source, tree, packet, controls)
     assert report["owner_proposals_passed"] == 15
-    assert report["canonical_regions_passed"] == 0
-    assert len(report["unit_errors"]) == len(controls["units"])
+    assert report["canonical_regions_passed"] == 15 and not report["unit_errors"]
+    assert tree["identity_decision"]["status"] == "unresolved" and tree["edition_admission"] is False
+
+
+def test_unresolved_regions_cannot_pass_full_acceptance():
+    source, tree, packet, controls = source_case()
+    tree["unresolved_regions"] = [{"region_id": "unresolved structural evidence"}]
+    with pytest.raises(ValueError):
+        checker().validate_controls(source, tree, packet, controls)
+
+
+def test_consistent_inclusion_of_page_noise_in_a_point_fails_acceptance():
+    source, tree, packet, controls = source_case()
+    noise = next(c for c in controls["regions"] if c["status"] == "noise")
+    rid = next(r["region_id"] for r in packet["regions"] if r["key"] == noise["key"])
+    entry = next(e for e in tree["excluded_blocks"] if rid in e["source_region_ids"])
+    tree["excluded_blocks"].remove(entry)
+    entry.update(kind="body", layout_kind="body", address="act/content/" + str(entry["block_id"]),
+                 owner_path="S/I/1", parent_address="act/owner/S/I/1", children=[])
+    pos = next((i for i, e in enumerate(tree["nodes"]) if e.get("source_region_ids")
+                and e["block_id"] > entry["block_id"]), len(tree["nodes"]))
+    tree["nodes"].insert(pos, entry)
+    for node in tree["nodes"]:
+        node["children"] = [c["address"] for c in tree["nodes"] if c["parent_address"] == node["address"]]
+    for binding in tree["region_bindings"]:
+        if binding["region_id"] == rid:
+            binding.update(address=entry["address"], owner_path="S/I/1", disposition="parsed")
+    for label, group in (("parsed", tree["nodes"]), ("unresolved", tree["unresolved_blocks"]), ("excluded", tree["excluded_blocks"])):
+        tree["accounting"][label + "_text_nodes"] = sum(len(e["text_node_ids"]) for e in group)
+        tree["accounting"][label + "_source_chars"] = sum(len(e["original_text"]) for e in group)
+    with pytest.raises(ValueError):
+        checker().validate_controls(source, tree, packet, controls)
+
+
+@pytest.mark.parametrize("damage", ["number", "parent", "continuation", "critical", "qualification_flag", "ambiguous"])
+def test_full_structural_acceptance_still_rejects_real_failures(damage):
+    source, tree, packet, controls = source_case()
+    unit = next(n for n in tree["nodes"] if n["owner_path"] == "S/I/1" and not n.get("source_region_ids"))
+    if damage == "number":
+        unit["number_display"] = "99"
+    elif damage == "parent":
+        unit["parent_address"] = "act/owner/A"
+        for n in tree["nodes"]:
+            n["children"] = [c["address"] for c in tree["nodes"] if c["parent_address"] == n["address"]]
+    elif damage == "continuation":
+        tree["region_bindings"][0]["continuation"] = True
+    elif damage == "critical":
+        tree["structural_issues"].append("unsupported_critical_shape")
+    elif damage == "qualification_flag":
+        tree["structural_issues"] = []
+    else:
+        controls["regions"][0].update(status="ambiguous", owner=None, candidates=["A", "S"], reason="unresolved source")
+        controls["uncertainties"] = ["unresolved source"]
+    with pytest.raises(ValueError):
+        checker().validate_controls(source, tree, packet, controls)
 
 
 def test_legal_unit_order_is_checked_separately_from_physical_content_order():

@@ -318,9 +318,13 @@ table-owner differences, four continuation misses and nine annex-number omission
 controls. All237development owner metrics/error lists and batch23per-document >99% remain unchanged.
 No.2/No.16 still leave39canonical regions/11units unresolved; Task3 and M1-04A closure remain pending.
 
-Owner decision, 31 October: requisites discussion/expansion and the empty-title loader fix are recorded as a
-[separate follow-up](../../plans/2026-10-31-npa-requisites-task.md), after M1-04A. Current identity behavior and
-provenance checks remain; structural qualification below is still required for M1-04A closure.
+Superseding owner decision, 1 November: OCR requisites are a
+[separate task](../../plans/2026-10-31-npa-requisites-task.md) and excluded from M1-04A acceptance,
+including Task 3. `ocr-owner-ast/3` builds legally unverified nodes even when identity is unresolved;
+the identity decision and downstream admission blocker remain. This is a scoped exception to the
+general identity-before-address/transfer requirements above, not a waiver of provenance, permissions,
+reserved-act membership or dated legal admission. Execute the
+[current Task 3 plan](../../plans/2026-11-01-m1-04a-task3.md); historical runs above remain unchanged.
 
 Build reusable legal hierarchy reconstruction over `text-extraction/1`: approving act, approved text, section/chapter/article/point/subpoint, annex, table and footnote ownership where supported. Inspect all retained M1-04 files and current diagnostic parser failures before extending the shared engine. Keep physical structure, exact text/source spans and unresolved findings; OCR field names and individual act identities must not drive legal rules. Detailed task and execution checks: [M1-04A plan](../../plans/2026-10-17-m1-04a-ocr-structure.md).
 

@@ -6,6 +6,10 @@ Start with the [product requirements](overview/PRODUCT_REQUIREMENTS.md),
 Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
+Current M1-04A work: [Task 3 execution](plans/2026-11-01-m1-04a-task3.md).
+The owner excluded OCR requisites from its structural criteria on 1 November;
+[requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
+
 | Folder | Contents |
 |---|---|
 | [overview/](overview/) | Product scope, architecture, roadmap and terminology |

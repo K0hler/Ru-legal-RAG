@@ -1367,3 +1367,8 @@ Scope: every file under `docs/`.
   not full legal acceptance. Preserve 147 protected files and earlier attempts;
   do not present the experimental format as a production contract or G13 result.
   User-facing analytical overviews and experiment reports must be in Russian.
+- Owner decision 01.11.2026 excludes OCR requisites from M1-04A/Task 3 acceptance.
+  `plans/2026-11-01-m1-04a-task3.md` supersedes earlier identity-based readiness
+  refusals. Preserve historical results, source/permission/split integrity and
+  downstream legal admission. `check_m1_04a_source_controls.validate_controls`
+  requires full independent structural acceptance, not confirmed requisites.

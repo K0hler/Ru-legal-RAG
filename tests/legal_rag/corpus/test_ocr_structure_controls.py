@@ -58,7 +58,7 @@ def test_full_authored_source_controls_pass_without_calling_the_candidate(monkey
 
 
 @pytest.mark.parametrize("damage", ["parent", "number", "order", "missing_region", "duplicate_text", "text", "view", "span", "block_id",
-                                    "table", "table_kind", "footnote_owner", "anchor", "identity", "critical", "unresolved",
+                                    "table", "table_kind", "footnote_owner", "anchor", "source_identity", "critical", "unresolved",
                                     "document_tree", "accounting", "control_coverage", "control_independence", "number_display", "number_components", "number_is_explicit"])
 def test_independent_controls_reject_corruption(damage):
     source, tree, controls = authored_case()
@@ -96,8 +96,8 @@ def test_independent_controls_reject_corruption(damage):
         binding["owner_path"] = "S/I/2"
     elif damage == "anchor":
         point["anchor_region_ids"] = []
-    elif damage == "identity":
-        tree["identity_decision"]["number"] = "99"
+    elif damage == "source_identity":
+        tree["source_asset_sha256"] = "wrong source"
     elif damage == "critical":
         tree["structural_issues"].append("unsupported_critical_shape")
     elif damage == "unresolved":
@@ -127,6 +127,12 @@ def test_consistent_wrong_numbered_scope_is_not_accepted_as_its_own_gold():
         return value
     with pytest.raises(ValueError, match="control"):
         validator().validate_structure(source, rename(tree), controls)
+
+
+def test_ocr_requisites_are_not_a_structural_acceptance_criterion():
+    source, tree, controls = authored_case()
+    tree["identity_decision"].update(status="unresolved", number=None, signing_date=None)
+    assert validator().validate_structure(source, tree, controls)["units"] == 8
 
 
 @pytest.mark.parametrize("damage", ["content_order", "content_parent", "table_kind_only"])

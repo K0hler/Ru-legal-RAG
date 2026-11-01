@@ -32,8 +32,11 @@
   Empty owner containers carry anchors/numbers; only content leaves own source
   text. Keep exact raw text, separate source spans across regions, table topology,
   physical regions and explicit unresolved owners. Display whitespace is a view.
-  Unknown identity keeps all content unresolved even when owner proposals exist;
-  region bindings distinguish proposals from parsed content. Repeated printed
+  Since the owner decision of 01.11.2026, `ocr-owner-ast/3` builds legally
+  unverified structure independently of OCR identity; only genuinely unresolved
+  owners/notes suppress nodes. Requisites are outside M1-04A acceptance. Keep
+  the identity decision accurate and the compiler's separate identity admission
+  blocker; never relax source/permission checks. Repeated printed
   owner paths and missing marker evidence stay structural issues. Every PDF
   retains `pdf_structure_unqualified`; this connection does not pass Task 3.
   HTML rows use physical `block_id` order for these trees, since multi-region

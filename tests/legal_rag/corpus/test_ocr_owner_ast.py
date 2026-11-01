@@ -34,6 +34,9 @@ def test_compile_pdf_uses_the_maintained_owner_parser_and_keeps_blockers(tmp_pat
     result = compile_input(path, "2025-01-01", output / "compiled", extraction_index=Path(saved["index"]))
     tree = json.loads(Path(result["draft"]).read_bytes())["content"]["trees"][0]
     assert tree["parser_version"].startswith("ocr-owner-ast/")
+    assert tree["identity_decision"]["status"] == "unresolved"
+    assert tree["nodes"] and "identity_unresolved" in result["blockers"]
+    assert tree["edition_admission"] is False
     assert "pdf_structure_unqualified" in result["blockers"] or "pdf_structure_unqualified" in tree["structural_issues"]
     assert "ocr_review_required" in result["blockers"]
     assert compile_input(path, "2025-01-01", output / "compiled", extraction_index=Path(saved["index"]))["result"] == "unchanged"
@@ -102,11 +105,13 @@ def test_unnumbered_annex_does_not_take_number_from_its_reference():
     assert annex["number_is_explicit"] is False
 
 
-def test_unbound_footnote_and_wrong_identity_remain_unresolved():
+def test_unconfirmed_identity_keeps_structure_but_unbound_footnote_stays_unresolved():
     source = extraction(["1. Правило.", ("Footnote", "² Сноска без знака в тексте.")])
     tree = adapter().build_owner_tree(source, "Другой акт", "original")
     assert tree["identity_decision"]["status"] == "unresolved"
-    assert not tree["nodes"]
+    assert any(n["text"] == "1. Правило." for n in tree["nodes"])
+    assert tree["edition_admission"] is False
+    assert all(n["legal_status"] == "unverified" for n in tree["nodes"])
     assert tree["unresolved_blocks"]
     assert any(e["original_text"] == "² Сноска без знака в тексте." for e in tree["unresolved_blocks"])
     assert "pdf_structure_unqualified" in tree["structural_issues"]
@@ -226,7 +231,7 @@ def test_report_keeps_a_multiregion_paragraph_in_source_order():
     document["pages"][1]["layout"] = [
         {"category": "Text", "text": "service is provided here.", "bbox": [0, 0, 400, 40]}]
     tree = adapter().build_owner_tree(normalize_dotsmocr(document, run, run["source_sha256"]), None, "original")
-    paragraph = next(n for n in tree["unresolved_blocks"] if n["text"].startswith("2. Information"))
+    paragraph = next(n for n in tree["nodes"] if n["text"].startswith("2. Information"))
     assert len(paragraph["source_region_ids"]) == 2 and paragraph["source_span"] is None
     manifest = {"assets": [{"sha256": tree["source_asset_sha256"], "source_url": "https://example.test/source",
                             "evidence": {"locator": "authored"}}],

@@ -122,10 +122,6 @@ def validate_structure(extraction, tree, controls):
     regions, tokens = validate_source(extraction, tree)
     require(not tree["unresolved_blocks"] and not tree["unresolved_regions"], "unresolved structure")
     require(set(tree["structural_issues"]) == {"pdf_structure_unqualified"}, "unsupported critical structure or missing qualification flag")
-    identity = tree["identity_decision"]
-    require(identity["status"] in {"claim_matches_header", "source_identity_matches"}, "unresolved identity")
-    require({"family", "issuer", "number", "signing_date"} <= controls["identity"].keys(), "incomplete identity control")
-    require(all(identity.get(k) == value for k, value in controls["identity"].items()), "identity control mismatch")
     expected_regions = unique(controls["regions"], "region_id", "region control")
     require(list(expected_regions) == list(regions), "incomplete or unordered region controls")
     for binding in tree["region_bindings"]:

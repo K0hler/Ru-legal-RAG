@@ -13,6 +13,23 @@ from evaluate_ocr_owner_gold import (  # noqa: E402
 from validate_ocr_structure import require, unique, validate_source  # noqa: E402
 
 
+def validate_controls(extraction, tree, packet, controls):
+    """Require complete structural acceptance; OCR requisites are a separate task."""
+    report = compare_controls(extraction, tree, packet, controls)
+    require(not tree["unresolved_blocks"] and not tree["unresolved_regions"], "unresolved structure")
+    bindings = {f"{b['page']}.{b['index']}": b for b in tree["region_bindings"]}
+    require(all(bindings[r["key"]]["disposition"] == "excluded" for r in controls["regions"]
+                if r["status"] == "noise"), "source page noise included in structure")
+    require(report["regions"]["evaluated"] > 0 and report["expected_units"] > 0, "empty structural controls")
+    require(not controls["uncertainties"] and report["regions"]["ambiguous"] == 0, "ambiguous source controls")
+    require(report["canonical_regions_passed"] == report["regions"]["evaluated"], "unconfirmed region ownership")
+    for key in ("region_errors", "unit_errors", "continuation_errors", "extra_units", "duplicate_units"):
+        require(not report[key], "structural failure: " + key)
+    require(report["unit_order_matches"], "wrong unit order")
+    require(set(report["structural_issues"]) == {"pdf_structure_unqualified"}, "critical structure or missing qualification flag")
+    return report
+
+
 def verify_annotation(packet, controls):
     require(controls["schema_version"] == "m1-04a-independent-source-controls/1", "wrong annotation schema")
     require(all(controls[k] == packet[k] for k in ("source_asset_sha256", "extraction_id", "assigned_pages")),

@@ -1,5 +1,10 @@
 # Test instructions
 
+- `ocr-owner-ast/3` controls require unresolved OCR identity to preserve correct
+  structure while keeping its status and actual compiler admission blocker.
+  Structural acceptance ignores OCR requisites but still rejects wrong source
+  hashes, parents/numbers/order, continuation, ambiguity and critical issues.
+
 - Attached-root table tests cover matching standalone numbered references,
   Caption/Text OCR labels and multipage table continuation, equivalent S/A/AN
   scopes, plus colon/ниже/следующей, unmatched/no reference and unfinished
