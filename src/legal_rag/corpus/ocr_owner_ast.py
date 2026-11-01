@@ -5,13 +5,15 @@ import re
 
 from .compiler import content_hash
 from . import ocr_owner_structure as parser
+from ._ocr_owner.text import ANNEX
 from .ocr_structure import _identity, prepare
 from .structure import _number_fields
 
-VERSION = "ocr-owner-ast/1"
+VERSION = "ocr-owner-ast/2"
 KINDS = {"int": "point", "decimal": "point", "paren": "subitem", "letter": "subitem",
          "article": "article", "chapter": "chapter", "roman": "section", "letter_part": "part",
-         "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter"}
+         "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter",
+         "annex": "annex"}
 
 
 def _marked(paragraph):
@@ -67,6 +69,18 @@ def _source(extraction):
     return tokens, regions, token_ids
 
 
+def _unit_markers(result, tokens, token_ids):
+    markers = {p["owner"]: p["marker"] for p in result["paragraphs"] if _marked(p) and p["owner"]}
+    for paragraph in result["paragraphs"]:
+        if paragraph["kind"] == "annex" and paragraph["owner"]:
+            raw = " ".join("".join(tokens[t]["raw_text"] for t in token_ids[r["region_id"]])
+                           for r in paragraph["regions"])
+            caption = ANNEX.match(parser.view(raw))
+            if caption and caption.group("number") is not None:
+                markers[paragraph["owner"]] = ("annex", caption.group("number"))
+    return markers
+
+
 def _entry(ids, tokens, regions, token_ids):
     tids = [t for rid in ids for t in token_ids[rid]]
     spans = [deepcopy(tokens[t]["source_span"]) for t in tids]
@@ -92,7 +106,7 @@ def build_owner_tree(extraction, declared_identity, role):
     identity_unresolved = identity["status"] == "unresolved"
     nodes, unresolved, excluded, containers, entries = [], [], [], {}, {}
     issues = {"pdf_structure_unqualified"}
-    markers = {p["owner"]: p["marker"] for p in result["paragraphs"] if _marked(p) and p["owner"]}
+    markers = _unit_markers(result, tokens, token_ids)
     repeated = Counter(p["owner"] for p in result["paragraphs"] if _marked(p) and p["owner"])
     if any(count > 1 for count in repeated.values()):
         issues.add("duplicate_printed_owner")
@@ -201,7 +215,7 @@ def validate_owner_tree(extraction, tree):
     children = defaultdict(list)
     for node in tree["nodes"]:
         children[node["parent_address"]].append(node["address"])
-    markers = {p["owner"]: p["marker"] for p in expected["paragraphs"] if _marked(p) and p["owner"]}
+    markers = _unit_markers(expected, tokens, token_ids)
     anchors = _anchors(expected)
     entries = [*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]]
     if Counter(t for e in entries for t in e["text_node_ids"]) != Counter(tokens.keys()):

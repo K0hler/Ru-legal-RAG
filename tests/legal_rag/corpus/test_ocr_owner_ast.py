@@ -68,6 +68,40 @@ def test_owner_ast_preserves_prototype_owners_text_tables_and_physical_regions()
     assert source == before
 
 
+@pytest.mark.parametrize("caption", ["Приложение № 7\nк СП 9.9.9999-20",
+                                     "Приложение 7\nк СП 9.9.9999-20",
+                                     "Приложение\n№ 7\nк СП 9.9.9999-20"])
+def test_printed_annex_number_is_source_bound_metadata(caption):
+    from test_ocr_structure import ISSUER
+    source = extraction(["1. Утвердить прилагаемые правила.",
+        f"УТВЕРЖДЕНЫ\nпостановлением {ISSUER}\nот 9 июня 2020 г. № 812",
+        ("Title", "Санитарные правила СП 9.9.9999-20"), caption,
+        ("Title", "Показатели"), "1. Правило приложения."])
+    before = copy.deepcopy(source)
+    tree = adapter().build_owner_tree(source, CLAIM, "original")
+    annex = next(n for n in tree["nodes"] if n["owner_path"] == "S/AN7" and not n.get("source_region_ids"))
+    assert annex["number_canonical"] == annex["number_display"] == "7"
+    assert annex["number_components"] == {"base": "7", "superscript": None}
+    assert annex["number_is_explicit"] and annex["marker_label"] == "7"
+    assert annex["anchor_region_ids"] and annex["anchor_source_spans"]
+    assert source == before
+    annex["number_canonical"] = "8"
+    with pytest.raises(ValueError):
+        adapter().validate_owner_tree(source, tree)
+
+
+def test_unnumbered_annex_does_not_take_number_from_its_reference():
+    from test_ocr_structure import ISSUER
+    source = extraction(["1. Утвердить прилагаемые правила.",
+        f"УТВЕРЖДЕНЫ\nпостановлением {ISSUER}\nот 9 июня 2020 г. № 812",
+        ("Title", "Санитарные правила СП 9.9.9999-20"), "Приложение\nк СП 9.9.9999-20",
+        ("Title", "Изменения"), "1. Новое правило."])
+    tree = adapter().build_owner_tree(source, CLAIM, "original")
+    annex = next(n for n in tree["nodes"] if n["kind"] == "annex" and not n.get("source_region_ids"))
+    assert annex["number_canonical"] is annex["number_display"] is annex["number_components"] is None
+    assert annex["number_is_explicit"] is False
+
+
 def test_unbound_footnote_and_wrong_identity_remain_unresolved():
     source = extraction(["1. Правило.", ("Footnote", "² Сноска без знака в тексте.")])
     tree = adapter().build_owner_tree(source, "Другой акт", "original")

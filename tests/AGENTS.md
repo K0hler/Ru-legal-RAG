@@ -1,5 +1,11 @@
 # Test instructions
 
+- Owner-AST annex-number tests cover numbered captions with/without № and line
+  breaks, source anchors, mutation rejection and an unnumbered caption whose
+  reference contains digits. Full authored controls expect the visibly printed
+  annex number; the source-audit negative test explicitly clears it to retain
+  detection of the former omission after the adapter is fixed.
+
 - `corpus/test_ocr_source_controls.py` checks the full source/image annotation
   audit: bind the entire physical packet to its real extraction, require every
   assigned image, keep picture/noise exclusions explicit, compare independent

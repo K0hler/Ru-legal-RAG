@@ -32,7 +32,7 @@ def authored_case():
     units = [("A", None, "act", None, []), ("A/1", "A", "point", "1", [4]),
              ("S", None, "approved_text", None, [5]), ("S/I", "S", "section", "I", [7]),
              ("S/I/1", "S/I", "point", "1", [8]), ("S/I/2", "S/I", "point", "2", [12]),
-             ("S/AN1", "S", "annex", None, [14]), ("S/AN1/1", "S/AN1", "point", "1", [16])]
+             ("S/AN1", "S", "annex", "1", [14]), ("S/AN1/1", "S/AN1", "point", "1", [16])]
     controls = {
         "schema_version": "ocr-independent-controls/1", "coverage": "full_document",
         "independence": {"candidate_outputs_used": False, "method": "Authored source fixture and explicit source positions"},

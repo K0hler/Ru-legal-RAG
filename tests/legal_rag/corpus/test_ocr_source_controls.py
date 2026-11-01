@@ -53,7 +53,14 @@ def test_full_source_coverage_and_explicit_picture_exclusion():
     report = checker().compare_controls(source, tree, packet, controls)
     assert report["regions"] == {"evaluated": 15, "picture": 2, "noise": 1, "ambiguous": 0}
     assert report["owner_proposals_passed"] == report["canonical_regions_passed"] == 15
-    # The source visibly numbers annex 1; the current adapter's null metadata must be exposed.
+    assert not report["unit_errors"]
+
+
+def test_numbered_annex_cannot_lose_its_printed_metadata():
+    source, tree, packet, controls = source_case()
+    annex = next(n for n in tree["nodes"] if n["owner_path"] == "S/AN1" and not n.get("source_region_ids"))
+    annex.update(number_canonical=None, number_display=None, number_components=None, number_is_explicit=False)
+    report = checker().compare_controls(source, tree, packet, controls)
     assert [r["owner_path"] for r in report["unit_errors"]] == ["S/AN1"]
     assert report["unit_errors"][0]["failures"] == ["number"]
 

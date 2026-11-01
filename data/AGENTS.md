@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-baseline-fixes-01/annex/` retains the
+  `ocr-owner-ast/2` compiler replay against unchanged complete source controls:
+  all nine printed-annex metadata omissions fixed, eleven units remain absent
+  due to the two existing identity refusals. Region owners and continuation
+  misses are unchanged at this stage. Keep the full audit's failures immutable.
+
 - `m1/m1-04a/experiments/20261101-baseline-independent-01/` retains source-only
   packets and three independent fresh-context annotations of all 10 baseline
   acts/103 page images/1139 regions/457 units. Job completion receipts seal the

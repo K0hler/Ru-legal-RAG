@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- `ocr-owner-ast/2` preserves explicit annex numbers from the raw text of an
+  already recognized annex caption, using the existing ANNEX grammar. Fill all
+  number fields and marker_label/number_is_explicit with source anchors; never
+  infer a printed number from an owner ordinal or a referenced act/designation.
+  Unnumbered annexes remain null. Build and conversion validation share the same
+  source-bound unit-marker extraction. This metadata fix changes neither owner
+  decisions nor identity admission and does not qualify the PDF route.
+
 - Since 31.10.2026 the compiler's PDF route uses `ocr_owner_ast.build_owner_tree`
   over the maintained `ocr_owner_structure.py` entry point and `_ocr_owner/`
   rules developed after П23.

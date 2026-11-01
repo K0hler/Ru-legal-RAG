@@ -81,6 +81,7 @@ development failures, experiments and superseded approaches.
 
 - [Closure checklist and current preflight](plans/2026-10-31-m1-04a-closure.md) — baseline source preservation rechecked; independent Task 3 remains open.
 - [Full baseline structural audit, 1 November](milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md) — independent source/image review of all 103 pages and 457 units; table ownership, continuations, annex-number metadata and two identity refusals remain unresolved.
+- [Baseline fixes, 1 November](milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md) — source-printed annex numbers restored against the frozen full controls; remaining owner/continuation and identity failures stay explicit.
 - [Earlier closure checks, 1 November](milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md) — independent validator, repeated full 12-document compilation and partial legacy-control comparison, before full baseline annotation.
 
 - [Deferred requisites task](plans/2026-10-31-npa-requisites-task.md) — separate follow-up after M1-04A, including the recorded empty-title loader fix; not started.
