@@ -1,5 +1,9 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_BATCH24_DOWNLOADS_2026-11-01.md` records five newly
+  acquired originals/94pages only. The two sanitary acts are amendments. No OCR,
+  parser run or independent structure acceptance has occurred on batch24.
+
 - `milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md` is the current short result:
   four exposed scans pass all source controls under the explicit warning policy;
   the full ten-document baseline and all237 old metrics/error lists are retained.

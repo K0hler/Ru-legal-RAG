@@ -1,5 +1,15 @@
 # Local data instructions
 
+- Scan batch24 contains five new originals only: three Government resolutions
+  and two sanitary amending acts,94pages, downloaded01.11.2026 at the owner's
+  request. `documents/pool/batch-24/index.json` binds readable PDF copies to the
+  immutable archive, source cards, inputs and new/unchanged receipts. Novelty
+  checks use302 prior publication IDs and2574 hashes from4164 metadata records.
+  OCR and structure evaluation have not run; do not count this as Task3 evidence.
+  `experiments/20261101-new-five-acquisition-01/` retains selection/inventory,
+  failed Python HTTP attempts and explicit one-run curl transport captures using
+  the existing source validators/lifecycle. Production connector code is unchanged.
+
 - `m1/m1-04a/experiments/20261101-task3-fixes-01/compiler-final/` retains the
   reviewed AST/4 full compiler replay: four exposed scans/120pages pass1291regions
   and572units (including20formerly ambiguous SP regions under explicit source
