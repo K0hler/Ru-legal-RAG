@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- `assets/check_m1_04a_source_controls.py` accepts source numbering warnings
+  only with explicit `allow_source_warnings=True` (owner decision 01.11.2026).
+  Exact source coverage, unit kinds/numbers/parents/order and continuations still
+  apply. Repeated units need independent occurrence/start evidence and matching
+  warning coverage; ambiguous non-marker owners after multiple starts need
+  `owner_unit_start_key`. Do not infer the occurrence from the latest position
+  or the candidate output. Warning acceptance never changes frozen controls.
+
 - `milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md` is the later result:
   all seven full-baseline table-owner differences, four continuation misses and
   nine annex-number omissions are fixed against unchanged controls. Eight

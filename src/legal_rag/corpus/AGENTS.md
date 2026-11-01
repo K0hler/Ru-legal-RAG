@@ -1,5 +1,14 @@
 # Corpus compilation module
 
+- Owner decision 01.11.2026: source numbering conflicts may pass structural
+  checks when explicitly warned and printed numbers are unchanged. AST/4 uses
+  source-bound `@N` occurrence paths for repeated markers; these suffixes never
+  change number fields. `_ocr_owner/audit.py` prepares occurrences and visible
+  warnings separately from critical hierarchy findings. A present decimal parent
+  bypassed by the parser is an error, not a missing-source-parent warning.
+  Footnote occurrence references must describe the final ownership decision,
+  including the page-note override; conflicting occurrence references stay unresolved.
+
 - Numeric section headings need heading/decimal/next-Roman corroboration and
   no already established section. Keep the printed Arabic label. Repeated
   decimals stay peers; missing decimal parents fall to an evidenced ancestor,
@@ -15,8 +24,8 @@
   The first run failed0/4: numeric section1 leaves an active point scope across
   later section headings, Text-labelled bottom-page footnote continuations
   inherit body owners, and meaningful footer/form-caption text is excluded.
-  Genuine duplicate printed source numbers remain unresolved; never repair
-  them from apparent sequence. Fix classes generically, with new independent
+  In that first candidate, duplicate printed source numbers were unresolved;
+  never repair them from apparent sequence. Fix classes generically, with new independent
   two-act-per-family evidence after any tuning on these exposed cases.
 
 - A standalone numbered table in an attached document without a named section
@@ -55,8 +64,8 @@
   unverified structure independently of OCR identity; only genuinely unresolved
   owners/notes suppress nodes. Requisites are outside M1-04A acceptance. Keep
   the identity decision accurate and the compiler's separate identity admission
-  blocker; never relax source/permission checks. Repeated printed
-  owner paths and missing marker evidence stay structural issues. Every PDF
+  blocker; never relax source/permission checks. Repeated occurrence
+  paths and missing marker evidence stay structural issues. Every PDF
   retains `pdf_structure_unqualified`; this connection does not pass Task 3.
   HTML rows use physical `block_id` order for these trees, since multi-region
   paragraphs have separate source spans and intentionally no aggregate span.

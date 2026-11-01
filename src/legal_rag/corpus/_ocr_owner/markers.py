@@ -332,6 +332,9 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
         sibling = stack[keep] if keep < depth else None
         item = (marker.kind, marker.value, label_under(marker, parent, article_parts))
         if sibling is not None:
+            if (marker.kind == "int" and parent is not None and parent[0] in UNIT_RANK
+                    and sibling[0] == "decimal" and marker.value == sibling[1][0] + 1):
+                yield stack[:keep] + (item,), 0.01 * (depth - keep)
             # continue the sequence at this level
             if sibling[0] == marker.kind:
                 if marker.kind in {"int", "paren", "letter", "roman"}:

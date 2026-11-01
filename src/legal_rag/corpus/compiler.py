@@ -498,6 +498,9 @@ def _report(manifest: dict, draft: dict) -> str:
             + escape(region["original_html"]) + "</pre></details>"
             for region in tree.get("unresolved_regions", []))
         audit_html = ""
+        if tree.get('source_warnings'):
+            messages = ''.join('<li>' + escape(w['message']) + '</li>' for w in tree['source_warnings'])
+            audit_html = '<h3>Особенности нумерации исходника</h3><ul>' + messages + '</ul>'
         if integrity := tree.get("source_integrity"):
             audit_html = ("<h3>Целостность официального дерева</h3><p>Структура перенесена из источника; "
                 "смысловая реконструкция отключена. Замечания к границам не исправляются автоматически.</p><pre>"

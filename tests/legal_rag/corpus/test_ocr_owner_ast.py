@@ -198,7 +198,10 @@ def test_dash_items_do_not_replace_the_point_marker_and_repeated_numbers_are_vis
     assert point["kind"] == "point" and point["number_canonical"] == "1"
     tree = adapter().build_owner_tree(extraction(["1. Пункт акта.", ("Section-header", "Статья 1. Первая статья"),
                                                 ("Section-header", "Статья 1. Повторенный заголовок")]), CLAIM, "original")
-    assert "duplicate_printed_owner" in tree["structural_issues"]
+    assert any(w['code'] == 'duplicate_printed_number' for w in tree['source_warnings'])
+    articles = [n for n in tree['nodes'] if n['kind'] == 'article']
+    assert len(articles) == 2 and len({n['address'] for n in articles}) == 2
+    assert all(n['number_display'] == '1' for n in articles)
 
 
 def test_current_owner_export_uses_the_compiler_route():

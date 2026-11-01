@@ -36,6 +36,40 @@ def test_capital_reference_start_requires_an_explicit_unfinished_reference(tail,
     assert conts(result)['2.1'] is False
 
 
+def test_unmarked_act_reference_continues_its_unfinished_standard_title():
+    source = extraction([
+        [('Text', '1. Отменить следующие документы:'),
+         ('Text', 'постановление государственного органа от 10.02.2024 № 42 «Об утверждении')],
+        [('Page-header', '2'),
+         ('Text', 'СанПиН 9.8.7654-24 «Санитарные требования» (зарегистрировано 12.03.2024);')],
+    ])
+    result = S.build(source)
+    assert conts(result)['2.1'] is True
+    assert owners(result)['2.1'] == 'A/1'
+
+
+def test_decimal_reference_list_continues_after_its_trailing_comma():
+    source = extraction([
+        [('Text', '1.3. Требования установлены пунктами 2.1.1, 2.3.4 (абзац первый), 2.4.9,')],
+        [('Page-header', '2'), ('Text', '2.4.10, 2.4.11 (абзац второй) для всех организаций.')],
+    ])
+    result = S.build(source)
+    assert conts(result)['2.1'] is True
+    assert owners(result)['2.1'] == 'A/1.3'
+
+
+@pytest.mark.parametrize('tail,head', [
+    ('1. Перечень значений: 2.1, 2.4,', '2.5, 2.6 указаны в таблице.'),
+    ('1. Требования установлены пунктами 2.1.1, 2.4.9.', '2.4.10, 2.4.11 приведены ниже.'),
+    ('постановление государственного органа от 10.02.2024 № 42 «Об утверждении»;',
+     'СанПиН 9.8.7654-24 «Санитарные требования».'),
+    ('1. Пример «Об утверждении', 'СанПиН 9.8.7654-24 «Санитарные требования».'),
+])
+def test_numeric_list_or_standard_title_needs_an_unfinished_legal_reference(tail, head):
+    result = S.build(extraction([[('Text', tail)], [('Page-header', '2'), ('Text', head)]]))
+    assert conts(result)['2.1'] is False
+
+
 @pytest.mark.parametrize('note', ['6 статья 5 технического регламента.', '6. Статья 5 технического регламента.'])
 def test_plain_footnote_number_accepts_lowercase_and_number_dot(note):
     result = S.build(extraction([[('Text', '1. Пищевая продукция соответствует требованиям⁶.'),

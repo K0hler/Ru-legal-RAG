@@ -1,5 +1,11 @@
 # Test instructions
 
+- `test_ocr_owner_warnings.py` preserves separate repeated source units and
+  unchanged numbers, verifies visible bound warnings, rejects disguised parser
+  hierarchy errors, and checks delayed/page-overridden footnote occurrences.
+  `test_ocr_source_warnings.py` exercises the explicit source-warning policy;
+  default comparison remains strict and cannot silently accept ambiguity.
+
 - `test_ocr_owner_sections.py` and `test_ocr_owner_notes.py` cover mixed Arabic/
   Roman headings, ordinary styled-point negatives, decimal repeats/gaps,
   footer/caption priority, quote budgets and citation/note continuations.

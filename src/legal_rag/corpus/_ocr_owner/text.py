@@ -220,14 +220,19 @@ def starts_continuation(text: str) -> bool:
 
 
 def continues_reference(tail: str, head: str) -> bool:
-    """A printed legal citation split before its date, act title or act kind."""
+    """A printed legal citation split inside its title, date, act kind or unit list."""
     dated = bool(re.search(r"\bот$", tail) and re.match(r"\d{1,2}\.\d{1,2}\.\d{4}\b", head))
+    act_reference = re.search(r"\b(?:постановлени\w*|закон\w*|приказ\w*|указ\w*|распоряжени\w*|решени\w*)\b",
+                              tail, re.IGNORECASE)
     act_title = bool(head.startswith(('"', '«')) and re.search(r"(?:№|N)\s*\d[\w./-]*$", tail)
-                     and re.search(r"\b(?:постановлени\w*|закон\w*|приказ\w*|указ\w*|распоряжени\w*|решени\w*)\b",
-                                   tail, re.IGNORECASE))
+                     and act_reference)
+    open_title = bool(head[:1].isupper() and act_reference
+                      and re.search(r"(?:№|N)\s*\d[\w./-]*\s+«[^»]*$", tail))
     act_kind = bool(re.search(r"\b(?:стать\w*|пункт\w*|част\w*|глав\w*)\s+\d[\d.]*$", tail, re.IGNORECASE)
                     and re.match(r"(?:Федерального\s+(?:конституционного\s+)?закона|Кодекса)\b", head))
-    return dated or act_title or act_kind
+    unit_list = bool(re.search(r"\b(?:стать\w*|пункт\w*|подпункт\w*|част\w*|глав\w*)\s+\d", tail, re.IGNORECASE)
+                     and re.search(r"\d+(?:\.\d+)+,$", tail) and re.match(r"\d+(?:\.\d+)+,", head))
+    return dated or act_title or open_title or act_kind or unit_list
 
 
 def footnote_number(text: str) -> int | None:

@@ -6,10 +6,11 @@ import re
 from .compiler import content_hash
 from . import ocr_owner_structure as parser
 from ._ocr_owner.text import ANNEX
+from ._ocr_owner.audit import prepare_owner_result
 from .ocr_structure import _identity, prepare
 from .structure import _number_fields
 
-VERSION = "ocr-owner-ast/3"
+VERSION = "ocr-owner-ast/4"
 KINDS = {"int": "point", "decimal": "point", "paren": "subitem", "letter": "subitem",
          "article": "article", "chapter": "chapter", "roman": "section", "letter_part": "part",
          "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter",
@@ -98,13 +99,14 @@ def _entry(ids, tokens, regions, token_ids):
 
 
 def build_owner_tree(extraction, declared_identity, role):
-    result = parser.build(extraction)
+    raw = parser.build(extraction)
     tokens, regions, token_ids = _source(extraction)
+    result = prepare_owner_result(raw, tokens)
     namespace = "amendment/" + extraction["source_asset_sha256"] if role == "amendment" else "act"
     version = VERSION + "+" + result["parser_version"]
     identity = _identity(prepare(extraction)["blocks"], declared_identity)
     nodes, unresolved, excluded, containers, entries = [], [], [], {}, {}
-    issues = {"pdf_structure_unqualified"}
+    issues = {"pdf_structure_unqualified", *result['audit_issues']}
     markers = _unit_markers(result, tokens, token_ids)
     repeated = Counter(p["owner"] for p in result["paragraphs"] if _marked(p) and p["owner"])
     if any(count > 1 for count in repeated.values()):
@@ -187,9 +189,10 @@ def build_owner_tree(extraction, declared_identity, role):
             "edition_admission": False, "valid_from": None, "valid_to": None,
             "nodes": nodes, "unresolved_blocks": unresolved, "excluded_blocks": excluded,
             "unresolved_regions": [], "structural_issues": sorted(issues), "cleanup_mapping": [],
+            "source_warnings": result['source_warnings'],
             "region_bindings": bindings, "document_tree": deepcopy(extraction["document_tree"]),
             "ocr_uncertainties": deepcopy(extraction.get("uncertainties", [])), "accounting": accounting,
-            "owner_parser": {"version": result["parser_version"], "result_sha256": content_hash(result)}}
+            "owner_parser": {"version": result["parser_version"], "result_sha256": content_hash(raw)}}
     validate_owner_tree(extraction, tree)
     return tree
 
@@ -197,14 +200,19 @@ def build_owner_tree(extraction, declared_identity, role):
 def validate_owner_tree(extraction, tree):
     """Check conversion against source and parser decisions; independent semantic review belongs to Task 3."""
     tokens, regions, token_ids = _source(extraction)
-    expected = parser.build(extraction)
+    raw = parser.build(extraction)
+    expected = prepare_owner_result(raw, tokens)
+    if tree.get('source_warnings') != expected['source_warnings']:
+        raise ValueError('changed source numbering warnings')
+    if not set(expected['audit_issues']) <= set(tree['structural_issues']):
+        raise ValueError('missing hierarchy findings')
     identity = _identity(prepare(extraction)["blocks"], tree["identity_decision"]["declared_identity"])
     if tree["identity_decision"] != identity:
         raise ValueError("changed OCR identity decision")
     if (tree["source_asset_sha256"] != extraction["source_asset_sha256"]
             or tree["extraction_id"] != extraction.get("extraction_id")
             or tree["document_tree"] != extraction["document_tree"]
-            or tree["owner_parser"]["result_sha256"] != content_hash(expected)):
+            or tree["owner_parser"]["result_sha256"] != content_hash(raw)):
         raise ValueError("changed OCR input or owner decisions")
     nodes = {n["address"]: n for n in tree["nodes"]}
     if len(nodes) != len(tree["nodes"]):

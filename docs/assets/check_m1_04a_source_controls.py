@@ -1,6 +1,6 @@
 """Compare complete source/image annotations with OCR trees; keep proposals separate from parsed nodes."""
 
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 import re
 import sys
@@ -13,24 +13,31 @@ from evaluate_ocr_owner_gold import (  # noqa: E402
 from validate_ocr_structure import require, unique, validate_source  # noqa: E402
 
 
-def validate_controls(extraction, tree, packet, controls):
+WARNING_CODES = {"duplicate_printed_number": "duplicate_printed_number",
+                 "parent_link_conflict": "missing_parent_number", "scope_boundary": "scope_boundary"}
+
+
+def validate_controls(extraction, tree, packet, controls, *, allow_source_warnings=False):
     """Require complete structural acceptance; OCR requisites are a separate task."""
-    report = compare_controls(extraction, tree, packet, controls)
+    report = compare_controls(extraction, tree, packet, controls, allow_source_warnings=allow_source_warnings)
     require(not tree["unresolved_blocks"] and not tree["unresolved_regions"], "unresolved structure")
     bindings = {f"{b['page']}.{b['index']}": b for b in tree["region_bindings"]}
     require(all(bindings[r["key"]]["disposition"] == "excluded" for r in controls["regions"]
                 if r["status"] == "noise"), "source page noise included in structure")
     require(report["regions"]["evaluated"] > 0 and report["expected_units"] > 0, "empty structural controls")
-    require(not controls["uncertainties"] and report["regions"]["ambiguous"] == 0, "ambiguous source controls")
-    require(report["canonical_regions_passed"] == report["regions"]["evaluated"], "unconfirmed region ownership")
-    for key in ("region_errors", "unit_errors", "continuation_errors", "extra_units", "duplicate_units"):
+    require(allow_source_warnings or not tree.get("source_warnings"), "source warnings require explicit policy")
+    require(allow_source_warnings or not controls["uncertainties"] and report["regions"]["ambiguous"] == 0,
+            "ambiguous source controls")
+    expected_regions = report["regions"]["evaluated"] + (report["regions"]["ambiguous"] if allow_source_warnings else 0)
+    require(report["canonical_regions_passed"] == expected_regions, "unconfirmed region ownership")
+    for key in ("region_errors", "unit_errors", "continuation_errors", "extra_units", "duplicate_units", "source_warning_errors"):
         require(not report[key], "structural failure: " + key)
     require(report["unit_order_matches"], "wrong unit order")
     require(set(report["structural_issues"]) == {"pdf_structure_unqualified"}, "critical structure or missing qualification flag")
     return report
 
 
-def verify_annotation(packet, controls):
+def verify_annotation(packet, controls, *, allow_source_warnings=False):
     require(controls["schema_version"] == "m1-04a-independent-source-controls/1", "wrong annotation schema")
     require(all(controls[k] == packet[k] for k in ("source_asset_sha256", "extraction_id", "assigned_pages")),
             "annotation source/pages mismatch")
@@ -61,12 +68,77 @@ def verify_annotation(packet, controls):
     require(set(images) == set(expected_images), "incomplete image review coverage")
     require(all(r["image_sha256"] == expected_images[p] and bool(r["observed_structure"].strip()) for p, r in images.items()),
             "image review hash or observation missing")
-    unique(controls["units"], "owner_path", "expected unit")
+    if not allow_source_warnings:
+        unique(controls["units"], "owner_path", "expected unit")
+    else:
+        uncertainties = controls["uncertainties"]
+        for item in uncertainties:
+            require(isinstance(item, dict) and item.get("type") in WARNING_CODES, "unsupported source uncertainty")
+            require(bool(item.get("keys")) and len(set(item["keys"])) == len(item["keys"])
+                    and all(key in source for key in item["keys"]), "uncertainty outside source")
+        covered = {key for item in uncertainties for key in item["keys"]}
+        require(all(row["key"] in covered for row in actual.values() if row["status"] == "ambiguous"),
+                "unrelated ambiguous source region")
+        grouped = defaultdict(list)
+        for unit in controls["units"]:
+            grouped[unit["owner_path"]].append(unit)
+        for path, units in grouped.items():
+            if len(units) < 2:
+                continue
+            starts = [u["start_key"] for u in units]
+            require(len(set(starts)) == len(starts) and None not in starts
+                    and all(start in source for start in starts)
+                    and starts == sorted(starts, key=list(source).index)
+                    and [u.get("occurrence_index") for u in units] == list(range(1, len(units) + 1))
+                    and len({u["printed_number"] for u in units}) == 1,
+                    "duplicate unit requires distinct source occurrence inventory")
+            require(any(item["type"] == "duplicate_printed_number" and item.get("owner_path") == path
+                        and item.get("unit_start_keys") == starts and set(item["keys"]) == set(starts)
+                        for item in uncertainties), "duplicate unit lacks source uncertainty")
     for unit in controls["units"]:
         start = unit["start_key"]
         require(start in source or start is None and unit["owner_path"] == "A" and 1 in packet["assigned_pages"], "unit start outside assigned source")
         require(all(k in source for k in unit["evidence_keys"]), "unit evidence outside assigned source")
         require(unit["printed_number"] is None or isinstance(unit["printed_number"], str) and bool(unit["printed_number"]), "invalid printed number")
+        if allow_source_warnings and (unit.get("candidate_owner_paths") or unit.get("candidate_parent_owner_paths")):
+            row = actual.get(start, {})
+            require(row.get("status") == "ambiguous" and start in covered, "unsupported unit alternatives")
+            alternatives = [*unit.get("candidate_owner_paths", []),
+                            *(parent + "/" + unit["owner_path"].rsplit("/", 1)[-1]
+                              for parent in unit.get("candidate_parent_owner_paths", []))]
+            require(all(path in row["candidates"] for path in alternatives), "unit alternative outside original candidates")
+    for row in actual.values():
+        if "owner_unit_start_key" in row:
+            start = row["owner_unit_start_key"]
+            owners = row.get("candidates", []) if row["status"] == "ambiguous" else [row["owner"]]
+            require(start in source and list(source).index(start) <= list(source).index(row["key"])
+                    and any(unit["start_key"] == start and any(owner == unit["owner_path"]
+                        or owner and owner.startswith(unit["owner_path"] + "/") for owner in owners)
+                        for unit in controls["units"]), "invalid independently anchored owner occurrence")
+
+
+def source_warning_errors(tree, packet, controls):
+    """Bind each accepted uncertainty to a visible warning and the actual affected owners."""
+    source = {row["key"]: row["region_id"] for row in packet["regions"]}
+    bindings = {row["region_id"]: row for row in tree["region_bindings"]}
+    expected = [(WARNING_CODES[item["type"]], {source[key] for key in item["keys"]})
+                for item in controls["uncertainties"]]
+    warnings = tree.get("source_warnings", [])
+    errors = []
+    for warning in warnings:
+        ids, owners = warning.get("region_ids", []), warning.get("owner_paths", [])
+        valid = (warning.get("code") in WARNING_CODES.values() and bool(ids) and len(ids) == len(set(ids))
+                 and all(rid in bindings for rid in ids) and bool(owners) and len(owners) == len(set(owners))
+                 and isinstance(warning.get("message"), str) and bool(warning["message"].strip()))
+        if valid:
+            valid = (set(owners) == {bindings[rid]["owner_path"] for rid in ids}
+                     and any(code == warning["code"] and regions == set(ids) for code, regions in expected))
+        if not valid:
+            errors.append({"failure": "unrelated or invalid source warning", "warning": warning})
+    for code, ids in expected:
+        if not any(w.get("code") == code and set(w.get("region_ids", [])) == ids for w in warnings):
+            errors.append({"failure": "missing source warning coverage", "code": code, "region_ids": sorted(ids)})
+    return errors
 
 
 def number_fields(printed):
@@ -82,13 +154,13 @@ def number_fields(printed):
             "number_display": printed, "number_components": {"base": base, "superscript": superscript}, "number_is_explicit": True}
 
 
-def compare_controls(extraction, tree, packet, controls):
+def compare_controls(extraction, tree, packet, controls, *, allow_source_warnings=False):
     require(all(packet[k] == extraction[k] for k in ("source_asset_sha256", "extraction_id")), "packet binds another extraction")
     physical = [(f"{p['page']}.{i}", p["page"], r["region_id"], r["category"])
                 for p in extraction["pages"] for i, r in enumerate(p["regions"])]
     require([(r["key"], r["page"], r["region_id"], r["category"]) for r in packet["regions"]] == physical
             and packet["assigned_pages"] == [p["page"] for p in extraction["pages"]], "packet must cover the full actual extraction")
-    verify_annotation(packet, controls)
+    verify_annotation(packet, controls, allow_source_warnings=allow_source_warnings)
     validate_source(extraction, tree)
     gold = {r["key"]: {"owners": [r["owner"]]} for r in controls["regions"] if r["status"] == "evaluated"}
     bindings = {f"{b['page']}.{b['index']}": b for b in tree["region_bindings"]}
@@ -105,14 +177,45 @@ def compare_controls(extraction, tree, packet, controls):
         return normal(path, 0)
 
     def actual_norm(path):
-        return normal(path, 1)
+        # Occurrence suffixes identify source instances, never printed legal numbers.
+        return normal(re.sub(r"@\d+(?=/|$)", "", path) if allow_source_warnings and path else path, 1)
+
+    physical_order = {row["key"]: i for i, row in enumerate(packet["regions"])}
+    region_controls = {row["key"]: row for row in controls["regions"]}
+    occurrences = defaultdict(list)
+    if allow_source_warnings:
+        for unit in controls["units"]:
+            if unit.get("occurrence_index"):
+                occurrences[expected_norm(unit["owner_path"])].append(
+                    (physical_order[unit["start_key"]], unit["occurrence_index"]))
+
+    def expected_instance(path, key):
+        path = expected_norm(path)
+        if path is None or key is None:
+            return path
+        parts, result = path.split("/"), []
+        for index, part in enumerate(parts):
+            starts = occurrences.get("/".join(parts[:index + 1]), [])
+            previous = [(start, occurrence) for start, occurrence in starts if start <= physical_order[key]]
+            explicit = region_controls[key].get("owner_unit_start_key")
+            selected = [occurrence for start, occurrence in previous if start == physical_order[key]]
+            if not selected and explicit is not None:
+                selected = [occurrence for start, occurrence in previous if start == physical_order[explicit]]
+            if not selected and len(previous) == 1:
+                selected = [previous[0][1]]
+            if starts and len(selected) != 1:
+                return None
+            occurrence = selected[0] if selected else 1
+            result.append(part + (f"@{occurrence}" if occurrence > 1 else ""))
+        return "/".join(result)
     region_errors, continuation_errors = [], []
     proposals_passed = canonical_passed = 0
     for expected in controls["regions"]:
-        if expected["status"] != "evaluated":
+        if expected["status"] != "evaluated" and not (allow_source_warnings and expected["status"] == "ambiguous"):
             continue
         binding = bindings[expected["key"]]
-        proposal = actual_norm(binding["owner_path"]) == expected_norm(expected["owner"])
+        owners = expected["candidates"] if expected["status"] == "ambiguous" else [expected["owner"]]
+        proposal = normal(binding["owner_path"], 1) in [expected_instance(path, expected["key"]) for path in owners]
         parsed = proposal and binding["disposition"] == "parsed"
         proposals_passed += proposal
         canonical_passed += parsed
@@ -123,30 +226,54 @@ def compare_controls(extraction, tree, packet, controls):
             continuation_errors.append({"key": expected["key"], "expected": expected["continuation"], "actual": binding["continuation"]})
     nodes = {n["address"]: n for n in tree["nodes"]}
     containers = [n for n in tree["nodes"] if not n.get("source_region_ids")]
-    by_owner = {}
+    by_owner = defaultdict(list)
     duplicate_units = []
     for unit in containers:
         path = actual_norm(unit["owner_path"])
-        if path in by_owner:
+        if any(old["anchor_region_ids"] == unit["anchor_region_ids"] for old in by_owner[path]):
             duplicate_units.append(path)
-        by_owner[path] = unit
+        by_owner[path].append(unit)
     source_regions = {r["key"]: r["region_id"] for r in packet["regions"]}
-    unit_errors = []
+    unit_errors, matched = [], []
     for expected in controls["units"]:
-        unit = by_owner.get(expected_norm(expected["owner_path"]))
+        paths = [expected["owner_path"]]
+        if allow_source_warnings:
+            paths += expected.get("candidate_owner_paths", [])
+            paths += [parent + "/" + expected["owner_path"].rsplit("/", 1)[-1]
+                      for parent in expected.get("candidate_parent_owner_paths", [])]
+        candidates = [unit for path in dict.fromkeys(expected_norm(p) for p in paths) for unit in by_owner[path]]
+        start = expected["start_key"]
+        anchored_candidates = [unit for unit in candidates if start is not None
+                               and unit["anchor_region_ids"] and unit["anchor_region_ids"][0] == source_regions[start]]
+        unit = next((u for u in anchored_candidates if u["address"] not in matched), None)
+        if unit is None and len(candidates) == 1 and candidates[0]["address"] not in matched:
+            unit = candidates[0]
         failures = []
         if unit is None:
             failures.append("missing")
         else:
+            matched.append(unit["address"])
+            if normal(unit["owner_path"], 1) not in [expected_instance(path, start) for path in paths]:
+                failures.append("occurrence")
             parent = unit["parent_address"]
             actual_parent = (None if expected["owner_path"] == "A" else "A") if parent == tree["namespace"] else nodes[parent]["owner_path"]
-            if actual_norm(actual_parent) != expected_norm(expected["parent_owner_path"]):
+            parents = [expected["parent_owner_path"]]
+            if allow_source_warnings:
+                parents += expected.get("candidate_parent_owner_paths", [])
+                if actual_norm(unit["owner_path"]) != expected_norm(expected["owner_path"]):
+                    # A listed scope alternative carries its own explicitly listed path prefix.
+                    parents = [path.rsplit("/", 1)[0] for path in paths
+                               if expected_norm(path) == actual_norm(unit["owner_path"])]
+            if normal(actual_parent, 1) not in [expected_instance(path, start) for path in parents]:
                 failures.append("parent")
             kinds = {"annex", "approved_text"} if expected["kind"] == "attached_document" else {expected["kind"]}
             if unit["kind"] not in kinds:
                 failures.append("kind")
             if any(unit[k] != value for k, value in number_fields(expected["printed_number"]).items()):
                 failures.append("number")
+            if (len(occurrences.get(expected_norm(expected["owner_path"]), [])) > 1
+                    and unit["anchor_region_ids"] != [source_regions[k] for k in expected["evidence_keys"]]):
+                failures.append("anchor_evidence")
             if expected["start_key"] is not None:
                 start = expected["start_key"]
                 anchored = source_regions[start] in unit["anchor_region_ids"]
@@ -162,12 +289,13 @@ def compare_controls(extraction, tree, packet, controls):
             unit_errors.append({"owner_path": expected["owner_path"], "start_key": expected["start_key"],
                                 "printed_number": expected["printed_number"], "failures": failures,
                                 "actual": {k: unit[k] for k in ("owner_path", "kind", "number_canonical", "number_display", "number_components")} if unit else None})
-    expected_paths = {expected_norm(u["owner_path"]) for u in controls["units"]}
-    extra_units = sorted(set(by_owner) - expected_paths)
+    extra_units = [actual_norm(u["owner_path"]) for u in containers if u["address"] not in matched]
     status_counts = Counter(r["status"] for r in controls["regions"])
     return {"regions": {k: status_counts[k] for k in ("evaluated", "picture", "noise", "ambiguous")},
             "owner_proposals_passed": proposals_passed, "canonical_regions_passed": canonical_passed,
-            "region_errors": region_errors, "continuation_errors": continuation_errors, "expected_units": len(expected_paths),
+            "region_errors": region_errors, "continuation_errors": continuation_errors, "expected_units": len(controls["units"]),
             "unit_errors": unit_errors, "extra_units": extra_units, "duplicate_units": duplicate_units,
-            "unit_order_matches": [actual_norm(u["owner_path"]) for u in containers] == [expected_norm(u["owner_path"]) for u in controls["units"]],
+            "unit_order_matches": [u["address"] for u in containers] == matched,
+            "source_warnings": tree.get("source_warnings", []),
+            "source_warning_errors": source_warning_errors(tree, packet, controls) if allow_source_warnings else [],
             "structural_issues": tree["structural_issues"], "identity": tree["identity_decision"]["status"]}

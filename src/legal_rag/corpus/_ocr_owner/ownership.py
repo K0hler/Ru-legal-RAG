@@ -548,6 +548,9 @@ def assign_footnote_owners(paragraphs: list[Paragraph], scopes: list[tuple[str, 
             p.owner = common_owner([q.owner for q in page_hits])
             p.evidence.append({"footnote_owner_common": "mark repeated on the footnote's page"})
         p.evidence.append({"footnote_owner": "marker" if hits else "unresolved", "candidates": len(hits)})
+        references = [r.region_id for r, _ in hits if r.page == p.first.page] or [r.region_id for r, _ in hits[-1:]]
+        if references:
+            p.evidence.append({"footnote_reference_region_ids": references})
         page_marked[id(p)] = bool(page_hits)
     # step 21.3 F: a footnote whose mark is only on an earlier page follows the footnotes of its own page that found their
     # marks there (one table's notes); a footnote whose mark is nowhere belongs to the document of its page
@@ -556,9 +559,15 @@ def assign_footnote_owners(paragraphs: list[Paragraph], scopes: list[tuple[str, 
         if p.flow == "footnote":
             by_page[p.first.page].append(p)
     for notes in by_page.values():
-        local = [q.owner for q in notes if page_marked.get(id(q)) and q.owner]
+        local_notes = [q for q in notes if page_marked.get(id(q)) and q.owner]
+        local = [q.owner for q in local_notes]
+        references = list(dict.fromkeys(rid for q in local_notes for e in q.evidence
+                                        for rid in e.get('footnote_reference_region_ids', [])))
         one_table = len(set(local)) == 1  # the page's marked footnotes share one owner: the notes of one unit
         for q in notes:
             if q.owner is None or (one_table and not page_marked.get(id(q)) and q.footnote is not None):
                 q.owner = common_owner(local) if local else scope_of.get(id(q))
+                q.evidence = [e for e in q.evidence if 'footnote_reference_region_ids' not in e]
+                if references:
+                    q.evidence.append({'footnote_reference_region_ids': references})
                 q.evidence.append({"footnote_owner_page": "the footnotes of its page, or the document of its page"})
