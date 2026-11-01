@@ -1,5 +1,14 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-task3-fixes-01/compiler-final/` retains the
+  reviewed AST/4 full compiler replay: four exposed scans/120pages pass1291regions
+  and572units (including20formerly ambiguous SP regions under explicit source
+  warning policy), three visible source warnings, identical repeated builds.
+  Baseline10/103pages passes1016regions/457units; `development-final-b/` matches
+  all237 old metrics/error lists, each no_section>99%. `verify_final.py` freezes
+  revised code separately from unchanged original sources/controls/failed report.
+  These scans are development evidence, not fresh independent qualification.
+
 - `m1/m1-04a/experiments/20261101-task3-discrepancy-01/` retains a same-input,
   same-metric diagnosis, not a new qualification. All 237 old metrics/error lists
   are unchanged; both code versions give identical Task 3 owners. Keep the

@@ -8,7 +8,8 @@ Experiment reports retain the results and limitations of their own dated runs.
 
 Current M1-04A work: [Task 3 execution](plans/2026-11-01-m1-04a-task3.md).
 Current corrections: [shared rules and visible source warnings](plans/2026-11-01-task3-fixes.md).
-Its [Russian check report](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) records the four-act scope and current status.
+The [latest correction result](milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md) passes all four exposed scans;
+the [first failed check](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) is retained. Fresh independent evidence is still required.
 The owner excluded OCR requisites from its structural criteria on 1 November;
 [requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
 

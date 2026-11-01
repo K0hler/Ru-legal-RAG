@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md` is the current short result:
+  four exposed scans pass all source controls under the explicit warning policy;
+  the full ten-document baseline and all237 old metrics/error lists are retained.
+  Keep the initial fail0/4 report as history. These tuned scans are development
+  evidence; M1-04A still needs fresh two-act-per-family qualification.
+
 - `assets/check_m1_04a_source_controls.py` accepts source numbering warnings
   only with explicit `allow_source_warnings=True` (owner decision 01.11.2026).
   Exact source coverage, unit kinds/numbers/parents/order and continuations still
