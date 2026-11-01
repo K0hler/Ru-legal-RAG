@@ -307,6 +307,12 @@ On 31 October, the owner rules developed after П23 were connected to ordinary P
 source-preserving `legal-ast/2` adapter. [Connection report](04a/M1_04A_COMPILER_INTEGRATION_2026-10-31.md).
 Unknown identity/owners remain unresolved and every PDF retains `pdf_structure_unqualified`; Task 3 is still pending.
 
+On 1 November, [independent source/image annotation of the full 103-page baseline](04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md)
+was completed and sealed: 1139 physical regions, 457 units and all 103 page images actually inspected by agents.
+The full compiler comparison retains 7 table-owner differences, 4 missed continuations, 9 annex-number metadata
+omissions and the existing No.2/No.16 identity refusals. Full review coverage is not passing structural acceptance;
+the reserved Task 3 cohort remains unread.
+
 Owner decision, 31 October: requisites discussion/expansion and the empty-title loader fix are recorded as a
 [separate follow-up](../../plans/2026-10-31-npa-requisites-task.md), after M1-04A. Current identity behavior and
 provenance checks remain; structural qualification below is still required for M1-04A closure.

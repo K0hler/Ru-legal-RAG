@@ -1,5 +1,14 @@
 # Test instructions
 
+- `corpus/test_ocr_source_controls.py` checks the full source/image annotation
+  audit: bind the entire physical packet to its real extraction, require every
+  assigned image, keep picture/noise exclusions explicit, compare independent
+  units/number displays/parents/order/starts, and preserve unresolved canonical
+  failures despite correct proposals. Use the existing approved attached-document
+  appearance equivalences, not candidate-derived expected labels. Abstract act
+  header evidence may live only in act-owned content, never in a child point.
+  `validate_ocr_structure.validate_source` also checks all container anchor spans.
+
 - `corpus/test_ocr_structure_controls.py` exercises the independent Task 3
   checker with authored full expectations and synthetic frozen files. It must
   not invoke the candidate to derive expected structure. Negative controls

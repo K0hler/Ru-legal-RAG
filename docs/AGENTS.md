@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- The full M1-04A baseline source/image audit is now recorded in
+  `milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md`: 103 images
+  actually viewed, 1139 regions and 457 independent source units. This supersedes
+  the earlier partial-review coverage limit, not its retained failures. Full
+  source coverage is not acceptance: 7 table-owner differences without an
+  enclosing section, 4 missed continuations, 9 annex-number omissions and two
+  identity refusals remain. No reserved body was opened or parser rule changed.
+
 - M1-04A closure checks on 01.11.2026 are recorded in
   `milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md`. The independent
   `assets/validate_ocr_structure.py` does not call the parser and requires full

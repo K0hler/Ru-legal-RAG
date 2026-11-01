@@ -52,6 +52,10 @@ def validate_source(extraction, tree):
             if not ids:
                 require(not any(entry[k] for k in ("text_node_ids", "original_text", "text", "source_spans")),
                         "container duplicates source content")
+                anchors = entry.get("anchor_region_ids", [])
+                require(len(set(anchors)) == len(anchors) and all(rid in regions for rid in anchors), "invalid source anchor regions")
+                anchor_spans = [tokens[t]["source_span"] for rid in anchors for t in region_tokens[rid]]
+                require(entry.get("anchor_source_spans", []) == anchor_spans, "changed source anchor locators")
                 continue
             require(all(r in regions and r not in leaves for r in ids), "missing or duplicated source region")
             require([region_order[rid] for rid in ids] == sorted(region_order[rid] for rid in ids), "changed fragment order")

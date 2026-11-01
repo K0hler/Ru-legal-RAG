@@ -1,5 +1,16 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-baseline-independent-01/` retains source-only
+  packets and three independent fresh-context annotations of all 10 baseline
+  acts/103 page images/1139 regions/457 units. Job completion receipts seal the
+  originals; `controls-freeze.json` precedes candidate evaluation. Use
+  `evaluation-02/` for the final audit; `evaluation-01/` retains eight technical
+  act-header-anchor comparison mismatches. The full controls expose 7 headed-table
+  owner differences, 4 continuation misses, 9 numbered-annex metadata omissions
+  and existing identity refusals. Never adjust these independent controls from
+  candidate output; corrections need new evidence/files. All visual reviews are
+  agent reviews, not human edition admission. Reserved bodies remain unread.
+
 - `m1/m1-04a/experiments/20261101-closure-development-02/` replays the actual
   compiler on 12 known development documents/205 pages, twice plus unchanged
   replay, and checks complete source text/regions/tables. `legacy-comparison-v2.json`
