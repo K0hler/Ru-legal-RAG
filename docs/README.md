@@ -11,6 +11,7 @@ Current corrections: [shared rules and visible source warnings](plans/2026-11-01
 The [latest correction result](milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md) passes all four exposed scans;
 the [first failed check](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) is retained. Fresh independent evidence is still required.
 [Five new originals in scan batch24](milestones/m1/04a/M1_04A_BATCH24_DOWNLOADS_2026-11-01.md) are downloaded; OCR and structure checks are pending.
+Their [independent check plan](plans/2026-11-01-batch24-structure-check.md) freezes the candidate before OCR and source-only annotation.
 The owner excluded OCR requisites from its structural criteria on 1 November;
 [requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
 

@@ -1,5 +1,10 @@
 # Documentation instructions
 
+- Batch24 execution follows `plans/2026-11-01-batch24-structure-check.md`:
+  freeze before OCR, independent source/image annotation before evaluation,
+  all five inputs retained, no parser tuning or sample replacement during check.
+  Report the two sanitary documents specifically as amending acts.
+
 - `milestones/m1/04a/M1_04A_BATCH24_DOWNLOADS_2026-11-01.md` records five newly
   acquired originals/94pages only. The two sanitary acts are amendments. No OCR,
   parser run or independent structure acceptance has occurred on batch24.
