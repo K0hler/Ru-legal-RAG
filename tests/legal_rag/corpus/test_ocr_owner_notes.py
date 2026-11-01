@@ -1,0 +1,108 @@
+"""Authored controls for source references, running text and mislabelled notes."""
+
+import copy
+
+import pytest
+
+from legal_rag.corpus import ocr_owner_structure as S
+from test_ocr_logical_structure import conts, extraction, owners
+
+
+@pytest.mark.parametrize("tail,head", [
+    ('1. Требования установлены постановлением Правительства от 10.02.2024 № 42',
+     '"О правилах ведения учета".'),
+    ('1. Проверка проводится в соответствии со статьей 16',
+     'Федерального закона "О контроле".'),
+    ('1. Изменения утверждены постановлением от',
+     '22.03.2024 № 38 (зарегистрировано 11.04.2024).'),
+])
+def test_explicit_legal_reference_continues_at_next_page_start(tail, head):
+    source = extraction([[('Text', tail)], [('Page-header', '2'), ('Text', head)]])
+    before = copy.deepcopy(source)
+    result = S.build(source)
+    assert conts(result)['2.1'] is True
+    assert owners(result)['2.1'] == 'A/1'
+    assert source == before
+
+
+@pytest.mark.parametrize("tail,head", [
+    ('1. Проверка по статье 16 завершена.', 'Федерального закона "О контроле".'),
+    ('1. Заполняется строка 16', 'Федерального закона "О контроле".'),
+    ('1. Название документа указано', '"О правилах ведения учета".'),
+    ('1. Дата отчета', '22.03.2024 № 38 (зарегистрировано 11.04.2024).'),
+])
+def test_capital_reference_start_requires_an_explicit_unfinished_reference(tail, head):
+    result = S.build(extraction([[('Text', tail)], [('Page-header', '2'), ('Text', head)]]))
+    assert conts(result)['2.1'] is False
+
+
+@pytest.mark.parametrize('note', ['6 статья 5 технического регламента.', '6. Статья 5 технического регламента.'])
+def test_plain_footnote_number_accepts_lowercase_and_number_dot(note):
+    result = S.build(extraction([[('Text', '1. Пищевая продукция соответствует требованиям⁶.'),
+                                  ('Text', '2. Прочие требования.'), ('Footnote', note)]]))
+    assert owners(result)['1.2'] == 'A/1'
+
+
+def bottom_notes_source():
+    source = extraction([
+        [('Text', '1. Проверка соответствует требованиям¹⁷,'),
+         ('Footnote', '17. Регламент принят решением (Собрание')],
+        [('Page-header', '2'), ('Text', 'изложенным в приложении.'),
+         ('Text', '2. Сведения об ингредиентах¹⁸ должны быть доступны.'),
+         ('Text', '3. Другое завершенное требование.'),
+         ('Text', 'законодательства Российской Федерации, 2024, № 2).'),
+         ('Text', '18 Подпункт 3 технического регламента.')],
+    ])
+    source['pages'][0]['regions'][1]['bbox'] = [180, 2000, 1400, 2150]
+    source['pages'][1]['regions'][4]['bbox'] = [180, 2000, 1400, 2100]
+    source['pages'][1]['regions'][5]['bbox'] = [180, 2110, 1400, 2150]
+    return source
+
+
+def test_bottom_text_continues_open_citation_note_and_opens_marked_next_note():
+    source = bottom_notes_source()
+    before = copy.deepcopy(source)
+    result = S.build(source)
+    got = owners(result)
+    assert got['1.1'] == got['2.4'] == 'A/1'
+    assert conts(result)['2.4'] is True
+    assert got['2.5'] == 'A/2'
+    assert conts(result)['2.5'] is False
+    assert got['2.3'] == 'A/3'
+    assert source == before
+
+
+@pytest.mark.parametrize('change', ['no_reference', 'not_at_bottom', 'closed_note'])
+def test_text_note_inference_requires_a_local_reference_and_bottom_citation(change):
+    source = bottom_notes_source()
+    if change == 'no_reference':
+        source['blocks'][4]['original_text'] = '2. Сведения об ингредиентах должны быть доступны.'
+    elif change == 'not_at_bottom':
+        source['pages'][1]['regions'][4]['bbox'] = [180, 400, 1400, 450]
+        source['pages'][1]['regions'][5]['bbox'] = [180, 460, 1400, 500]
+    else:
+        source['blocks'][1]['original_text'] = '17. Источник завершен.'
+    result = S.build(source)
+    assert conts(result)['2.4'] is False
+    assert owners(result)['2.4'] == 'A/3'
+    if change != 'closed_note':
+        assert owners(result)['2.5'] == 'A/3'
+
+
+@pytest.mark.parametrize('text', ['7623401', '7623401.doc', 'Рекомендуемый образец'])
+def test_repeated_source_codes_and_sample_captions_remain_content(text):
+    category = 'Page-header' if text == 'Рекомендуемый образец' else 'Page-footer'
+    source = extraction([[(category, text), ('Text', f'{i}. Требование.')]
+                         for i in range(1, 5)])
+    result = S.build(source)
+    assert all(r['role'] == 'content' for r in result['regions'])
+    if category == 'Page-footer':
+        assert all(owners(result)[f'{i}.0'] == 'A' for i in range(1, 5))
+
+
+def test_page_numbers_and_repeated_running_title_stay_noise():
+    source = extraction([[('Page-header', str(i)), ('Page-footer', 'Издание органа власти'),
+                          ('Text', f'{i}. Требование.')]
+                         for i in range(1, 5)])
+    result = S.build(source)
+    assert all(r['role'] == 'noise' for r in result['regions'] if r['category'].startswith('Page-'))

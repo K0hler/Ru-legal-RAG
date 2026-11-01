@@ -1,5 +1,10 @@
 # Test instructions
 
+- `test_ocr_owner_sections.py` and `test_ocr_owner_notes.py` cover mixed Arabic/
+  Roman headings, ordinary styled-point negatives, decimal repeats/gaps,
+  footer/caption priority, quote budgets and citation/note continuations.
+  Large same-prefix gaps stay peers; file footers are content owned by scope.
+
 - `ocr-owner-ast/3` controls require unresolved OCR identity to preserve correct
   structure while keeping its status and actual compiler admission blocker.
   Structural acceptance ignores OCR requisites but still rejects wrong source

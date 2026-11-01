@@ -90,7 +90,8 @@ PROJECT_MAX = 40
 
 
 def is_caption(text: str) -> bool:
-    return approval_caption(text) or (bool(ANNEX.match(text)) and len(text) <= CAPTION_MAX)
+    return (approval_caption(text) or (bool(ANNEX.match(text)) and len(text) <= CAPTION_MAX)
+            or bool(re.fullmatch(r"\(?Рекомендуемый образец\)?", text, re.IGNORECASE)))
 
 
 def is_project_caption(text: str) -> bool:
@@ -218,18 +219,29 @@ def starts_continuation(text: str) -> bool:
     return bool(text) and (text[0].islower() or (text[0] == "(" and not editorial_note_unit(text)))
 
 
+def continues_reference(tail: str, head: str) -> bool:
+    """A printed legal citation split before its date, act title or act kind."""
+    dated = bool(re.search(r"\bот$", tail) and re.match(r"\d{1,2}\.\d{1,2}\.\d{4}\b", head))
+    act_title = bool(head.startswith(('"', '«')) and re.search(r"(?:№|N)\s*\d[\w./-]*$", tail)
+                     and re.search(r"\b(?:постановлени\w*|закон\w*|приказ\w*|указ\w*|распоряжени\w*|решени\w*)\b",
+                                   tail, re.IGNORECASE))
+    act_kind = bool(re.search(r"\b(?:стать\w*|пункт\w*|част\w*|глав\w*)\s+\d[\d.]*$", tail, re.IGNORECASE)
+                    and re.match(r"(?:Федерального\s+(?:конституционного\s+)?закона|Кодекса)\b", head))
+    return dated or act_title or act_kind
+
+
 def footnote_number(text: str) -> int | None:
     m = re.match(rf"^([{SUP}]+)", text)
     return int("".join(SUP_DIGIT[c] for c in m.group(1))) if m else None
 
 
 # Step 21.2 A (sanpin-81-2016, sanpin-44-2017): a Footnote region whose number OCR printed as plain digits («15 СП …»).
-PLAIN_FOOTNOTE_NUMBER = re.compile(r"^(\d{1,3})\s+(?=[«\"А-ЯЁA-Z])")
+PLAIN_FOOTNOTE_NUMBER = re.compile(r"^(\d{1,3})\.?\s+(?=[«\"А-Яа-яЁёA-Za-z])")
 
 
-def region_footnote_number(region: "Region") -> int | None:
+def region_footnote_number(region: "Region", *, allow_plain: bool = False) -> int | None:
     number = footnote_number(region.text)
-    if number is None and region.category == "Footnote":
+    if number is None and (region.category == "Footnote" or allow_plain):
         m = PLAIN_FOOTNOTE_NUMBER.match(region.text)
         number = int(m.group(1)) if m else None
     return number
@@ -327,12 +339,15 @@ def page_mark(region: Region) -> bool:
     never text of the unit it happens to follow. Step 16 C5: also a footer line printed on two pages («ФГОС ВО
     культурология -05»; on three it is running noise)."""
     text = region.text.strip()
+    if is_caption(text):
+        return False
     if FORM_SERVICE_MARK.fullmatch(text):
         return True  # step 24 B: a sheet side or service-stamp place is not text of the preceding form field
     if region.category == "Text":
         return bool(PRINT_MARK.match(text) or TIME_STAMP.fullmatch(text)
                     or (region.index <= FORM_HEAD_ZONE and FORM_PAGE_HEAD.fullmatch(text)))
     return region.category in NOISE_CATEGORIES and bool(PAGE_MARK.fullmatch(region.text) or PRINT_MARK.match(region.text)
+                                                        or (region.category == "Page-footer" and re.fullmatch(r"\d{6,8}", text))
                                                         or (len(region.text) <= 100 and JOB_CODE.search(region.text))
                                                         or (region.category == "Page-footer" and region.repeats == 2)
                                                         or "компьют" in text.lower() or 0 < len(text) <= 2)

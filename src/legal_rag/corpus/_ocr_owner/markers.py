@@ -230,6 +230,21 @@ def letter_parts(body: list[Paragraph]) -> None:
             body[k].marker = Marker("none")
 
 
+def numeric_sections(body: list[Paragraph]) -> None:
+    """Mixed Arabic/Roman section numbering needs both heading and sequence evidence."""
+    for k, p in enumerate(body[:-1]):
+        if (p.marker.kind != "int" or p.first.category not in {"Section-header", "Title"}
+                or not heading_like(p.text, p.first.category) or terminated(p.text)
+                or any(q.marker.kind in {"roman", "section_named"} for q in body[:k])):
+            continue
+        following = next((q.marker for q in body[k + 1:] if q.marker.kind != "none"), None)
+        if (following is not None and following.kind == "decimal" and following.value[:1] == (p.marker.value,)
+                and any(q.marker.kind == "roman" and q.marker.value == p.marker.value + 1 for q in body[k + 1:])):
+            p.marker = Marker("roman", p.marker.value, "разд" + p.marker.label)
+            p.kind = "heading"
+            p.evidence.append({"numeric_section": "heading, matching decimal points and next Roman section"})
+
+
 def roman_sequence(items: list[Paragraph], rows: set[int]) -> None:
     """Applies ``next_roman_section`` in reading order after the table rows of the scope are known (cycle 6,
     v4 §4.7): rubrics «I.», «II.» demoted to table rows are no sections of the sequence, and a row is never
@@ -292,6 +307,17 @@ def transitions(stack: tuple, marker: Marker, last_int: int | None, article_part
 
 def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_parts: bool):
     depth = len(stack)
+    if marker.kind == "decimal" and len(marker.value) > 2:
+        prefix = marker.value[:-1]
+        if not any(entry[0] == "decimal" and entry[1] == prefix for entry in stack):
+            keep = 0
+            for k, entry in enumerate(stack):
+                if (entry[0] in UNIT_RANK
+                        or (entry[0] == "int" and entry[1] == marker.value[0])
+                        or (entry[0] == "decimal" and marker.value[:len(entry[1])] == entry[1])):
+                    keep = k + 1
+            yield stack[:keep] + ((marker.kind, marker.value, marker.label),), 5.0
+            return
     if marker.kind in UNIT_RANK and marker.kind != "roman":
         # A named unit heading is explicit: it closes every open unit of the same
         # or lower rank (and all points) and nests under the nearest higher unit.
@@ -323,9 +349,11 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                         yield stack[:keep] + (item,), RESTART_COST + 0.01 * (depth - keep)
                 elif marker.kind == "decimal":
                     a, b = sibling[1], marker.value
-                    if len(a) == len(b) and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
+                    if a == b:
+                        yield stack[:keep] + (item,), 0.01 * (depth - keep)
+                    elif len(a) == len(b) and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
-                    elif len(a) == len(b) and a[:-1] == b[:-1] and 1 < b[-1] - a[-1] <= 3:
+                    elif len(a) == len(b) and a[:-1] == b[:-1] and b[-1] - a[-1] > 1:
                         # a skipped number («5.3» after «5.1»): the parent of «N.M» is «N.» by its prefix,
                         # so «5.3» is a sibling of «5.1», not its subpoint (the gap costs as for «N.»)
                         yield stack[:keep] + (item,), 2.0 + b[-1] - a[-1]

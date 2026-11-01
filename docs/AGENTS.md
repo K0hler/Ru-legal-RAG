@@ -1387,3 +1387,6 @@ Scope: every file under `docs/`.
   old noise exclusions yield 100%,100%,99.04%,7.49% on those inputs. An in-memory
   Arabic 1 -> Roman I heading experiment isolates the SP scope cascade; it is not
   a source correction or qualification. Evidence: 20261101-task3-discrepancy-01/.
+- Owner 01.11.2026 requests short, plain result summaries; retain large machine
+  evidence locally. `plans/2026-11-01-task3-fixes.md` tracks shared corrections;
+  the four previously reserved scans are development inputs for these fixes.

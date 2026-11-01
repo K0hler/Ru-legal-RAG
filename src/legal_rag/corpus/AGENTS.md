@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- Numeric section headings need heading/decimal/next-Roman corroboration and
+  no already established section. Keep the printed Arabic label. Repeated
+  decimals stay peers; missing decimal parents fall to an evidenced ancestor,
+  never an unrelated point. Meaningful running marks stay source content but
+  cannot affect scope/quote history; approval captions outrank mark heuristics.
+  Plain footnotes need category or low-page position plus an actual reference;
+  cross-page note Text joins need evidence of the open source citation.
+
 - Task 3 candidate code was frozen at `5bebd41` before all four reserved
   source bodies were processed in `20261101-task3-01/`. Do not tune owner rules
   on this check and reuse those acts as independent evidence. This restriction

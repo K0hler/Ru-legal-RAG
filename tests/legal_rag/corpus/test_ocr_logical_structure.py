@@ -191,7 +191,9 @@ def test_continuation_starting_with_approval_word_does_not_open_scope():
     assert got["2.4"] == "S/I/1/а" and got["2.5"] == "S/I/1/б"
     assert got["1.4"] == "A/1" and got["1.5"] == "A"   # signature belongs to the act root
     roles = {f"{r['page']}.{r['index']}": r["role"] for r in result["regions"]}
-    assert roles["3.0"] == "noise" and roles["1.6"] == "noise" and roles["2.7"] == "noise"
+    assert roles["3.0"] == "noise"
+    assert roles["1.6"] == roles["2.7"] == "content"
+    assert got["1.6"] == "A" and got["2.7"] == got["3.4"] == "S"
 
 
 def test_terminated_paragraph_is_not_joined_with_lowercase_list_abzac():
@@ -1966,10 +1968,9 @@ def test_dotted_number_after_a_skipped_number_is_a_sibling_not_a_subpoint():
     assert [got[f"3.{k}"] for k in (4, 5, 6, 7)] == ["S/AN5/5.3", "S/AN5/5.4", "S/AN5/5.5", "S/AN5/5.6"]
 
 
-def test_dotted_gap_over_the_limit_stays_nested():
-    """Cycle 7 B4 (v5 review): the sibling reading covers a gap of 2-3 numbers only; «5.5» after «5.1» (three numbers
-    missing) keeps the earlier unexplained nesting into «5.1», while «5.4» after «5.1» is still a sibling."""
-    for number, expected in ((5, "S/5/5.1/5.5"), (4, "S/5/5.4")):
+def test_shared_decimal_prefix_keeps_peers_across_large_printed_gaps():
+    """A missing number never makes 5.5 a child of 5.1; the printed shared prefix determines its parent."""
+    for number, expected in ((5, "S/5/5.5"), (4, "S/5/5.4"), (12, "S/5/5.12")):
         pages = costing(("Text", "5. Затраты группируются по статьям калькуляции:"),
                         ("Text", "5.1. Статьи калькуляции."), *GAP_BLOCK, ("Text", f"5.{number}. Статья затрат."))
         got = owners(S.build(extraction(pages)))

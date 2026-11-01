@@ -105,9 +105,12 @@ def partition_scopes(paragraphs: list[Paragraph]) -> list[tuple[str, list[Paragr
     approves, signed_page = False, None
     service_tail = False  # step 21.5 B: «Лист согласования …» seen
     for q in paragraphs:
-        if q.flow == "body" and q.kind == "text":
+        if q.flow == "body" and q.kind == "text" and PAGE_MARK_EVIDENCE not in q.evidence:
             page_first.setdefault(q.first.page, q)
     for i, p in enumerate(paragraphs):
+        if PAGE_MARK_EVIDENCE in p.evidence:
+            scopes[-1][1].append(p)
+            continue
         if service_tail:
             scopes[0][1].append(p)  # step 21.5 B: the act's approval sheet and everything after it
             if p.flow == "body":
@@ -151,7 +154,8 @@ def partition_scopes(paragraphs: list[Paragraph]) -> list[tuple[str, list[Paragr
                 act_kind = act_kind_of_approval(text)
             if project:
                 p.evidence.append({"caption": "project", "rule": "standalone «Проект» opens an attached document"})
-            previous = next((q for q in reversed(paragraphs[:i]) if q.flow == "body" and q.kind != "picture"), None)
+            previous = next((q for q in reversed(paragraphs[:i]) if q.flow == "body" and q.kind != "picture"
+                             and PAGE_MARK_EVIDENCE not in q.evidence), None)
             if previous is None or previous.kind != "approval" or previous is pending_annex_caption:
                 approved_count += 1
                 approved_opened = True
@@ -168,7 +172,8 @@ def partition_scopes(paragraphs: list[Paragraph]) -> list[tuple[str, list[Paragr
             scopes[-1][1].append(p)
             scope_captions.add(text)
             continue
-        nxt = next((q for q in paragraphs[i + 1:] if q.flow == "body" and q.kind == "text"), None)
+        nxt = next((q for q in paragraphs[i + 1:] if q.flow == "body" and q.kind == "text"
+                    and PAGE_MARK_EVIDENCE not in q.evidence), None)
         m = annex_caption(p, nxt.text if nxt is not None else "", page_first.get(p.first.page) is p) \
             if caption_here else None
         if m:

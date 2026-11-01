@@ -19,7 +19,9 @@ from .text import (
     PAGE_CODE_LINE,
     PAGE_MARK_EVIDENCE,
     REPEAT_THRESHOLD,
+    SUP,
     barcode_like,
+    continues_reference,
     final_char,
     footnote_number,
     is_caption,
@@ -88,7 +90,8 @@ def load_regions(extraction: dict) -> list[Region]:
             # a bare page number, or text repeated on three or more pages.
             repeated = (not r.text or re.fullmatch(r"[-–\s]*\d+[-–\s]*", r.text)
                         or running[re.sub(r"\d+", "#", r.text)] >= REPEAT_THRESHOLD)
-            if repeated and not is_caption(r.text):
+            code = page_mark(r) and not re.fullmatch(r"[-–\s]*\d{1,5}[-–\s]*", r.text)
+            if repeated and not is_caption(r.text) and not code:
                 r.role = "noise"
     return regions
 
@@ -101,6 +104,17 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
     for r in regions:
         if r.role == "content":
             by_page[r.page].append(r)
+    text_notes = set()
+    for page in by_page.values():
+        for r in page:
+            number = region_footnote_number(r, allow_plain=True)
+            if (r.category != "Text" or number is None or r.bbox[1] < r.page_size[1] * 0.75
+                    or parse_marker(r.text, r.category).kind != "none"):
+                continue
+            token = "".join(SUP[int(d)] for d in str(number))
+            mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")
+            if any(q.order < r.order and q.category != "Footnote" and mark.search(q.text) for q in page):
+                text_notes.add(r.order)
     for r in regions:
         if r.role == "noise":
             continue
@@ -109,8 +123,8 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
             continue
         page_content = by_page[r.page]
         first_on_page = page_content and page_content[0] is r
-        if r.category == "Footnote" or footnote_number(r.text) is not None:
-            number = region_footnote_number(r)
+        if r.category == "Footnote" or footnote_number(r.text) is not None or r.order in text_notes:
+            number = region_footnote_number(r, allow_plain=r.order in text_notes)
             if number is None and open_note and open_note.first.page < r.page and not terminated(open_note.text):
                 open_note.regions.append(r)
                 open_note.evidence.append({"join": "unnumbered_footnote_after_page_break", "region": r.region_id})
@@ -129,24 +143,27 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
         # across a page break, never on the same page (OCR keeps those together).
         tail = open_body.text if open_body else ""
         strong_start = (open_body is not None and open_body.regions[-1].page == r.page - 1 and first_on_page
-                        and (r.text[:1].isupper() or r.text[:1].isdigit())
+                        and (r.text[:1].isupper() or r.text[:1].isdigit() or continues_reference(tail, r.text))
                         and r.category == "Text" and not is_caption(r.text)
                         and not any(x.role == "table" for x in regions[open_body.regions[-1].order + 1:r.order])
                         and ((tail.count("(") > tail.count(")") and r.text.count(")") > r.text.count("("))
                              or (((unbalanced_quotes(tail) > 0 and unbalanced_quotes(r.text) < 0)
                                   or (tail.count('"') == 1 and not tail.rstrip().endswith('"') and r.text.count('"') == 1))
                                  and parse_marker(open_body.first.text, open_body.first.category).kind != "none")
-                             or (r.text[:1].isdigit() and re.search(r"\b(?:более|менее|реже|чаще|выше|ниже|позднее|ранее)$", tail))))
+                             or (r.text[:1].isdigit() and re.search(r"\b(?:более|менее|реже|чаще|выше|ниже|позднее|ранее)$", tail))
+                             or continues_reference(tail, r.text)))
         if (starts_continuation(r.text) or strong_start) and parse_marker(r.text, r.category).kind == "none" and not page_mark(r):
             # A footnote continued on the next page, mislabelled as Text: it sits
             # after the page body, directly before the page's footnotes (or at the end),
             # the previous page's last footnote is unterminated, and it cannot be a
             # body continuation because body continuations open the page.
             later = [x for x in page_content if x.order > r.order]
-            before_notes = all(x.category == "Footnote" for x in later)
+            before_notes = all(x.category == "Footnote" or x.order in text_notes for x in later)
             body_open_here = open_body is not None and open_body.regions[-1].page == r.page and not terminated(open_body.text)
+            citation_tail = (open_note is not None and open_note.text.count("(") > open_note.text.count(")")
+                             and r.text.count(")") > r.text.count("(") and r.bbox[1] >= r.page_size[1] * 0.75)
             if (open_note is not None and open_note.regions[-1].page == r.page - 1 and not terminated(open_note.text)
-                    and not first_on_page and before_notes and (r.text[0] == "(" or body_open_here)):
+                    and not first_on_page and before_notes and (r.text[0] == "(" or body_open_here or citation_tail)):
                 open_note.regions.append(r)
                 open_note.evidence.append({"join": "footnote_continuation_after_page_break", "region": r.region_id})
                 continue

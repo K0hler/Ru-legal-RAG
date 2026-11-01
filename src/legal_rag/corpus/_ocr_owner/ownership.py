@@ -17,6 +17,7 @@ from .markers import (
     letter_parts,
     list_number,
     mark_restarts,
+    numeric_sections,
     parse_marker,
     point_references,
     quoted_markers,
@@ -413,6 +414,7 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
             p.evidence.append(dict(TABLE_ROW_EVIDENCE))
     labelled_first_items(items)
     quoted_markers(items)
+    numeric_sections(body)
     roman_sequence(items, rows)
     letter_parts(body)
     mark_restarts(items)
