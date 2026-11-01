@@ -58,7 +58,7 @@ def table_references(body: list[Paragraph], stacks: list[tuple]) -> None:
 
 
 TABLE_NUMBER = re.compile(r"^Таблица\s*(?:№\s*)?(\d+(?:\.\d+)*)")  # «Таблица 2.1. Оптимальные величины …» too
-TABLE_BLOCK_EVIDENCE = {"table_block": "a table with its own heading between points -> the section (owner 29.10.2026)"}
+TABLE_BLOCK_EVIDENCE = {"table_block": "a standalone headed table -> enclosing section or attached document root"}
 
 
 def table_head(q: Paragraph) -> bool:
@@ -103,13 +103,14 @@ def gap_sibling(stack: tuple, heads: list[Paragraph], rest: list[Paragraph]) -> 
             and nxt.marker.value[:-1] == value[:-1] and nxt.marker.value[-1] == value[-1] + 2)
 
 
-def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
+def table_block_sections(scope_path: str, items: list[Paragraph], body: list[Paragraph], stacks: list[tuple]) -> None:
     """Step 21 (owner 29.10.2026 «Разделу», batch 20): after a finished point («.» or «;»), a table with its own heading
     («Вещества, обладающие эффектом суммации», «Таблица 1.3.») belongs to the section: the heading lines and the
     unmarked lines after the table up to the next marker go to the enclosing named unit («II.», «Раздел 2»). The next
     heading-and-table block right after such a table goes there too, also when the point names it («приведены в таблице
     3.13», owner 29.10.2026 «Разделу» again; rule D's displaced table too). A table the point introduces with a final
-    «:» stays with the point; without an enclosing unit it stays."""
+    «:» stays with the point. Without a section, a numbered table that an attached document's finished point
+    only references belongs to that document; «ниже» / «следующей» still introduces the point's own table."""
     index = {id(q): k for k, q in enumerate(body)}
     seq = [q for q in items if q.flow == "body" and q.kind != "picture"]
     last_text = None  # the last body text before the current position (point or unmarked line)
@@ -144,6 +145,10 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             heads = seq[i:end]
             stack = stacks[k]
             unit = next((n for n in range(len(stack) - 1, -1, -1) if stack[n][0] in UNIT_RANK), None)
+            root_reference = (unit is None and scope_path != "A" and (moved == () or
+                (last_text is not None and not re.search(r"\b(?:ниже|следующ[а-яё]*)\b", last_text.text, re.I)
+                 and any((m := TABLE_CAPTION.match(h.text.strip()))
+                         and m.group(1) in referenced_tables(last_text.text) for h in heads))))
             # its own heading: an OCR heading line over the caption («Вещества, обладающие эффектом суммации»), or the
             # next block of a moved run; a caption line alone («Таблица 2.1. Оптимальные величины …») stays with the point
             own_heading = moved is not None or any(heading_evidence(h) or id(h) in titles
@@ -153,8 +158,8 @@ def table_block_sections(items: list[Paragraph], body: list[Paragraph], stacks: 
             finished = moved is not None or (prev is not None and prev.kind != "table" and last_text is not None
                                              and final_char(formula_body(last_text.text)) in ".;")
             gap = gap_sibling(stack, heads, seq[end:])
-            if gap or (unit is not None and unit + 1 < len(stack) and finished and own_heading):
-                moved = stack[:-1] if gap else stack[:unit + 1]
+            if gap or (finished and (root_reference or (unit is not None and unit + 1 < len(stack) and own_heading))):
+                moved = stack[:-1] if gap else () if root_reference else stack[:unit + 1]
                 for h in heads:
                     stacks[index[id(h)]] = moved
                     h.evidence.append(dict(TABLE_BLOCK_EVIDENCE))

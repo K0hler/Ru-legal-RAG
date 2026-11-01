@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md` is the later result:
+  all seven full-baseline table-owner differences, four continuation misses and
+  nine annex-number omissions are fixed against unchanged controls. Eight
+  document trees pass the full controls; No.2/No.16 still have identity refusals
+  and the reserved Task3 qualification remains pending. Preserve the preceding
+  audit as its genuine failed baseline; proposed owner agreement is not admission.
+
 - The full M1-04A baseline source/image audit is now recorded in
   `milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md`: 103 images
   actually viewed, 1139 regions and 457 independent source units. This supersedes

@@ -1,5 +1,12 @@
 # Local data instructions
 
+- `20261101-baseline-fixes-01/tables/` and `table-regression/` retain the final
+  standalone-table fix: full103-page audit now1016/1016proposed owners,0missed
+  continuations,0annex-number omissions;39canonical regions/11units remain
+  unresolved due to No.2/No.16 identity. All237development owner metrics/error
+  lists and each batch23document >99% remain unchanged. Controls/source images
+  are immutable and the reserved Task3 cohort is still unread.
+
 - Within `20261101-baseline-fixes-01/`, use `continuations-accepted/` and
   `continuation-regression-accepted/` for the final capital/numeric body-join
   fix. Earlier attempts remain retained. All four baseline continuation misses

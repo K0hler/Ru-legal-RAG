@@ -115,6 +115,53 @@ def test_nested_quotes_in_award_recipient_lines_do_not_join_two_people(prefix):
     assert conts(S.build(source))["2.1"] is False
 
 
+@pytest.mark.parametrize("category", ["Caption", "Text"])
+def test_referenced_standalone_tables_without_a_section_belong_to_attached_root(category):
+    table = ("Table", "<table><tr><td>Показатель</td><td>12</td></tr></table>")
+    pages = regulation(("Text", "1. Общие требования."))
+    pages += [[("Page-header", "Приложение № 4\nк Правилам контроля"), ("Title", "Порядок отбора проб"),
+               ("Text", "1. Контроль обязателен."),
+               ("Text", "2. Количество проб устанавливается с учетом таблицы 1."), (category, "Таблица 1"), table,
+               ("Text", "3. Показатели определяются с учетом таблицы 2."), (category, "Таблица 2"), table],
+              [("Page-header", "4"), table,
+               ("Text", "4. Контроль ведется с частотой, указанной в таблице 3, зависящей от числа жителей."),
+               (category, "Таблица 3"), table, ("Text", "5. Контроль завершен.")]]
+    got = owners(S.build(extraction(pages)))
+    for key in ("3.4", "3.5", "3.7", "3.8", "4.1", "4.3", "4.4"):
+        assert got[key] == "S/AN4", key
+    assert got["3.3"] == "S/AN4/2" and got["4.2"] == "S/AN4/4" and got["4.5"] == "S/AN4/5"
+
+
+@pytest.mark.parametrize("reference,caption", [
+    ("2. Значения приведены в таблице 1:", "Таблица 1"),
+    ("2. Значения приведены в таблице 1 ниже.", "Таблица 1"),
+    ("2. Значения приведены в следующей таблице 1.", "Таблица 1"),
+    ("2. Значения приведены в таблице 1,", "Таблица 1"),
+    ("2. Значения приведены в таблице 1.", "Таблица 2"),
+    ("2. Перечень определен.", "Таблица 1"),
+])
+def test_annex_root_table_rule_requires_a_standalone_matching_reference(reference, caption):
+    pages = regulation(("Text", "1. Общие требования."))
+    pages += [[("Page-header", "Приложение № 4\nк Правилам контроля"), ("Title", "Порядок контроля"),
+               ("Text", "1. Контроль обязателен."), ("Text", reference), ("Caption", caption),
+               ("Table", "<table><tr><td>Показатель</td></tr></table>"), ("Text", "3. Следующий пункт.")]]
+    got = owners(S.build(extraction(pages)))
+    assert got["3.4"] == got["3.5"] == "S/AN4/2"
+
+
+def test_standalone_reference_rule_respects_equivalent_attached_document_captions():
+    table = ("Table", "<table><tr><td>Показатель</td></tr></table>")
+    for caption, root in [("УТВЕРЖДЕНЫ\nпостановлением Правительства Российской Федерации от 15 мая 2013 г. № 416", "S"),
+                          ("Приложение № 1\nк постановлению Правительства Российской Федерации", "A/AN1")]:
+        pages = [[("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "ПОСТАНОВЛЕНИЕ"),
+                  ("Text", "1. Утвердить правила."), ("Text", "Д.Медведев", 1250)],
+                 [("Page-header", caption), ("Title", "Правила контроля"),
+                  ("Text", "1. Значения установлены с учетом таблицы 1."), ("Caption", "Таблица 1"), table,
+                  ("Text", "2. Следующий пункт.")]]
+        got = owners(S.build(extraction(pages)))
+        assert got["2.3"] == got["2.4"] == root
+
+
 RESOLUTION = [
     [("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "ПОСТАНОВЛЕНИЕ"),
      ("Text", "от 15 мая 2013 г. № 416"),

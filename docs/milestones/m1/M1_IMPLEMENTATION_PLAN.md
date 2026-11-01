@@ -313,6 +313,11 @@ The full compiler comparison retains 7 table-owner differences, 4 missed continu
 omissions and the existing No.2/No.16 identity refusals. Full review coverage is not passing structural acceptance;
 the reserved Task 3 cohort remains unread.
 
+The [subsequent baseline fixes](04a/M1_04A_BASELINE_FIXES_2026-11-01.md) resolve all seven
+table-owner differences, four continuation misses and nine annex-number omissions against the same sealed
+controls. All237development owner metrics/error lists and batch23per-document >99% remain unchanged.
+No.2/No.16 still leave39canonical regions/11units unresolved; Task3 and M1-04A closure remain pending.
+
 Owner decision, 31 October: requisites discussion/expansion and the empty-title loader fix are recorded as a
 [separate follow-up](../../plans/2026-10-31-npa-requisites-task.md), after M1-04A. Current identity behavior and
 provenance checks remain; structural qualification below is still required for M1-04A closure.

@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- A standalone numbered table in an attached document without a named section
+  goes to that document root only when the finished point references that same
+  table and does not introduce it with a colon/ниже/следующей. Scope context is
+  passed to table_block_sections; S and A/AN attachments behave equivalently.
+  Table continuations keep the moved root until a new marker; bare-act A,
+  unmatched/no references and unfinished/introduction cases retain prior owners.
+  This fixes the full baseline's seven annex-table regions with no per-act rule.
+
 - Body continuations starting with a capital/number need positive source
   evidence: close an open parenthesis, a quote of an explicitly marked clause,
   or a number after a comparison/frequency tail. The new path requires adjacent

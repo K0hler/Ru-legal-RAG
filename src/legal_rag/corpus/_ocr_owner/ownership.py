@@ -427,7 +427,7 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
     editorial_note_owners(body, stacks, points_are_parts)
     article_notes(body, stacks, under_table_ids(items))
     table_references(body, stacks)
-    table_block_sections(items, body, stacks)
+    table_block_sections(scope_path, items, body, stacks)
     for k, p in enumerate(body):
         if TOC_EVIDENCE in p.evidence:
             stacks[k] = ()  # cycle 10 B4: a contents line belongs to the document root

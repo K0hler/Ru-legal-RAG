@@ -80,8 +80,8 @@ development failures, experiments and superseded approaches.
 ### M1-04A: universal OCR structure parser
 
 - [Closure checklist and current preflight](plans/2026-10-31-m1-04a-closure.md) — baseline source preservation rechecked; independent Task 3 remains open.
-- [Full baseline structural audit, 1 November](milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md) — independent source/image review of all 103 pages and 457 units; table ownership, continuations, annex-number metadata and two identity refusals remain unresolved.
-- [Baseline fixes, 1 November](milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md) — source-printed annex numbers restored against the frozen full controls; remaining owner/continuation and identity failures stay explicit.
+- [Full baseline structural audit, 1 November](milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md) — independent source/image review of all 103 pages and 457 units; original failure inventory retained before the subsequent fixes.
+- [Baseline fixes, 1 November](milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md) — all 7 table-owner differences, 4 continuation misses and 9 annex-number omissions fixed against frozen full controls; 237 development owner results retained, two identity refusals and Task 3 remain open.
 - [Earlier closure checks, 1 November](milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md) — independent validator, repeated full 12-document compilation and partial legacy-control comparison, before full baseline annotation.
 
 - [Deferred requisites task](plans/2026-10-31-npa-requisites-task.md) — separate follow-up after M1-04A, including the recorded empty-title loader fix; not started.

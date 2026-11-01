@@ -1,5 +1,11 @@
 # Test instructions
 
+- Attached-root table tests cover matching standalone numbered references,
+  Caption/Text OCR labels and multipage table continuation, equivalent S/A/AN
+  scopes, plus colon/ниже/следующей, unmatched/no reference and unfinished
+  negatives. Retain the bare-act no-section control; table-owner improvements
+  must preserve all development error lists and batch23 per-document >99% checks.
+
 - Owner-rule continuation controls cover capital issuer names, dates, angled
   and simple straight quoted titles, numeric comparison tails and intervening
   footnotes. Negatives retain headings, captions, new markers, completed text,
