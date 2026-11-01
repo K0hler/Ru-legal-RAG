@@ -47,6 +47,74 @@ def conts(result):
     return {f"{r['page']}.{r['index']}": r["continuation"] for r in result["regions"]}
 
 
+@pytest.mark.parametrize("tail,head", [
+    ("1. Сведения зарегистрированы (Министерством юстиции", "Российской Федерации 07.05.2008, номер 11637)."),
+    ("1. Сведения зарегистрированы (Министерством юстиции Российской Федерации", "29.01.2021, номер 62297)."),
+    ("1. Отменить правила «О введении в действие СанПиН", "СанПиН 9.9.9999-20»."),
+    ('1. Отменить правила "О введении в действие СанПиН', 'СанПиН 9.9.9999-20".'),
+    ("1. Заполнять резервуар следует не реже", "1 раза в сутки."),
+    ("1. Количество должно составлять не менее", "20 единиц в сутки."),
+])
+def test_capital_or_numeric_page_start_continues_a_source_open_clause(tail, head):
+    source = extraction([[('Text', tail)], [('Page-header', '2'), ('Text', head), ('Text', '2. Другой пункт.')]])
+    before = copy.deepcopy(source)
+    result = S.build(source)
+    assert owners(result)["2.1"] == "A/1" and conts(result)["2.1"] is True
+    joined = next(p for p in result["paragraphs"] if any(r["page"] == 1 for r in p["regions"]))
+    assert [r["page"] for r in joined["regions"]] == [1, 2]
+    assert owners(result)["2.2"] == "A/2"
+    assert source == before
+
+
+def test_numeric_body_continuation_crosses_an_independent_footnote_flow():
+    source = extraction([[('Text', '1. Резервуар¹ опорожняют не реже'), ('Footnote', '¹ Источник правила.')],
+                         [('Page-header', '2'), ('Text', '1 раза в сутки.'), ('Text', '2. Другой пункт.')]])
+    result = S.build(source)
+    assert conts(result)["2.1"] is True and owners(result)["2.1"] == "A/1"
+    note, = [p for p in result["paragraphs"] if p["flow"] == "footnote"]
+    assert [r["page"] for r in note["regions"]] == [1]
+
+
+@pytest.mark.parametrize("tail,category,head", [
+    ("1. Решение принято.", "Text", "Российской Федерации направлено уведомление."),
+    ("1. Результат передаётся", "Text", "Заявитель подтверждает сведения."),
+    ("1. Дата отчёта", "Text", "12.03.2022 указана на бланке."),
+    ("1. Учитываются сведения (по данным", "Title", "Российской Федерации)"),
+    ("1. Учитываются сведения (по данным", "Text", "2. Российская Федерация)"),
+    ("1. Учитываются сведения (по данным", "Text", "Приложение № 1 к правилам)"),
+    ("1. Учитываются сведения (по данным;", "Text", "Российской Федерации)"),
+    ('1. Учитываются правила "Показатели" и сведения', 'Text', 'СанПиН 9.9.9999-20".'),
+    ('1. Так заканчивается прежняя цитата"', 'Text', 'СанПиН 9.9.9999-20".'),
+])
+def test_strong_page_continuation_requires_a_real_body_clause(tail, category, head):
+    result = S.build(extraction([[('Text', tail)], [('Page-header', '2'), (category, head)]]))
+    assert conts(result)["2.1"] is False
+
+
+def test_strong_body_join_requires_adjacent_pages_and_never_joins_same_page():
+    source = extraction([[('Text', '1. Учитываются сведения (Министерством юстиции')],
+                         [('Text', 'Российской Федерации).')]])
+    source["pages"][1]["page"] = 3
+    assert conts(S.build(source))["3.0"] is False
+    same_page = extraction([[('Text', '1. Учитываются сведения (Министерством юстиции'),
+                             ('Text', 'Российской Федерации).')]])
+    assert conts(S.build(same_page))["1.1"] is False
+
+
+def test_strong_body_join_cannot_skip_an_intervening_table():
+    source = extraction([[('Text', '1. Учитываются сведения (для')],
+                         [('Table', '<table><tr><td>Показатель</td></tr></table>'),
+                          ('Text', 'Российской Федерации).')]])
+    assert conts(S.build(source))["2.1"] is False
+
+
+@pytest.mark.parametrize("prefix", ["", "1. "])
+def test_nested_quotes_in_award_recipient_lines_do_not_join_two_people(prefix):
+    source = extraction([[('Text', prefix + 'КАРАСОВУ Анатолию Ивановичу - работнику общества "Объединение "Завод", область')],
+                         [('Page-header', '2'), ('Text', 'КУЗИНУ Владимиру Михайловичу - начальнику общества "Объединение "Завод", город')]])
+    assert conts(S.build(source))["2.1"] is False
+
+
 RESOLUTION = [
     [("Title", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ"), ("Title", "ПОСТАНОВЛЕНИЕ"),
      ("Text", "от 15 мая 2013 г. № 416"),

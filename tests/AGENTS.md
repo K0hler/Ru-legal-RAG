@@ -1,5 +1,12 @@
 # Test instructions
 
+- Owner-rule continuation controls cover capital issuer names, dates, angled
+  and simple straight quoted titles, numeric comparison tails and intervening
+  footnotes. Negatives retain headings, captions, new markers, completed text,
+  same/missing pages, tables and numbered/unnumbered recipient lists with nested
+  ASCII quotes as distinct paragraphs. Full development owner regressions and
+  continuation-label deltas are checked separately; no frozen gold rewrites.
+
 - Owner-AST annex-number tests cover numbered captions with/without № and line
   breaks, source anchors, mutation rejection and an unnumbered caption whose
   reference contains digits. Full authored controls expect the visibly printed

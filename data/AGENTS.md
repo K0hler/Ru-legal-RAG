@@ -1,5 +1,11 @@
 # Local data instructions
 
+- Within `20261101-baseline-fixes-01/`, use `continuations-accepted/` and
+  `continuation-regression-accepted/` for the final capital/numeric body-join
+  fix. Earlier attempts remain retained. All four baseline continuation misses
+  are fixed; audit changed continuation flags separately from owner errors and
+  retain historical-label disagreements with source evidence. No old gold is edited.
+
 - `m1/m1-04a/experiments/20261101-baseline-fixes-01/annex/` retains the
   `ocr-owner-ast/2` compiler replay against unchanged complete source controls:
   all nine printed-annex metadata omissions fixed, eleven units remain absent

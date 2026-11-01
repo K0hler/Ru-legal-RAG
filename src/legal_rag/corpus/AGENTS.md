@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- Body continuations starting with a capital/number need positive source
+  evidence: close an open parenthesis, a quote of an explicitly marked clause,
+  or a number after a comparison/frequency tail. The new path requires adjacent
+  pages, first Text, no new marker/caption/page mark or intervening table;
+  existing lowercase behavior is unchanged. ASCII quotes use a conservative
+  single pair, never nested-name parity. Keep notes separate and preserve raw
+  fragments. This fixes paragraph grouping, not source wording or identity.
+
 - `ocr-owner-ast/2` preserves explicit annex numbers from the raw text of an
   already recognized annex caption, using the existing ANNEX grammar. Fill all
   number fields and marker_label/number_is_explicit with source anchors; never

@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 
 from .markers import (
     parse_marker,
+    unbalanced_quotes,
 )
 from .model import (
     Paragraph,
@@ -126,7 +127,17 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
             continue
         # Body text. Join a continuation only with an unterminated open paragraph
         # across a page break, never on the same page (OCR keeps those together).
-        if starts_continuation(r.text) and parse_marker(r.text, r.category).kind == "none" and not page_mark(r):
+        tail = open_body.text if open_body else ""
+        strong_start = (open_body is not None and open_body.regions[-1].page == r.page - 1 and first_on_page
+                        and (r.text[:1].isupper() or r.text[:1].isdigit())
+                        and r.category == "Text" and not is_caption(r.text)
+                        and not any(x.role == "table" for x in regions[open_body.regions[-1].order + 1:r.order])
+                        and ((tail.count("(") > tail.count(")") and r.text.count(")") > r.text.count("("))
+                             or (((unbalanced_quotes(tail) > 0 and unbalanced_quotes(r.text) < 0)
+                                  or (tail.count('"') == 1 and not tail.rstrip().endswith('"') and r.text.count('"') == 1))
+                                 and parse_marker(open_body.first.text, open_body.first.category).kind != "none")
+                             or (r.text[:1].isdigit() and re.search(r"\b(?:более|менее|реже|чаще|выше|ниже|позднее|ранее)$", tail))))
+        if (starts_continuation(r.text) or strong_start) and parse_marker(r.text, r.category).kind == "none" and not page_mark(r):
             # A footnote continued on the next page, mislabelled as Text: it sits
             # after the page body, directly before the page's footnotes (or at the end),
             # the previous page's last footnote is unterminated, and it cannot be a
