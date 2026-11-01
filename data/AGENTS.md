@@ -1,5 +1,11 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-task3-discrepancy-01/` retains a same-input,
+  same-metric diagnosis, not a new qualification. All 237 old metrics/error lists
+  are unchanged; both code versions give identical Task 3 owners. Keep the
+  original controls and first failed report. The single-character heading
+  experiment mutates only an in-memory copy, never OCR/source files.
+
 - `m1/m1-04a/experiments/20261101-task3-01/` freezes candidate `5bebd41`
   before processing all four original reserved acts (120pages/1413regions).
   All local OCR saved-native replays match. Runtime receipts match the frozen

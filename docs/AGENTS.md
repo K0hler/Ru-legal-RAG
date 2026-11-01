@@ -1380,3 +1380,10 @@ Scope: every file under `docs/`.
   and reproducibility pass but do not waive wrong owners/section hierarchy.
   SP has both genuine source ambiguity and independent large hierarchy errors;
   its supplemental known-region diagnostic is explicitly not qualification.
+- The Task 3 report's discrepancy addendum replays the same 237 scans at
+  51640/51704 (all individual no_section scores >99%) with identical error lists.
+  Old post-П23 and current code assign identical owners on the four Task 3 OCRs.
+  Do not compare complete-document pass counts directly with region accuracy:
+  old noise exclusions yield 100%,100%,99.04%,7.49% on those inputs. An in-memory
+  Arabic 1 -> Roman I heading experiment isolates the SP scope cascade; it is not
+  a source correction or qualification. Evidence: 20261101-task3-discrepancy-01/.
