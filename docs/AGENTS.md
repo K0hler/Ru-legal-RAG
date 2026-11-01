@@ -1,13 +1,18 @@
 # Documentation instructions
 
+- Batch24 source stage has completed94pages of local OCR and actual independent
+  image review:986regions/443units, three sealed fresh-context jobs and matching
+  saved replay/runtime evidence. The candidate is still unchanged from its
+  pre-OCR freeze. Source coverage is not the structural verdict; retain all failures.
+
 - Batch24 execution follows `plans/2026-11-01-batch24-structure-check.md`:
   freeze before OCR, independent source/image annotation before evaluation,
   all five inputs retained, no parser tuning or sample replacement during check.
   Report the two sanitary documents specifically as amending acts.
 
 - `milestones/m1/04a/M1_04A_BATCH24_DOWNLOADS_2026-11-01.md` records five newly
-  acquired originals/94pages only. The two sanitary acts are amendments. No OCR,
-  parser run or independent structure acceptance has occurred on batch24.
+  acquired originals/94pages at the download stage. The two sanitary acts are
+  amendments; later source review and evaluation are separate evidence.
 
 - `milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md` is the current short result:
   four exposed scans pass all source controls under the explicit warning policy;

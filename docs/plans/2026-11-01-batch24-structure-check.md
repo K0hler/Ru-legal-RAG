@@ -20,14 +20,18 @@ Keep the candidate unchanged from its pre-OCR freeze through evaluation; no new 
 
 ## A. Prepare and freeze
 
-- [ ] Verify acquisition/novelty records, prepare source-only annotation brief and reuse existing orchestration.
-- [ ] Regenerate M0, commit preparation, then freeze all candidate code, source permissions, OCR profile/runtime/model files.
+- [x] Verify acquisition/novelty records, prepare source-only annotation brief and reuse existing orchestration.
+- [x] Regenerate M0, commit preparation, then freeze all candidate code, source permissions, OCR profile/runtime/model files.
 
 ## B. Extract and seal independent controls
 
-- [ ] OCR all94pages locally and replay saved native results; verify actual runtime receipts and source coverage.
-- [ ] Three independent jobs inspect/annotate all pages and source units; seal outputs before any candidate evaluation.
-- [ ] Record full coverage, immutable hashes and annotation completion; update module knowledge and commit.
+- [x] OCR all94pages locally and replay saved native results; verify actual runtime receipts and source coverage.
+- [x] Three independent jobs inspect/annotate all pages and source units; seal outputs before any candidate evaluation.
+- [x] Record full coverage, immutable hashes and annotation completion; update module knowledge and commit.
+
+Source stage: `20261101-batch24-check-01/` freezes code at `4d916ef`, all five source/runtime bindings,
+94 actually viewed images,986 regions and443 source units before candidate evaluation. Three fresh-context
+jobs sealed their controls; all saved-native replays and actual runtime receipts match. Docker stopped.
 
 ## C. Evaluate and report
 

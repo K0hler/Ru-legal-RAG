@@ -1,11 +1,19 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-batch24-check-01/` now retains the pre-evaluation
+  candidate freeze at4d916ef, full94-page local OCR, saved-native replay equality
+  and matching actual runtime receipts for5/5. Three fresh source-only jobs
+  viewed all94 images and sealed986regions/443units before candidate evaluation.
+  `controls-freeze.json` binds sources, code/private rules, profiles/model files,
+  images and annotation outputs. This source-stage completion is not a passed
+  structure check. Docker stopped after extraction. Preserve all frozen outputs.
+
 - Scan batch24 contains five new originals only: three Government resolutions
   and two sanitary amending acts,94pages, downloaded01.11.2026 at the owner's
   request. `documents/pool/batch-24/index.json` binds readable PDF copies to the
   immutable archive, source cards, inputs and new/unchanged receipts. Novelty
   checks use302 prior publication IDs and2574 hashes from4164 metadata records.
-  OCR and structure evaluation have not run; do not count this as Task3 evidence.
+  At acquisition, OCR and structure evaluation had not run; downloads are not Task3 evidence.
   `experiments/20261101-new-five-acquisition-01/` retains selection/inventory,
   failed Python HTTP attempts and explicit one-run curl transport captures using
   the existing source validators/lifecycle. Production connector code is unchanged.
