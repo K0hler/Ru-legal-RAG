@@ -7,6 +7,12 @@
   evaluation; seal all independent controls before executing the candidate.
   The four reserved bodies are now exposed for this check: never tune rules on
   them and call the same acts fresh transfer evidence. Failures must be retained.
+  `controls-freeze.json` precedes all candidate evaluation; the first transfer
+  report is fail0/4. All builds repeat and preserve source, but meaningful
+  footer/footnote/section-boundary errors remain. SP source annotations keep
+  both printed3.15starts and20ambiguousregions, explicitly not unique controls.
+  Its separate diagnostic drops one duplicate only in-memory, never qualifies
+  the input, and preserves original labels/failed results. No after-run tuning.
 
 - `20261101-baseline-fixes-01/tables/` and `table-regression/` retain the final
   standalone-table fix: full103-page audit now1016/1016proposed owners,0missed

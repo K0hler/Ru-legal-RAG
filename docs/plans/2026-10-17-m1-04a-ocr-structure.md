@@ -106,13 +106,19 @@ review before Task 3. The required independent two-act-per-family gate is unchan
 **Consumes:** frozen final parser/profiles, saved normalized extractions and independently prepared source controls.
 **Produces:** `parser-transfer-report/1`, repeated full compiler artifacts and a Russian review report.
 
+**First frozen run, 01.11.2026:** performed, **not passed:0/4, both family rows0/2**.
+[Full source/image check report](../milestones/m1/04a/M1_04A_TASK3_2026-11-01.md).
+All120pages were viewed, source controls sealed before evaluation, full builds repeated;
+real ownership/continuation/section-boundary failures and source ambiguity are retained.
+Requisites were excluded. No rule tuning or silent sample replacement occurred.
+
 - [x] Implement the explicit validator with authored tests that reject a wrong parent/number, dropped region, mismatched extraction/control hash, unsupported critical structure and a development act presented as reserved evidence. Implemented 01.11.2026; [checks and remaining limits](../milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md). This item alone does not qualify the parser.
-- [ ] Freeze code/profile, extraction, corpus split and control hashes. Evaluate all four reserved acts in full through the actual compiler; compare with the independent controls.
+- [x] Freeze code/profile, extraction, corpus split and control hashes. Evaluate all four reserved acts in full through the actual compiler; compare with the independent controls. Completed with retained failures; SP's ambiguous source control is explicitly unqualified, with a separate limited diagnostic.
 - [ ] For every supported family/OCR-format row, require two distinct non-pilot acts passing numbering, parents/order, annex/table/footnote ownership, exactly-once accounting and exact source locators. OCR requisites are excluded by the 1 November owner decision. Retain unresolved/failing cases and measured timing; a coverage percentage alone cannot pass a wrong hierarchy.
-- [ ] Compile every input twice in separate output directories and replay into the same directory. Require identical IDs/hashes and `unchanged` replay for the same saved input/version; retain fresh OCR variability separately.
-- [ ] Review examples for every observed structure class against page images and retain the actual structural review record. It is distinct from legal admission of a dated edition.
-- [ ] Keep `pdf_structure_unqualified` on unsupported/unverified family-format routes. Any future relaxation must bind to passing qualification evidence and retain genuine unresolved findings.
-- [ ] Run the full default suite, Ruff, `git diff --check` and M0 gate. Replay the official-JSON route unchanged, publish the support/failure matrix, update instructions and commit.
+- [x] Compile every input twice in separate output directories and replay into the same directory. Require identical IDs/hashes and `unchanged` replay for the same saved input/version; retain fresh OCR variability separately.
+- [x] Review examples for every observed structure class against page images and retain the actual structural review record. It is distinct from legal admission of a dated edition.
+- [x] Keep `pdf_structure_unqualified` on unsupported/unverified family-format routes. Any future relaxation must bind to passing qualification evidence and retain genuine unresolved findings.
+- [x] Run the full default suite, Ruff, `git diff --check` and M0 gate. Replay the official-JSON route unchanged, publish the support/failure matrix, update instructions and commit. First attempt remains fail0/4; 1090 tests and M0 78/78 pass independently of transfer acceptance.
 
 ## Completion and downstream boundary
 

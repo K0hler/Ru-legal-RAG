@@ -1376,3 +1376,7 @@ Scope: every file under `docs/`.
   attempt at `20261101-task3-01/`. OCR/replay completed for all120pages; source
   annotation precedes candidate evaluation. Keep its status explicit and retain
   the failed cases, initial freezes and absence of legal admission.
+  The completed first run is fail0/4 (both rows0/2); full source preservation
+  and reproducibility pass but do not waive wrong owners/section hierarchy.
+  SP has both genuine source ambiguity and independent large hierarchy errors;
+  its supplemental known-region diagnostic is explicitly not qualification.

@@ -326,11 +326,13 @@ general identity-before-address/transfer requirements above, not a waiver of pro
 reserved-act membership or dated legal admission. Execute the
 [current Task 3 plan](../../plans/2026-11-01-m1-04a-task3.md); historical runs above remain unchanged.
 
-Task 3 started on the frozen `5bebd41` candidate: all four reserved inputs/120pages
-have complete local OCR and identical saved-native replays. Independent source/image
-annotation of all120pages is sealed, including genuine duplicate-number/hierarchy
-uncertainties in SP2.4.3648-20; candidate evaluation has not run yet.
-[Current check report](04a/M1_04A_TASK3_2026-11-01.md).
+Task 3 completed its first full frozen `5bebd41` run: **0/4 pass, both families0/2**.
+All120pages were independently viewed/annotated before comparison, with saved OCR/replays,
+full repeated actual compiler builds, unchanged replay and preserved source accounting.
+Failures include meaningful footer exclusion, footnote/continuation ownership, and an Arabic
+section boundary placing sectionIII below point1.12. SP also retains genuine source-number
+ambiguity. Requisites did not participate in verdicts. No tuning/replacement was performed;
+M1-04A remains open. [Full check report](04a/M1_04A_TASK3_2026-11-01.md).
 
 Build reusable legal hierarchy reconstruction over `text-extraction/1`: approving act, approved text, section/chapter/article/point/subpoint, annex, table and footnote ownership where supported. Inspect all retained M1-04 files and current diagnostic parser failures before extending the shared engine. Keep physical structure, exact text/source spans and unresolved findings; OCR field names and individual act identities must not drive legal rules. Detailed task and execution checks: [M1-04A plan](../../plans/2026-10-17-m1-04a-ocr-structure.md).
 

@@ -4,6 +4,12 @@
   source bodies were processed in `20261101-task3-01/`. Do not tune owner rules
   on this check and reuse those acts as independent evidence. This restriction
   applies to all private owner modules and the AST adapter, not just the facade.
+  The first run failed0/4: numeric section1 leaves an active point scope across
+  later section headings, Text-labelled bottom-page footnote continuations
+  inherit body owners, and meaningful footer/form-caption text is excluded.
+  Genuine duplicate printed source numbers remain unresolved; never repair
+  them from apparent sequence. Fix classes generically, with new independent
+  two-act-per-family evidence after any tuning on these exposed cases.
 
 - A standalone numbered table in an attached document without a named section
   goes to that document root only when the finished point references that same
