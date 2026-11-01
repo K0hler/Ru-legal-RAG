@@ -1,5 +1,13 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-task3-01/` freezes candidate `5bebd41`
+  before processing all four original reserved acts (120pages/1413regions).
+  All local OCR saved-native replays match. Runtime receipts match the frozen
+  image/config for 4/4. Source-only jobs/annotations are separated from candidate
+  evaluation; seal all independent controls before executing the candidate.
+  The four reserved bodies are now exposed for this check: never tune rules on
+  them and call the same acts fresh transfer evidence. Failures must be retained.
+
 - `20261101-baseline-fixes-01/tables/` and `table-regression/` retain the final
   standalone-table fix: full103-page audit now1016/1016proposed owners,0missed
   continuations,0annex-number omissions;39canonical regions/11units remain

@@ -7,6 +7,7 @@ Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
 Current M1-04A work: [Task 3 execution](plans/2026-11-01-m1-04a-task3.md).
+Its [Russian check report](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) records the four-act scope and current status.
 The owner excluded OCR requisites from its structural criteria on 1 November;
 [requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
 

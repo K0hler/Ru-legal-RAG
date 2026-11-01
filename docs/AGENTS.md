@@ -1372,3 +1372,7 @@ Scope: every file under `docs/`.
   refusals. Preserve historical results, source/permission/split integrity and
   downstream legal admission. `check_m1_04a_source_controls.validate_controls`
   requires full independent structural acceptance, not confirmed requisites.
+- `milestones/m1/04a/M1_04A_TASK3_2026-11-01.md` records the frozen four-act
+  attempt at `20261101-task3-01/`. OCR/replay completed for all120pages; source
+  annotation precedes candidate evaluation. Keep its status explicit and retain
+  the failed cases, initial freezes and absence of legal admission.

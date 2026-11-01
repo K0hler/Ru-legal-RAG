@@ -1,5 +1,10 @@
 # Corpus compilation module
 
+- Task 3 candidate code was frozen at `5bebd41` before all four reserved
+  source bodies were processed in `20261101-task3-01/`. Do not tune owner rules
+  on this check and reuse those acts as independent evidence. This restriction
+  applies to all private owner modules and the AST adapter, not just the facade.
+
 - A standalone numbered table in an attached document without a named section
   goes to that document root only when the finished point references that same
   table and does not introduce it with a colon/ниже/следующей. Scope context is
