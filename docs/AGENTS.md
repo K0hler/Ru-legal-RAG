@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- M1-04A closure checks on 01.11.2026 are recorded in
+  `milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md`. The independent
+  `assets/validate_ocr_structure.py` does not call the parser and requires full
+  source controls plus frozen file/split bindings. Its authored tests are not
+  Task 3 qualification. Actual compiler replay passes preservation on 12/205;
+  baseline literal comparison is 97 canonical passes, 14 unresolved, one
+  unscored Picture, with 20/20 numbering sequences. The 111 matching proposed
+  owners cannot replace canonical acceptance or full 103-page structural review.
+
 - M1-04A closure resumes under `plans/2026-10-31-m1-04a-closure.md`. Its baseline
   preflight verifies source/control text anchors, not semantic parent correctness.
   Never report 112 matching text hashes as 112 passed structural relations, or

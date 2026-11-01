@@ -80,6 +80,7 @@ development failures, experiments and superseded approaches.
 ### M1-04A: universal OCR structure parser
 
 - [Closure checklist and current preflight](plans/2026-10-31-m1-04a-closure.md) — baseline source preservation rechecked; independent Task 3 remains open.
+- [Closure checks, 1 November](milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md) — independent validator, repeated full 12-document compilation and explicit legacy-control comparison; two baseline identity refusals and full structural review remain open.
 
 - [Deferred requisites task](plans/2026-10-31-npa-requisites-task.md) — separate follow-up after M1-04A, including the recorded empty-title loader fix; not started.
 

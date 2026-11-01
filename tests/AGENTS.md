@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_ocr_structure_controls.py` exercises the independent Task 3
+  checker with authored full expectations and synthetic frozen files. It must
+  not invoke the candidate to derive expected structure. Negative controls
+  include consistent wrong scope/parent/order, source/table/locator damage,
+  unresolved-kind smuggling, all frozen-file categories, omitted nested/source
+  dependencies and a development/pilot identity aliased as reserved. No saved
+  corpus, reserved bodies or OCR inference is needed for these tests.
+
 - `corpus/test_ocr_logical_structure.py` now exercises maintained production
   `ocr_owner_structure.py`, not the retained experimental copy.
   `corpus/test_ocr_owner_ast.py` covers actual compiler dispatch, deterministic

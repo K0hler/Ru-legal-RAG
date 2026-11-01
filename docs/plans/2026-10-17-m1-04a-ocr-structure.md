@@ -104,7 +104,7 @@ review before Task 3. The required independent two-act-per-family gate is unchan
 **Consumes:** frozen final parser/profiles, saved normalized extractions and independently prepared source controls.
 **Produces:** `parser-transfer-report/1`, repeated full compiler artifacts and a Russian review report.
 
-- [ ] Implement the explicit validator with authored tests that reject a wrong parent/number, dropped region, mismatched extraction/control hash, unsupported critical structure and a development act presented as reserved evidence.
+- [x] Implement the explicit validator with authored tests that reject a wrong parent/number, dropped region, mismatched extraction/control hash, unsupported critical structure and a development act presented as reserved evidence. Implemented 01.11.2026; [checks and remaining limits](../milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md). This item alone does not qualify the parser.
 - [ ] Freeze code/profile, extraction, corpus split and control hashes. Evaluate all four reserved acts in full through the actual compiler; compare with the independent controls.
 - [ ] For every supported family/OCR-format row, require two distinct non-pilot acts passing identity, numbering, parents/order, annex/table/footnote ownership, exactly-once accounting and exact source locators. Retain unresolved/failing cases and measured timing; a coverage percentage alone cannot pass a wrong hierarchy.
 - [ ] Compile every input twice in separate output directories and replay into the same directory. Require identical IDs/hashes and `unchanged` replay for the same saved input/version; retain fresh OCR variability separately.

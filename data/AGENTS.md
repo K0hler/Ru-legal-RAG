@@ -1,5 +1,14 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261101-closure-development-02/` replays the actual
+  compiler on 12 known development documents/205 pages, twice plus unchanged
+  replay, and checks complete source text/regions/tables. `legacy-comparison-v2.json`
+  is the corrected partial source-control comparison: 97 canonical passes,
+  14 unresolved (No.2/No.16), one Picture unscored; 20 numbering sequences pass.
+  `-01/` stopped before compilation on a diagnostic relative-path error;
+  the first legacy comparison's four technical-parent differences are superseded.
+  All failed diagnostics remain retained. No reserved body or fresh OCR was used.
+
 - `m1/m1-04a/experiments/20261031-closure-preflight-02/` retains diagnostic adapter
   results for the known ten-PDF/103-page baseline and 112 matching control text
   anchors. Semantic legacy-address comparison and independent qualification are
