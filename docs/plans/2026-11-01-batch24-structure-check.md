@@ -35,6 +35,12 @@ jobs sealed their controls; all saved-native replays and actual runtime receipts
 
 ## C. Evaluate and report
 
-- [ ] Compile each act twice and replay unchanged; require identical artifacts and compare all controls with explicit warning policy.
-- [ ] Retain every failure, separate OCR/source defects from parser errors and record the family/format limits.
-- [ ] Run applicable tests/Ruff/M0 and final fresh review; write a short Russian result, update instructions and commit.
+- [x] Compile each act twice and replay unchanged; require identical artifacts and compare all controls with explicit warning policy.
+- [x] Retain every failure, separate OCR/source defects from parser errors and record the family/format limits.
+- [x] Run applicable tests/Ruff/M0 and final fresh review; write a short Russian result, update instructions and commit.
+
+Result: [short Russian check report](../milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md).
+Strict1/5, Government1/3 and sanitary-amendments0/2; all443units match, but16content-owner
+differences and24heterogeneous continuation differences remain. Retain original controls/results.
+Ruling: do not tune the candidate or rewrite controls during this frozen check. Record the
+continuation-adjacency convention gap and actual OCR table defects separately from parser ownership.

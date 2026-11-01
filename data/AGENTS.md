@@ -1,5 +1,16 @@
 # Local data instructions
 
+- Batch24 final frozen check in `20261101-batch24-check-01/` is strict1/5:
+  Government1/3, sanitary amending acts0/2;881/897evaluated content bindings,
+  all443unit kinds/numbers/parents/order match.16owner failures include the
+  delayed asterisk note (pp1120p13->p16) and quoted table/annex payloads.24
+  continuation differences mix captions, one crosspage sentence, closing quotes
+  and two split table cells; do not report them as24identical hierarchy defects.
+  Source-only annotations and final review also retain actual OCR table damage
+  and the convention§3 adjacency gap at pp1228 21.11/22.1. Both builds/replay,
+  all986regions/1048text nodes, frozen sources/rules/runtime and 19official trees
+  replays checked; no code/labels were tuned and M1-04A remains open.
+
 - `m1/m1-04a/experiments/20261101-batch24-check-01/` now retains the pre-evaluation
   candidate freeze at4d916ef, full94-page local OCR, saved-native replay equality
   and matching actual runtime receipts for5/5. Three fresh source-only jobs

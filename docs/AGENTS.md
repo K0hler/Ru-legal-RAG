@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md` is the latest check:
+  strict1/5 (Government1/3, sanitary amending acts0/2). All443unit properties
+  match, but16content-owner failures and24heterogeneous continuation differences
+  remain. Do not equate unit matches or OCR accounting with correct content/table
+  placement. Retain the original controls and explicit continuation-adjacency
+  convention gap; no after-run retuning/rescoring or qualification claim.
+
 - Batch24 source stage has completed94pages of local OCR and actual independent
   image review:986regions/443units, three sealed fresh-context jobs and matching
   saved replay/runtime evidence. The candidate is still unchanged from its
