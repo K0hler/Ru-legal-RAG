@@ -26,6 +26,7 @@ from .text import (
     footnote_number,
     is_caption,
     page_mark,
+    requisite_like,
     region_footnote_number,
     starts_continuation,
     terminated,
@@ -109,7 +110,7 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
         for r in page:
             number = region_footnote_number(r, allow_plain=True)
             if (r.category != "Text" or number is None or r.bbox[1] < r.page_size[1] * 0.75
-                    or parse_marker(r.text, r.category).kind != "none"):
+                    or parse_marker(r.text, r.category).kind != "none" or requisite_like(r.text)):
                 continue
             token = "".join(SUP[int(d)] for d in str(number))
             mark = re.compile(rf"(?<![{SUP}]){token}(?![{SUP}])|<sup>\s*{number}\s*</sup>")

@@ -190,3 +190,139 @@ def test_projection_7_does_not_extend_dotted_section_without_printed_number(text
     nodes = [{"id": "s", "lvl": 0, "unit": "раздел", "caption": "1.1. Экономика", "np": "p1", "npe": "p1"}]
     paths, _ = J.node_paths(nodes, {"p1": 0}, {"p1": text}, projection=7)
     assert paths == {"s": "A/1"}
+
+
+@pytest.mark.parametrize(("ordinal", "number"), [("ПЕРВАЯ", "1"), ("ТРЕТЬЯ", "3"), ("ЧЕТВЕРТАЯ", "4")])
+def test_projection_8_adds_source_printed_outer_code_part_missing_from_tree(ordinal, number):
+    nodes = [{"id": "s", "lvl": 0, "unit": "раздел", "caption": "Раздел V. Правила", "np": "p4", "npe": "p6"},
+             {"id": "a", "lvl": 1, "unit": "статья", "caption": "Статья 1. Правило", "np": "p5", "npe": "p6"}]
+    order = {f"p{i}": i - 1 for i in range(1, 8)}
+    first = {"p1": "Название кодекса", "p2": f"ЧАСТЬ {ordinal}", "p3": "Принят Государственной Думой",
+             "p4": "Раздел V. Правила", "p5": "Статья 1. Правило", "p6": "Текст.", "p7": "Президент"}
+    before = deepcopy((nodes, order, first))
+    paths, _ = J.node_paths(nodes, order, first, projection=8, act_type="Кодекс")
+    owners = J.paragraph_owners(nodes, order, first, projection=8, act_type="Кодекс")
+    assert paths["s"] == f"A/разд{number}/V"
+    assert paths["a"] == f"A/разд{number}/V/ст1"
+    assert [owners[f"p{i}"][0] for i in range(1, 8)] == [
+        "A", f"A/разд{number}", f"A/разд{number}", f"A/разд{number}/V",
+        f"A/разд{number}/V/ст1", f"A/разд{number}/V/ст1", "A"]
+    assert (nodes, order, first) == before
+    old, _ = J.node_paths(nodes, order, first, projection=7, act_type="Кодекс")
+    assert old == {"s": "A/V", "a": "A/V/ст1"}
+
+
+def test_projection_8_does_not_duplicate_source_tree_code_part():
+    nodes = [{"id": "b", "lvl": 0, "unit": "часть", "caption": "ЧАСТЬ ПЕРВАЯ", "np": "p1", "npe": "p2"},
+             {"id": "s", "lvl": 1, "unit": "раздел", "caption": "Раздел I. Правила", "np": "p2", "npe": "p2"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0, "p2": 1},
+                            {"p1": "ЧАСТЬ ПЕРВАЯ", "p2": "Раздел I. Правила"}, projection=8, act_type="Кодекс")
+    assert paths == {"b": "A/разд1", "s": "A/разд1/I"}
+
+
+@pytest.mark.parametrize(("act_type", "heading", "changes", "extra"), [
+    (None, "ЧАСТЬ ПЕРВАЯ", {}, {}),
+    ("Закон", "ЧАСТЬ ПЕРВАЯ", {}, {}),
+    ("Кодекс", "Часть первая", {}, {}),
+    ("Кодекс", "В соответствии с ЧАСТЬЮ ПЕРВОЙ", {}, {}),
+    ("Кодекс", "ЧАСТЬ НЕИЗВЕСТНАЯ", {}, {}),
+    ("Кодекс", "ЧАСТЬ ПЕРВАЯ", {"np": "missing"}, {}),
+    ("Кодекс", "ЧАСТЬ ПЕРВАЯ", {"npe": "missing"}, {}),
+    ("Кодекс", "ЧАСТЬ ПЕРВАЯ", {"np": "p1"}, {}),
+    ("Кодекс", "ЧАСТЬ ПЕРВАЯ", {}, {"p2": "ЧАСТЬ ВТОРАЯ"}),
+])
+def test_projection_8_refuses_missing_code_part_without_unique_outer_source_anchor(act_type, heading, changes, extra):
+    nodes = [{"id": "s", "lvl": 0, "unit": "раздел", "caption": "Раздел I. Правила",
+              "np": "p3", "npe": "p4", **changes}]
+    paths, _ = J.node_paths(nodes, {f"p{i}": i - 1 for i in range(1, 5)},
+                            {"p1": heading, "p3": "Раздел I. Правила", **extra}, projection=8, act_type=act_type)
+    assert paths == {"s": "A/I"}
+
+
+def test_projection_8_explicit_source_subparagraph_keeps_its_printed_number_and_children():
+    nodes = [{"id": "g", "lvl": 0, "unit": "§", "caption": "§ 5. Права", "np": "p1", "npe": "p4"},
+             {"id": "r", "lvl": 1, "unit": "подпараграф", "caption": "1. Общие положения", "np": "p2", "npe": "p4"},
+             {"id": "a", "lvl": 2, "unit": "статья", "caption": "Статья 1. Правило", "np": "p3", "npe": "p4"}]
+    order = {f"p{i}": i - 1 for i in range(1, 5)}
+    first = {"p1": "§ 5. Права", "p2": "1.Общие положения", "p3": "Статья 1. Правило", "p4": "Текст."}
+    paths, _ = J.node_paths(nodes, order, first, projection=8)
+    assert paths == {"g": "A/§5", "r": "A/§5/1", "a": "A/§5/1/ст1"}
+    assert J.paragraph_owners(nodes, order, first, projection=8)["p4"] == ("A/§5/1/ст1", None)
+    old, _ = J.node_paths(nodes, order, first, projection=7)
+    assert old == {"g": "A/§5", "r": None, "a": "A/§5/ст1"}
+
+
+@pytest.mark.parametrize("text", ["Общие положения", "2. Другой номер", "1 без разделителя"])
+def test_projection_8_subparagraph_requires_printed_source_number(text):
+    nodes = [{"id": "r", "lvl": 0, "unit": "подпараграф", "caption": "1. Общие положения", "np": "p1", "npe": "p1"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0}, {"p1": text}, projection=8)
+    assert paths == {"r": None}
+
+
+@pytest.mark.parametrize(("unit", "caption", "text", "suffix"), [
+    ("часть", "часть 4<sup>2-1</sup>", "4²⁻¹. Правило.", "ч4^2-1"),
+    ("пункт", "пункт 4<sup>2-1</sup>", "4²⁻¹. Правило.", "ч4^2-1"),
+    ("подпункт", "подпункт 4<sup>2-1</sup>", "4²⁻¹) Правило.", "4^2-1"),
+    ("подпункт", "подпункт а<sup>2-1</sup>", "а²⁻¹) Правило.", "а^2-1"),
+])
+def test_projection_8_preserves_source_compound_superscript_on_numbered_units(unit, caption, text, suffix):
+    nodes = [{"id": "a", "lvl": 0, "unit": "статья", "caption": "Статья 5. Правило", "np": "p1", "npe": "p3"},
+             {"id": "n", "lvl": 1, "unit": unit, "caption": caption, "np": "p2", "npe": "p3"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0, "p2": 1, "p3": 2},
+                            {"p1": "Статья 5. Правило", "p2": text, "p3": "Продолжение."}, projection=8)
+    assert paths == {"a": "A/ст5", "n": f"A/ст5/{suffix}"}
+
+
+@pytest.mark.parametrize("text", ["4². Другой индекс.", "4. Другой номер.", "4²⁻¹ без разделителя."])
+def test_projection_8_compound_index_requires_full_printed_source_match(text):
+    nodes = [{"id": "n", "lvl": 0, "unit": "пункт", "caption": "пункт 4<sup>2-1</sup>", "np": "p1", "npe": "p1"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0}, {"p1": text}, projection=8)
+    assert paths == {"n": None}
+
+
+def test_projection_8_cli_keeps_source_compound_text_and_preserves_default_6(tmp_path, monkeypatch):
+    corpus = fake_corpus(tmp_path / "corpus")
+    doc = corpus / "docs" / "pp-a"
+    (doc / "document.html").write_text('<p id="p1">4<sup>2-1</sup>. Правило.</p>', encoding="utf-8")
+    (doc / "document_content.json").write_text(json.dumps({"data": [
+        {"id": "n", "lvl": 0, "unit": "пункт", "caption": "пункт 4<sup>2-1</sup>", "np": "p1", "npe": "p1"}]}),
+        encoding="utf-8")
+    before = {p: p.read_bytes() for p in corpus.rglob("*") if p.is_file()}
+    monkeypatch.setattr(J, "CORPUS", corpus)
+    J.main(["project", "--out", str(tmp_path / "new"), "--projection", "8"])
+    J.main(["project", "--out", str(tmp_path / "default")])
+    assert (tmp_path / "new/pp-a/gold.txt").read_text(encoding="utf-8").splitlines()[1:] == ["1.0 A/4^2-1"]
+    assert (tmp_path / "new/pp-a/extraction.json").read_bytes() == (tmp_path / "default/pp-a/extraction.json").read_bytes()
+    assert json.loads((tmp_path / "default/freeze.json").read_text(encoding="utf-8"))["projection"] == 6
+    assert {p: p.read_bytes() for p in before} == before
+
+
+@pytest.mark.parametrize(("caption", "want"), [
+    ("ПРИЛОЖЕНИЕ № 8 к Правилам (В редакции постановления от 01.01.2026 № 1118)", "A/AN8"),
+    ("Приложение 8 к Правилам", "A/AN8"),
+    ("ПРИЛОЖЕНИЕ № 2<sup>1</sup> к Правилам", "A/AN2"),
+    ("ПРИЛОЖЕНИЕ № 2<sup>2</sup> к Правилам", "A/AN2"),
+    ("ПРИЛОЖЕНИЕ № 2<sup>2-1</sup> к Правилам", "A/AN2"),
+    ("ПРИЛОЖЕНИЕ к Правилам (В редакции постановления от 01.01.2026 № 1118)", "A/AN1"),
+    ("Приложение к постановлению Правительства от 01.01.2026 № 1118", "A/AN1"),
+    ("ПРИЛОЖЕНИЕ. Таблица 8 (утверждена приказом № 1118)", "A/AN1"),
+])
+def test_projection_8_annex_number_belongs_to_caption_prefix(caption, want):
+    nodes = [{"id": "annex", "lvl": 0, "unit": "приложение", "caption": caption, "np": "p1", "npe": "p1"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0}, {"p1": caption}, projection=8)
+    assert paths == {"annex": want}
+
+
+@pytest.mark.parametrize(("unit", "caption", "text", "path"), [
+    ("глава", "Глава 14<sup>4-1</sup>. Документация", "Глава 14⁴⁻¹. Документация", "A/гл14^4-1"),
+    ("раздел", "Раздел 2<sup>3-1</sup>. Правила", "Раздел 2³⁻¹. Правила", "A/разд2^3-1"),
+    ("подраздел", "Подраздел II<sup>2-1</sup>. Правила", "Подраздел II²⁻¹. Правила", "A/II^2-1"),
+    ("§", "§ 5<sup>2-1</sup>. Правила", "§ 5²⁻¹. Правила", "A/§5^2-1"),
+])
+def test_projection_8_named_units_keep_full_compound_index_on_their_article_paths(unit, caption, text, path):
+    nodes = [{"id": "heading", "lvl": 0, "unit": unit, "caption": caption, "np": "p1", "npe": "p3"},
+             {"id": "article", "lvl": 1, "unit": "статья", "caption": "Статья 105<sup>16-1</sup>. Правило",
+              "np": "p2", "npe": "p3"}]
+    paths, _ = J.node_paths(nodes, {"p1": 0, "p2": 1, "p3": 2},
+                            {"p1": text, "p2": "Статья 105¹⁶⁻¹. Правило", "p3": "Текст."}, projection=8)
+    assert paths == {"heading": path, "article": path + "/ст105^16-1"}

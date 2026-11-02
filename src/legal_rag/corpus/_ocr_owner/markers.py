@@ -43,20 +43,20 @@ from .text import (
 # step 23 A (rp-1622-2020): an international treaty numbers its articles in Roman figures («Статья I» … «Статья VIII»)
 ARTICLE = re.compile(rf"^(?:Статья|СТАТЬЯ)\s+(\d+(?:[.¹²³⁴⁵⁶⁷⁸⁹][\d⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)*|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
 # An inserted chapter/section/§ carries a superscript like an article: «Глава 24¹», «Раздел I¹».
-CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
+CHAPTER = re.compile(rf"^(?:Глава|ГЛАВА)\s+((?:\d+|[{ROMAN_CHARS}]+)(?:[{SUP}]+(?:⁻[{SUP}]+)*)?)\.?(?=\s|$)")
 # «Раздел II.» or uppercase «РАЗДЕЛ I ОБЩИЕ ПОЛОЖЕНИЯ» (codes print it without a dot); the Roman
 # number may carry OCR Cyrillic Х / Ukrainian І («РАЗДЕЛ ІХ»).
-SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+((?:\d+|[{ROMAN_CHARS}]+)[{SUP}]*)\.?(?=\s|$)")
-PARAGRAPH_SIGN = re.compile(rf"^§\s*(\d+[{SUP}]*)\.?(?=\s|$)")
+SECTION_NAMED = re.compile(rf"^(?:Раздел|РАЗДЕЛ)\s+((?:\d+|[{ROMAN_CHARS}]+)(?:[{SUP}]+(?:⁻[{SUP}]+)*)?)\.?(?=\s|$|(?<=[{SUP}])[А-ЯЁ])")
+PARAGRAPH_SIGN = re.compile(rf"^§\s*(\d+(?:[{SUP}]+(?:⁻[{SUP}]+)*)?)\.?(?=\s|$)")
 # A code's top division «ЧАСТЬ ВТОРАЯ. БЮДЖЕТНАЯ СИСТЕМА …» (uppercase ordinal word; «часть 2 статьи» is a
 # reference) and its section subdivision «ПОДРАЗДЕЛ II. ИСКОВОЕ ПРОИЗВОДСТВО».
 CODE_PART_ORDINALS = {"ПЕРВАЯ": 1, "ВТОРАЯ": 2, "ТРЕТЬЯ": 3, "ЧЕТВЕРТАЯ": 4, "ЧЕТВЁРТАЯ": 4, "ПЯТАЯ": 5,
                       "ШЕСТАЯ": 6, "СЕДЬМАЯ": 7, "ВОСЬМАЯ": 8, "ДЕВЯТАЯ": 9, "ДЕСЯТАЯ": 10}
 CODE_PART = re.compile(rf"^ЧАСТЬ\s+({'|'.join(CODE_PART_ORDINALS)})\.?(?=\s|$)")
-SUBSECTION = re.compile(rf"^(?:ПОДРАЗДЕЛ|Подраздел)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
+SUBSECTION = re.compile(rf"^(?:ПОДРАЗДЕЛ|Подраздел)\s+((?:\d+|[{ROMAN_CHARS}]+)(?:[{SUP}]+(?:⁻[{SUP}]+)*)?)\.?(?=\s|$)")
 WORD_SECTION = re.compile(r"^РАЗДЕЛ\s+(?:ПЕРВЫЙ|ВТОРОЙ|ТРЕТИЙ|ЧЕТВ[ЕЁ]РТЫЙ|ПЯТЫЙ|ШЕСТОЙ|СЕДЬМОЙ|ВОСЬМОЙ|ДЕВЯТЫЙ|ДЕСЯТЫЙ)(?=[.\s]|$)", re.IGNORECASE)
 UNIT_RANK = {"code_part": -1, "roman": 0, "section_named": 0, "letter_part": 0, "subsection": 0.5, "chapter": 1,
-             "paragraph_sign": 2, "article": 3}
+             "paragraph_sign": 2, "subparagraph": 2.5, "article": 3}
 
 
 def named_unit(text: str, category: str) -> Marker | None:
@@ -85,8 +85,9 @@ def named_unit(text: str, category: str) -> Marker | None:
             value = CODE_PART_ORDINALS[number]
             return Marker(kind, value, f"разд{value}")
         if kind == "subsection":
-            value = int(number) if number.isdigit() else roman_value(number)
-            return Marker(kind, value, to_roman(value))
+            base = strip_sup(number)
+            value = int(base) if base.isdigit() else roman_value(base)
+            return Marker(kind, value, to_roman(value) + number[len(base):])
         base, sup = strip_sup(number), number[len(strip_sup(number)):]
         if kind == "paragraph_sign":
             return Marker(kind, int(base), f"§{base}{sup}")
@@ -97,7 +98,7 @@ def named_unit(text: str, category: str) -> Marker | None:
     return None
 
 
-LIST_NUMBER = re.compile(r"^(\d{1,3})([.)])\s+\S")
+LIST_NUMBER = re.compile(r"^(\d+)([.)])\s+\S")
 
 
 def leading_zero_list(text: str) -> bool:
@@ -129,6 +130,9 @@ def parse_marker(text: str, category: str) -> Marker:
         return named
     if category in {"Section-header", "Title"} and WORD_SECTION.match(text):
         return Marker("section_reset")  # explicit boundary; no invented numeric section address
+    removed = re.match(r"^(\d+)\.\s*[-–—]\s*(\d+)\.\s*\(Пункты\s+утратили\s+силу\b", text)
+    if removed and int(removed[1]) <= int(removed[2]):
+        return Marker("retired_range", (int(removed[1]), int(removed[2])))
     m = re.match(rf"^([{ROMAN_CHARS}]+)\.\s+\S", text)
     if m and roman_value(m.group(1)) and heading_like(text, category):
         v = roman_value(m.group(1))
@@ -138,26 +142,32 @@ def parse_marker(text: str, category: str) -> Marker:
     if m and m.group(1).lower() in LETTERS and heading_like(text, category):
         letter = m.group(1).lower()
         return Marker("letter_part", LETTERS.index(letter) + 1, letter)
-    m = re.match(r"^(\d{1,3}(?:\.\d{1,3})+)\.?\s+\S", text)
+    m = re.match(rf"^(\d{{1,3}}(?:[{SUP}]+(?:⁻[{SUP}]+)*)?(?:\.\d{{1,3}}(?:[{SUP}]+(?:⁻[{SUP}]+)*)?)+)\.?\s+\S", text)
     if m:
-        parts = tuple(int(p) for p in m.group(1).split("."))
-        return Marker("decimal", parts, ".".join(map(str, parts)))
+        printed = m.group(1).split(".")
+        bases = [strip_sup(p) for p in printed]
+        parts = tuple(int(p) for p in bases)
+        label = ".".join(str(int(base)) + p[len(base):] for p, base in zip(printed, bases))
+        return Marker("decimal", parts, label, sup=sup_value(printed[-1][len(bases[-1]):]))
     if re.match(r"^\d{1,2}\.\s?\d{1,2}\.\s?\d{4}\b", text):
         return Marker("none")  # a date such as "12. 02. 2026", not point 12
     if leading_zero_list(text):
         return Marker("none")  # «01. …», «02) …»: a list line of the current unit, not a point
     # An inserted unit carries a superscript after its number: «2¹.», «3²)», «е¹)».
     # step 21.2 D (fz-435-2020, the owner's known class «6.Сообщение»): the number may be glued to a capitalised word
-    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\.(?:\s+\S|(?=[А-ЯЁ][а-яё]))", text)
+    m = re.match(rf"^(\d+)([{SUP}]+(?:⁻[{SUP}]+)*)?\.(?:\s+\S|(?=[А-ЯЁ][а-яё]|\())", text)
     if m:
-        return Marker("int", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2)))
-    m = re.match(rf"^(\d{{1,3}})([{SUP}]*)\)\s+\S", text)
+        tail = m.group(2) or ""
+        return Marker("int", int(m.group(1)), m.group(1) + tail, sup=sup_value(tail))
+    m = re.match(rf"^(\d{{1,3}})([{SUP}]+(?:⁻[{SUP}]+)*)?\)\s+\S", text)
     if m:
-        return with_ocr_reading(Marker("paren", int(m.group(1)), m.group(1) + m.group(2), sup=sup_value(m.group(2))))
-    m = re.match(rf"^([а-я])([{SUP}]*)\)\s+\S", text)
+        tail = m.group(2) or ""
+        return with_ocr_reading(Marker("paren", int(m.group(1)), m.group(1) + tail, sup=sup_value(tail)))
+    m = re.match(rf"^([а-я])([{SUP}]+(?:⁻[{SUP}]+)*)?\)\s+\S", text)
     if m and m.group(1) in LETTERS:
-        return with_ocr_reading(Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1) + m.group(2),
-                                       sup=sup_value(m.group(2))))
+        tail = m.group(2) or ""
+        return with_ocr_reading(Marker("letter", LETTERS.index(m.group(1)) + 1, m.group(1) + tail,
+                                       sup=sup_value(tail)))
     if re.match(r"^[-–—]\s+\S", text):
         return Marker("dash")
     return Marker("none")
@@ -318,13 +328,13 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                 yield stack[:i] + (item,), 0.01 * (depth - i - 1)
                 return
     if marker.kind == "decimal" and len(marker.value) > 2:
-        prefix = marker.value[:-1]
-        if not any(entry[0] == "decimal" and entry[1] == prefix for entry in stack):
+        prefix = marker.label.rsplit(".", 1)[0]
+        if not any(entry[0] == "decimal" and entry[2] == prefix for entry in stack):
             keep = 0
             for k, entry in enumerate(stack):
                 if (entry[0] in UNIT_RANK
-                        or (entry[0] == "int" and entry[1] == marker.value[0])
-                        or (entry[0] == "decimal" and marker.value[:len(entry[1])] == entry[1])):
+                        or (entry[0] == "int" and entry[2].removeprefix("ч") == marker.label.split(".")[0])
+                        or (entry[0] == "decimal" and marker.label.startswith(entry[2] + "."))):
                     keep = k + 1
             yield stack[:keep] + ((marker.kind, marker.value, marker.label),), 5.0
             return
@@ -362,11 +372,12 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                         yield stack[:keep] + (item,), RESTART_COST + 0.01 * (depth - keep)
                 elif marker.kind == "decimal":
                     a, b = sibling[1], marker.value
-                    if a == b:
+                    same_prefix = sibling[2].rsplit(".", 1)[0] == marker.label.rsplit(".", 1)[0]
+                    if a == b and same_prefix:
                         yield stack[:keep] + (item,), 0.01 * (depth - keep)
-                    elif len(a) == len(b) and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
+                    elif len(a) == len(b) and same_prefix and a[:-1] == b[:-1] and b[-1] == a[-1] + 1:
                         yield stack[:keep] + (item,), 0.0 + 0.01 * (depth - keep)
-                    elif len(a) == len(b) and a[:-1] == b[:-1] and b[-1] - a[-1] > 1:
+                    elif len(a) == len(b) and same_prefix and a[:-1] == b[:-1] and b[-1] - a[-1] > 1:
                         # a skipped number («5.3» after «5.1»): the parent of «N.M» is «N.» by its prefix,
                         # so «5.3» is a sibling of «5.1», not its subpoint (the gap costs as for «N.»)
                         yield stack[:keep] + (item,), 2.0 + b[-1] - a[-1]
@@ -395,8 +406,10 @@ def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_par
                     yield stack[:keep] + (item,), 3.0
         elif marker.kind == "decimal":
             v = marker.value
-            child_of_decimal = parent is not None and parent[0] == "decimal" and v[:-1] == parent[1] and v[-1] == 1
-            child_of_int = parent is not None and parent[0] == "int" and len(v) == 2 and v[0] == parent[1] and v[1] == 1
+            prefix = marker.label.rsplit(".", 1)[0]
+            child_of_decimal = parent is not None and parent[0] == "decimal" and prefix == parent[2] and v[-1] == 1
+            child_of_int = (parent is not None and parent[0] == "int" and len(v) == 2
+                            and prefix == parent[2].removeprefix("ч") and v[1] == 1)
             if child_of_decimal or child_of_int:
                 yield stack[:keep] + (item,), 0.0
             elif (parent is None or parent[0] == "roman") and len(v) == 2 and v[1] == 1:
@@ -420,9 +433,26 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
         if marker.kind in {"none", "dash"}:
             states = [(c, s, li, h + [s]) for c, s, li, h in states]
             continue
+        retired_end = None
+        if marker.kind == "retired_range":
+            start, retired_end = marker.value
+            marker = Marker("int", start, str(start))
         nxt = []
         alt = replace(marker.alt, restart=marker.restart) if marker.alt is not None else None
         for cost, stack, last_int, hist in states:
+            if marker.kind == "decimal":
+                prefix = marker.label.rsplit(".", 1)[0]
+                value = marker.value[0] if len(marker.value) == 2 else marker.value[:-1]
+                for i, entry in enumerate(stack):
+                    if entry[0] in {"int", "decimal"} and entry[1] == value and entry[2].removeprefix("ч") != prefix:
+                        # An explicit prefix may return to a source parent closed by an inserted sibling.
+                        for previous in reversed(hist):
+                            if len(previous) <= i or previous[:i] != stack[:i]:
+                                break
+                            if previous[i][0] == entry[0] and previous[i][2].removeprefix("ч") == prefix:
+                                stack = previous
+                                break
+                        break
             options = list(transitions(stack, marker, last_int, article_parts))
             if alt is not None:
                 options += [(st, c + OCR_READING_COST) for st, c in transitions(stack, alt, last_int, article_parts)]
@@ -431,6 +461,8 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
             for new_stack, c in options:
                 li = marker.value if marker.kind == "int" and len(new_stack) and new_stack[-1][0] == "int" and \
                     (len(new_stack) == 1 or new_stack[-2][0] == "roman") else last_int
+                if retired_end is not None:
+                    new_stack, li = new_stack[:-1], retired_end
                 nxt.append((cost + c, new_stack, li, hist + [new_stack]))
         nxt.sort(key=lambda s: s[0])
         seen, states = set(), []

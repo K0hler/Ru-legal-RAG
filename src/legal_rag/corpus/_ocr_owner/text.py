@@ -44,12 +44,13 @@ def view(text: str) -> str:
     return re.sub(r"\s+", " ", " ".join(lines)).strip()
 
 
-def sup_value(marks: str) -> int:
-    return int("".join(SUP_DIGIT[c] for c in marks)) if marks else 0
+def sup_value(marks: str) -> int | str:
+    number = "".join("-" if c == "⁻" else SUP_DIGIT[c] for c in marks)
+    return number if "-" in number else int(number) if number else 0
 
 
 def strip_sup(text: str) -> str:
-    return re.sub(rf"[{SUP}]+", "", text).rstrip()
+    return re.sub(rf"[{SUP}⁻]+", "", text).rstrip()
 
 
 # Case-sensitive capitalised word. «ОДОБРЕН распоряжением …» (an endorsed agreement) only in capitals: the law
@@ -186,12 +187,14 @@ def annex_caption(p, next_text: str = "", first_on_page: bool = False) -> re.Mat
     # caption naming a lowercase document approved by an act, never a sentence
     approved_document = bool(m.group("sign") and LOWERCASE_DOCUMENT_REFERENT.match(reference)
                              and APPROVED_DOCUMENT.search(text))
+    document_reference = bool(DOCUMENT_REFERENT.match(reference) or (
+        text.startswith("ПРИЛОЖЕНИЕ") and LOWERCASE_DOCUMENT_REFERENT.match(reference)))
     long_allowed = text.startswith("ПРИЛОЖЕНИЕ") or DOCUMENT_REFERENT.match(reference) or approved_document
-    limit = CAPTION_UPPER_MAX if m.group("sign") and long_allowed else CAPTION_BLOCK_MAX
+    limit = CAPTION_UPPER_MAX if long_allowed and (m.group("sign") or text.startswith("ПРИЛОЖЕНИЕ")) else CAPTION_BLOCK_MAX
     # step 23 E (prikaz-fns-269-2020): «Приложение к форме свидетельства от «21» 04 2020г. № … о регистрации … Форма» —
     # a caption naming a form (FORM_REFERENT) whose long tail is the form's own date, number and title
     if len(text) < limit and (p.first.category == "Page-header" or ACT_REFERENT.match(reference)
-                              or DOCUMENT_REFERENT.match(reference) or approved_document
+                              or document_reference or approved_document
                               or FORM_REFERENT.match(reference)):
         return m
     return None
@@ -277,7 +280,7 @@ REQUISITE_LINES = (
     re.compile(rf"^{NUMBER}$"),  # «№ 23-ФЗ», «N 204»
     re.compile(rf"^(?:г\.\s*)?(?:Москва|МОСКВА)(?:,\s*Кремль)?(?:\s+{DATE})?(?:\s+{NUMBER})?$"),
     re.compile(r"^Зарегистрирован[оа]?\s+в\s+Мин"),  # «Зарегистрировано в Минюсте России ...»
-    re.compile(r"^Совершено\s+в\b"),  # closing formula of an agreement
+    re.compile(r"^Совершено(?:\s+в\b|\s*_{2,})"),  # actual or blank agreement closing formula
     re.compile(r"^(?:Составлен[ао]?|Ответ\s+на\s+запрос\s+прошу\s+направить)\s+_{2,}"),  # step 24 D: form tail
     re.compile(r"^[_\-–—\s]{3,}$"),  # a closing rule line
 )

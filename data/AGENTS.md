@@ -1,5 +1,22 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261102-sets02-05-fixes-01/` is the accepted
+  correction experiment for all5exposed sets. Use `accepted8-v2/set-*/accepted-results.json`,
+  `candidate-final-02.json`, `development-final/`, `compiler-final/` and
+  `legacy8/legacy-*/{before,accepted}-results.json`. Earlier automatic8/accepted8,
+  trial01/trial02/final and candidate-final-01 are retained attempts. The initial
+  full-test log predates the final article-part point-note fix; use final-02 log.
+  `before-fix.json` protects3648original files. `source-review/` holds6full
+  source-only controls (209regions),2partial decisions and their independence
+  limits; previous set1's13-region review is reused. The annex-parent decision
+  applies to its82source-node addresses, not82independent annotations.
+  Controls keep38746scored keys, original extractions and142exclusions;15old
+  alternative regions remain,6are resolved by full printed indices, none added.
+  Legacy296 controls are separately reprojected8 with identical keys/extractions:
+  old6 cannot represent several printed compound numbers/subparagraphs. Preserve
+  raw6 attempts and compare both code versions on the same corrected8, where
+  no per-file metric drops or new strict errors remain.237scan errors are exact.
+
 - `m1/m1-04a/experiments/20261102-sets02-05-check-01/` retains one first
   execution for all200acts in sets2–5 at343c94e. `candidate-freeze.json` binds
   all production/private rules, source projector, scorer and run script before

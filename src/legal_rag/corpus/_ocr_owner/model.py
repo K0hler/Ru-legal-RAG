@@ -34,7 +34,7 @@ class Marker:
     # numbering may start again (RESTART_COST) instead of nesting into the last point
     restart: bool = False
     # inserted unit «2¹.», «3²)», «е¹)»: value is the base number, sup the superscript index
-    sup: int = 0
+    sup: int | str = 0  # compound printed indices such as2-1 remain strings
     # step 16 C1: the other reading of a marker OCR confuses («б)» / «6)», «з)» / «3)»); the solver tries it at
     # OCR_READING_COST and keeps it only where the sequence fits better
     alt: "Marker | None" = None

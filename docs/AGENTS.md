@@ -1,5 +1,17 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md` records the
+  subsequent development correction:250/250strictly above99%, minimum99.16%,
+  total38675/38746. Source projection8 preserves printed code parts, typed
+  subparagraphs, compound indices and own-caption annex numbers. New source-only
+  review covers209regions in6files plus2single-region decisions; one annex-parent
+  decision is propagated to82source-node addresses. Prior set1 review is reused.
+  Original sources, projection6/7 controls and failed results stay sealed. Scored
+  keys/extractions and142exclusions are unchanged;6stale alternatives resolved,
+  no new alternatives. Parser gain is1198regions on the200new acts when compared
+  on identical corrected controls; separate source correction gain7620.
+  All5sets are exposed development, no fresh scan qualification or M1-04A closure.
+
 - `milestones/m1/04a/M1_04A_REMAINING_FOUR_SETS_2026-11-02.md` records the
   first frozen check of sets2–5 on343c94e: strict above99 counts43/50,41/50,
   47/50,46/50 (177/200). All200first results remain unchanged; no tuning or

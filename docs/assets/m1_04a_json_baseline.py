@@ -130,9 +130,10 @@ def paragraph_order(html: str):
 # ------------------------------------------------------------------ tree -> owner paths
 
 
-def split_number(text: str):
+def split_number(text: str, compound_sup: bool = False):
     """'11<sup>1</sup>' / '11' -> ('11', '1' | None)."""
-    m = re.match(r"^\s*([\dIVXLC]+(?:\.\d+)*|[а-я])(?:<sup>(\d+)</sup>)?", text)
+    index = r"\d+(?:-\d+)*" if compound_sup else r"\d+"
+    m = re.match(rf"^\s*([\dIVXLC]+(?:\.\d+)*|[а-я])(?:<sup>({index})</sup>)?", text)
     return (m.group(1), m.group(2)) if m else (None, None)
 
 
@@ -143,14 +144,40 @@ def printed(first_text: str, number: str, sup: str | None) -> str | None:
     return m.group(1) if m else None
 
 
+def with_outer_code_part(nodes, order, first_text, act_type):
+    """Projection 8: a unique printed code-part heading before the tree encloses its typed roots."""
+    if not isinstance(act_type, str) or act_type.strip().casefold() != "кодекс":
+        return nodes
+    roots = [n for n in nodes if n["lvl"] == 0]
+    if not roots or any(n.get("unit") not in ("раздел", "подраздел", "глава", "§", "статья")
+                        or n["np"] not in order or n["npe"] not in order
+                        or order[n["np"]] > order[n["npe"]] for n in roots):
+        return nodes
+    start = min(order[n["np"]] for n in roots)
+    headings = [(pid, text) for pid, text in first_text.items() if pid in order and order[pid] < start
+                and re.fullmatch(r"ЧАСТЬ\s+([А-ЯЁ]+)", text.strip())
+                and text.split()[-1].lower() in ORDINALS]
+    if len(headings) != 1:
+        return nodes
+    pid, caption = headings[0]
+    # Stop at the source tree's last root, leaving the act's signature/requisites outside the part.
+    end = max(roots, key=lambda n: order[n["npe"]])["npe"]
+    part = {"id": f"source-code-part:{pid}", "lvl": 0, "unit": "часть", "caption": caption.strip(),
+            "np": pid, "npe": end}
+    return [part, *[{**n, "lvl": n["lvl"] + 1} for n in nodes]]
+
+
 def node_paths(nodes, order, first_text, projection=1, act_type=None):
     """Per node: owner path (None = transparent), using non-transparent ancestors; with projection 2
     also an alternative owner for unprinted parts/points (the previous printed sibling)."""
+    if projection >= 8:
+        nodes = with_outer_code_part(nodes, order, first_text, act_type)
     stack, out, alts = [], {}, {}
     last_child: dict = {}
     attached = 0
     child_annexes: Counter = Counter()
     first_paragraph = min(order, key=order.get, default=None) if projection >= 7 else None
+    named_index = r"\d+(?:-\d+)*" if projection >= 8 else r"\d+"
     for n in nodes:
         if projection >= 7:
             n = dict(n)  # New projections do not add derived paths to the source tree.
@@ -182,7 +209,8 @@ def node_paths(nodes, order, first_text, projection=1, act_type=None):
                 child_annexes[parent] += 1
                 seg = f"AN{child_annexes[parent]}"
         elif unit == "приложение":
-            m = re.search(r"№\s*(\d+)", cap)
+            m = (re.match(r"^\s*ПРИЛОЖЕНИЕ\s*(?:№\s*)?(\d+)(?:<sup>\d+(?:-\d+)*</sup>)?(?=\s|[.,(]|$)", cap, re.I)
+                 if projection >= 8 else re.search(r"№\s*(\d+)", cap))
             child_annexes[parent] += 1
             seg = f"AN{m.group(1) if m else child_annexes[parent]}"
         elif unit == "статья":
@@ -190,36 +218,41 @@ def node_paths(nodes, order, first_text, projection=1, act_type=None):
             m = re.match(rf"^(?:Статья|СТАТЬЯ)\s+(\d+(?:\.\d+)*)(?:<sup>({index})</sup>)?", cap)
             seg = f"ст{m.group(1)}" + (f"^{m.group(2)}" if m.group(2) else "") if m else None
         elif unit == "глава":
-            m = re.match(r"^(?:Глава|ГЛАВА)\s+(\d+|[IVXLC]+)(?:<sup>(\d+)</sup>)?", cap)
+            m = re.match(rf"^(?:Глава|ГЛАВА)\s+(\d+|[IVXLC]+)(?:<sup>({named_index})</sup>)?", cap)
             if m:
                 value = m.group(1) if m.group(1).isdigit() else str(roman_value(m.group(1)))
                 seg = f"гл{value}" + (f"^{m.group(2)}" if m.group(2) else "")
         elif unit in ("раздел", "подраздел"):
-            m = re.match(r"^(Раздел|РАЗДЕЛ|Подраздел|ПОДРАЗДЕЛ)?\s*(\d+|[IVXLC]+)(?:<sup>(\d+)</sup>)?", cap)
+            m = re.match(rf"^(Раздел|РАЗДЕЛ|Подраздел|ПОДРАЗДЕЛ)?\s*(\d+|[IVXLC]+)(?:<sup>({named_index})</sup>)?", cap)
             if m:
                 # projection 5: a bare «1.» without the word «Раздел» is a point (convention v2 §6.1, 26.10.2026)
                 point = projection >= 5 and m.group(2).isdigit() and not m.group(1)
                 number, sup = m.group(2), m.group(3)
                 if projection >= 7 and point:
-                    dotted, dotted_sup = split_number(cap)
+                    dotted, dotted_sup = split_number(cap, compound_sup=projection >= 8)
                     if "." in dotted and printed(first_text.get(n["np"], ""), dotted, dotted_sup):
                         number, sup = dotted, dotted_sup
                 seg = (number if ROMAN.match(number) or point else f"разд{number}") + (f"^{sup}" if sup else "")
         elif unit == "§":
-            m = re.match(r"^§\s*(\d+)", cap)
-            seg = f"§{m.group(1)}" if m else None
+            m = re.match(rf"^§\s*(\d+)(?:<sup>({named_index})</sup>)?", cap)
+            seg = f"§{m.group(1)}" + (f"^{m.group(2)}" if projection >= 8 and m.group(2) else "") if m else None
+        elif unit == "подпараграф" and projection >= 8:
+            number, sup = split_number(cap, compound_sup=True)
+            if number and printed(first_text.get(n["np"], ""), number, sup):
+                seg = number + (f"^{sup}" if sup else "")
         elif unit == "часть":
             m = re.match(r"^ЧАСТЬ\s+([А-ЯЁ]+)", cap)
             if m and m.group(1).lower() in ORDINALS:
                 seg = f"разд{ORDINALS[m.group(1).lower()]}"
             else:
-                number, sup = split_number(cap.removeprefix("часть "))
+                number, sup = split_number(cap.removeprefix("часть "), compound_sup=projection >= 8)
                 if number and printed(first_text.get(n["np"], ""), number, sup):
                     seg = f"ч{number}" + (f"^{sup}" if sup else "")
                 elif number and projection >= 2:
                     alts[n["id"]] = last_child.get(sibling_key)
         elif unit in ("пункт", "подпункт"):
-            number, sup = split_number(cap.removeprefix(unit + " ").strip().strip('"').replace('"', ""))
+            number, sup = split_number(cap.removeprefix(unit + " ").strip().strip('"').replace('"', ""),
+                                       compound_sup=projection >= 8)
             delim = printed(first_text.get(n["np"], ""), number, sup) if number else None
             if delim:
                 seg = number + (f"^{sup}" if sup else "")
@@ -239,6 +272,8 @@ def node_paths(nodes, order, first_text, projection=1, act_type=None):
 
 
 def paragraph_owners(nodes, order, first_text, projection=1, act_type=None):
+    if projection >= 8:
+        nodes = with_outer_code_part(nodes, order, first_text, act_type)
     if projection < 2:
         paths = node_paths(nodes, order, first_text)
         fill = ["A"] * len(order)
@@ -461,7 +496,7 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5, 6, 7), default=6,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5, 6, 7, 8), default=6,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
                              "also accept the previous printed sibling; 3: 2 + compound superscript indices "
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
@@ -470,7 +505,10 @@ def main(argv=None):
                              "(sub)section (no word «Раздел») is a point (convention v2 §6.1, 26.10.2026); 6: 5 + article notes "
                              "(«вложение» «Примечания», «примечание N») are transparent: their text is the article's; "
                              "7: 6 + a top-level current-act wrapper matching card.type at the first source paragraph "
-                             "is transparent; bare dotted (sub)section captions keep their full printed number")
+                             "is transparent; bare dotted (sub)section captions keep their full printed number; "
+                             "8: 7 + a source-anchored outer code part missing from the tree, printed source "
+                             "subparagraphs, compound superscript indices on named and numbered units, and annex "
+                             "numbers only from the caption's own prefix")
     parser.add_argument("--split", choices=("dev", "holdout", "all"), default="dev",
                         help="corpus part to project; the holdout was measured once (25.10.2026) and is development "
                              "now; all: the 100 acts, dev then holdout")

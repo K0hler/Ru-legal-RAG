@@ -14,6 +14,7 @@ VERSION = "ocr-owner-ast/4"
 KINDS = {"int": "point", "decimal": "point", "paren": "subitem", "letter": "subitem",
          "article": "article", "chapter": "chapter", "roman": "section", "letter_part": "part",
          "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter",
+         "subparagraph": "subchapter",
          "annex": "annex"}
 
 

@@ -1,5 +1,14 @@
 # Test instructions
 
+- `corpus/test_ocr_owner_transfer_fixes.py` covers the exposed sets2–5 classes:
+  full compound indices and decimal parent recovery, four-digit versus padded
+  lists, glued headings/editorial notes, long annex captions, narrative
+  conclusions, date/footnote refusal, remapped and ordinary point notes,
+  centred rubrics with inline/separate notes, removed ranges and numbered
+  rubrics below §. Include normalized AST numbers/parents and negatives for
+  Cyrillic Х words, complete/split article parts, and unstyled continuations.
+  Source projector8 controls remain independent and versions1–7 byte-compatible.
+
 - `test_ocr_owner_notes.py` additionally covers quoted contracts with blank fields
   and signature captions, quoted separators before * / ** explanatory notes,
   actual outside-quote requisite blocks, and a quoted field/table before the next

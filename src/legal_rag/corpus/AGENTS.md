@@ -1,5 +1,25 @@
 # Corpus compilation module
 
+- Exposed official-tree sets2–5 corrections retain full compound superscripts
+  on ordinary/decimal/named units. Match decimal parents by their full printed
+  prefix, not just numeric tuples; a known parent closed by an inserted sibling
+  may be restored only within the uninterrupted same ancestor context. Long
+  numeric lists pass999; zero-padded form lists remain non-unit text. Glued
+  Roman headings require an actual superscript before the joined title, so a
+  Cyrillic word starting Х never invents sectionX.
+- A numbered styled rubric under § may contain following articles, but a
+  complete sentence or a lowercase body continuation cannot promote an article
+  part to that rubric. `subparagraph` maps to AST subchapter. Explicit retired
+  ranges keep their numbers in raw text/evidence, close at their parent, and
+  serialize no printed unit marker. Never turn14–61 into a single numbered14.
+- Centred rubric evidence and separate/inline editorial notes are handled
+  within the existing subheading refinement; geometric evidence alone must not
+  license unrelated unstyled body continuations. Editorial point/subpoint terms
+  respect article-part context and the act's vocabulary remap. Dates cannot
+  become inferred plain footnotes because an earlier inserted index happens to
+  match. Long uppercase annex captions with document references and templated
+  agreement closing formulas preserve their scope. Identity admission is unchanged.
+
 - Exposed official-tree set1 corrections keep superscript insertions as peers of
   the matching open base marker, close terminal double ASCII quotes without
   treating a spaced punctuation literal as an outer close, and attach an

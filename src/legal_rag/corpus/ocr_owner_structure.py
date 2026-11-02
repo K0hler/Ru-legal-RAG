@@ -125,7 +125,7 @@ def build(extraction: dict) -> dict:
         "source_asset_sha256": extraction["source_asset_sha256"],
         "paragraphs": [{
             "flow": p.flow, "kind": p.kind, "owner": p.owner,
-            "marker": None if p.marker.kind in {"none", "section_reset"} else [p.marker.kind, p.marker.label],
+            "marker": None if p.marker.kind in {"none", "section_reset", "retired_range"} else [p.marker.kind, p.marker.label],
             "regions": [{"page": r.page, "index": r.index, "region_id": r.region_id, "category": r.category}
                         for r in p.regions],
             "text_node_ids": [t for r in p.regions for t in r.text_node_ids],

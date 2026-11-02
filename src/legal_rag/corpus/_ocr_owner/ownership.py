@@ -82,6 +82,16 @@ SUBHEADING_STYLED_MAX = 1000
 LABEL_LINE = re.compile(r"^\S+(?:\s\S+)?:\s")
 
 
+def subheading_evidence(p: Paragraph) -> bool:
+    return heading_evidence(p, bold=True) or (
+        p.first.category == "Text" and p.first.page_size[0] * .25 <= p.first.bbox[0] <= p.first.page_size[0] * .55)
+
+
+def subheading_note(p: Paragraph) -> bool:
+    return (p.marker.kind == "none" and p.text.endswith(")") and len(p.text) <= 400
+            and bool(re.match(r"^\((?:Наименование подраздела|Дополнение подразделом)\b", p.text)))
+
+
 def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     """An unmarked capitalised line that is not a sentence: no final «.;:!?», no broken tail («,»,
     hyphen). Not a figure/table/form caption (OCR category Caption or the text «Схема 1», «Рисунок
@@ -89,10 +99,11 @@ def subheading_candidate(p: Paragraph, long: bool = False) -> bool:
     or a rejected annex caption («Приложение 2»). At most SUBHEADING_MAX characters as body text
     (SUBHEADING_STYLED_MAX with ``long``), SUBHEADING_HEADER_MAX with OCR heading evidence (Section-header/Title)."""
     text = strip_emphasis(p.text)  # step 24 C: a whole bold line can be a subheading even in a Text region
-    header = heading_evidence(p, bold=True)
+    header = subheading_evidence(p)
     limit = SUBHEADING_HEADER_MAX if header else SUBHEADING_STYLED_MAX if long else SUBHEADING_MAX
     # step 16 C3: an OCR heading may end with «:» («## Проведение проверки:» over «### Документарная проверка»)
-    open_ = not terminated(text) or (header and final_char(text) == ":")
+    end = provision_final(text)
+    open_ = end not in {".", ";", ":", "!", "?"} or (header and end == ":")
     return (p.kind == "text" and p.marker.kind == "none" and p.first.category != "Caption"
             and bool(text) and text[0].isupper()
             and len(text) <= limit and open_ and final_char(text) not in ",-–—"
@@ -123,26 +134,31 @@ def subheading_stacks(items: list[Paragraph], body: list[Paragraph], stacks: lis
             k += 1
             continue
         end = k
-        while end + 1 < len(seq) and id(seq[end + 1]) in index and subheading_candidate(seq[end + 1], long=True):
+        while end + 1 < len(seq) and id(seq[end + 1]) in index and (
+                subheading_candidate(seq[end + 1], long=True) or subheading_note(seq[end + 1])):
             end += 1
-        prev = seq[k - 1] if k else None
+        prev_index = k - 1
+        while prev_index >= 0 and editorial_only(seq[prev_index]):
+            prev_index -= 1
+        prev = seq[prev_index] if prev_index >= 0 else None
         nxt = seq[end + 1] if end + 1 < len(seq) else None
         # step 16 C3: a run of OCR headings also follows a point that lost its final «.»
-        finished = final_char(prev.text) in ".;" if prev is not None else False
+        finished = provision_final(prev.text) in {".", ";"} if prev is not None else False
         if prev is not None and not finished and prev.marker.kind in POINT_KINDS and final_char(prev.text).isalnum():
-            finished = all(heading_evidence(q, bold=True) for q in seq[k:end + 1])
+            finished = all(subheading_evidence(q) or subheading_note(q) for q in seq[k:end + 1])
         if (prev is not None and id(prev) in index and finished
                 and nxt is not None and id(nxt) in index and nxt.marker.kind in POINT_KINDS):
             parent = stacks[index[id(nxt)]][:-1]
             # step 21.4 B (pp-1521-2014): a run of OCR headings between points of the scope root is the root's heading
-            if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(heading_evidence(q, bold=True) for q in seq[k:end + 1])):
+            if (parent and parent[-1][0] in UNIT_RANK) or (not parent and all(
+                    subheading_evidence(q) or subheading_note(q) for q in seq[k:end + 1])):
                 runs.append((seq[k:end + 1], parent))
         k = end + 1
     styled = sum(any(heading_evidence(q, bold=True) for q in run) for run, _ in runs) >= SUBHEADING_CORROBORATION
     changed: set[int] = set()
     for run, parent in runs:
-        if not styled and (not any(heading_evidence(q, bold=True) for q in run)
-                           or not all(subheading_candidate(q) for q in run)):
+        if not styled and (not any(subheading_evidence(q) for q in run)
+                           or not all(subheading_candidate(q) or subheading_note(q) for q in run)):
             continue
         for q in run:
             j = index[id(q)]
@@ -259,7 +275,7 @@ NOTE_UNIT = {"стат": "article", "глав": "chapter", "разд": "section"
              "подп": "subpoint"}
 
 
-def note_unit_level(stack: tuple, unit: str) -> int | None:
+def note_unit_level(stack: tuple, unit: str, paren_point: bool = False) -> int | None:
     """Index of the deepest open entry of the named kind, or None. A part is «N.» right under an
     article; a point is «N.»/«N.M»/«N)» that is not a part; a subpoint is «а)»/«N)» under a point."""
     for i in range(len(stack) - 1, -1, -1):
@@ -267,7 +283,9 @@ def note_unit_level(stack: tuple, unit: str) -> int | None:
         part = kind == "int" and parent == "article"
         if ((unit == "article" and kind == "article") or (unit == "chapter" and kind == "chapter")
                 or (unit == "section" and kind in {"section_named", "roman"}) or (unit == "part" and part)
-                or (unit == "point" and kind in {"int", "decimal", "paren"} and not part)
+                or (unit == "point" and not part and (kind in {"int", "decimal"}
+                    or (kind == "paren" and (paren_point or parent not in {"int", "decimal", "paren"}
+                        or (parent == "int" and i >= 2 and stack[i - 2][0] == "article")))))
                 or (unit == "subpoint" and kind in {"letter", "paren"} and parent in {"int", "decimal", "paren"})):
             return i
     return None
@@ -297,9 +315,11 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are
             continue
         unit = NOTE_UNIT[word[:4]]
         named_part = unit == "part"
+        paren_point = False
         if points_are_parts and unit in {"point", "subpoint"} and any(e[0] == "article" for e in stacks[k]):
+            paren_point = unit == "subpoint"
             unit = "part" if unit == "point" else "point"
-        level = note_unit_level(stacks[k], unit)
+        level = note_unit_level(stacks[k], unit, paren_point=paren_point)
         if level is None and named_part:
             level = note_unit_level(stacks[k], "article")
         if level is not None and level + 1 < len(stacks[k]):
@@ -387,6 +407,8 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
                     and caption.text.startswith("(") and not signature_caption(caption.text)):
                 marker_text += " " + caption.text  # matching view only; source regions stay separate
         p.marker = parse_marker(marker_text, p.first.category)
+        if p.marker.kind == "retired_range":
+            p.evidence.append({"retired_range": list(p.marker.value)})
         if p.first.category in NOISE_CATEGORIES and p.marker.kind != "none":
             # step 12 B1: a page header/footer is outside the text flow and never opens a unit («1. Коприво …»)
             p.marker = Marker("none")
@@ -408,8 +430,22 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
             list_prev = None
         if p.marker.kind in UNIT_RANK:
             p.kind = "heading"
+    within_paragraph = False
+    for k, p in enumerate(body):
+        if p.marker.kind in UNIT_RANK and UNIT_RANK[p.marker.kind] <= UNIT_RANK["paragraph_sign"]:
+            within_paragraph = p.marker.kind == "paragraph_sign"
+        if (within_paragraph and p.marker.kind == "int" and heading_evidence(p, bold=True)
+                and not terminated(p.text)):
+            following = next((j for j in range(k + 1, len(body)) if body[j].marker.kind not in {"none", "dash"}), None)
+            continuation = any(q.text and q.text[0].islower() and not editorial_only(q)
+                               for q in body[k + 1:following])
+            if following is not None and body[following].marker.kind == "article" and not continuation:
+                p.marker = replace(p.marker, kind="subparagraph")
+                p.kind = "heading"
+                p.evidence.append({"subparagraph": "numbered heading under § before an article"})
     point_references(body)
-    if any(p.marker.kind == "chapter" for p in body) and not any(p.marker.kind == "article" for p in body):
+    if (any(p.marker.kind == "chapter" or (p.marker.kind in {"int", "decimal"} and subheading_evidence(p)) for p in body)
+            and not any(p.marker.kind == "article" for p in body)):
         for p in body:
             centred = p.first.page_size[0] * 0.25 <= p.first.bbox[0] <= p.first.page_size[0] * 0.55
             if strip_emphasis(p.text).strip().casefold() == "заключение" and (heading_evidence(p) or centred):
