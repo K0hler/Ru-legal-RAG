@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md` records the owner's
+  automatic-control alternative: 50 previously unconsumed IPS acts, unchanged
+  maintained post-П23 code and projection6. Strict/no_section3437/3552 (96.76%),
+  47/50 above99%,46perfect; the each-document target fails. Retain the111-region
+  quoted-contract mismatch in1288/2023 and four footnote comparisons separately;
+  source-tree agreement is not independent adjudication of every difference.
+  All projected regions were evaluated, with no alternative owners. This uses
+  clean text/artificial pages; scan batch24 remains failed and M1-04A open.
+
 - `milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md` is the latest check:
   strict1/5 (Government1/3, sanitary amending acts0/2). All443unit properties
   match, but16content-owner failures and24heterogeneous continuation differences

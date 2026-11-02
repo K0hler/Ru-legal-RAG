@@ -1,5 +1,17 @@
 # Local data instructions
 
+- Official trees acquired02.11.2026 are in `m1/m1-04a/json-corpus/20261102-v3/`:
+  50 new same-edition IPS pairs,1896nodes, no acquisition refills. Evidence in
+  `experiments/20261102-official-trees-check-01/` freezes code/ordered candidates
+  before new text, then sources and projection6 controls before first evaluation.
+  Strict/no_section3437/3552;47/50above99%,46perfect. All3552projected regions
+  scored, no exclusions/alternative owners; source tables are aggregate regions.
+  Preserve original failures, controls, sources and code.111differences concern
+  the quoted contract in1288/2023; four footnote differences need source/rule
+  adjudication. `verification-attempt-01.json` explains the original verifier's
+  text-newline mismatch; separate `verify_raw_bytes.py` checks raw source bytes.
+  This is clean-text evidence, not scan-batch25, OCR qualification or admission.
+
 - Batch24 final frozen check in `20261101-batch24-check-01/` is strict1/5:
   Government1/3, sanitary amending acts0/2;881/897evaluated content bindings,
   all443unit kinds/numbers/parents/order match.16owner failures include the
