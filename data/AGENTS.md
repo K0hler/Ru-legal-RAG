@@ -1,5 +1,16 @@
 # Local data instructions
 
+- First set1 execution is retained in `m1/m1-04a/experiments/20261102-five-sets-set01-check-01/`:
+  full candidate freeze precedes `exposure-start.json` and all50 first builds.
+  `exposure-complete.json` records only set1, outside frozen acquisition files.
+  Raw strict/no_section9749/10565,38/50above99%,35perfect;12excluded,0alternatives.
+  `source-review.json` binds six current-act President-order wrappers wrongly
+  mapped to S by projection6: their errors are solely A/S label differences.
+  Keep the first results/controls unchanged, do not call six zero scores total
+  parser loss, and do not silently correct/rescore. Other mismatches remain.
+  All frozen source/control/code bindings match; stored score/error replay50/50.
+  Set1 is now exposed; other four sets have not been passed through the parser.
+
 - `m1/m1-04a/json-corpus/20261102-five-sets/` contains five self-contained
   `set-01..05/` reserves,50documents each. Root `fetch.json` indexes250rows;
   use each row's `relative_path`, not root `docs/<slug>`. Bodies/tree pairs have

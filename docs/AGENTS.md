@@ -1,5 +1,16 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_FIVE_SETS_SET01_CHECK_2026-11-02.md` records the
+  first frozen check of set1 only:38/50above99%,35perfect,9749/10565 (92.28%),
+  identical strict/no_section scores;12projected regions unscored. Six President
+  orders score0 solely because projection6 treats their current-act wrapper
+  `вложение/Распоряжение` as attached S, while the parser uses A; all remaining
+  tails match in those six. Preserve raw scores/controls and source-review proof;
+  this is a projection defect, not total structure loss. Address/other acts retain
+  additional differences. No tuning/rescoring occurred. Set1 is exposed; sets2–5
+  remain unused. Do not read the acquisition report's reserved status as current
+  exposure status for set1; the new experiment records that transition separately.
+
 - `milestones/m1/04a/M1_04A_FIVE_OFFICIAL_TREE_SETS_2026-11-02.md` records
   five prepared reserves of50new IPS documents,250total,14act/issuer groups
   (11source types). All250same-edition HTML/tree pairs and existing projection6
