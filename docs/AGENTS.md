@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_FINAL_TEN_PREPARATION_2026-11-02.md` records10new
+  official-tree control documents reserved at466c043, not a passed check.9type/
+  issuer groups,490source nodes,715/715regions controlled, no exclusions or
+  alternatives. All screened codes/rare groups were already acquired; one extra
+  Government resolution uses the declared fallback. One Duma source lacking
+  unit types was replaced before any candidate run. Production/projector8 are
+  unchanged; no owner parser, scoring, OCR or manual annotation was run.
+
 - `milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md` records the
   subsequent development correction:250/250strictly above99%, minimum99.16%,
   total38675/38746. Source projection8 preserves printed code parts, typed

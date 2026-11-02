@@ -1,5 +1,18 @@
 # Local data instructions
 
+- `m1/m1-04a/json-corpus/20261102-final-control-10/` contains10new reserved
+  control acts from9available type/issuer groups. `split.json` has no dev acts;
+  `status.json` is acquisition-time reserved evidence, not current exposure.
+  `experiments/20261102-final-control-10-acquisition-01/` freezes466c043 and48
+  code/helper files before new bodies, then88source files and21projection8
+  control files. All715regions are scored by source-only gold, zero exclusions/
+  alternatives;490tree nodes.7634prior files and ID/act-identity/body-hash checks
+  exclude older corpora, all five exposed sets, scans and downloaded failed
+  attempts. One untyped Duma tree was rejected from the frozen queue; raw attempt
+  retained. Preserve empty original card titles. No candidate/OCR/scoring/manual
+  annotation occurred. A later first check must verify the frozen code and
+  record exposure separately here, outside immutable corpus status/splits.
+
 - `m1/m1-04a/experiments/20261102-sets02-05-fixes-01/` is the accepted
   correction experiment for all5exposed sets. Use `accepted8-v2/set-*/accepted-results.json`,
   `candidate-final-02.json`, `development-final/`, `compiler-final/` and
