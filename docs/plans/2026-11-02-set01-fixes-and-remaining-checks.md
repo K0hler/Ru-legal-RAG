@@ -17,13 +17,13 @@ Work on main. Preserve all original sources, projection6 controls and first scor
 
 ## Item B: frozen check of sets2–5
 
-- [ ] After A, freeze all production/private rules, helpers and corrected source
+- [x] After A, freeze all production/private rules, helpers and corrected source
   projection before any remaining candidate runs. Generate/freeze source-only
   controls for all200, preserve original projection6 alongside them.
-- [ ] Run every remaining set exactly once without tuning or replacing inputs;
+- [x] Run every remaining set exactly once without tuning or replacing inputs;
   verify hashes and stored scoring. Record separate exposure receipts outside
   immutable acquisition files. Do not treat later exposed sets as fresh reserves.
-- [ ] Write a short Russian result with each set's above99 count, per-document
+- [x] Write a short Russian result with each set's above99 count, per-document
   metrics, source/control limits and retained failures. Update notes and commit.
 
 Scope: clean official text, no OCR/requisites task or legal admission. No new

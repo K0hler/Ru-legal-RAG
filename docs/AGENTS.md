@@ -1,5 +1,15 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_REMAINING_FOUR_SETS_2026-11-02.md` records the
+  first frozen check of sets2–5 on343c94e: strict above99 counts43/50,41/50,
+  47/50,46/50 (177/200). All200first results remain unchanged; no tuning or
+  control edits followed exposure. Strict19329/28181 and no_section27564/28181
+  differ greatly because three code parts absent from source trees add ancestor
+  segments in parser paths; other differences remain. Do not silently drop
+  sections or call23strict failures23confirmed parser defects. Source coverage
+  retains130exclusions and21alternative regions. All five sets are now exposed;
+  preparation-time reserved statuses are historical. M1-04A stays open.
+
 - `milestones/m1/04a/M1_04A_SET01_FIXES_2026-11-02.md` records corrected
   exposed set1:50/50above99%,46perfect,10528/10565strict, minimum99.27%.
   Source projection7 corrects first-act wrappers and printed dotted sections;

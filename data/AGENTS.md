@@ -1,5 +1,23 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261102-sets02-05-check-01/` retains one first
+  execution for all200acts in sets2–5 at343c94e. `candidate-freeze.json` binds
+  all production/private rules, source projector, scorer and run script before
+  source projection; all four projection7controls are frozen before the first
+  candidate process. No manual overrides; old scored keys/extractions are exact,
+  with130old exclusions and21old alternatives. `projection-deltas.json` records
+  source-only label corrections before exposure. `first-results.json` in each
+  set is immutable: strict above99 counts43,41,47,46; no_section43,41,48,47.
+  `verification-summary.json` confirms200stored-score replays and unchanged46code,
+  404control and2549original bindings. Exposure receipts live here, outside the
+  frozen acquisition splits/status. All250prepared acts have now been exposed;
+  never reuse them as fresh reserves. Preserve these failures before any future
+  development. This is clean-text comparison, not OCR or legal admission.
+  Source diagnosis in the new codes also finds a printed4²⁻¹parent dropped by
+  projection and partially parsed, and a source `подпараграф` node transparent
+  in projection. Adjudicate these source/control limits separately from parser
+  defects; never retune the frozen check merely to match those labels.
+
 - Set1 correction evidence is `m1/m1-04a/experiments/20261102-set01-fixes-01/`.
   Use `accepted-controls-v2/accepted-results.json`, `candidate-final-03.json`,
   `development-accepted/`, `legacy-{100,146,50}/accepted-results.json` and
