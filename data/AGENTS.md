@@ -1,5 +1,18 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261102-official-trees-fixes-01/acceptance.json` records
+  all50 official-tree development acts strictly above99%,49perfect,3551/3552,
+  minimum146/147. `before-fix.json` protects567 originals/source/first-run files;
+  `final-code-freeze.json` binds every production Python module, not only facade.
+  Use `projection6/final-results.json`, `development-final/` and official100/146
+  `before` vs `final` results; earlier `fixed`/`fixed-b` and `development-237`
+  are retained intermediate attempts, not accepted regression evidence. A quoted
+  tail separator has scope-root ownership without opening a requisite block;
+  fields before later outer points retain their point. Old237 metrics/errors
+  are exact; old246 official acts improve14 regions without new errors. Full
+  compiler controls14/14 pass with identical repeats. No sources/gold rewritten,
+  fresh OCR/qualification or admission; scan-batch24 original failure remains.
+
 - Official trees acquired02.11.2026 are in `m1/m1-04a/json-corpus/20261102-v3/`:
   50 new same-edition IPS pairs,1896nodes, no acquisition refills. Evidence in
   `experiments/20261102-official-trees-check-01/` freezes code/ordered candidates

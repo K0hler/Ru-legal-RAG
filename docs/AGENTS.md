@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_OFFICIAL_TREES_FIXES_2026-11-02.md` is the latest
+  clean-text development result: all50 above99%,49perfect,3551/3552 (99.97%),
+  minimum146/147 (99.32%). Preserve the first3437/3552 report and controls.
+  The three failed amendments shared a quoted-blank/requisite-block cascade;
+  they were not fixed by changing OCR or footnote links. Old237 scan metrics/error
+  lists are exact; old246 official acts have no new errors and14 additional
+  correct regions. Full14-document compiler controls and1166tests pass. These
+  exposed50 acts are development evidence; scan-batch24 qualification stays failed.
+
 - `milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md` records the owner's
   automatic-control alternative: 50 previously unconsumed IPS acts, unchanged
   maintained post-П23 code and projection6. Strict/no_section3437/3552 (96.76%),

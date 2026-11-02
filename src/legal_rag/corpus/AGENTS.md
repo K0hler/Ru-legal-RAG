@@ -1,5 +1,15 @@
 # Corpus compilation module
 
+- Amending-quotation evidence also blocks text-based requisite-block opening:
+  a quoted form's blank, signature or explanatory note must not move later text
+  to the document root. After the last genuine marker, a standalone quoted rule
+  keeps its prior scope-root owner via the non-advancing signature path. Before
+  a later outer marker, quoted blank fields keep their introducing point, as do
+  subsequent tables. Numbered fields and genuine outside-quote requisites retain
+  their behavior. This fixes all50 official-tree development acts above99% without
+  changing controls; it is not fresh PDF qualification. Private rule hashes must
+  be bound even when the public facade hash and VERSION remain unchanged.
+
 - Owner decision 01.11.2026: source numbering conflicts may pass structural
   checks when explicitly warned and printed numbers are unchanged. AST/4 uses
   source-bound `@N` occurrence paths for repeated markers; these suffixes never

@@ -442,21 +442,18 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
     last_marked = max((k for k, p in enumerate(body) if p.marker.kind not in {"none", "dash"}), default=-1)
     # cycle 10 B1: a page mark (file code, typist's mark) never opens the block, and a page header/footer
     # opens it only by its text, not by its position («X», «Компьютер /Н.Н./…» sit at the right edge)
-    # cycle 11 B2: a paragraph of an amending quotation («(форма)» of a quoted form) opens no block by its
-    # position either; by its text (a closing rule «____» after a quotation whose quote mark was lost) it still does
-    # step 13 B3: a form's signature caption («(подпись)», «М.П.») opens it, but not inside an amending quotation
-    # (a quoted form ends «М.П. (при наличии)".»)
+    # Fields, separators and signatures inside an amending quotation belong to
+    # its introducing unit; neither their position nor their text opens this block.
     # step 22 D: a blank line right under a part heading («Г. Примечания» / «__________») is that part's field
     block = next((body[k] for k in range(last_marked + 1, len(body)) if body[k].text
                   and not (k == last_marked + 1 and body[last_marked].marker.kind == "letter_part"
                            and BLANK_LINE.match(body[k].text))
                   and PAGE_MARK_EVIDENCE not in body[k].evidence and not body[k].text[0].islower()
+                  and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)
                   and (requisite_like(body[k].text)
-                       or (signature_caption(body[k].text)
-                           and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence))
+                       or signature_caption(body[k].text)
                        or (signature_like(body[k].first) and id(body[k]) not in framed
-                           and body[k].first.category not in NOISE_CATEGORIES
-                           and not any("quoted" in e or "in_quotation" in e for e in body[k].evidence)))), None)
+                           and body[k].first.category not in NOISE_CATEGORIES))), None)
     if block is not None and block.text.startswith("(") and not signature_caption(block.text):
         # step 21.5 C: a field caption «(серия, номер, дата выдачи …)» stays with its field; the block opens after it
         after = body.index(block) + 1
@@ -464,7 +461,7 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
     in_block = False
     blank = None  # (stack, parent path) of the last marked paragraph when it is a fill-in line «2. ___»
     fill_parent: dict[int, str] = {}
-    for p, stack in zip(body, stacks):
+    for k, (p, stack) in enumerate(zip(body, stacks)):
         in_block = in_block or p is block or SERVICE_TAIL_EVIDENCE in p.evidence
         if p.marker.kind not in {"none", "dash"}:
             blank = (stack, path_of(scope_path, stack[:-1]), False) if fill_in_line(p.text) else (
@@ -478,7 +475,10 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
         elif p.marker.kind == "none" and ((signature_like(p.first) and id(p) not in framed
                                            and not (p.text.startswith("(") and not signature_caption(p.text))
                                            and not any("in_quotation" in e for e in p.evidence))
-                                          or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence):
+                                          or BARCODE_EVIDENCE in p.evidence or PAGE_MARK_EVIDENCE in p.evidence
+                                          or (k > last_marked and BLANK_LINE.match(p.text)
+                                              and any("quoted" in e or "in_quotation" in e for e in p.evidence))):
+            # A standalone rule owns no quoted content; do not advance `current` below.
             p.kind = "signature"
             p.owner = scope_path
         elif (p.marker.kind == "none" and blank is not None and stack == blank[0]

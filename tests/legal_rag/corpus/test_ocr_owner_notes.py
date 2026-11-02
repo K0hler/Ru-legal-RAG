@@ -140,3 +140,72 @@ def test_page_numbers_and_repeated_running_title_stay_noise():
                          for i in range(1, 5)])
     result = S.build(source)
     assert all(r['role'] == 'noise' for r in result['regions'] if r['category'].startswith('Page-'))
+
+
+def test_quoted_contract_fields_and_signatures_keep_the_amending_point():
+    source = extraction([[
+        ('Text', '1. Форму договора изложить в следующей редакции:'),
+        ('Text', '"ДОГОВОР'),
+        ('Text', '1. Получатель заполняет сведения.'),
+        ('Text', '____________________________'),
+        ('Text', '(номер и дата документа)'),
+        ('Text', '2. Получатель подтверждает условия.'),
+        ('Text', 'Подписи и реквизиты Сторон'),
+        ('Text', '____________________________'),
+        ('Text', 'М.П. (при наличии)".'),
+        ('Text', 'Председатель Правительства'),
+        ('Text', 'А.А.Иванов'),
+    ]])
+    before = copy.deepcopy(source)
+    result = S.build(source)
+    got = owners(result)
+    assert [got[f'1.{k}'] for k in [1, 2, 4, 5, 6, 8]] == ['A/1'] * 6
+    # A standalone rule keeps its document owner without moving later quoted text.
+    assert got['1.3'] == got['1.7'] == 'A'
+    assert got['1.9'] == got['1.10'] == 'A'
+    assert source == before
+
+
+@pytest.mark.parametrize('note', [
+    '* Условие относится к указанным значениям".',
+    '** При изменении сведений направляется уведомление".',
+])
+def test_separator_before_quoted_explanatory_note_does_not_end_its_point(note):
+    source = extraction([[
+        ('Text', '1. Приложение изложить в следующей редакции:'),
+        ('Text', '"ФОРМА ОТЧЕТА'),
+        ('Table', '<table><tr><td>Сведения*</td><td>Значение**</td></tr></table>'),
+        ('Text', '____________________________'),
+        ('Text', note),
+        ('Text', '____________'),
+    ]])
+    before = copy.deepcopy(source)
+    result = S.build(source)
+    got = owners(result)
+    assert got['1.2'] == got['1.4'] == 'A/1'
+    assert got['1.3'] == 'A'
+    assert got['1.5'] == 'A'
+    assert source == before
+
+
+def test_unquoted_blank_after_last_point_still_opens_the_requisite_block():
+    result = S.build(extraction([[
+        ('Text', '1. Последнее требование.'),
+        ('Text', '____________________________'),
+        ('Text', 'Председатель Правительства'),
+    ]]))
+    assert owners(result) == {'1.0': 'A/1', '1.1': 'A', '1.2': 'A'}
+
+
+def test_quoted_field_before_next_outer_point_keeps_its_owner_and_table():
+    result = S.build(extraction([[
+        ('Text', '1. Форму изложить в следующей редакции:'),
+        ('Text', '"ФОРМА'),
+        ('Text', '____________________________'),
+        ('Table', '<table><tr><td>Сведения заявителя</td></tr></table>'),
+        ('Text', 'Сведения подтверждены".'),
+        ('Text', '2. Установить другое требование.'),
+    ]]))
+    got = owners(result)
+    assert got['1.2'] == got['1.3'] == got['1.4'] == 'A/1'
+    assert got['1.5'] == 'A/2'

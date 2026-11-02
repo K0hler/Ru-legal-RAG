@@ -7,8 +7,9 @@ Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
 Current M1-04A result: [five-scan batch24 check](milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md), strict1/5; the task remains open.
-Latest clean-text check: [50 new official trees from 2 November](milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md),
-47/50 above99%,46perfect; overall96.76%. This uses automatic website controls and does not replace the scan check.
+Latest clean-text correction: [all50 official-tree acts above99%](milestones/m1/04a/M1_04A_OFFICIAL_TREES_FIXES_2026-11-02.md),
+49perfect; overall99.97%, minimum99.32%. The [first check](milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md)
+is retained. This uses automatic website controls and does not replace the scan check.
 Current corrections: [shared rules and visible source warnings](plans/2026-11-01-task3-fixes.md).
 The [latest correction result](milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md) passes all four exposed scans;
 the [first failed check](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) is retained. Fresh independent evidence is still required.

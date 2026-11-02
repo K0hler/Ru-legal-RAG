@@ -1,5 +1,11 @@
 # Test instructions
 
+- `test_ocr_owner_notes.py` additionally covers quoted contracts with blank fields
+  and signature captions, quoted separators before * / ** explanatory notes,
+  actual outside-quote requisite blocks, and a quoted field/table before the next
+  outer point. A tail separator keeps its document owner without moving later
+  quoted text; an earlier field retains its point. Inputs must remain unchanged.
+
 - `test_ocr_owner_warnings.py` preserves separate repeated source units and
   unchanged numbers, verifies visible bound warnings, rejects disguised parser
   hierarchy errors, and checks delayed/page-overridden footnote occurrences.
