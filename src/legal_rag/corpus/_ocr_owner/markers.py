@@ -54,6 +54,7 @@ CODE_PART_ORDINALS = {"ПЕРВАЯ": 1, "ВТОРАЯ": 2, "ТРЕТЬЯ": 3, "
                       "ШЕСТАЯ": 6, "СЕДЬМАЯ": 7, "ВОСЬМАЯ": 8, "ДЕВЯТАЯ": 9, "ДЕСЯТАЯ": 10}
 CODE_PART = re.compile(rf"^ЧАСТЬ\s+({'|'.join(CODE_PART_ORDINALS)})\.?(?=\s|$)")
 SUBSECTION = re.compile(rf"^(?:ПОДРАЗДЕЛ|Подраздел)\s+(\d+|[{ROMAN_CHARS}]+)\.?(?=\s|$)")
+WORD_SECTION = re.compile(r"^РАЗДЕЛ\s+(?:ПЕРВЫЙ|ВТОРОЙ|ТРЕТИЙ|ЧЕТВ[ЕЁ]РТЫЙ|ПЯТЫЙ|ШЕСТОЙ|СЕДЬМОЙ|ВОСЬМОЙ|ДЕВЯТЫЙ|ДЕСЯТЫЙ)(?=[.\s]|$)", re.IGNORECASE)
 UNIT_RANK = {"code_part": -1, "roman": 0, "section_named": 0, "letter_part": 0, "subsection": 0.5, "chapter": 1,
              "paragraph_sign": 2, "article": 3}
 
@@ -126,6 +127,8 @@ def parse_marker(text: str, category: str) -> Marker:
     named = named_unit(text, category)
     if named is not None:
         return named
+    if category in {"Section-header", "Title"} and WORD_SECTION.match(text):
+        return Marker("section_reset")  # explicit boundary; no invented numeric section address
     m = re.match(rf"^([{ROMAN_CHARS}]+)\.\s+\S", text)
     if m and roman_value(m.group(1)) and heading_like(text, category):
         v = roman_value(m.group(1))
@@ -307,6 +310,13 @@ def transitions(stack: tuple, marker: Marker, last_int: int | None, article_part
 
 def _transitions(stack: tuple, marker: Marker, last_int: int | None, article_parts: bool):
     depth = len(stack)
+    if marker.sup and marker.kind in {"int", "paren", "letter"}:
+        for i in range(depth - 1, -1, -1):
+            if stack[i][:2] == (marker.kind, marker.value):
+                parent = stack[i - 1] if i else None
+                item = (marker.kind, marker.value, label_under(marker, parent, article_parts))
+                yield stack[:i] + (item,), 0.01 * (depth - i - 1)
+                return
     if marker.kind == "decimal" and len(marker.value) > 2:
         prefix = marker.value[:-1]
         if not any(entry[0] == "decimal" and entry[1] == prefix for entry in stack):
@@ -400,6 +410,13 @@ def solve_depths(markers: list[Marker], beam: int = 64, article_parts: bool = Tr
     """Beam search over the whole marker sequence of one scope; returns stacks."""
     states = [(0.0, (), None, [])]  # cost, stack, last_int, history
     for marker in markers:
+        if marker.kind == "section_reset":
+            reset = []
+            for cost, stack, _, history in states:
+                parent = tuple(entry for entry in stack if entry[0] == "code_part")
+                reset.append((cost, parent, None, history + [parent]))
+            states = reset
+            continue
         if marker.kind in {"none", "dash"}:
             states = [(c, s, li, h + [s]) for c, s, li, h in states]
             continue
@@ -458,7 +475,8 @@ QUOTED_UNIT_HEADING = re.compile(r"^[«\"„“]\s*(?:Статья|Глава|Р
 def self_closing(text: str) -> bool:
     """An opener that also ends the quotation. With «…» it is the final closing mark (OCR merges or drops nested
     closing marks, cycle 8 C9); cycle 11: with straight quotes only an even count closes — an odd count with a final
-    quote («"1. … программы "Развитие образования".») ends a quoted title inside the still open quotation."""
+    quote («"1. … программы "Развитие образования".») ends a quoted title inside the still open quotation.
+    Two terminal closes separated by punctuation also close; a spaced punctuation literal does not."""
     if not QUOTE_CLOSE.search(text):
         return False
     # step 21.4 G (fz-119-2016): a quoted article, chapter or section heading whose last «»» closes an inner title
@@ -466,7 +484,7 @@ def self_closing(text: str) -> bool:
     if QUOTED_UNIT_HEADING.match(text) and not re.search(r"[»\"“”][.;,)]+$", text):
         return False
     if '"' in text and not any(mark in text for mark in "«»„“"):
-        return text.count('"') % 2 == 0
+        return text.count('"') % 2 == 0 or bool(re.search(r'(?<=\S)"[.;,)]+"[.;,)]*$', text))
     return True
 
 

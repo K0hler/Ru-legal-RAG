@@ -296,9 +296,12 @@ def editorial_note_owners(body: list[Paragraph], stacks: list[tuple], points_are
         if word is None:
             continue
         unit = NOTE_UNIT[word[:4]]
+        named_part = unit == "part"
         if points_are_parts and unit in {"point", "subpoint"} and any(e[0] == "article" for e in stacks[k]):
             unit = "part" if unit == "point" else "point"
         level = note_unit_level(stacks[k], unit)
+        if level is None and named_part:
+            level = note_unit_level(stacks[k], "article")
         if level is not None and level + 1 < len(stacks[k]):
             stacks[k] = stacks[k][:level + 1]
             p.evidence.append({"editorial_note": f"names the {unit} -> that unit"})
@@ -406,6 +409,12 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
         if p.marker.kind in UNIT_RANK:
             p.kind = "heading"
     point_references(body)
+    if any(p.marker.kind == "chapter" for p in body) and not any(p.marker.kind == "article" for p in body):
+        for p in body:
+            centred = p.first.page_size[0] * 0.25 <= p.first.bbox[0] <= p.first.page_size[0] * 0.55
+            if strip_emphasis(p.text).strip().casefold() == "заключение" and (heading_evidence(p) or centred):
+                p.marker = Marker("section_reset")
+                p.evidence.append({"back_matter": "conclusion after narrative chapters"})
     rows = table_rows(scope_path, items) | table_rubrics(items)
     for p in body:
         if id(p) in rows:

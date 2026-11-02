@@ -1,5 +1,17 @@
 # Local data instructions
 
+- Set1 correction evidence is `m1/m1-04a/experiments/20261102-set01-fixes-01/`.
+  Use `accepted-controls-v2/accepted-results.json`, `candidate-final-03.json`,
+  `development-accepted/`, `legacy-{100,146,50}/accepted-results.json` and
+  `compiler-final-03/`. Earlier controls without the gold comment header and
+  intermediate `after/final/fix-a/fix-b` runs are retained diagnostic attempts.
+  Accepted gold has the same10565scored keys/12exclusions/zero alternatives.
+  Projection7 and the independent RP source-only13-region review are explicit
+  control corrections; original2712protected files and acquisition status stay
+  immutable. A separate receipt corrects a quoted-text typo in the sealed source
+  review note without changing labels. All50files now strictly above99%; this
+  remains exposed clean-text development, not scan or admission qualification.
+
 - First set1 execution is retained in `m1/m1-04a/experiments/20261102-five-sets-set01-check-01/`:
   full candidate freeze precedes `exposure-start.json` and all50 first builds.
   `exposure-complete.json` records only set1, outside frozen acquisition files.

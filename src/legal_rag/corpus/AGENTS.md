@@ -1,5 +1,16 @@
 # Corpus compilation module
 
+- Exposed official-tree set1 corrections keep superscript insertions as peers of
+  the matching open base marker, close terminal double ASCII quotes without
+  treating a spaced punctuation literal as an outer close, and attach an
+  unnumbered-part editorial note to its article only when it actually names a
+  part (never after the Tax Code point-to-part vocabulary mapping). Word-numbered
+  section headings and narrative chapter conclusions close lower units while
+  retaining an outer code part. These boundaries are internal `section_reset`
+  markers; serialize them as null, never as an explicitly numbered AST unit.
+  Set1 now passes50/50above99%;237scan errors are unchanged,296older official
+  acts have no new strict errors, and14compiler controls retain all blockers.
+
 - Amending-quotation evidence also blocks text-based requisite-block opening:
   a quoted form's blank, signature or explanatory note must not move later text
   to the document root. After the last genuine marker, a standalone quoted rule

@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_SET01_FIXES_2026-11-02.md` records corrected
+  exposed set1:50/50above99%,46perfect,10528/10565strict, minimum99.27%.
+  Source projection7 corrects first-act wrappers and printed dotted sections;
+  a source-only independent13-region annotation replaces missing unit typing
+  for one RP. The original9749/10565 and all projection6 files remain sealed;
+  12exclusions and zero alternatives are unchanged. On corrected controls the
+  old parser scores10437/10565; parser changes add91correct regions. Do not
+  attribute the entire gain to parser rules or call this fresh scan qualification.
+
 - `milestones/m1/04a/M1_04A_FIVE_SETS_SET01_CHECK_2026-11-02.md` records the
   first frozen check of set1 only:38/50above99%,35perfect,9749/10565 (92.28%),
   identical strict/no_section scores;12projected regions unscored. Six President

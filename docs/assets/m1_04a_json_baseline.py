@@ -143,14 +143,17 @@ def printed(first_text: str, number: str, sup: str | None) -> str | None:
     return m.group(1) if m else None
 
 
-def node_paths(nodes, order, first_text, projection=1):
+def node_paths(nodes, order, first_text, projection=1, act_type=None):
     """Per node: owner path (None = transparent), using non-transparent ancestors; with projection 2
     also an alternative owner for unprinted parts/points (the previous printed sibling)."""
     stack, out, alts = [], {}, {}
     last_child: dict = {}
     attached = 0
     child_annexes: Counter = Counter()
+    first_paragraph = min(order, key=order.get, default=None) if projection >= 7 else None
     for n in nodes:
+        if projection >= 7:
+            n = dict(n)  # New projections do not add derived paths to the source tree.
         del stack[n["lvl"]:]
         parent = next((s["path"] for s in reversed(stack) if s["path"] is not None), "A")
         sibling_key = stack[-1]["id"] if stack else None
@@ -158,8 +161,14 @@ def node_paths(nodes, order, first_text, projection=1):
         seg = None
         if unit == "вложение":
             own_caption = projection >= 4 and re.match(r"^УТВЕРЖДЕН", first_text.get(n["np"], ""))
-            if cap.strip().lower() in TRANSPARENT_CAPTIONS or (projection >= 6 and NOTE_CAPTION.match(cap)):
+            act_wrapper = (projection >= 7 and not own_caption and isinstance(act_type, str) and bool(act_type.strip())
+                           and cap.strip().casefold() == act_type.strip().casefold() and n["lvl"] == 0
+                           and n["np"] == first_paragraph and bool(first_text.get(n["np"], "").strip())
+                           and n["npe"] in order and order[n["np"]] <= order[n["npe"]])
+            if (act_wrapper or cap.strip().lower() in TRANSPARENT_CAPTIONS
+                    or (projection >= 6 and NOTE_CAPTION.match(cap))):
                 # projection 6: «Примечания» / «примечание 2<sup>1</sup>» are article notes, not annexes
+                # projection 7: a source-typed current act at the source start is not an attached document.
                 seg = None
             elif parent == "A" or own_caption:
                 # projection 4: a document with its own approval caption is attached to the act even when
@@ -190,8 +199,12 @@ def node_paths(nodes, order, first_text, projection=1):
             if m:
                 # projection 5: a bare «1.» without the word «Раздел» is a point (convention v2 §6.1, 26.10.2026)
                 point = projection >= 5 and m.group(2).isdigit() and not m.group(1)
-                seg = (m.group(2) if ROMAN.match(m.group(2)) or point else f"разд{m.group(2)}") + (
-                    f"^{m.group(3)}" if m.group(3) else "")
+                number, sup = m.group(2), m.group(3)
+                if projection >= 7 and point:
+                    dotted, dotted_sup = split_number(cap)
+                    if "." in dotted and printed(first_text.get(n["np"], ""), dotted, dotted_sup):
+                        number, sup = dotted, dotted_sup
+                seg = (number if ROMAN.match(number) or point else f"разд{number}") + (f"^{sup}" if sup else "")
         elif unit == "§":
             m = re.match(r"^§\s*(\d+)", cap)
             seg = f"§{m.group(1)}" if m else None
@@ -225,7 +238,7 @@ def node_paths(nodes, order, first_text, projection=1):
     return (out, alts) if projection >= 2 else out
 
 
-def paragraph_owners(nodes, order, first_text, projection=1):
+def paragraph_owners(nodes, order, first_text, projection=1, act_type=None):
     if projection < 2:
         paths = node_paths(nodes, order, first_text)
         fill = ["A"] * len(order)
@@ -235,7 +248,7 @@ def paragraph_owners(nodes, order, first_text, projection=1):
                 for i in range(order[n["np"]], order[n["npe"]] + 1):
                     fill[i] = paths[n["id"]]
         return {pid: fill[i] for pid, i in order.items()}
-    paths, alts = node_paths(nodes, order, first_text, projection)
+    paths, alts = node_paths(nodes, order, first_text, projection, act_type)
     fill = [("A", None)] * len(order)
     for n in sorted(nodes, key=lambda n: n["lvl"]):
         if n["np"] not in order or n["npe"] not in order:
@@ -355,12 +368,15 @@ def phase_project(out: Path, projection: int = 1, part: str = "dev"):
         order = paragraph_order(html)
         regions = html_regions(html, compound_sup=projection >= 3)
         first_text = {pid: r["text"] for r in regions for pid in r["ids"][:1]}
-        owners = paragraph_owners(nodes, order, first_text, projection)
+        act_type = None
+        if projection >= 7 and (doc / "card.json").is_file():
+            act_type = json.loads((doc / "card.json").read_text(encoding="utf-8")).get("type")
+        owners = paragraph_owners(nodes, order, first_text, projection, act_type)
         excluded, trailing = set(), {}
         if projection >= 4:
             text = {pid: r["text"] for r in regions for pid in r["ids"]}
             excluded = unstructured_documents(nodes, order, text)
-            paths, _ = node_paths(nodes, order, first_text, projection)
+            paths, _ = node_paths(nodes, order, first_text, projection, act_type)
             trailing = {pid: pair for pid, pair in after_last_item(nodes, order, text, paths).items()
                         if pid in owners and owners[pid][0] == pair[1]}
         header = "# convention: projected IPS tree (m1_04a_json_baseline.py)"
@@ -445,14 +461,16 @@ def main(argv=None):
     parser.add_argument("phase", choices=("project", "run"))
     parser.add_argument("--out", required=True)
     parser.add_argument("--label", default="v5")
-    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5, 6), default=6,
+    parser.add_argument("--projection", type=int, choices=(1, 2, 3, 4, 5, 6, 7), default=6,
                         help="1: the frozen 20261025 run; 2: «N.» in an article -> ч<N>, unprinted parts/points "
                              "also accept the previous printed sibling; 3: 2 + compound superscript indices "
                              "(«Статья 115¹⁻¹», `ст115^1-1`) in text and gold; 4: 3 + convention v2 §6.1 (unstructured "
                              "forms/agreements not scored, abzac after the last list item -> parent|item, separator "
                              "-> its document, own approval caption -> separate document); 5: 4 + a bare numbered «1.» "
                              "(sub)section (no word «Раздел») is a point (convention v2 §6.1, 26.10.2026); 6: 5 + article notes "
-                             "(«вложение» «Примечания», «примечание N») are transparent: their text is the article's")
+                             "(«вложение» «Примечания», «примечание N») are transparent: their text is the article's; "
+                             "7: 6 + a top-level current-act wrapper matching card.type at the first source paragraph "
+                             "is transparent; bare dotted (sub)section captions keep their full printed number")
     parser.add_argument("--split", choices=("dev", "holdout", "all"), default="dev",
                         help="corpus part to project; the holdout was measured once (25.10.2026) and is development "
                              "now; all: the 100 acts, dev then holdout")

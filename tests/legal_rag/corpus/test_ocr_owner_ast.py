@@ -44,6 +44,21 @@ def test_compile_pdf_uses_the_maintained_owner_parser_and_keeps_blockers(tmp_pat
     assert again["draft_id"] == result["draft_id"]
 
 
+@pytest.mark.parametrize("heading, intro", [
+    ("РАЗДЕЛ ВТОРОЙ", [("Section-header", "Статья 8"), "1. Последнее правило."]),
+    ("Заключение", [("Section-header", "Глава 1"), "1.1. Последнее правило."]),
+])
+def test_unnumbered_boundary_does_not_create_a_printed_ast_unit(heading, intro):
+    from legal_rag.corpus import ocr_owner_structure
+    source = extraction([*intro, ("Section-header", heading), "1. Новое правило."])
+    result = ocr_owner_structure.build(source)
+    assert result["paragraphs"][2]["marker"] is None
+    tree = adapter().build_owner_tree(source, CLAIM, "original")
+    assert {r["owner_path"] for r in tree["region_bindings"]} >= {"A", "A/1"}
+    assert all(n.get("marker_label") != "" for n in tree["nodes"])
+    assert not any(n.get("owner_path", "").startswith("/A") for n in tree["nodes"])
+
+
 def test_owner_ast_preserves_prototype_owners_text_tables_and_physical_regions():
     source = extraction()
     before = copy.deepcopy(source)

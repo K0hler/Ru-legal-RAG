@@ -468,3 +468,11 @@ Scope: automated tests and checked fixtures.
   and Russian quotation marks, unclosed quotation refusal, duplicate boundaries,
   immutable permission-bound compiler replay and preserved admission blockers.
   An unsupported heading inside a quotation is an exception, never a crash.
+- `corpus/test_ocr_owner_insertions.py` covers inserted superscript peers,
+  genuinely unnamed parts versus remapped point notes, terminal double ASCII
+  quotes versus punctuation literals, and word-section/conclusion boundaries
+  with body-reference negatives and retained outer code parts.
+  `test_ocr_owner_ast.py` also rejects invented empty-number units from these
+  internal boundaries. Projection7 tests in `test_m1_04a_json_baseline.py` cover
+  source-typed first-act wrappers, explicit-approval precedence and full printed
+  dotted section labels; projections1–6 keep their prior behavior.
