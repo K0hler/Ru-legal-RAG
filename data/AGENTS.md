@@ -1,5 +1,18 @@
 # Local data instructions
 
+- First control execution of the final10 is retained in
+  `m1/m1-04a/experiments/20261102-final-control-10-check-01/`: immutable copied
+  projection8controls, pre-run bindings, separate exposure start/complete receipts,
+  one saved first output per act and `projection8/first-results.json`.
+  Strict715/715, all10files100%; no exclusions/alternatives or post-exposure
+  changes. `verification-summary.json` and independent audit verify10stored
+  score replays and7799original/21copied bindings. The four AN/AN1 labels of
+  ukaz27/1997 are a pre-existing unnumbered-annex appearance equivalence; source
+  p10 and uf1 print no own annex number. Record this in `notation-check.json`,
+  without changing raw gold/predictions. Original acquisition source/status/split
+  files stay unchanged. These10are exposed now; never present them as a fresh
+  reserve again. This clean-text control does not qualify new scans or admit acts.
+
 - `m1/m1-04a/json-corpus/20261102-final-control-10/` contains10new reserved
   control acts from9available type/issuer groups. `split.json` has no dev acts;
   `status.json` is acquisition-time reserved evidence, not current exposure.

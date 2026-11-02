@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_FINAL_TEN_CHECK_2026-11-02.md` records the first
+  frozen control run at466c043:10/10strictly above99%, all715/715, every file100%.
+  No production/source/gold edits or retuning; full key coverage, zero exclusions/
+  alternatives and10stored-score replays. Four literal path labels in one
+  unnumbered annex differ only as AN vs AN1 under the pre-existing equivalence;
+  printed source caption confirms no own number. Do not call this byte equality
+  of all owner strings or a new OCR/AST/legal-admission qualification. The ten
+  documents are now exposed; old preparation status remains historical.
+
 - `milestones/m1/04a/M1_04A_FINAL_TEN_PREPARATION_2026-11-02.md` records10new
   official-tree control documents reserved at466c043, not a passed check.9type/
   issuer groups,490source nodes,715/715regions controlled, no exclusions or
