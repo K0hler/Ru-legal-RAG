@@ -1,5 +1,20 @@
 # Local data instructions
 
+- `m1/m1-04a/json-corpus/20261102-five-sets/` contains five self-contained
+  `set-01..05/` reserves,50documents each. Root `fetch.json` indexes250rows;
+  use each row's `relative_path`, not root `docs/<slug>`. Bodies/tree pairs have
+  no ID, equivalent acquired-act-identity or body-hash overlaps with prior inputs
+  or each other. Mere census/reference metadata did not exclude an unacquired act;
+  actual acquisitions across official banks did.14groups/11types cover decades,
+  tree sizes/depths and amended/approving texts.8unusable-tree candidates replaced
+  7slots in the same groups. Evidence is in `experiments/20261102-five-sets-acquisition-01/`:
+  sources/code/prior/control freezes and `verification-summary.json`; controls are
+  `controls/set-01..05/` (existing projection6,142excluded/21alternative regions).
+  No parser/OCR execution or manual annotation occurred; all sets are reserved.
+  Preserve acquisition-time `status.json` and frozen splits: record later exposure
+  in a new experiment/receipt outside these frozen source files. Freeze the full
+  candidate before each selected set's future first check; leave later sets unused.
+
 - `m1/m1-04a/experiments/20261102-official-trees-fixes-01/acceptance.json` records
   all50 official-tree development acts strictly above99%,49perfect,3551/3552,
   minimum146/147. `before-fix.json` protects567 originals/source/first-run files;

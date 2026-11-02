@@ -1,5 +1,16 @@
 # Documentation instructions
 
+- `milestones/m1/04a/M1_04A_FIVE_OFFICIAL_TREE_SETS_2026-11-02.md` records
+  five prepared reserves of50new IPS documents,250total,14act/issuer groups
+  (11source types). All250same-edition HTML/tree pairs and existing projection6
+  controls are sealed; parser/OCR were not executed. Each set has11–12groups;
+  source Protocol/Addresses/Constitution/Fundamentals are included where available,
+  without normative-status or admission claims for all types.8tree failures
+  refilled7slots, preserving all planned groups.38746/38888projected regions
+  have automatic controls; retain142exclusions and21alternative-owner regions.
+  The five sets are for successive checks; do not consume every reserve in a
+  single correction run or call preparation a passed structure check.
+
 - `milestones/m1/04a/M1_04A_OFFICIAL_TREES_FIXES_2026-11-02.md` is the latest
   clean-text development result: all50 above99%,49perfect,3551/3552 (99.97%),
   minimum146/147 (99.32%). Preserve the first3437/3552 report and controls.

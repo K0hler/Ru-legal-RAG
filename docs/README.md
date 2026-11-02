@@ -10,6 +10,8 @@ Current M1-04A result: [five-scan batch24 check](milestones/m1/04a/M1_04A_BATCH2
 Latest clean-text correction: [all50 official-tree acts above99%](milestones/m1/04a/M1_04A_OFFICIAL_TREES_FIXES_2026-11-02.md),
 49perfect; overall99.97%, minimum99.32%. The [first check](milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md)
 is retained. This uses automatic website controls and does not replace the scan check.
+[Five further reserves of50 diverse official-tree documents](milestones/m1/04a/M1_04A_FIVE_OFFICIAL_TREE_SETS_2026-11-02.md)
+are acquired and sealed for subsequent checks; the parser has not run on them.
 Current corrections: [shared rules and visible source warnings](plans/2026-11-01-task3-fixes.md).
 The [latest correction result](milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md) passes all four exposed scans;
 the [first failed check](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) is retained. Fresh independent evidence is still required.
