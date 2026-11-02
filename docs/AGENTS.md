@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- M1-04A is closed by owner acceptance on2November2026; the current record is
+  `milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md`. Acceptance covers250corrected
+  official-tree acts each>99% and the final frozen ten each100%. No further scan
+  batch is required for that task. Earlier frozen reports retain their historical
+  open/failed status; never edit them to imply a passed independent PDF protocol.
+  Family/OCR-format qualification under M1 G13, PDF/identity/admission guards and
+  the separate requisites/empty-title loader task remain outside this closure.
+
 - `milestones/m1/04a/M1_04A_FINAL_TEN_CHECK_2026-11-02.md` records the first
   frozen control run at466c043:10/10strictly above99%, all715/715, every file100%.
   No production/source/gold edits or retuning; full key coverage, zero exclusions/

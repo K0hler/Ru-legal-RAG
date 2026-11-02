@@ -1,5 +1,11 @@
 # Local data instructions
 
+- M1-04A owner closure on2November2026 is recorded separately in
+  `m1/m1-04a/experiments/20261102-owner-closure-01/`; retain pre-closure Trello
+  state, fresh binding verification and status readback there. Never modify the
+  accepted correction/final-control seals, source/status/split files or historical
+  failed results to reflect the later task closure. All260acts are already exposed.
+
 - First control execution of the final10 is retained in
   `m1/m1-04a/experiments/20261102-final-control-10-check-01/`: immutable copied
   projection8controls, pre-run bindings, separate exposure start/complete receipts,

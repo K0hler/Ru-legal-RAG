@@ -79,8 +79,14 @@ The [owner-scoped acceptance](docs/milestones/m1/04/M1_04_ACCEPTANCE_2026-10-16.
 the source-bound page-75 table are excluded from OCR quality grading; fresh
 inference is versioned and saved replay is deterministic. Inferred legal PDF
 hierarchy remains unqualified.
-The planned [M1-04A OCR structure parser](docs/plans/2026-10-17-m1-04a-ocr-structure.md)
-adds legal hierarchy reconstruction and independent experiments on additional official acts.
+[M1-04A is closed by owner acceptance on 2 November](docs/milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md):
+the shared structure parser is connected to PDF compilation. All
+[250 corrected official-tree documents](docs/milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md)
+score strictly above99%; the [final ten-document check](docs/milestones/m1/04a/M1_04A_FINAL_TEN_CHECK_2026-11-02.md)
+scores100% in every file. This bounded acceptance leaves independent PDF/OCR-format
+qualification, M1 G13 and legal admission open; the PDF structure blocker remains.
+
+Historical development record (23–24 October; superseded as current status):
 Its development prototype v3.1 (v3 plus a final-review fix) is frozen and reported in
 [M1_04A_PROTOTYPE_V3_2026-10-23.md](docs/milestones/m1/04a/M1_04A_PROTOTYPE_V3_2026-10-23.md);
 development-document scores are not progress. Its first measure, pool batch 5

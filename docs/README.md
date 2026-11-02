@@ -6,21 +6,16 @@ Start with the [product requirements](overview/PRODUCT_REQUIREMENTS.md),
 Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
-Current M1-04A result: [five-scan batch24 check](milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md), strict1/5; the task remains open.
-Latest clean-text correction: [all50 official-tree acts above99%](milestones/m1/04a/M1_04A_OFFICIAL_TREES_FIXES_2026-11-02.md),
-49perfect; overall99.97%, minimum99.32%. The [first check](milestones/m1/04a/M1_04A_OFFICIAL_TREES_2026-11-02.md)
-is retained. This uses automatic website controls and does not replace the scan check.
-[Five further sets of50 diverse official-tree documents](milestones/m1/04a/M1_04A_FIVE_OFFICIAL_TREE_SETS_2026-11-02.md)
-are acquired and sealed. Their [set1 first check](milestones/m1/04a/M1_04A_FIVE_SETS_SET01_CHECK_2026-11-02.md)
-is38/50above99%,35perfect,92.28%; retain the six identified projection-label cases.
-Sets2–5 remain unused for subsequent checks.
-Current corrections: [shared rules and visible source warnings](plans/2026-11-01-task3-fixes.md).
-The [latest correction result](milestones/m1/04a/M1_04A_TASK3_FIXES_2026-11-01.md) passes all four exposed scans;
-the [first failed check](milestones/m1/04a/M1_04A_TASK3_2026-11-01.md) is retained. Fresh independent evidence is still required.
-[Five new originals in scan batch24](milestones/m1/04a/M1_04A_BATCH24_DOWNLOADS_2026-11-01.md) have completed OCR, independent source review and structural comparison.
-Their [independent check plan](plans/2026-11-01-batch24-structure-check.md) freezes the candidate before OCR and source-only annotation.
-The owner excluded OCR requisites from its structural criteria on 1 November;
-[requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
+M1-04A is [closed by owner acceptance on 2 November](milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md).
+The [five corrected sets](milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md)
+pass250/250strictly above99%, minimum99.16%; the
+[final ten-document first check](milestones/m1/04a/M1_04A_FINAL_TEN_CHECK_2026-11-02.md)
+passes10/10at100%,715/715. No additional scan batch is required to close this task.
+This accepts the engineering deliverable with official-tree controls; the earlier
+[batch24 scan result](milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md), strict1/5,
+is retained, and independent PDF/OCR-format qualification under M1 G13 remains deferred.
+PDF structure/admission blockers remain; M1 itself is open.
+[Requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
 
 | Folder | Contents |
 |---|---|
@@ -95,7 +90,13 @@ development failures, experiments and superseded approaches.
 
 ### M1-04A: universal OCR structure parser
 
-- [Closure checklist and current preflight](plans/2026-10-31-m1-04a-closure.md) — baseline source preservation rechecked; independent Task 3 remains open.
+- [Owner acceptance and closure, 2 November](milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md) — current status, accepted scope and deferred work.
+- [All250corrected official-tree documents](milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md) — every document strictly above99%.
+- [Final ten-document check](milestones/m1/04a/M1_04A_FINAL_TEN_CHECK_2026-11-02.md) — first frozen check, every document100%,715/715.
+
+Historical plans and experiment results below retain their dated status; the closure record supersedes earlier task-open statements.
+
+- [Earlier closure checklist and preflight](plans/2026-10-31-m1-04a-closure.md) — baseline source preservation and the former independent Task 3 protocol.
 - [Full baseline structural audit, 1 November](milestones/m1/04a/M1_04A_BASELINE_STRUCTURE_AUDIT_2026-11-01.md) — independent source/image review of all 103 pages and 457 units; original failure inventory retained before the subsequent fixes.
 - [Baseline fixes, 1 November](milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md) — all 7 table-owner differences, 4 continuation misses and 9 annex-number omissions fixed against frozen full controls; 237 development owner results retained, two identity refusals and Task 3 remain open.
 - [Earlier closure checks, 1 November](milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md) — independent validator, repeated full 12-document compilation and partial legacy-control comparison, before full baseline annotation.

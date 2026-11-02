@@ -1,5 +1,12 @@
 # Corpus compilation module
 
+- Owner acceptance on2November2026 closes the M1-04A engineering task on the250
+  corrected official-tree acts and final ten-document control. This documentation
+  decision changes no parser or qualification behavior: keep
+  `pdf_structure_unqualified`, identity/source permission and admission guards.
+  Independent family/OCR-format support under M1 G13 remains deferred. Closure:
+  `docs/milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md`.
+
 - Exposed official-tree sets2–5 corrections retain full compound superscripts
   on ordinary/decimal/named units. Match decimal parents by their full printed
   prefix, not just numeric tuples; a known parent closed by an inserted sibling

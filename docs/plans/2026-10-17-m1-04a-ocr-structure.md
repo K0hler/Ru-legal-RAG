@@ -1,5 +1,12 @@
 # M1-04A: Universal OCR Structure Parser Implementation Plan
 
+**Current status, 2 November 2026:** closed by
+[owner acceptance](../milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md).
+The owner accepted the final official-tree control as the last check for this task.
+The plan and status statements below are historical; its independent PDF/OCR-format
+Task 3 protocol is deferred under M1 G13, not declared passed. No new scan batch is
+required for this closed task. [Closure plan](2026-11-02-m1-04a-acceptance.md).
+
 > **For agentic workers:** Use superpowers:executing-plans. Work on `main`, one verified item and commit at a time. Execution started on 17 October 2026; retain the ledger and actual unresolved results when continuing.
 
 **Status:** in progress from 17 October 2026. Tasks 1–2 have diagnostic implementation/evidence in [the initial report](../milestones/m1/04a/M1_04A_BASELINE_2026-10-17.md) and [the shared OCR report](../milestones/m1/04a/M1_04A_STRUCTURE_2026-10-17.md). Critical development structure remains unresolved; Task 3 qualification is pending, not passed.
