@@ -273,6 +273,61 @@ def _check_loop_layout(native, dimensions, layout, turns_expected):
     return attempts[-1]["penalties"]
 
 
+def _check_page_orientation(page, policy):
+    """Validate source-space boxes, then expose the sent-image boxes to existing retry checks."""
+    record, dimensions, layout = page.get("page_orientation"), page["image_size"], page.get("layout")
+    if not isinstance(record, dict) or not isinstance(policy, dict):
+        raise ValueError("missing OCR page orientation evidence")
+    if (policy.get("package") != "rapid-orientation" or policy.get("version") != "0.0.11"
+            or policy.get("backend") != "CPUExecutionProvider" or policy.get("direction") != "counterclockwise"
+            or policy.get("min_confidence") != 0.85 or policy.get("score") != "minimum_crop_probability"
+            or policy.get("model_sha256") != "2f62c9bfb830a0b417241269fde7ef2d0ad5446c0ed2b8af33b1f6543545e8e2"):
+        raise ValueError("unsupported OCR page orientation policy")
+    angle = record.get("angle")
+    if type(angle) is not int or angle not in (0, 90, 180, 270):
+        raise ValueError("invalid OCR page orientation angle")
+    predicted, confidence = record.get("predicted_angle"), record.get("confidence")
+    if (type(predicted) is not int or predicted not in (0, 90, 180, 270)
+            or type(confidence) not in {int, float} or not math.isfinite(confidence) or not 0 <= confidence <= 1
+            or angle != (predicted if confidence >= policy["min_confidence"] else 0)):
+        raise ValueError("invalid OCR page orientation confidence/decision")
+    sent_size = dimensions[::-1] if angle in (90, 270) else dimensions
+    if record.get("image_size") != sent_size or not isinstance(layout, list):
+        raise ValueError("invalid OCR page orientation dimensions/layout")
+    sent = []
+    width, height = dimensions
+    for region in layout:
+        if not isinstance(region, dict):
+            raise ValueError("invalid oriented OCR region")
+        bbox = region.get("oriented_bbox") if angle else region.get("bbox")
+        if (not isinstance(bbox, list) or len(bbox) != 4
+                or any(type(n) not in {int, float} or not math.isfinite(n) for n in bbox)
+                or not 0 <= bbox[0] < bbox[2] <= sent_size[0]
+                or not 0 <= bbox[1] < bbox[3] <= sent_size[1]):
+            raise ValueError("invalid oriented OCR coordinates")
+        left, top, right, bottom = bbox
+        original = ([width-right, height-bottom, width-left, height-top] if angle == 180 else
+                    _unrotate(bbox, "ccw90" if angle == 90 else "cw90", width, height) if angle else bbox)
+        if region.get("bbox") != original or (not angle and "oriented_bbox" in region):
+            raise ValueError("oriented OCR coordinates do not match source page")
+        sent.append({key: value for key, value in {**region, "bbox": bbox}.items() if key != "oriented_bbox"})
+    # Successful primary responses need the same evidence binding as recovered pages.
+    native = page.get("native", {})
+    choices = native.get("choices", []) if isinstance(native, dict) else []
+    if isinstance(choices, list) and len(choices) == 1 and not _unfinished(native, choices[0]):
+        try:
+            cells = json.loads(choices[0]["message"]["content"])
+        except (KeyError, TypeError, json.JSONDecodeError) as error:
+            raise ValueError("invalid oriented OCR native layout") from error
+        if not isinstance(cells, list) or len(cells) != len(sent) or any(
+                not isinstance(cell, dict) or cell.get("bbox") != region["bbox"]
+                or cell.get("category") != region.get("category")
+                or (cell.get("text") != region.get("text") and region.get("text_source") != "picture_ocr")
+                for cell, region in zip(cells, sent)):
+            raise ValueError("oriented OCR layout does not match native response")
+    return sent_size, sent
+
+
 def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
     """Keep native layout claims, exact OCR-string locators and all physical pages."""
     if not isinstance(document, dict) or not isinstance(run, dict):
@@ -312,14 +367,20 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
             raise ValueError("native OCR choice/message must be objects")
         content = choices[0]["message"].get("content")
         layout = source_page.get("layout")
+        check_dimensions, check_layout = dimensions, layout
+        orientation_policy = (run.get("config") or {}).get("page_orientation")
+        if "page_orientation" in source_page or orientation_policy is not None:
+            check_dimensions, check_layout = _check_page_orientation(source_page, orientation_policy)
+        elif isinstance(layout, list) and any(isinstance(r, dict) and "oriented_bbox" in r for r in layout):
+            raise ValueError("oriented OCR layout needs page orientation evidence")
         rotation = loop = None
         if source_page.get("error"):
             raise ValueError("failed or truncated native OCR response")
         if "loop_retry" in native and _unfinished(native, choices[0]):
-            loop = _check_loop_layout(native, dimensions, layout, "rotation_retry" in (run.get("config") or {}))
+            loop = _check_loop_layout(native, check_dimensions, check_layout, "rotation_retry" in (run.get("config") or {}))
             uncertainties.add("page_loop_retry")
         elif "orientation_retry" in native and _unfinished(native, choices[0]):
-            rotation = _check_rotated_layout(native, dimensions, layout)
+            rotation = _check_rotated_layout(native, check_dimensions, check_layout)
             uncertainties.add("page_orientation_retry")
         elif (choices[0].get("finish_reason") != "stop" or "orientation_retry" in native or "loop_retry" in native
                 or native.get("client_error") or native.get("local_stop_reason")
@@ -330,6 +391,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
         page = {"page": requested[page_index], "mode": "ocr", "confidence": None,
                 "image_size": dimensions, "coordinate_space": "rendered_image_pixels",
                 "regions": [], "blocks": []}
+        if "page_orientation" in source_page:
+            page["page_orientation"] = source_page["page_orientation"]
         if rotation is not None:
             page["orientation_retry"] = rotation
         if loop is not None:

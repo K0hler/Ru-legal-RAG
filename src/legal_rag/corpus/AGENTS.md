@@ -1,5 +1,21 @@
 # Corpus compilation module
 
+- `ocr_runtime.run_ocr_lab` forwards the opt-in boolean `page_orientation` to
+  OCR-Lab's packaged RapidOrientation 0.0.11 CPU classifier, before dots.mocr.
+  The client image and ONNX weight hash are pinned; source PNGs stay unchanged.
+  Page `page_orientation` records the counterclockwise angle and sent-image size;
+  it also retains the predicted angle and minimum crop probability. A turn needs
+  confidence >=0.85; lower scores preserve the source orientation. The importer
+  re-derives this decision. The upstream API drops scores, so a second CPU forward
+  reads them without replacing its classifier/preprocessing/vote.
+  `oriented_bbox` retains the sent-image box, while `bbox` is always in source
+  pixels. `pdf_extraction._check_page_orientation` verifies that mapping before
+  applying existing loop/rotation evidence checks in the sent-image space.
+  A `stop` response with a client error is still unfinished: validate its selected
+  recovery, not its primary content. Native sidecars must match page orientation.
+  Old saved results without the flag retain their extraction IDs. This auxiliary
+  classifier does not replace dots.mocr or qualify table meaning/legal admission.
+
 - Owner decision on 3 November 2026: PDF requisites come from the archived official
   card, without mandatory OCR identity agreement. `compiler._publication_requisites`
   uses the card SHA in that PDF asset's acquisition capture, validates raw bytes,

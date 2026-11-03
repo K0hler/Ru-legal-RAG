@@ -28,7 +28,8 @@ def _read_ocr_output(root: Path) -> tuple[dict, dict]:
             raise ValueError("layout-only OCR pages need a page number and no embedded native response")
         sidecar = _read(_inside(root, f"native/page_{page['page_number']:04d}.json"))
         if (sidecar.get("page_number") != page["page_number"]
-                or sidecar.get("image_size") != page.get("image_size")):
+                or sidecar.get("image_size") != page.get("image_size")
+                or sidecar.get("page_orientation") != page.get("page_orientation")):
             raise ValueError("OCR native sidecar does not match its page")
         attached.append({**page, "native": sidecar.get("native")})
     return {**document, "pages": attached}, run
@@ -88,6 +89,9 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
     loop_retry = config.get("loop_retry", False)
     if type(loop_retry) is not bool:
         raise ValueError("OCR loop retry must be true or false")
+    page_orientation = config.get("page_orientation", False)
+    if type(page_orientation) is not bool:
+        raise ValueError("OCR page orientation must be true or false")
     if picture_overrides:
         picture = _read(lab / "config/dotsmocr_picture_ocr.json")
         snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, **picture_overrides})
@@ -107,6 +111,8 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
         fingerprint["rotation_retry"] = True  # Absent when off, so earlier runtime fingerprints stay equal.
     if loop_retry:
         fingerprint["loop_retry"] = True
+    if page_orientation:
+        fingerprint["page_orientation"] = True
     (receipt_dir / "runtime.json").write_bytes(json_bytes(fingerprint))
     staged = lab / "input" / ("legal-rag-" + digest + ".pdf")
     _store({staged: payload}, root=lab)
@@ -116,6 +122,8 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
                "python3", f"/data/results/legal-rag-runtime/{profile_id}/scripts/new_ocr_pdf.py", "--engine", "dotsmocr",
                "/data/input/" + staged.name, "--output", "/data/results/legal-rag/" + name,
                "--workers", str(workers)] + (["--rotation-retry"] if rotation_retry else []) + (["--loop-retry"] if loop_retry else [])
+    if page_orientation:
+        command.append("--page-orientation")
     with (receipt_dir / "runtime.log").open("wb") as log:
         try:
             completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,

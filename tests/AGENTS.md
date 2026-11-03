@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_page_orientation.py` checks source-coordinate mapping for all four
+  angles, malformed/missing classifier evidence, and composition with rotation/
+  loop recovery, including a stream timeout after `finish_reason=stop`.
+  Cover the 0.85 confidence boundary, abstention on sparse input and NaN refusal;
+  a low-confidence 180 prediction must retain the source page unchanged.
+  External CPU checks live in `docs/assets/check_ocr_lab_page_orientation.py`;
+  run them in OCR-Lab's image, where Pillow/ONNX dependencies are installed.
+
 - `corpus/test_official_requisites.py` checks the 3 November 2026 official-card
   policy with authored card/PDF/OCR archives: unresolved OCR cannot block complete
   card requisites; null/empty/absent title is optional, missing required fields

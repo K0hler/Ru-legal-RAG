@@ -273,6 +273,17 @@ class OcrRuntimeTest(unittest.TestCase):
                                      "rotation_retry": True, "loop_retry": True}, b"%PDF-fixture", "a" * 64, looped)
             self.assertEqual(commands[-1][-2:], ["--rotation-retry", "--loop-retry"])
             self.assertTrue(json.loads((looped / "runtime.json").read_bytes())["loop_retry"])
+            oriented = Path(temporary) / "run-oriented"
+            oriented.mkdir()
+            with patch.object(runtime.subprocess, "run", side_effect=execute):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "page_orientation": True}, b"%PDF-fixture", "a" * 64, oriented)
+            self.assertIn("--page-orientation", commands[-1])
+            self.assertTrue(json.loads((oriented / "runtime.json").read_bytes())["page_orientation"])
+            self.assertNotIn("page_orientation", json.loads((receipt / "runtime.json").read_bytes()))
+            with self.assertRaises(ValueError):
+                runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
+                                     "page_orientation": "yes"}, b"%PDF-fixture", "a" * 64, oriented)
             with self.assertRaises(ValueError):
                 runtime.run_ocr_lab({"provider": "ocr-lab", "engine": "dotsmocr", "lab_root": str(lab),
                                      "loop_retry": 1}, b"%PDF-fixture", "a" * 64, looped)

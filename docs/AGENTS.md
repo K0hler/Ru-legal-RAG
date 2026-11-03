@@ -1,5 +1,16 @@
 # Documentation instructions
 
+- `assets/ocr_lab_page_orientation.patch` applies after the page-recovery patch;
+  it adds RapidOrientation 0.0.11 (packaged PaddleClas ONNX model, Apache-2.0)
+  to the dots client image without upgrading its Transformers or recognizer.
+  Rebuild `dotsmocr`; the recovery config enables `page_orientation`.
+  Apply turns only at minimum crop confidence >=0.85: the first full control
+  exposed a false 180 on a sparse upright page (score 0.267). Retain that failed
+  check; the later confidence-gated check is separate.
+  `assets/check_ocr_lab_page_orientation.py` checks four-way mapping and actual
+  preprocessing/source-image preservation without GPU inference. The module
+  handles whole-page quarter turns, not mixed-direction text or table semantics.
+
 - Post-M1-04A OCR refill repair is recorded in
   `milestones/m1/04a/M1_04A_OCR_REFILL_FIXES_2026-11-03.md`. The external
   `assets/ocr_lab_page_recovery.patch` applies after the existing loop/rotation/

@@ -1,5 +1,18 @@
 # Local data instructions
 
+- `m1/m1-04a/experiments/20261103-ocr-fix-orientation-01/` retains the failed
+  first automatic-orientation control (false 180 on sparse `pp-1455-2022` p4).
+  `...-02/` checks the added 0.85 confidence gate, separate from the manual probe.
+  `classifier-probe.json` covers five images at four angles; the later
+  `confidence-probe.json` checks both target pages and the sparse page. Baseline
+  hashes bind the previous 628 files. Physical PNGs
+  keep source orientation; inspect `page_orientation` and `oriented_bbox` to see
+  what the recognizer received. Do not rewrite old OCR as automatically oriented.
+  Final `...-02/verification.json` checks five full acts/66 pages, both target table
+  meanings, unchanged control text/types/order and all PNGs, five exact saved
+  replays, and 628 unchanged baseline files. The sparse control abstains; the
+  remaining Latin transcription error is outside this orientation correction.
+
 - The post-M1-04A OCR repair uses new `m1/m1-04a/experiments/20261103-ocr-fix-*`
   folders. `...-diagnosis-01/` pins the eight original failure records/native
   responses, the external client before/patch hashes, isolated timeout-page

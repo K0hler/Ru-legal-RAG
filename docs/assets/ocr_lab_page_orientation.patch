@@ -1,0 +1,147 @@
+--- a/scripts/new_ocr_pdf.py
++++ b/scripts/new_ocr_pdf.py
+@@ -472,11 +472,51 @@
+     return image.resize((width, height), Image.Resampling.LANCZOS)
+
+
+-def parse_pdf(engine, pdf, output, selection=None, workers=None, rotation_retry=False, loop_retry=False):
++def load_page_orientation():
++    from rapid_orientation import RapidOrientation
++    from rapid_orientation.main import DEFAULT_PATH
++
++    policy = {'package': 'rapid-orientation', 'version': '0.0.11', 'backend': 'CPUExecutionProvider',
++              'model_sha256': '2f62c9bfb830a0b417241269fde7ef2d0ad5446c0ed2b8af33b1f6543545e8e2',
++              'direction': 'counterclockwise', 'min_confidence': 0.85, 'score': 'minimum_crop_probability'}
++    if version(policy['package']) != policy['version'] or hashlib.sha256(DEFAULT_PATH.read_bytes()).hexdigest() != policy['model_sha256']:
++        raise ValueError('Page orientation package/model does not match the pinned version')
++    predictor = RapidOrientation()
++    if predictor.session.session.get_providers() != [policy['backend']]:
++        raise ValueError('Page orientation must run on CPU')
++    def classify(image):
++        angle, _ = predictor(image)
++        # The public API returns elapsed time, not confidence; retain its vote and read the model scores.
++        scores = predictor.session(predictor.preprocess(predictor.load_img(image)))[0]
++        return angle, float(scores[:, predictor.labels.index(angle)].min())
++    return classify, policy
++
++
++def orient_page(image, predictor):
++    predicted, confidence = predictor(image)
++    predicted = int(predicted)
++    if predicted not in (0, 90, 180, 270) or not math.isfinite(confidence) or not 0 <= confidence <= 1:
++        raise ValueError('Invalid page orientation label')
++    angle = predicted if confidence >= 0.85 else 0
++    turned = image.rotate(angle, expand=True) if angle else image
++    return turned, {'angle': angle, 'predicted_angle': predicted, 'confidence': confidence,
++                    'image_size': list(turned.size)}
++
++
++def unorient_bbox(bbox, angle, size):
++    left, top, right, bottom = bbox
++    width, height = size
++    if angle == 180:
++        return [width-right, height-bottom, width-left, height-top]
++    return unrotate_bbox(bbox, 'ccw90' if angle == 90 else 'cw90', size) if angle else bbox
++
++
++def parse_pdf(engine, pdf, output, selection=None, workers=None, rotation_retry=False, loop_retry=False,
++              page_orientation=False):
+     workers = workers if workers is not None else (16 if engine == 'dotsmocr' else 1)
+     if not 1 <= workers <= 16 or (engine != 'dotsmocr' and workers != 1):
+         raise ValueError('Only dots.mocr supports 1 to 16 workers; other engines require 1')
+-    if (rotation_retry or loop_retry) and engine != 'dotsmocr':
++    if (rotation_retry or loop_retry or page_orientation) and engine != 'dotsmocr':
+         raise ValueError('Rotation and loop retries are implemented only for dots.mocr')
+     sidecar = engine in NATIVE_SIDECAR
+     output.mkdir(parents=True, exist_ok=False)
+@@ -518,8 +558,10 @@
+             f'{page.get("markdown", markdowns.get(page["page_number"], ""))}'
+             for page in pages), encoding='utf-8')
+
+-    def recognize_page(index, image):
+-        page = {'page_number': index + 1, 'image_size': list(image.size)}
++    def recognize_page(index, image, source_size, orientation):
++        page = {'page_number': index + 1, 'image_size': list(source_size)}
++        if orientation is not None:
++            page['page_orientation'] = orientation
+         name = f'page_{index + 1:04d}'
+         path = output / 'pages' / f'{name}.json'
+         # Without a sidecar the page itself carries the native response, as before.
+@@ -544,6 +586,11 @@
+                 finally:
+                     write_json(raw_path, raw)
+             page.update(decode_native(engine, raw['native']))
++            if orientation and orientation['angle']:
++                page['layout'] = [{**cell, 'oriented_bbox': cell['bbox'],
++                                   'bbox': unorient_bbox(cell['bbox'], orientation['angle'], source_size)}
++                                  for cell in page['layout']]
++                page['coordinate_space'] = 'source image pixels; sent-image boxes retained in oriented_bbox'
+             markdown = page.pop('markdown') if sidecar else page['markdown']
+             markdowns[page['page_number']] = markdown
+             write_json(path, page)
+@@ -564,6 +611,9 @@
+
+     try:
+         manifest['model'] = model_manifest(engine)
++        predictor = None
++        if page_orientation:
++            predictor, manifest['config']['page_orientation'] = load_page_orientation()
+         recognize, info = create_runtime(engine, loop_retry=True) if loop_retry else create_runtime(engine)
+         manifest.update(info)
+         with open_pdf(pdf) as document:
+@@ -585,14 +635,18 @@
+                         # PyMuPDF stays on the caller thread; only recognition runs concurrently.
+                         try:
+                             image = render_page(document[index])
++                            source_size = image.size
+                             image.save(output / 'pages' / f'page_{index + 1:04d}.png')
++                            orientation = None
++                            if predictor is not None:
++                                image, orientation = orient_page(image, predictor)
+                         except Exception as exc:
+                             failure = exc
+                             manifest['current_page'] = index + 1
+                             manifest.setdefault('failed_pages', []).append(index + 1)
+                             break
+-                        jobs.append(pool.submit(recognize_page, index, image) if pool
+-                                    else recognize_page(index, image))
++                        jobs.append(pool.submit(recognize_page, index, image, source_size, orientation) if pool
++                                    else recognize_page(index, image, source_size, orientation))
+                         del image
+                         manifest['current_pages'].append(index + 1)
+                         try:
+@@ -672,6 +726,8 @@
+                         help='dots.mocr: retry a token-limited page turned 90 degrees (at most twice)')
+     parser.add_argument('--loop-retry', action='store_true',
+                         help='dots.mocr: retry an unfinished (token limit or timeout) page upright with repetition penalties')
++    parser.add_argument('--page-orientation', action='store_true',
++                        help='dots.mocr: use the packaged PaddleClas four-way page classifier on CPU before OCR')
+     args = parser.parse_args()
+     if args.check:
+         check_runtime(args.engine)
+@@ -682,4 +738,5 @@
+         if pdf.parent != Path('/data/input') or pdf.suffix.lower() != '.pdf' or not pdf.is_file():
+             parser.error('PDF must be a file inside /data/input')
+         output = args.output or Path('/data/results') / args.engine / pdf.stem / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+-        parse_pdf(args.engine, pdf, output, args.pages, args.workers, args.rotation_retry, args.loop_retry)
++        parse_pdf(args.engine, pdf, output, args.pages, args.workers, args.rotation_retry, args.loop_retry,
++                  args.page_orientation)
+--- a/compose.yaml
++++ b/compose.yaml
+@@ -26,7 +26,7 @@
+       retries: 60
+       start_period: 120s
+   dotsmocr:
+-    image: ocr-lab/dotsmocr:2026-10-10
++    image: ocr-lab/dotsmocr:2026-11-03-orientation
+     build:
+       context: .
+       dockerfile: docker/Dockerfile.dotsmocr
+--- a/docker/Dockerfile.dotsmocr
++++ b/docker/Dockerfile.dotsmocr
+@@ -6,3 +6,5 @@
+     python3 -m pip install --no-deps --target=/opt/dots-runtime 'fastapi==0.136.0' 'starlette==0.48.0' \
+     && python3 -c "import fastapi, starlette; print(fastapi.__version__, starlette.__version__)"
+ ENTRYPOINT []
++RUN echo 'rapid-orientation==0.0.11 --hash=sha256:3d69e77c18ac05a3e9a157e9a26ecff49e8ef485913eaa57b0921b0419684be6' \
++    | python3 -m pip install --no-deps --target=/opt/dots-runtime --require-hashes -r /dev/stdin

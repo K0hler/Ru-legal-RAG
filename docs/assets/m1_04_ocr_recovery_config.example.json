@@ -4,6 +4,7 @@
   "engine": "dotsmocr",
   "lab_root": "H:/AI_AGENT/OCR-Lab",
   "workers": 4,
+  "page_orientation": true,
   "picture_ocr_failure_policy": "retain_unresolved",
   "rotation_retry": true,
   "loop_retry": true,
