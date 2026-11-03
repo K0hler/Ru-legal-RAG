@@ -5,6 +5,9 @@
   attempts, stream deadlines, source-coordinate mapping, failed-page handling
   and import into the existing normalizer. Pillow is needed for these tests but
   no inference libraries are installed on the host.
+- `corpus/test_dotsmocr_stream_failures.py` covers malformed, non-UTF-8,
+  interrupted and error SSE events, preserves partial evidence and verifies
+  unresolved Picture recovery through the existing extraction normalizer.
 - `corpus/test_dotsmocr_model.py` uses small authored model files and verifies
   that corrupt, missing, unlisted or escaping entries stop the command before it
   starts. The real model stays local and is never changed by these tests.

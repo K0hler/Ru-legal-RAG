@@ -6,6 +6,8 @@
   environment and baked manifest/verifier hashes before snapshotting the client.
   It binds the runtime and effective settings to `runtime.json`, checks the
   snapshot and container identity after execution, and never starts containers.
+  Before staging, both Compose and the live container must have exactly the
+  project-local model and input binds read-only and results bind read-write.
   This is an experimental qualification route, not the default provider.
 
 - `ocr_runtime.run_ocr_lab` forwards the opt-in boolean `page_orientation` to

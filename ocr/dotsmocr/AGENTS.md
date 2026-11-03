@@ -23,3 +23,7 @@
   confidence-gated page orientation and `dotsmocr-layout/2` native sidecars.
   The host may snapshot these files; a real synthetic PDF result has passed the
   existing normalizer under `data/ocr/dotsmocr/results/task3-client-20261103/`.
+- On interrupted or malformed SSE, retain complete chunks and unfinished bytes
+  (`unparsed_sse_base64`) with `client_error`; never accept a response with that
+  error as finished. Picture failures remain recorded per attempt and, under
+  `retain_unresolved`, produce an explicit unresolved region rather than text.

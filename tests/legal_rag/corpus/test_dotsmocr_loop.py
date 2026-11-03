@@ -164,7 +164,7 @@ class LoopTests(unittest.TestCase):
                 self.end_headers()
                 self.wfile.write(b'data: {"choices": [{"delta": {"content": "partial"}, "finish_reason": null}]}\n')
                 self.wfile.flush()
-                time.sleep(1.5)
+                time.sleep(4.0)
 
             def log_message(self, *args):
                 pass
@@ -179,7 +179,7 @@ class LoopTests(unittest.TestCase):
             return real_open(request, **kwargs)
 
         try:
-            with patch.object(client, "LAYOUT_TIMEOUT", 0.75), \
+            with patch.object(client, "LAYOUT_TIMEOUT", 2.0), \
                     patch.object(client.urllib.request, "urlopen", side_effect=local_open):
                 result = client.request_image("dotsmocr", Image.new("RGB", (28, 28)), 24000,
                                               prompt="OCR", layout_stream=True)

@@ -45,6 +45,8 @@ def docker_double(runtime_dir, commands, *, image="sha256:fixture", config_hash=
     volumes = [{"type": "bind", "source": str(data / name), "target": "/data/" + name,
                 "read_only": name != "results"}
                for name in ("model", "input", "results")]
+    if change == "extra_mount":
+        volumes.append({"type": "bind", "source": str(data / "extra"), "target": "/data/extra", "read_only": False})
     profile = {"command": ["vllm", "serve", "/data/model"], "environment": {"HF_HUB_OFFLINE": "1"},
                "volumes": volumes}
     def execute(command, **kwargs):
@@ -105,7 +107,7 @@ def test_own_provider_snapshots_and_runs_only_its_container(own_runtime):
     assert receipt_data["profile_id"] == snapshot.name
 
 
-@pytest.mark.parametrize("failure", ["image", "compose", "manifest", "command", "mount", "environment"])
+@pytest.mark.parametrize("failure", ["image", "compose", "manifest", "command", "mount", "extra_mount", "environment"])
 def test_own_provider_rejects_unverified_service_before_staging(own_runtime, failure):
     project, runtime_dir, receipt, config = own_runtime
     commands = []

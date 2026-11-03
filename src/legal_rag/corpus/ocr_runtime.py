@@ -201,11 +201,15 @@ def run_legal_rag_dotsmocr(config: dict, payload: bytes, digest: str, receipt_di
                             not v.get("read_only", False), v["type"]) for v in service["volumes"]}
         actual_mounts = {(os.path.normcase(str(Path(v["Source"]).resolve())), v["Destination"], v["RW"], v["Type"])
                          for v in container["Mounts"]}
+        allowed_mounts = {(os.path.normcase(str((data / name).resolve())), "/data/" + name,
+                           name == "results", "bind") for name in ("model", "input", "results")}
         expected_entrypoint = ["python3", "/opt/dotsmocr/scripts/verify_model.py", "/data/model",
                                "/opt/dotsmocr/config/new_ocr_models.json", "--"]
         if (container["State"]["Status"] != "running" or container["State"]["Health"]["Status"] != "healthy"
                 or container["Image"] != image or container["Config"]["Entrypoint"] != expected_entrypoint
-                or container["Config"]["Cmd"] != service["command"] or actual_mounts != expected_mounts
+                or container["Config"]["Cmd"] != service["command"]
+                or len(service["volumes"]) != 3 or len(container["Mounts"]) != 3
+                or expected_mounts != allowed_mounts or actual_mounts != allowed_mounts
                 or any(environment.get(k) != v for k, v in service["environment"].items())
                 or len(config_hash) != 2 or config_hash[0] != "dotsmocr"
                 or container["Config"]["Labels"].get("com.docker.compose.config-hash") != config_hash[1]):

@@ -46,35 +46,53 @@ def model_manifest(engine):
 def read_picture_stream(response):
     chunks, parts = [], []
     finish, local_stop, usage = None, None, None
-    for line in response:
-        if not line.startswith(b'data: '):
-            continue
-        if line.strip() == b'data: [DONE]':
-            break
-        chunk = json.loads(line[6:])
-        chunks.append(chunk)
-        if chunk.get('error'):
-            raise ValueError(f'Picture OCR stream error: {chunk["error"]}')
-        usage = chunk.get('usage') or usage
-        for choice in chunk.get('choices', []):
-            parts.append(choice['delta'].get('content') or '')
-            finish = choice.get('finish_reason') or finish
-        text = ''.join(parts)
-        if len(text) >= 128 and any(text[-size:].strip() and text.endswith(text[-size:] * 8)
-                                    for size in range(1, min(64, len(text) // 8) + 1)):
-            local_stop = 'tail_repetition'
-            break
-    return {'id': chunks[0].get('id') if chunks else None, 'model': 'dotsmocr',
-            'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': ''.join(parts)},
-                         'finish_reason': finish}], 'usage': usage,
-            'local_stop_reason': local_stop, 'stream_chunks': chunks}
+    error, unparsed = None, None
+    try:
+        for line in response:
+            if not line.startswith(b'data: '):
+                continue
+            if line.strip() == b'data: [DONE]':
+                break
+            chunk = json.loads(line[6:])
+            chunks.append(chunk)
+            if not isinstance(chunk, dict):
+                raise ValueError('Picture OCR stream event must be an object')
+            if chunk.get('error'):
+                raise ValueError(f'Picture OCR stream error: {chunk["error"]}')
+            usage = chunk.get('usage') or usage
+            for choice in chunk.get('choices', []):
+                part = choice['delta'].get('content')
+                if part is not None and not isinstance(part, str):
+                    raise ValueError('Picture OCR stream content must be a string')
+                parts.append(part or '')
+                finish = choice.get('finish_reason') or finish
+            text = ''.join(parts)
+            if len(text) >= 128 and any(text[-size:].strip() and text.endswith(text[-size:] * 8)
+                                        for size in range(1, min(64, len(text) // 8) + 1)):
+                local_stop = 'tail_repetition'
+                break
+    except (OSError, http.client.IncompleteRead, ValueError, KeyError, TypeError, AttributeError) as exc:
+        error = f'{type(exc).__name__}: {exc}'
+        if isinstance(exc, http.client.IncompleteRead):
+            unparsed = exc.partial
+        elif isinstance(exc, (json.JSONDecodeError, UnicodeDecodeError)):
+            unparsed = line
+    native = {'id': next((chunk.get('id') for chunk in chunks if isinstance(chunk, dict)), None), 'model': 'dotsmocr',
+              'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': ''.join(parts)},
+                           'finish_reason': finish}], 'usage': usage,
+              'local_stop_reason': local_stop, 'stream_chunks': chunks}
+    if error:
+        native['client_error'] = error
+    if unparsed:
+        native['unparsed_sse_base64'] = base64.b64encode(unparsed).decode('ascii')
+    return native
 
 
 def read_layout_stream(response, deadline=None):
     """Keep partial layout evidence; abort long repeated tails before they fill the KV cache."""
     chunks, parts = [], []
     finish, local_stop, usage, error = None, None, None, None
-    length, next_check = 0, 12000
+    length, next_check, unparsed = 0, 12000, None
     deadline = deadline if deadline is not None else time.monotonic() + LAYOUT_TIMEOUT
     # urllib has no public read-timeout setter; shrink the socket timeout after headers and every SSE event.
     connection = getattr(getattr(getattr(response, 'fp', None), 'raw', None), '_sock', None)
@@ -95,11 +113,16 @@ def read_layout_stream(response, deadline=None):
                 break
             chunk = json.loads(line[6:])
             chunks.append(chunk)
+            if not isinstance(chunk, dict):
+                raise ValueError('Layout OCR stream event must be an object')
             if chunk.get('error'):
                 raise ValueError(f'Layout OCR stream error: {chunk["error"]}')
             usage = chunk.get('usage') or usage
             for choice in chunk.get('choices', []):
-                part = choice['delta'].get('content') or ''
+                part = choice['delta'].get('content')
+                if part is not None and not isinstance(part, str):
+                    raise ValueError('Layout OCR stream content must be a string')
+                part = part or ''
                 parts.append(part)
                 length += len(part)
                 finish = choice.get('finish_reason') or finish
@@ -112,14 +135,20 @@ def read_layout_stream(response, deadline=None):
                 next_check = length + 1024
             if time.monotonic() >= deadline:
                 raise TimeoutError('layout page deadline exceeded')
-    except (OSError, http.client.IncompleteRead) as exc:
+    except (OSError, http.client.IncompleteRead, ValueError, KeyError, TypeError, AttributeError) as exc:
         error = f'{type(exc).__name__}: {exc}'
-    native = {'id': chunks[0].get('id') if chunks else None, 'model': 'dotsmocr',
+        if isinstance(exc, http.client.IncompleteRead):
+            unparsed = exc.partial
+        elif isinstance(exc, (json.JSONDecodeError, UnicodeDecodeError)):
+            unparsed = line
+    native = {'id': next((chunk.get('id') for chunk in chunks if isinstance(chunk, dict)), None), 'model': 'dotsmocr',
               'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': ''.join(parts)},
                            'finish_reason': finish}], 'usage': usage,
               'local_stop_reason': local_stop, 'stream_chunks': chunks}
     if error:
         native.update(client_error=error, client_timeout_seconds=LAYOUT_TIMEOUT)
+    if unparsed:
+        native['unparsed_sse_base64'] = base64.b64encode(unparsed).decode('ascii')
     return native
 
 
@@ -200,9 +229,15 @@ def recognize_picture_text(native, image):
                 raise ValueError(f'Invalid Picture region: {cell["bbox"]}')
             crop = image.crop(box)
             started = time.perf_counter()
-            response = request_image('dotsmocr', crop, settings['max_tokens'],
-                                     prompt=settings['prompt'], temperature=settings['temperature'],
-                                     picture_ocr=recovery)
+            error = None
+            try:
+                response = request_image('dotsmocr', crop, settings['max_tokens'],
+                                         prompt=settings['prompt'], temperature=settings['temperature'],
+                                         picture_ocr=recovery)
+            except OSError as exc:
+                error = exc
+                response = {'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': None},
+                                         'finish_reason': None}], 'client_error': f'{type(exc).__name__}: {exc}'}
             attempts.append({'crop_bbox': box, 'image_size': list(crop.size),
                              'elapsed_seconds': round(time.perf_counter() - started, 6), 'native': response})
             record.update(attempts[-1])
@@ -210,7 +245,10 @@ def recognize_picture_text(native, image):
                 record['attempts'] = attempts
             if len(attempts) == 1:
                 native['picture_ocr'].append(record)
-            if response['choices'][0]['finish_reason'] == 'stop' and not response.get('local_stop_reason'):
+            if error and settings.get('failure_policy') != 'retain_unresolved':
+                raise error
+            if (response['choices'][0]['finish_reason'] == 'stop' and not response.get('local_stop_reason')
+                    and not response.get('client_error')):
                 break
 
 
@@ -354,7 +392,8 @@ def decode_native(engine, native):
         if cells[index]['category'] != 'Picture' or cells[index]['bbox'] != region['bbox']:
             raise ValueError('Picture OCR does not match the primary layout')
         choice = region['native']['choices'][0]
-        if choice['finish_reason'] != 'stop' or region['native'].get('local_stop_reason'):
+        if (choice['finish_reason'] != 'stop' or region['native'].get('local_stop_reason')
+                or region['native'].get('client_error')):
             if native.get('picture_ocr_config', {}).get('failure_policy') == 'retain_unresolved':
                 cells[index] = {**cells[index], 'ocr_issue': {
                     'stage': 'picture_ocr', 'reason': 'incomplete_response',
