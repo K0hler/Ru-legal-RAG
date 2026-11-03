@@ -14,8 +14,9 @@
   Verify actual imports and orientation inference rather than installing two
   OpenCV distributions into the same Python namespace.
 - The first clean build and synthetic GPU inference were verified on 3 November
-  2026. The model copy was manually checked against all 16 source-manifest hashes;
-  automatic pre-start hash refusal is still Task 4 and must not be assumed.
+  2026. The container entrypoint checks all files against the 16 hashes in
+  `config/new_ocr_models.json` before starting its command, rejecting missing,
+  changed, extra or symlinked files. Do not bypass the entrypoint for inference.
   A synthetic check is not runtime qualification or owner approval to switch.
 - `scripts/new_ocr_pdf.py` and `config/` contain only the dots.mocr client and
   its pinned settings. Preserve streaming Picture/loop recovery, rotation retries,

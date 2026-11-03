@@ -5,6 +5,9 @@
   attempts, stream deadlines, source-coordinate mapping, failed-page handling
   and import into the existing normalizer. Pillow is needed for these tests but
   no inference libraries are installed on the host.
+- `corpus/test_dotsmocr_model.py` uses small authored model files and verifies
+  that corrupt, missing, unlisted or escaping entries stop the command before it
+  starts. The real model stays local and is never changed by these tests.
 
 - `corpus/test_page_orientation.py` checks source-coordinate mapping for all four
   angles, malformed/missing classifier evidence, and composition with rotation/
