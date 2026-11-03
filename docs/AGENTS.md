@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- M1-04B runtime inventory is in `milestones/m1/04b/M1_04B_RUNTIME_CONTRACT.md`.
+  The plan predates accepted page orientation and bounded page recovery: retain
+  both and the current four-worker / 0.55 GPU profile when qualifying the new
+  runtime. The vLLM base lacks PyMuPDF and ONNX Runtime; TeleOCR installed both.
+  A CPU-only model processor load is not a GPU inference or qualification.
+
 - Owner acceptance on 3 November 2026 closes the page-orientation task recorded in
   `milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md`; retain its documented
   transcription limits and failed first control as evidence.

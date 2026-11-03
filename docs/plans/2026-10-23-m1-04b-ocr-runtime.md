@@ -72,9 +72,9 @@
 
 **Files:** новый `docs/milestones/m1/04b/M1_04B_RUNTIME_CONTRACT.md`.
 
-- [ ] Выяснить, откуда в образе каждая нужная dots.mocr библиотека: сравнить `pip list` образов `teleocr` и `dotsmocr`, найти, кто тянет PyMuPDF.
-- [ ] Записать контракт: вход (PDF в папке входа, номера страниц), выход (`run.json`, `document.json`, `native/page_NNNN.json`, `pages/*.png`, `document.md`), параметры (DPI 200, `max_pixels`, `max_tokens`, сэмплинг, распознавание картинок, повтор с поворотом), состав отпечатка.
-- [ ] Отметить, что в клиенте OCR-Lab не нужно (Nemotron, Hunyuan, потоковое чтение Hunyuan).
+- [x] Выяснить, откуда в образе каждая нужная dots.mocr библиотека: сравнить `pip list` образов `teleocr` и `dotsmocr`, найти, кто тянет PyMuPDF.
+- [x] Записать контракт: вход (PDF в папке входа, номера страниц), выход (`run.json`, `document.json`, `native/page_NNNN.json`, `pages/*.png`, `document.md`), параметры (DPI 200, `max_pixels`, `max_tokens`, сэмплинг, распознавание картинок, повтор с поворотом), состав отпечатка.
+- [x] Отметить, что в клиенте OCR-Lab не нужно (Nemotron, Hunyuan, потоковое чтение Hunyuan).
 
 **Verify:** документ проверен по коду `ocr_runtime.py` и клиента; ни одного неизвестного пункта в списке зависимостей.
 
