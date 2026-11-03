@@ -8,7 +8,7 @@ from each extraction (an act whose OCR failed keeps only the failure record of i
 ``run-01/ocr-runs/<id>/run.json``). ``logical_text_id`` keeps batch 1's recorded form
 ``logical-text\\<id>`` (a Windows relative path without ``.json``). ``--table-stats`` (batch 6 on)
 adds per-act region and table counts, tables with ``grid: "unresolved"`` and pages read with the
-rotation retry; without it the output is unchanged.
+rotation or upright loop retry; without it the output is unchanged.
 
     python docs/assets/summarize_m1_04a_ocr.py --experiment data/m1/m1-04a/experiments/20261021-batch-01-ocr \
         --extraction-raw summary.raw-first-pass.json --replay-raw summary.raw.json --output summary.json
@@ -26,13 +26,14 @@ OCR = ROOT / "data" / "m1" / "m1-04a" / "ocr"
 
 
 def _table_stats(ext: dict) -> dict:
-    """Region/table counts, unresolved table grids and rotation-retry pages of one extraction."""
+    """Region/table counts, unresolved grids and page retries of one extraction."""
     regions = [(page["page"], region) for page in ext["pages"] for region in page["regions"]]
     tables = [(page, region) for page, region in regions if region.get("category") == "Table"]
     broken = [page for page, region in tables if region.get("table", {}).get("grid") == "unresolved"]
     return {"regions": len(regions), "tables": len(tables), "tables_grid_unresolved": len(broken),
             "tables_grid_unresolved_pages": sorted(set(broken)),
-            "orientation_retry_pages": [page["page"] for page in ext["pages"] if "orientation_retry" in page]}
+            "orientation_retry_pages": [page["page"] for page in ext["pages"] if "orientation_retry" in page],
+            "loop_retry_pages": [page["page"] for page in ext["pages"] if "loop_retry" in page]}
 
 
 def summarize(extraction_raw: dict, replay_raw: dict, ocr_root: Path = OCR, table_stats: bool = False) -> dict:
@@ -71,14 +72,16 @@ def main(argv=None) -> None:
     parser.add_argument("--extraction-raw", required=True, help="raw summary of the extraction pass")
     parser.add_argument("--replay-raw", required=True, help="raw summary of the replay pass")
     parser.add_argument("--output", required=True, help="new file name inside --experiment")
-    parser.add_argument("--table-stats", action="store_true", help="add table and rotation-retry counts")
+    parser.add_argument("--ocr-root", type=Path, default=OCR, help="root passed as -OcrRoot to the runner")
+    parser.add_argument("--table-stats", action="store_true", help="add table and page-retry counts")
     args = parser.parse_args(argv)
     exp = Path(args.experiment)
 
     def read(name):  # PowerShell 5 may have written a BOM
         return json.loads((exp / name).read_text(encoding="utf-8-sig"))
 
-    record = summarize(read(args.extraction_raw), read(args.replay_raw), table_stats=args.table_stats)
+    record = summarize(read(args.extraction_raw), read(args.replay_raw), ocr_root=args.ocr_root,
+                       table_stats=args.table_stats)
     # Batch 1's file: indent 2, CRLF, no final newline.
     with (exp / args.output).open("x", encoding="utf-8", newline="\r\n") as handle:
         handle.write(json.dumps(record, ensure_ascii=False, indent=2))

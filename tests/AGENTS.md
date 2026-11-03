@@ -362,6 +362,13 @@
 - `docs/assets/check_ocr_lab_rotation.py <lab-root>` checks the external client's
   rotation retry on real PIL images: coordinate mapping for both turns, the
   upright-text rule, first accepted turn, retained attempts and the two-turn bound.
+- `docs/assets/check_ocr_lab_loop.py <lab-root>` checks the opt-in upright
+  penalties, early stream cancellation, partial timeout/reset retention, an
+  actual local HTTP stall, deadline rejection even with `stop`, and continued
+  processing after exhausted page retries with final `status=failed`.
+  Normalizer mutations reject a selected rotation with `client_error` and a
+  cancelled primary without a verified successful retry. The default suite
+  still requires no GPU, Docker, network downloads or private corpus.
 - `corpus/test_ocr_runtime.py` checks CLI saved import, subprocess argument
   construction, permission-before-write, immutable replay, fresh-runtime
   provenance replay and index/extraction/native corruption. Keep external OCR

@@ -158,6 +158,7 @@ def _upright_cells(attempt):
     choices = attempt["native"].get("choices") if isinstance(attempt.get("native"), dict) else None
     if (not isinstance(choices, list) or len(choices) != 1 or not isinstance(choices[0], dict)
             or choices[0].get("finish_reason") != "stop" or attempt["native"].get("local_stop_reason")
+            or attempt["native"].get("client_error")
             or not isinstance(choices[0].get("message"), dict)):
         return None
     try:
@@ -201,8 +202,9 @@ LOOP_SETTINGS = ({"repetition_penalty": 1.1}, {"frequency_penalty": 0.3})
 
 
 def _unfinished(native, choice):
-    """The primary hit the token limit or the client abandoned it after its timeout."""
-    return choice.get("finish_reason") == "length" or bool(native.get("client_error"))
+    """The primary hit a limit, timed out, or was cancelled for a long repeated tail."""
+    return (choice.get("finish_reason") == "length" or bool(native.get("client_error"))
+            or native.get("local_stop_reason") == "tail_repetition")
 
 
 def _loop_cells(native):
@@ -320,7 +322,8 @@ def normalize_dotsmocr(document: dict, run: dict, source_sha256: str) -> dict:
             rotation = _check_rotated_layout(native, dimensions, layout)
             uncertainties.add("page_orientation_retry")
         elif (choices[0].get("finish_reason") != "stop" or "orientation_retry" in native or "loop_retry" in native
-                or native.get("client_error") or not isinstance(content, str) or not content.strip()):
+                or native.get("client_error") or native.get("local_stop_reason")
+                or not isinstance(content, str) or not content.strip()):
             raise ValueError("failed or truncated native OCR response")
         if not isinstance(layout, list) or not layout:
             raise ValueError("empty OCR layout requires explicit page review")

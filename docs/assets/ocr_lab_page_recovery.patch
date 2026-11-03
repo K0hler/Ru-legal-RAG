@@ -1,0 +1,235 @@
+--- a/scripts/new_ocr_pdf.py
++++ b/scripts/new_ocr_pdf.py
+@@ -2,6 +2,7 @@
+ import argparse
+ import base64
+ import hashlib
++import http.client
+ import io
+ import json
+ import math
+@@ -30,6 +31,7 @@
+ # turn; greedy decoding repeats empty form rows or the last regions until the limit.
+ LOOP_SETTINGS = ({'repetition_penalty': 1.1}, {'frequency_penalty': 0.3})
+ CLIENT_TIMEOUT = 900
++LAYOUT_TIMEOUT = 180
+ # Text-bearing regions are wider than tall when upright; Page-header/footer are often one digit.
+ UPRIGHT_TEXT = {'Text', 'Title', 'Section-header', 'List-item', 'Footnote', 'Caption'}
+ 
+@@ -102,8 +104,61 @@
+             'local_stop_reason': local_stop, 'stream_chunks': chunks}
+ 
+ 
++def read_layout_stream(response, deadline=None):
++    """Keep partial layout evidence; abort long repeated tails before they fill the KV cache."""
++    chunks, parts = [], []
++    finish, local_stop, usage, error = None, None, None, None
++    length, next_check = 0, 12000
++    deadline = deadline if deadline is not None else time.monotonic() + LAYOUT_TIMEOUT
++    # urllib has no public read-timeout setter; shrink the socket timeout after headers and every SSE event.
++    connection = getattr(getattr(getattr(response, 'fp', None), 'raw', None), '_sock', None)
++    lines = iter(response)
++    try:
++        while True:
++            remaining = deadline - time.monotonic()
++            if remaining <= 0:
++                raise TimeoutError('layout page deadline exceeded')
++            if connection is not None:
++                connection.settimeout(remaining)
++            line = next(lines, b'')
++            if not line:
++                break
++            if not line.startswith(b'data: '):
++                continue
++            if line.strip() == b'data: [DONE]':
++                break
++            chunk = json.loads(line[6:])
++            chunks.append(chunk)
++            if chunk.get('error'):
++                raise ValueError(f'Layout OCR stream error: {chunk["error"]}')
++            usage = chunk.get('usage') or usage
++            for choice in chunk.get('choices', []):
++                part = choice['delta'].get('content') or ''
++                parts.append(part)
++                length += len(part)
++                finish = choice.get('finish_reason') or finish
++            if finish is None and length >= next_check:
++                tail = ''.join(parts)[-8192:]
++                if any(tail[-size:].strip() and tail.endswith(tail[-size:] * 24)
++                       for size in range(1, min(256, len(tail) // 24) + 1)):
++                    local_stop = 'tail_repetition'
++                    break
++                next_check = length + 1024
++            if time.monotonic() >= deadline:
++                raise TimeoutError('layout page deadline exceeded')
++    except (OSError, http.client.IncompleteRead) as exc:
++        error = f'{type(exc).__name__}: {exc}'
++    native = {'id': chunks[0].get('id') if chunks else None, 'model': 'dotsmocr',
++              'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': ''.join(parts)},
++                           'finish_reason': finish}], 'usage': usage,
++              'local_stop_reason': local_stop, 'stream_chunks': chunks}
++    if error:
++        native.update(client_error=error, client_timeout_seconds=LAYOUT_TIMEOUT)
++    return native
++
++
+ def request_image(engine, image, max_tokens, prompt=None, temperature=0.0, picture_ocr=False,
+-                  top_p=1.0, seed=None, penalties=None):
++                  top_p=1.0, seed=None, layout_stream=False, penalties=None):
+     if prompt is None:
+         prompt = (LAB / 'config' / f'{engine}_prompt.txt').read_text(encoding='utf-8').strip()
+     if engine == 'dotsmocr':
+@@ -122,19 +177,22 @@
+         payload['messages'].insert(0, {'role': 'system', 'content': ''})
+         payload.update(top_k=-1, repetition_penalty=1.08, skip_special_tokens=True,
+                        stream=True, stream_options={'include_usage': True})
+-    if picture_ocr:
++    if picture_ocr or layout_stream:
+         payload.update(stream=True, stream_options={'include_usage': True})
+     request = urllib.request.Request('http://127.0.0.1:8080/v1/chat/completions',
+         data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+-    with urllib.request.urlopen(request, timeout=CLIENT_TIMEOUT) as response:
++    deadline = time.monotonic() + LAYOUT_TIMEOUT
++    with urllib.request.urlopen(request, timeout=LAYOUT_TIMEOUT if layout_stream else CLIENT_TIMEOUT) as response:
+         if picture_ocr:
+             return read_picture_stream(response)
++        if layout_stream:
++            return read_layout_stream(response, deadline)
+         if engine == 'hunyuanocr':
+             return read_hunyuan_stream(response)
+         return json.load(response)
+ 
+ 
+-def create_runtime(engine):
++def create_runtime(engine, loop_retry=False):
+     import torch
+ 
+     if not torch.cuda.is_available():
+@@ -179,7 +237,9 @@
+                                                     'start_chars': 4000, 'check_step_chars': 1000})
+         sampling = DOTS_SAMPLING if engine == 'dotsmocr' else {}
+         def recognize(image, max_tokens=SETTINGS['max_tokens'], penalties=None):
+-            return request_image(engine, image, max_tokens, penalties=penalties, **sampling)
++            return request_image(engine, image, max_tokens, penalties=penalties,
++                                 layout_stream=loop_retry, **sampling)
++        recognize.timeout_seconds = LAYOUT_TIMEOUT if loop_retry else CLIENT_TIMEOUT
+     return recognize, info
+ 
+ 
+@@ -237,23 +297,25 @@
+     return [width - bottom, left, width - top, right]
+ 
+ 
+-def timed_out(error):
++def timed_out(error, timeout_seconds=CLIENT_TIMEOUT):
+     """Native record of a request the client abandoned; it has no model output to decode."""
+     return {'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': None}, 'finish_reason': None}],
+-            'client_error': f'{type(error).__name__}: {error}', 'client_timeout_seconds': CLIENT_TIMEOUT}
++            'client_error': f'{type(error).__name__}: {error}', 'client_timeout_seconds': timeout_seconds}
+ 
+ 
+ def recognize_guarded(recognize, image, **settings):
+     try:
+         return recognize(image, **settings)
+     except TimeoutError as error:
+-        return timed_out(error)
++        return timed_out(error, getattr(recognize, 'timeout_seconds', CLIENT_TIMEOUT))
+ 
+ 
+ def retry_trigger(native):
+-    """'length' or 'timeout' when the primary response is unfinished, otherwise None."""
++    """Why the primary is unfinished, otherwise None."""
+     if native.get('client_error'):
+         return 'timeout'
++    if native.get('local_stop_reason') == 'tail_repetition':
++        return 'tail_repetition'
+     return 'length' if native['choices'][0]['finish_reason'] == 'length' else None
+ 
+ 
+@@ -308,7 +370,8 @@
+                    'native': recognize_guarded(recognize, turned)}
+         retry['attempts'].append(attempt)
+         choice = attempt['native']['choices'][0]
+-        if choice['finish_reason'] != 'stop' or attempt['native'].get('local_stop_reason'):
++        if (choice['finish_reason'] != 'stop' or attempt['native'].get('local_stop_reason')
++                or attempt['native'].get('client_error')):
+             continue
+         try:
+             cells = json.loads(choice['message']['content'] or '')
+@@ -349,7 +412,8 @@
+                                        'from the rotated retry recorded in rotated_bbox')
+         return decoded
+     text = choice['message']['content'] or ''
+-    if not text.strip() or choice['finish_reason'] != 'stop' or native.get('local_stop_reason'):
++    if (not text.strip() or choice['finish_reason'] != 'stop' or native.get('local_stop_reason')
++            or native.get('client_error')):
+         reason = native.get('client_error') or native.get('local_stop_reason') or choice['finish_reason']
+         raise ValueError(f'Empty or incomplete native model response ({reason}); inspect the retained page JSON')
+     if engine == 'hunyuanocr':
+@@ -433,8 +497,12 @@
+             manifest['config']['rotation_retry'] = {'trigger': 'length', 'rotations': list(ROTATIONS)}
+         if loop_retry:
+             # With the loop retry a client timeout is unfinished too and also tries the turns first.
+-            manifest['config']['loop_retry'] = {'triggers': ['length', 'timeout'], 'settings': list(LOOP_SETTINGS),
+-                                                'client_timeout_seconds': CLIENT_TIMEOUT}
++            manifest['config']['loop_retry'] = {'triggers': ['length', 'timeout', 'tail_repetition'],
++                                                'settings': list(LOOP_SETTINGS),
++                                                'client_timeout_seconds': LAYOUT_TIMEOUT,
++                                                'stream': True, 'continue_after_page_error': True,
++                                                'tail_repetition': {'start_chars': 12000, 'repeats': 24,
++                                                                    'max_unit_chars': 256}}
+     if sidecar:
+         manifest['export'] = {'format': NATIVE_SIDECAR[engine], 'native': 'native/page_NNNN.json',
+                               'markdown': 'document.md'}
+@@ -496,7 +564,7 @@
+ 
+     try:
+         manifest['model'] = model_manifest(engine)
+-        recognize, info = create_runtime(engine)
++        recognize, info = create_runtime(engine, loop_retry=True) if loop_retry else create_runtime(engine)
+         manifest.update(info)
+         with open_pdf(pdf) as document:
+             indices = parse_pages(selection, len(document))
+@@ -505,7 +573,7 @@
+             save()
+             with (ThreadPoolExecutor(max_workers=workers) if workers > 1 else nullcontext()) as pool:
+                 remaining = iter(indices)
+-                jobs, failure = [], None
++                jobs, failure, page_failure = [], None, None
+                 manifest['current_pages'] = []
+                 while True:
+                     while failure is None and len(jobs) < workers:
+@@ -544,7 +612,10 @@
+                             manifest['completed_pages'].append(number)
+                             print(f'Physical page {number}: saved', flush=True)
+                         else:
+-                            failure = failure or error
++                            if loop_retry:
++                                page_failure = page_failure or error
++                            else:
++                                failure = failure or error
+                             manifest['current_page'] = number
+                             manifest.setdefault('failed_pages', []).append(number)
+                             print(f'Physical page {number}: failed: {error}', flush=True)
+@@ -552,8 +623,8 @@
+                             save()
+                         except OSError as exc:
+                             failure = failure or exc
+-                if failure is not None:
+-                    raise failure
++                if failure is not None or page_failure is not None:
++                    raise failure or page_failure
+                 manifest.pop('current_page')
+                 manifest.pop('current_pages')
+                 save()
+--- a/compose.yaml
++++ b/compose.yaml
+@@ -44,7 +44,7 @@
+       VLLM_CACHE_ROOT: /data/cache/dotsmocr/vllm
+       TRITON_CACHE_DIR: /data/cache/dotsmocr/triton
+       FLASHINFER_WORKSPACE_BASE: /data/cache/dotsmocr/flashinfer
+-    command: ["vllm", "serve", "/data/cache/dotsmocr/model", "--host", "127.0.0.1", "--port", "8080", "--served-model-name", "dotsmocr", "--trust-remote-code", "--dtype", "bfloat16", "--chat-template-content-format", "string", "--gpu-memory-utilization", "0.65", "--max-model-len", "32768", "--max-num-seqs", "16", "--max-num-batched-tokens", "8192", "--limit-mm-per-prompt", '{"image":1}', "--mm-processor-kwargs", '{"max_pixels":4014080}', "--compilation-config", '{"cudagraph_capture_sizes":[1,2,4,6,8,12,16]}']
++    command: ["vllm", "serve", "/data/cache/dotsmocr/model", "--host", "127.0.0.1", "--port", "8080", "--served-model-name", "dotsmocr", "--trust-remote-code", "--dtype", "bfloat16", "--chat-template-content-format", "string", "--gpu-memory-utilization", "0.55", "--max-model-len", "32768", "--max-num-seqs", "16", "--max-num-batched-tokens", "8192", "--limit-mm-per-prompt", '{"image":1}', "--mm-processor-kwargs", '{"max_pixels":4014080}', "--compilation-config", '{"cudagraph_capture_sizes":[1,2,4,6,8,12,16]}']
+     healthcheck:
+       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)"]
+       interval: 10s

@@ -1,0 +1,11 @@
+{
+  "schema_version": "ocr-provider/1",
+  "provider": "ocr-lab",
+  "engine": "dotsmocr",
+  "lab_root": "H:/AI_AGENT/OCR-Lab",
+  "workers": 4,
+  "picture_ocr_failure_policy": "retain_unresolved",
+  "rotation_retry": true,
+  "loop_retry": true,
+  "timeout_seconds": 14400
+}

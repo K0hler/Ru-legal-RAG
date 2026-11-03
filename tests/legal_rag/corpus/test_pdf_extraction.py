@@ -86,6 +86,25 @@ def looped_result(attempts=(LOOPED, UPRIGHT), primary="length", turns=True):
 
 
 class PdfExtractionTest(unittest.TestCase):
+    def test_timed_out_rotation_with_stop_is_not_an_accepted_retry(self):
+        document, run = rotated_result()
+        document["pages"][0]["native"]["orientation_retry"]["attempts"][0]["native"].update(
+            client_error="TimeoutError: deadline exceeded")
+        with self.assertRaises(ValueError):
+            pdf.normalize_dotsmocr(document, run, DIGEST)
+
+    def test_early_cancelled_primary_requires_a_retained_successful_retry(self):
+        document, run = looped_result(turns=False)
+        page = document["pages"][0]
+        page["native"]["choices"][0]["finish_reason"] = None
+        page["native"]["local_stop_reason"] = "tail_repetition"
+        page["native"]["loop_retry"]["trigger"] = "tail_repetition"
+        extraction = pdf.normalize_dotsmocr(document, run, DIGEST)
+        self.assertIn("page_loop_retry", extraction["uncertainties"])
+        del page["native"]["loop_retry"]
+        with self.assertRaises(ValueError):
+            pdf.normalize_dotsmocr(document, run, DIGEST)
+
     def test_loop_retry_layout_is_accepted_only_from_its_retained_attempt(self):
         # Observed: blank form rows (sanpin-20-2015 p. 24) and repeated last regions (sanpin-6-2025 p. 106).
         for primary, attempts, turns in (("length", (LOOPED, UPRIGHT), True), ("timeout", (UPRIGHT,), True),

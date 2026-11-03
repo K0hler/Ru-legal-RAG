@@ -206,6 +206,15 @@
   `bbox` mapped back, `rotated_bbox`, `page_rotation`) from that retained attempt
   and checks earlier attempts were rejected. Page `orientation_retry`, uncertainty
   `page_orientation_retry`. Rotated pages that finish without a loop are not retried.
+- Opt-in `loop_retry: true` also accepts an early-cancelled primary with
+  `local_stop_reason: tail_repetition`, only through a retained valid rotation
+  or upright retry. Re-derive the selected layout and reject `client_error`
+  even alongside `finish_reason: stop`. A partial primary never becomes text.
+  OCR-Lab's page-recovery patch streams only this profile, retains partial
+  transport failures, bounds reads, and continues later pages after exhausted
+  page retries; any remaining failed page still blocks the whole extraction.
+  Nested tables and unresolved grids retain OCR claims, not verified cell
+  geometry; `table_content_unverified` remains meaningful on resolved grids too.
 - `ocr_runtime.py` validates the entire PDF permission/input before staging.
   Configure the external lab path through `ocr-provider/1`; fresh execution
   requires an already-healthy service and uses UUID-isolated outputs. Saved

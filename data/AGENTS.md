@@ -1,5 +1,24 @@
 # Local data instructions
 
+- The post-M1-04A OCR repair uses new `m1/m1-04a/experiments/20261103-ocr-fix-*`
+  folders. `...-diagnosis-01/` pins the eight original failure records/native
+  responses, the external client before/patch hashes, isolated timeout-page
+  probes and the 229-run saved replay. `...-all-01/` retains a complete 96-page
+  act and an interrupted 189-page act: page 19 timed out again with four
+  workers while Windows recorded GPU memory spilling into shared RAM.
+  `...-all-02/` retains all eight refill acts (527 pages) plus three earlier
+  controls (10 pages), all imported and saved-replayed under one fingerprint.
+  `verification.json` verifies complete extraction equality, original source
+  hashes and unchanged original failure bindings. Controls keep all text/types/
+  order; one bbox differs by one pixel. GPU monitor: 1344 samples, peak shared
+  85983232 bytes at vLLM reservation 0.55 / four clients. Sanpin p24 still loses
+  both empty fill-in rows; Minprom p30/33 retains the wrong total-row merge.
+  Keep these quality limitations separate from document-level recovery.
+  Do not change original pool failures,
+  source/status/split files or old OCR to reflect recovery. The actual FST EO is
+  `0001201506090024`. Completed OCR and deterministic replay do not certify
+  transcription, table merges, legal structure or admission.
+
 - M1-04A owner closure on2November2026 is recorded separately in
   `m1/m1-04a/experiments/20261102-owner-closure-01/`; retain pre-closure Trello
   state, fresh binding verification and status readback there. Never modify the

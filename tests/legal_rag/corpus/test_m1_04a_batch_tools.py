@@ -775,7 +775,7 @@ def test_ocr_summary_table_stats_are_opt_in(tmp_path):
                   "unsupported_regions": [], "pages": [
                       {"page": 1, "regions": [table, {"category": "Text"}]},
                       {"page": 2, "regions": [broken, broken], "orientation_retry": {"accepted": "cw90"}},
-                      {"page": 3, "regions": [{"category": "Text"}]}]}
+                      {"page": 3, "regions": [{"category": "Text"}], "loop_retry": {"repetition_penalty": 1.1}}]}
     path = tmp_path / "extraction.json"
     path.write_text(json.dumps(extraction), encoding="utf-8")
     raw = {"health_wait_seconds": 1.0, "acts": {"act": {"status": "complete", "seconds": 2.0, "extraction_id": "e",
@@ -787,6 +787,12 @@ def test_ocr_summary_table_stats_are_opt_in(tmp_path):
     assert act["regions"] == 5 and act["tables"] == 3
     assert act["tables_grid_unresolved"] == 2 and act["tables_grid_unresolved_pages"] == [2]
     assert act["orientation_retry_pages"] == [2]
+    assert act["loop_retry_pages"] == [3]
+    (tmp_path / "raw.json").write_text(json.dumps({**raw, **replay}), encoding="utf-8")
+    S.main(["--experiment", str(tmp_path), "--ocr-root", str(tmp_path),
+            "--extraction-raw", "raw.json", "--replay-raw", "raw.json", "--output", "summary.json",
+            "--table-stats"])
+    assert json.loads((tmp_path / "summary.json").read_text())["acts"]["act"] == act
 
 
 def test_ordinal_single_annex_numbers_the_only_annex_of_an_act_annex_document():

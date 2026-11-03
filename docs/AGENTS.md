@@ -1,5 +1,23 @@
 # Documentation instructions
 
+- Post-M1-04A OCR refill repair is recorded in
+  `milestones/m1/04a/M1_04A_OCR_REFILL_FIXES_2026-11-03.md`. The external
+  `assets/ocr_lab_page_recovery.patch` applies after the existing loop/rotation/
+  Picture patches; verify its before/after hashes, never overwrite lab results.
+  `assets/m1_04_ocr_recovery_config.example.json` selects four workers and the
+  opt-in streaming loop recovery. The patch also reduces dots.mocr's vLLM GPU
+  reservation from 0.65 to 0.55: a reproduced page-19 timeout with four workers
+  coincided with Windows GPU shared-memory spill. Successful primary sampling stays greedy
+  (`temperature=0`, `seed=1`, 24000 tokens). Page failures retain partial native
+  responses and allow later pages to finish, while the run remains failed.
+  `summarize_m1_04a_ocr.py --ocr-root` matches the runner's `-OcrRoot`;
+  `--table-stats` also lists upright loop-retry pages. Keep completed OCR,
+  preservation/replay, table accuracy and legal qualification separate.
+  The runner now defaults to `data/m1/ocr.recovery.local.json` (copy the recovery
+  example); the old rotation-only config remains historical evidence. Keep four
+  clients with the reduced KV cache; do not assume the old 16-client throughput
+  result qualifies this resource profile.
+
 - Section 5 of `milestones/m1/M1_NPA_REQUISITES_2026-11-03.md` records the later
   PDF transport fix: Connection: close alone reproduces partial-body timeout
   even in curl; pool/4 uses a PDF-only Python keep-alive handler. Main-loader
@@ -1267,8 +1285,9 @@
   it (3 pages turned cw90); 0/12 forced turns of upright pages were accepted.
   Rotated pages read without a loop and upright looping blanks remain open.
   Owner decision 23.10.2026: M1-04A batches after batch 5 run OCR with the
-  rotation retry; `assets/run_m1_04a_ocr.ps1` defaults `-OcrConfig` to
-  `data/m1/ocr.rotation-retry.local.json` and records it (with sha256) in the
+  rotation retry; `assets/run_m1_04a_ocr.ps1` then defaulted `-OcrConfig` to
+  `data/m1/ocr.rotation-retry.local.json` (superseded by the 3 November recovery
+  profile) and records the selected config (with sha256) in the
   raw summary. Batches 1-5 stay as frozen, without it.
 - `assets/ocr_lab_rotation_retry.patch` retains the OCR-Lab client change for the
   rotation retry (before `42ddf34a…`, after `6beed388…`, compared without `\r`;

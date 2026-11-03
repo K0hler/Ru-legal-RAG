@@ -10,9 +10,9 @@ param(
     [string[]]$Slugs = @("fz-22-2018", "fz-23-2018", "pp-1455-2022", "pp-884-2024",
         "prikaz-minobrazovaniya-901-2015", "prikaz-mintsifrovogo-173-2021",
         "rp-1378-2018", "ukaz-204-2016"),
-    [int]$HealthTimeoutSeconds = 600,
-    # Owner decision 23.10.2026: batches after batch 5 use the opt-in rotation retry.
-    [string]$OcrConfig = "data/m1/ocr.rotation-retry.local.json",
+    [int]$HealthTimeoutSeconds = 1200,
+    # Post-M1-04A refill repair: four clients and bounded page recovery.
+    [string]$OcrConfig = "data/m1/ocr.recovery.local.json",
     # Re-runs of acts that already have ocr/<slug>/run-01 (e.g. data/m1/m1-04a/experiments/<date>-ocr-fix-loop).
     [string]$OcrRoot = "",
     [switch]$ReplayOnly   # skip Docker/extraction; only replay saved results
@@ -35,15 +35,17 @@ function Save-Json($value, $path) {
     [IO.File]::WriteAllText((Join-Path (Get-Location) $path), ($value | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding($false)))
 }
 if (-not $ReplayOnly) {
-# 1. GPU must be free enough for dots.mocr (it reserves 65% of memory).
+# 1. Keep GPU headroom for the server reservation and inference buffers.
 $gpu = (nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits).Trim() -split ",\s*"
 $usedMiB = [int]$gpu[0]; $totalMiB = [int]$gpu[1]
 Write-Host "GPU memory used: $usedMiB / $totalMiB MiB"
 $others = docker ps --filter "name=ocr-lab-" --format "{{.Names}}" | Where-Object { $_ -ne "ocr-lab-dotsmocr" }
 if ($others) { throw "Other OCR-Lab containers hold the GPU: $others" }
-if ($usedMiB -gt 0.5 * $totalMiB) { throw "GPU is busy: $usedMiB MiB in use" }
+# A running dots.mocr service already owns its GPU reservation.
+$serviceRunning = @(docker ps --filter "name=^ocr-lab-dotsmocr$" --format "{{.Names}}") -contains "ocr-lab-dotsmocr"
+if (-not $serviceRunning -and $usedMiB -gt 0.5 * $totalMiB) { throw "GPU is busy: $usedMiB MiB in use" }
 
-# 2. Start the service and wait for health (max 10 minutes), else fail before extraction.
+# 2. Cold loading through the Windows mount can exceed 10 minutes; wait before extraction.
 $clock = [Diagnostics.Stopwatch]::StartNew()
 docker compose --project-directory $LabRoot up -d dotsmocr
 if ($LASTEXITCODE) { throw "docker compose up failed" }
