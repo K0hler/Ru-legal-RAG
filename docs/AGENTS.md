@@ -1,5 +1,9 @@
 # Documentation instructions
 
+- Owner acceptance on 3 November 2026 closes the page-orientation task recorded in
+  `milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md`; retain its documented
+  transcription limits and failed first control as evidence.
+
 - `assets/ocr_lab_page_orientation.patch` applies after the page-recovery patch;
   it adds RapidOrientation 0.0.11 (packaged PaddleClas ONNX model, Apache-2.0)
   to the dots client image without upgrading its Transformers or recognizer.
