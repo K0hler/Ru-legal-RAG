@@ -1,10 +1,13 @@
 # Source acquisition test instructions
 
 - `test_publication_pool.py` uses authored metadata and fake transport only.
-  Check empty-name order acquisition/repeat with exact original card hashes,
+  Check empty/null/absent-name acquisition/repeat across document types with exact original card hashes,
   unchanged identity validation, per-item feed refusal (including duplicates,
   invalid dates and non-objects), strict envelopes and explicit non-PDF formats.
   Frozen M0 replay fixtures and tests must not change for this opt-in adapter.
+  Feed views normalize null/absent names to empty strings for existing selectors;
+  retain exact raw feed bytes and reject non-string values. Conflicting act identity
+  must preserve all previously successful raw/assets/items.
 
 - `test_structure_bundle.py` replays both banks with authored sidecars and the
   unchanged frozen fixtures. Check exact bytes, same-edition selectors, repeat

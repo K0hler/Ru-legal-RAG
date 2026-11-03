@@ -22,7 +22,7 @@ class _FeedReplay(PublicationPravoConnector):
 
 
 class PublicationPoolConnector(PublicationPravoConnector):
-    adapter_version = "publication-pravo-pool/2"
+    adapter_version = "publication-pravo-pool/3"
 
     def fetch_feed(self, publication_date, page=1):
         self._rejected = []
@@ -69,13 +69,7 @@ class PublicationPoolConnector(PublicationPravoConnector):
             return raw, transport  # Frozen validator reports malformed JSON.
         if route == "/api/Document":
             self._card_bytes = raw
-            if (isinstance(value, dict) and isinstance(value.get("name"), str)
-                    and value["name"] == ""
-                    and isinstance(value.get("documentType"), dict)
-                    and value["documentType"].get("name") == "Распоряжение"
-                    and isinstance(value.get("signatoryAuthorities"), list)
-                    and any(isinstance(a, dict) and a.get("name") == "Правительство Российской Федерации"
-                            for a in value["signatoryAuthorities"])):
+            if isinstance(value, dict) and value.get("name") in (None, ""):
                 value["name"] = value.get("complexName")
                 self._warnings.append({"reason": "empty_card_name", "title_field": "complexName"})
                 return json.dumps(value, ensure_ascii=False).encode(), transport
@@ -88,6 +82,8 @@ class PublicationPoolConnector(PublicationPravoConnector):
             _FeedReplay(envelope, transport).fetch_feed(day, page)
             valid, seen = [], set()
             for index, item in enumerate(value["items"]):
+                if isinstance(item, dict) and item.get("name") is None:
+                    item = dict(item, name="")
                 try:
                     _FeedReplay(dict(envelope, items=[item]), transport).fetch_feed(day, page)
                     if item["eoNumber"] in seen:

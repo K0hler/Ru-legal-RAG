@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `milestones/m1/M1_NPA_REQUISITES_2026-11-03.md` records the separate post-M1-04A
+  empty-title fix: opt-in pool/3 accepts empty/null/absent names with all other
+  card guards retained. Exact raw bytes stay archived; frozen M0 is unchanged.
+  Real No.1165-r repeats new/unchanged only with a disclosed one-run curl transport
+  injection after native Python PDF timeouts. Keep that limit separate from
+  metadata correctness and from future OCR/requisites/manual-review measurements.
+
 - M1-04A is closed by owner acceptance on2November2026; the current record is
   `milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md`. Acceptance covers250corrected
   official-tree acts each>99% and the final frozen ten each100%. No further scan

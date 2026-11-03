@@ -36,7 +36,7 @@ Receipts `<batch>/receipts/<eo>.json` and failures `<batch>/failures/` are writt
 verifies every recorded file hash without network access and reports `unchanged`.
 Network: existing connectors only, request_interval 1 s.
 Batch-01/02 retain their frozen v1 publication adapter; other batch directories
-use publication-pravo-pool/2. Codes use the `code-<number>-<year>` slug.
+use the opt-in publication pool adapter. Codes use the `code-<number>-<year>` slug.
 """
 
 import argparse
