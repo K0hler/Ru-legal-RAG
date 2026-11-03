@@ -5,6 +5,9 @@
   both and the current four-worker / 0.55 GPU profile when qualifying the new
   runtime. The vLLM base lacks PyMuPDF and ONNX Runtime; TeleOCR installed both.
   A CPU-only model processor load is not a GPU inference or qualification.
+  The separate own-provider example is experimental; it does not switch the
+  default before qualification and owner acceptance. Retained failed first
+  orientation outputs require their saved pre-confidence normalizer for replay.
 
 - Owner acceptance on 3 November 2026 closes the page-orientation task recorded in
   `milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md`; retain its documented

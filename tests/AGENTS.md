@@ -8,6 +8,10 @@
 - `corpus/test_dotsmocr_model.py` uses small authored model files and verifies
   that corrupt, missing, unlisted or escaping entries stop the command before it
   starts. The real model stays local and is never changed by these tests.
+- `corpus/test_own_ocr_runtime.py` mocks Docker at the process boundary: check
+  client snapshot/fingerprint, rejected image, manifest, compose, command,
+  mounts and environment, and service restart or snapshot change during OCR.
+  `test_ocr_runtime.py` also checks old/new dispatch and saved replay.
 
 - `corpus/test_page_orientation.py` checks source-coordinate mapping for all four
   angles, malformed/missing classifier evidence, and composition with rotation/

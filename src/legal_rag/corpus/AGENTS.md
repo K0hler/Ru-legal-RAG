@@ -1,5 +1,13 @@
 # Corpus compilation module
 
+- M1-04B adds the explicit `legal-rag-dotsmocr` provider; the old `ocr-lab`
+  adapter and saved-result route remain unchanged. The new adapter verifies the
+  running container's image, model-verifier entrypoint, compose command, mounts,
+  environment and baked manifest/verifier hashes before snapshotting the client.
+  It binds the runtime and effective settings to `runtime.json`, checks the
+  snapshot and container identity after execution, and never starts containers.
+  This is an experimental qualification route, not the default provider.
+
 - `ocr_runtime.run_ocr_lab` forwards the opt-in boolean `page_orientation` to
   OCR-Lab's packaged RapidOrientation 0.0.11 CPU classifier, before dots.mocr.
   The client image and ONNX weight hash are pinned; source PNGs stay unchanged.

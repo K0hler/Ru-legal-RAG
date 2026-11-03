@@ -209,6 +209,27 @@ class OcrRuntimeTest(unittest.TestCase):
             self.assertEqual(compile_input(path, "2025-01-01", output / "draft",
                                           extraction_index=Path(replay["index"]))["result"], "new")
 
+    def test_own_provider_dispatch_preserves_fingerprint_on_saved_replay(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path, mapping, output, digest = self.prepare(temporary)
+            config = Path(temporary) / "config.json"
+            config.write_bytes(json_bytes({"schema_version": "ocr-provider/1", "provider": "legal-rag-dotsmocr",
+                                           "engine": "dotsmocr", "project_root": temporary}))
+
+            def execute(settings, payload, source_hash, receipt):
+                (receipt / "runtime.json").write_bytes(json_bytes({"provider": "legal-rag-dotsmocr",
+                                                                    "image_id": "sha256:fixture"}))
+                return Path(temporary) / "native"
+
+            with patch.object(runtime, "run_legal_rag_dotsmocr", side_effect=execute), \
+                    patch.object(runtime, "run_ocr_lab", side_effect=AssertionError("wrong provider")):
+                first = runtime.extract_input(path, output, config_path=config)
+            mapping.write_bytes(json_bytes({"schema_version": "ocr-results/1", "results": {
+                digest: first["native_evidence"][digest]}}))
+            replay = runtime.extract_input(path, output / "replayed", results_path=mapping)
+            self.assertEqual(first["extractions"][digest]["extraction_id"],
+                             replay["extractions"][digest]["extraction_id"])
+
     def test_cli_imports_without_a_target_date_or_ocr_runtime(self):
         with tempfile.TemporaryDirectory() as temporary:
             path, mapping, output, _ = self.prepare(temporary)

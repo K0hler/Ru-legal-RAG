@@ -1,0 +1,12 @@
+{
+  "schema_version": "ocr-provider/1",
+  "provider": "legal-rag-dotsmocr",
+  "engine": "dotsmocr",
+  "project_root": "H:/AI_AGENT/Legal RAG",
+  "workers": 4,
+  "page_orientation": true,
+  "picture_ocr_failure_policy": "retain_unresolved",
+  "rotation_retry": true,
+  "loop_retry": true,
+  "timeout_seconds": 14400
+}

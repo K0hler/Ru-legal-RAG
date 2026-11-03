@@ -1,6 +1,8 @@
 """Explicit local OCR execution and immutable, permission-bound saved-result import."""
 
 import hashlib
+import json
+import os
 from pathlib import Path
 import subprocess
 import uuid
@@ -138,6 +140,123 @@ def run_ocr_lab(config: dict, payload: bytes, digest: str, receipt_dir: Path) ->
     return native
 
 
+def run_legal_rag_dotsmocr(config: dict, payload: bytes, digest: str, receipt_dir: Path) -> Path:
+    """Run the project-owned service with a pinned image and immutable client snapshot."""
+    if config.get("provider") != "legal-rag-dotsmocr" or config.get("engine") != "dotsmocr":
+        raise ValueError("unsupported OCR provider/adapter")
+    project = Path(config["project_root"]).resolve()
+    runtime = project / "ocr" / "dotsmocr"
+    data = (project / "data" / "ocr" / "dotsmocr").resolve()
+    workers = config.get("workers", 4)
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("OCR workers must be between 1 and 16")
+    timeout = config.get("timeout_seconds", 3600)
+    if type(timeout) is not int or timeout < 1:
+        raise ValueError("OCR timeout must be a positive integer")
+    flags = {}
+    for name in ("rotation_retry", "loop_retry", "page_orientation"):
+        value = config.get(name, False)
+        if type(value) is not bool:
+            raise ValueError(f"OCR {name} must be true or false")
+        flags[name] = value
+    overrides = {}
+    if "picture_ocr_max_tokens" in config:
+        budget = config["picture_ocr_max_tokens"]
+        if type(budget) is not int or not 1 <= budget <= 24000:
+            raise ValueError("Picture OCR budget must be between 1 and 24000 tokens")
+        overrides["max_tokens"] = budget
+    if "picture_ocr_failure_policy" in config:
+        policy = config["picture_ocr_failure_policy"]
+        if policy not in {"strict", "retain_unresolved"}:
+            raise ValueError("unknown Picture OCR failure policy")
+        overrides["failure_policy"] = policy
+        if policy == "retain_unresolved":
+            overrides["recover_repetitions"] = True
+
+    paths = ["compose.yaml", "Dockerfile", "scripts/verify_model.py", "scripts/new_ocr_pdf.py",
+             "config/new_ocr_models.json", "config/dotsmocr_prompt.txt", "config/dotsmocr_picture_ocr.json"]
+    files = {name: (runtime / name).read_bytes() for name in paths}
+    snapshot = {name: payload for name, payload in files.items()
+                if name == "scripts/new_ocr_pdf.py" or name.startswith("config/")}
+    if overrides:
+        picture = json.loads(snapshot["config/dotsmocr_picture_ocr.json"])
+        snapshot["config/dotsmocr_picture_ocr.json"] = json_bytes({**picture, **overrides})
+    profile_id = content_hash({name: hashlib.sha256(payload).hexdigest() for name, payload in snapshot.items()})
+    compose = runtime / "compose.yaml"
+    name = "legal-rag-dotsmocr"
+    try:
+        state = subprocess.run(["docker", "inspect", "--format", "{{json .}}", name],
+                               capture_output=True, text=True, check=True, timeout=30)
+        container = json.loads(state.stdout)
+        image = subprocess.run(["docker", "image", "inspect", "--format", "{{.Id}}",
+                                "legal-rag/dotsmocr:m1-04b"], capture_output=True, text=True,
+                               check=True, timeout=30).stdout.strip()
+        config_hash = subprocess.run(["docker", "compose", "-f", str(compose), "config", "--hash", "dotsmocr"],
+                                     capture_output=True, text=True, check=True, timeout=30).stdout.split()
+        profile = json.loads(subprocess.run(["docker", "compose", "-f", str(compose), "config", "--format", "json"],
+                                            capture_output=True, text=True, check=True, timeout=30).stdout)
+        service = profile["services"]["dotsmocr"]
+        environment = dict(entry.split("=", 1) for entry in container["Config"]["Env"])
+        expected_mounts = {(os.path.normcase(str(Path(v["source"]).resolve())), v["target"],
+                            not v.get("read_only", False), v["type"]) for v in service["volumes"]}
+        actual_mounts = {(os.path.normcase(str(Path(v["Source"]).resolve())), v["Destination"], v["RW"], v["Type"])
+                         for v in container["Mounts"]}
+        expected_entrypoint = ["python3", "/opt/dotsmocr/scripts/verify_model.py", "/data/model",
+                               "/opt/dotsmocr/config/new_ocr_models.json", "--"]
+        if (container["State"]["Status"] != "running" or container["State"]["Health"]["Status"] != "healthy"
+                or container["Image"] != image or container["Config"]["Entrypoint"] != expected_entrypoint
+                or container["Config"]["Cmd"] != service["command"] or actual_mounts != expected_mounts
+                or any(environment.get(k) != v for k, v in service["environment"].items())
+                or len(config_hash) != 2 or config_hash[0] != "dotsmocr"
+                or container["Config"]["Labels"].get("com.docker.compose.config-hash") != config_hash[1]):
+            raise RuntimeError("project dots.mocr service does not match its image or compose profile")
+        baked_names = ("scripts/verify_model.py", "config/new_ocr_models.json")
+        baked = subprocess.run(["docker", "exec", name, "sha256sum", *["/opt/dotsmocr/" + p for p in baked_names]],
+                               capture_output=True, text=True, check=True, timeout=30).stdout.splitlines()
+        baked_hashes = {line.split(maxsplit=1)[1].strip(): line.split(maxsplit=1)[0] for line in baked}
+        if any(baked_hashes.get("/opt/dotsmocr/" + p) != hashlib.sha256(files[p]).hexdigest()
+               for p in baked_names):
+            raise RuntimeError("project dots.mocr image does not match the model manifest and verifier")
+    except (OSError, subprocess.SubprocessError, KeyError, TypeError, ValueError, IndexError) as error:
+        raise RuntimeError("project dots.mocr service is unavailable or unverified") from error
+
+    snapshot_root = data / "results" / "legal-rag-runtime" / profile_id
+    _store({snapshot_root / key: value for key, value in snapshot.items()}, root=data)
+    fingerprint = {"provider": "legal-rag-dotsmocr", "engine": "dotsmocr", "image_id": image,
+                   "compose_config_hash": config_hash[1], "profile_id": profile_id,
+                   "container_id": container["Id"], "container_started_at": container["State"]["StartedAt"],
+                   "files": {key: hashlib.sha256(value).hexdigest() for key, value in files.items()},
+                   "workers": workers, "timeout_seconds": timeout, **flags}
+    (receipt_dir / "runtime.json").write_bytes(json_bytes(fingerprint))
+    staged = data / "input" / ("legal-rag-" + digest + ".pdf")
+    _store({staged: payload}, root=data)
+    native = data / "results" / "legal-rag" / receipt_dir.name
+    command = ["docker", "compose", "-f", str(compose), "exec", "-T", "dotsmocr", "python3",
+               f"/data/results/legal-rag-runtime/{profile_id}/scripts/new_ocr_pdf.py", "--engine", "dotsmocr",
+               "/data/input/" + staged.name, "--output", "/data/results/legal-rag/" + receipt_dir.name,
+               "--workers", str(workers)]
+    command += ["--" + key.replace("_", "-") for key, enabled in flags.items() if enabled]
+    with (receipt_dir / "runtime.log").open("wb") as log:
+        try:
+            completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
+                                       timeout=timeout, check=False)
+        except (OSError, subprocess.SubprocessError) as error:
+            raise RuntimeError(f"OCR command failed; see {receipt_dir / 'runtime.log'}") from error
+    if any(_digest(snapshot_root / key) != hashlib.sha256(value).hexdigest() for key, value in snapshot.items()):
+        raise RuntimeError("OCR runtime snapshot changed during extraction")
+    if completed.returncode:
+        raise RuntimeError(f"OCR exited {completed.returncode}; native output retained at {native}")
+    try:
+        current = subprocess.run(["docker", "inspect", "--format", "{{json .}}", name],
+                                 capture_output=True, text=True, check=True, timeout=30)
+        after = json.loads(current.stdout)
+        if (after["Id"] != container["Id"] or after["State"]["StartedAt"] != container["State"]["StartedAt"]):
+            raise RuntimeError("OCR runtime container changed during extraction")
+    except (OSError, subprocess.SubprocessError, KeyError, TypeError, ValueError) as error:
+        raise RuntimeError("OCR runtime container changed during extraction") from error
+    return native
+
+
 def extract_input(input_path: Path, output_dir: Path, config_path: Path | None = None,
                   results_path: Path | None = None) -> dict:
     if (config_path is None) == (results_path is None):
@@ -177,7 +296,8 @@ def extract_input(input_path: Path, output_dir: Path, config_path: Path | None =
                 _destination(receipt_dir, output, protected)
                 receipt_dir.mkdir(parents=True)
                 (receipt_dir / "run.json").write_bytes(json_bytes(observation))
-                native = run_ocr_lab(config, raw[digest], digest, receipt_dir)
+                runner = run_legal_rag_dotsmocr if config.get("provider") == "legal-rag-dotsmocr" else run_ocr_lab
+                native = runner(config, raw[digest], digest, receipt_dir)
             else:
                 native = mapping[digest]
             document, run = _read_ocr_output(native)
