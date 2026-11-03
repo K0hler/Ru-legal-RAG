@@ -1,0 +1,7 @@
+annotated-doc==0.0.5
+fastapi==0.136.0
+flatbuffers==25.12.19
+onnxruntime==1.30.0
+pymupdf==1.28.2
+rapid-orientation==0.0.11
+starlette==0.48.0

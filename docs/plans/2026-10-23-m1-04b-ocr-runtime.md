@@ -82,12 +82,18 @@
 
 **Files:** `ocr/dotsmocr/` (`Dockerfile`, `compose.yaml`, `requirements.lock`, `AGENTS.md`), ссылка на `ocr/AGENTS.md` в карте проекта корневого `AGENTS.md`.
 
-- [ ] `FROM vllm/vllm-openai:v0.11.0@sha256:<digest>`, явные версии из задачи 1, без TeleOCR.
-- [ ] Один сервис с теми же параметрами vLLM, что сейчас (`--max-model-len 32768`, `--max-num-seqs 16`, `max_pixels 4014080`, `gpu-memory-utilization 0.65`), офлайн-режим HF.
-- [ ] Подключения: модель `data/ocr/dotsmocr/model/` — только чтение; вход и выход — `data/ocr/dotsmocr/input/` и `data/ocr/dotsmocr/results/` (игнорируются git).
-- [ ] Своё имя контейнера (например, `legal-rag-dotsmocr`), чтобы не путать с `ocr-lab-dotsmocr`.
+- [x] `FROM vllm/vllm-openai:v0.11.0@sha256:<digest>`, явные версии из задачи 1, без TeleOCR.
+- [x] Один сервис с параметрами vLLM актуального профиля: `--max-model-len 32768`, `--max-num-seqs 16`, `max_pixels 4014080`, `gpu-memory-utilization 0.55` (принятая доработка 03.11), офлайн-режим HF.
+- [x] Подключения: модель `data/ocr/dotsmocr/model/` — только чтение; вход и выход — `data/ocr/dotsmocr/input/` и `data/ocr/dotsmocr/results/` (игнорируются git).
+- [x] Своё имя контейнера `legal-rag-dotsmocr`, чтобы не путать с `ocr-lab-dotsmocr`.
 
 **Verify:** образ собирается с нуля; `/v1/models` отдаёт `dotsmocr` с нужной ревизией; синтетическая страница распознаётся (аналог `--check` клиента).
+
+**Проверено 03.11.2026:** сборка без кэша, все 16 файлов модели вручную сверены
+по исходному манифесту, `/v1/models` подтверждает имя и путь проверенной модели,
+синтетическая страница прочитана. API сам revision не сообщает; привязка сделана
+через манифест и хеши файлов. Доказательства: `data/ocr/dotsmocr/results/task2-synthetic-20261103/`.
+Автоматический отказ при несовпадении хеша реализуется в задаче 4.
 
 ### Task 3: Клиент только для dots.mocr
 

@@ -1,0 +1,26 @@
+services:
+  dotsmocr:
+    image: legal-rag/dotsmocr:m1-04b
+    build:
+      context: .
+    container_name: legal-rag-dotsmocr
+    gpus: all
+    shm_size: 2gb
+    volumes:
+      - ../../data/ocr/dotsmocr/model:/data/model:ro
+      - ../../data/ocr/dotsmocr/input:/data/input:ro
+      - ../../data/ocr/dotsmocr/results:/data/results
+    environment:
+      HF_HOME: /tmp/huggingface
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      VLLM_CACHE_ROOT: /tmp/vllm
+      TRITON_CACHE_DIR: /tmp/triton
+      FLASHINFER_WORKSPACE_BASE: /tmp/flashinfer
+    command: ["vllm", "serve", "/data/model", "--host", "127.0.0.1", "--port", "8080", "--served-model-name", "dotsmocr", "--trust-remote-code", "--dtype", "bfloat16", "--chat-template-content-format", "string", "--gpu-memory-utilization", "0.55", "--max-model-len", "32768", "--max-num-seqs", "16", "--max-num-batched-tokens", "8192", "--limit-mm-per-prompt", '{"image":1}', "--mm-processor-kwargs", '{"max_pixels":4014080}', "--compilation-config", '{"cudagraph_capture_sizes":[1,2,4,6,8,12,16]}']
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 120

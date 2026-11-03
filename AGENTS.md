@@ -11,6 +11,7 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
   - [`src/legal_rag/retrieval/AGENTS.md`](src/legal_rag/retrieval/AGENTS.md) — exact and full-text retrieval.
 - [`tests/AGENTS.md`](tests/AGENTS.md) — test placement and acceptance checks.
 - [`data/AGENTS.md`](data/AGENTS.md) — local corpus and fixture handling.
+- [`ocr/AGENTS.md`](ocr/AGENTS.md) — isolated OCR runtime and service.
 
 ## Project-wide direction
 
