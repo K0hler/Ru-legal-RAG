@@ -1,5 +1,11 @@
 # Test instructions
 
+- `corpus/test_dotsmocr_{picture,rotation,loop,orientation,export}.py` exercise
+  the project-owned client without GPU, including real Pillow images, retained
+  attempts, stream deadlines, source-coordinate mapping, failed-page handling
+  and import into the existing normalizer. Pillow is needed for these tests but
+  no inference libraries are installed on the host.
+
 - `corpus/test_page_orientation.py` checks source-coordinate mapping for all four
   angles, malformed/missing classifier evidence, and composition with rotation/
   loop recovery, including a stream timeout after `finish_reason=stop`.

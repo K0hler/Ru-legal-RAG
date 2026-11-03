@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "padding_pixels": 28,
+  "temperature": 0.0,
+  "max_tokens": 512,
+  "prompt": "Extract the text content from this image."
+}

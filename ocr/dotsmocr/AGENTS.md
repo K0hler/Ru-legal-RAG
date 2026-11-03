@@ -17,3 +17,8 @@
   2026. The model copy was manually checked against all 16 source-manifest hashes;
   automatic pre-start hash refusal is still Task 4 and must not be assumed.
   A synthetic check is not runtime qualification or owner approval to switch.
+- `scripts/new_ocr_pdf.py` and `config/` contain only the dots.mocr client and
+  its pinned settings. Preserve streaming Picture/loop recovery, rotation retries,
+  confidence-gated page orientation and `dotsmocr-layout/2` native sidecars.
+  The host may snapshot these files; a real synthetic PDF result has passed the
+  existing normalizer under `data/ocr/dotsmocr/results/task3-client-20261103/`.
