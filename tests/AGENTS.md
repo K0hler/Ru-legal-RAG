@@ -1,5 +1,12 @@
 # Test instructions
 
+- `corpus/test_official_requisites.py` checks the 3 November 2026 official-card
+  policy with authored card/PDF/OCR archives: unresolved OCR cannot block complete
+  card requisites; null/empty/absent title is optional, missing required fields
+  remain explicit. Reject foreign IDs/URLs, missing membership and corrupt bytes
+  before writes; verify captured historical cards, stable repeats and source
+  immutability. Native identity checks and legal-admission restrictions stay tested.
+
 - `corpus/test_ocr_owner_transfer_fixes.py` covers the exposed sets2–5 classes:
   full compound indices and decimal parent recovery, four-digit versus padded
   lists, glued headings/editorial notes, long annex captions, narrative

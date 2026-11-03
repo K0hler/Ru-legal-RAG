@@ -1,5 +1,18 @@
 # Documentation instructions
 
+- Owner decision on 3 November 2026 supersedes the mandatory OCR requisites-comparison
+  plan: date/full number/type/issuer come from the official card, with card/PDF/OCR
+  linkage retained. `plans/2026-11-03-official-card-requisites.md` implements the
+  publication.pravo PDF route. `milestones/m1/M1_NPA_REQUISITES_2026-11-03.md`
+  separates the preceding diagnostic counts from the later card-policy result.
+  Do not treat 147 unsupported OCR types or 7 OCR disagreements as manual requisites
+  tasks when bound cards already contain the fields. Missing/corrupt source
+  evidence and temporal/structural/legal review remain independent concerns.
+  Completed replay: 229/229 card records, 229 exact tree/content replays and unchanged
+  repeats, 159 removed OCR identity blockers, 2064 unchanged source files, 1306 tests,
+  Ruff and M0 78/78. This is bounded publication-PDF behavior, not bank-wide
+  metadata coverage, new OCR qualification, network transport repair or legal admission.
+
 - `milestones/m1/M1_NPA_REQUISITES_2026-11-03.md` records the separate post-M1-04A
   empty-title fix: opt-in pool/3 accepts empty/null/absent names with all other
   card guards retained. Exact raw bytes stay archived; frozen M0 is unchanged.

@@ -114,6 +114,64 @@ def _asset(root: Path, digest: str) -> tuple[dict, bytes]:
     return public, payload
 
 
+def _publication_requisites(root: Path, reference: dict, item: dict) -> dict:
+    record = {"document_asset_sha256": reference["sha256"], "source_item": reference["source_item"],
+              "status": "unavailable", "ocr_comparison": "not_required"}
+    if item.get("source_system") != "publication.pravo.gov.ru":
+        return {**record, "reason": "unsupported_official_card_source"}
+    eo_number = item.get("external_id")
+    if not isinstance(eo_number, str) or not re.fullmatch(r"[0-9]{16}", eo_number) or (
+        reference["source_item"] != f"publication.pravo.gov.ru:{eo_number}"
+    ):
+        raise ValueError("publication source item identity mismatch")
+    metadata = _read(_inside(root, f"assets/{reference['sha256']}.json"))
+    transport = metadata.get("transport_metadata", {})
+    if not isinstance(transport, dict):
+        raise ValueError("invalid publication transport metadata")
+    capture = transport.get("card_request")
+    if capture is None:
+        return {**record, "reason": "card_pdf_binding_missing"}
+    if not isinstance(capture, dict):
+        raise ValueError("invalid publication card capture")
+    card_sha = _hash(capture.get("sha256"))
+    if card_sha not in item.get("asset_sha256s", []):
+        raise ValueError("publication card does not belong to source item")
+    card_metadata, payload = _asset(root, card_sha)
+    card_url = f"http://publication.pravo.gov.ru/api/Document?eoNumber={eo_number}"
+    pdf_url = f"http://publication.pravo.gov.ru/File/Pdf?eoNumber={eo_number}"
+    if (reference["source_url"] != pdf_url or card_metadata["source_url"] != card_url
+            or card_metadata["media_type"].split(";", 1)[0] != "application/json"
+            or _read(_inside(root, f"assets/{card_sha}.json")).get("role") != "declared_publication"
+            or any(transport.get(key) != pdf_url or capture.get(key) != card_url
+                   for key in ("request_url", "response_url"))):
+        raise ValueError("publication card/PDF transport binding mismatch")
+    card = json.loads(payload.decode("utf-8-sig"))
+    if (not isinstance(card, dict) or card.get("eoNumber") != eo_number
+            or card.get("complexName") != reference["declared_identity"]):
+        raise ValueError("publication card identity mismatch")
+    kind = card.get("documentType")
+    if kind is None:
+        kind = {}
+    authorities = card.get("signatoryAuthorities")
+    if authorities is None:
+        authorities = []
+    if not isinstance(kind, dict) or not isinstance(authorities, list) or any(
+        not isinstance(authority, dict) for authority in authorities
+    ):
+        raise ValueError("invalid publication type or authorities")
+    values = {"document_date": card.get("documentDate"), "document_number": card.get("number"),
+              "document_type": kind.get("name")}
+    values = {key: None if value is None or value == "" else _text(value) for key, value in values.items()}
+    if values["document_date"] is not None:
+        values["document_date"] = datetime.fromisoformat(values["document_date"].replace("Z", "+00:00")).date().isoformat()
+    names = [authority.get("name") for authority in authorities]
+    values["signatory_authorities"] = [_text(name) for name in names] if names and all(names) else None
+    missing = sorted(key for key, value in values.items() if value is None)
+    return {**record, "status": "official_card_incomplete" if missing else "official_card",
+            "values": values, "missing_fields": missing, "card_asset_sha256": card_sha,
+            "source_url": card_url, "captured_at": card_metadata["captured_at"]}
+
+
 def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Path]:
     """Validate all evidence and permission before creating any derived files."""
     manifest = _object(_read(path), {
@@ -180,7 +238,10 @@ def load_input(path: Path, target_date: str) -> tuple[dict, dict[str, bytes], Pa
             "review_status": _text(item.get("review_status", "unreviewed")),
             "unresolved_items": sorted(unresolved, key=json_bytes),
         })
-        assets.append({**reference, "metadata": asset})
+        normalized_asset = {**reference, "metadata": asset}
+        if asset["media_type"] == "application/pdf":
+            normalized_asset["official_requisites"] = _publication_requisites(root, reference, item)
+        assets.append(normalized_asset)
         raw[digest] = payload
     roles = [asset["role"] for asset in assets]
     expected_roles = ["consolidated", "official_structure"] if version == "corpus-input/2" else ["consolidated"]
@@ -335,6 +396,7 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extra
         if output_dir.is_relative_to((archive / protected).resolve()):
             raise ValueError("output directory overlaps protected source/approved state")
     extractions, trees = [], []
+    official_requisites = {}
     pdf_extractions = {}
     if extraction_index is not None:
         from .ocr_runtime import load_extractions
@@ -377,6 +439,7 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extra
             extraction = pdf_extractions[asset["sha256"]]
             extractions.append(extraction)
             trees.append(build_owner_tree(extraction, asset["declared_identity"], asset["role"]))
+            official_requisites[asset["sha256"]] = asset["official_requisites"]
             blockers.add("ocr_review_required")
             continue
         if asset["metadata"]["media_type"] != "text/plain; charset=utf-8":
@@ -394,8 +457,11 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extra
         trees.append(_tree(asset, text, extraction["extraction_id"]))
     if any(tree["unresolved_blocks"] or tree.get("unresolved_regions") or tree.get("structural_issues") for tree in trees):
         blockers.add("unresolved_structure")
-    if any(tree["identity_decision"]["status"] == "unresolved" for tree in trees):
+    if any(tree["identity_decision"]["status"] == "unresolved" for tree in trees
+           if tree["source_asset_sha256"] not in official_requisites):
         blockers.add("identity_unresolved")
+    if any(record["status"] != "official_card" for record in official_requisites.values()):
+        blockers.add("official_requisites_unavailable")
     content = {"trees": trees, "target_date": target_date, "kind": manifest["kind"]}
     draft = {
         "schema_version": "edition-draft/1", "input_hash": manifest["manifest_hash"],
@@ -404,6 +470,8 @@ def compile_input(input_path: Path, target_date: str, output_dir: Path, *, extra
         "content_hash": content_hash(content), "content": content, "blockers": sorted(blockers),
         "admission_status": manifest["admission_status"], "legal_admission": "not_requested",
     }
+    if official_requisites:
+        draft["official_requisites"] = official_requisites
     draft["draft_id"] = content_hash(draft)
     draft_dir = output_dir / "drafts" / draft["draft_id"]
     files = {output_dir / "extractions" / f"{item['extraction_id']}.json": json_bytes(item) for item in extractions}
@@ -498,6 +566,19 @@ def _report(manifest: dict, draft: dict) -> str:
             + escape(region["original_html"]) + "</pre></details>"
             for region in tree.get("unresolved_regions", []))
         audit_html = ""
+        requisites_html = ""
+        if requisites := draft.get("official_requisites", {}).get(asset["sha256"]):
+            labels = {"document_date": "Дата", "document_number": "Номер", "document_type": "Вид документа",
+                      "signatory_authorities": "Издатель"}
+            values = requisites.get("values", {})
+            items = "".join("<li>" + label + ": " + escape(
+                ", ".join(value) if isinstance(value, list) else value or "Не указано") + "</li>"
+                for key, label in labels.items() for value in [values.get(key)])
+            status = "Из официальной карточки" if requisites["status"] == "official_card" else "Недостаточно сведений официальной карточки"
+            requisites_html = ("<h3>Реквизиты документа</h3><p>" + status
+                + ". Сверка с распознанным текстом не требуется.</p><ul>" + items + "</ul>")
+            if requisites.get("source_url"):
+                requisites_html += '<p><a href="' + escape(requisites["source_url"], quote=True) + '">Официальная карточка</a></p>'
         if tree.get('source_warnings'):
             messages = ''.join('<li>' + escape(w['message']) + '</li>' for w in tree['source_warnings'])
             audit_html = '<h3>Особенности нумерации исходника</h3><ul>' + messages + '</ul>'
@@ -517,7 +598,7 @@ def _report(manifest: dict, draft: dict) -> str:
         sections.append(f"<h2>{escape(tree['namespace'])}</h2><p>SHA-256: {asset['sha256']}</p>"
                         f"<p>Source: {escape(asset['source_url'])}; evidence: {escape(asset['evidence']['locator'])}</p>"
                         f"<pre>{escape(json.dumps(tree['accounting'], sort_keys=True, indent=2))}</pre>"
-                        + audit_html + "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
+                        + requisites_html + audit_html + "<table><tr><th>Address / disposition</th><th>Raw locator</th><th>Text</th></tr>"
                         + "".join(document_rows) + "</table>" + exclusions + regions)
     blockers = "".join("<li>" + escape(item) + "</li>" for item in draft["blockers"])
     return ("<!doctype html><html lang='en'><meta charset='utf-8'><title>Legal RAG diagnostic draft</title>"

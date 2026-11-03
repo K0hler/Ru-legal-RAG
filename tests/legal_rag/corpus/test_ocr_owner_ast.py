@@ -35,7 +35,8 @@ def test_compile_pdf_uses_the_maintained_owner_parser_and_keeps_blockers(tmp_pat
     tree = json.loads(Path(result["draft"]).read_bytes())["content"]["trees"][0]
     assert tree["parser_version"].startswith("ocr-owner-ast/")
     assert tree["identity_decision"]["status"] == "unresolved"
-    assert tree["nodes"] and "identity_unresolved" in result["blockers"]
+    assert tree["nodes"] and "official_requisites_unavailable" in result["blockers"]
+    assert "identity_unresolved" not in result["blockers"]
     assert tree["edition_admission"] is False
     assert "pdf_structure_unqualified" in result["blockers"] or "pdf_structure_unqualified" in tree["structural_issues"]
     assert "ocr_review_required" in result["blockers"]

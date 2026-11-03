@@ -15,7 +15,9 @@ This accepts the engineering deliverable with official-tree controls; the earlie
 [batch24 scan result](milestones/m1/04a/M1_04A_BATCH24_CHECK_2026-11-01.md), strict1/5,
 is retained, and independent PDF/OCR-format qualification under M1 G13 remains deferred.
 PDF structure/admission blockers remain; M1 itself is open.
-[Requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) remain a separate task.
+[Requisites and empty-title loading](plans/2026-10-31-npa-requisites-task.md) use the
+3 November owner decision: take PDF requisites from the bound official card;
+mandatory OCR comparison is removed. See the [result](milestones/m1/M1_NPA_REQUISITES_2026-11-03.md).
 
 | Folder | Contents |
 |---|---|
@@ -101,7 +103,9 @@ Historical plans and experiment results below retain their dated status; the clo
 - [Baseline fixes, 1 November](milestones/m1/04a/M1_04A_BASELINE_FIXES_2026-11-01.md) — all 7 table-owner differences, 4 continuation misses and 9 annex-number omissions fixed against frozen full controls; 237 development owner results retained, two identity refusals and Task 3 remain open.
 - [Earlier closure checks, 1 November](milestones/m1/04a/M1_04A_CLOSURE_CHECKS_2026-11-01.md) — independent validator, repeated full 12-document compilation and partial legacy-control comparison, before full baseline annotation.
 
-- [Deferred requisites task](plans/2026-10-31-npa-requisites-task.md) — separate follow-up after M1-04A, including the recorded empty-title loader fix; not started.
+- [Requisites and empty-title task](plans/2026-10-31-npa-requisites-task.md) — empty-title loader fix and the owner-approved official-card policy.
+- [Official-card implementation plan](plans/2026-11-03-official-card-requisites.md) — PDF/card/extraction binding, optional titles and independent OCR diagnostics.
+- [Requisites result, 3 November](milestones/m1/M1_NPA_REQUISITES_2026-11-03.md) — bounded measurements, implementation and checks; original archives/results retained.
 
 - [Source requisites metadata research](milestones/m1/04a/M1_04A_REQUISITES_METADATA_2026-10-31.md) — empty titles versus absent cards, bounded counts, live examples and current adapter rejection; identity behavior remains unchanged.
 

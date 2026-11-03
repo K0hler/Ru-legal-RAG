@@ -1,5 +1,19 @@
 # Corpus compilation module
 
+- Owner decision on 3 November 2026: PDF requisites come from the archived official
+  card, without mandatory OCR identity agreement. `compiler._publication_requisites`
+  uses the card SHA in that PDF asset's acquisition capture, validates raw bytes,
+  source-item membership, IDs and request/response URLs, and records date/full
+  number/type/authorities. Never substitute an unrelated latest-card pointer.
+  A title is optional. PDF drafts/reports expose `official_requisites`; missing
+  evidence/fields add `official_requisites_unavailable`, while the old OCR
+  `identity_decision` stays diagnostic and adds no PDF `identity_unresolved` blocker.
+  Native identity behavior, owner trees, source/permission/OCR/temporal/legal
+  admission guards remain unchanged. Card metadata is not legal applicability.
+  The retained 229 PDF replay has 229 complete card records, 229 unchanged trees and
+  repeats, 159 removed OCR identity blockers and 2064 unchanged source files;
+  every other blocker is identical. Evidence: `data/requisites-20261103/card-policy-01/`.
+
 - Owner acceptance on2November2026 closes the M1-04A engineering task on the250
   corrected official-tree acts and final ten-document control. This documentation
   decision changes no parser or qualification behavior: keep
@@ -111,8 +125,8 @@
   Since the owner decision of 01.11.2026, `ocr-owner-ast/3` builds legally
   unverified structure independently of OCR identity; only genuinely unresolved
   owners/notes suppress nodes. Requisites are outside M1-04A acceptance. Keep
-  the identity decision accurate and the compiler's separate identity admission
-  blocker; never relax source/permission checks. Repeated occurrence
+  the identity diagnostic accurate; the 3 November 2026 card policy above supersedes
+  the PDF OCR identity blocker. Never relax source/permission checks. Repeated occurrence
   paths and missing marker evidence stay structural issues. Every PDF
   retains `pdf_structure_unqualified`; this connection does not pass Task 3.
   HTML rows use physical `block_id` order for these trees, since multi-region
