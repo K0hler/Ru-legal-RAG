@@ -15,6 +15,7 @@ Read the nearest `AGENTS.md` before changing files. A deeper file overrides this
 
 ## Project-wide direction
 
+- Owner decision 04.11.2026: use the integrated `legal-rag-dotsmocr` provider for new OCR runs. OCR-Lab remains available for historical replay. OCR output equality is not a prerequisite for this integration switch.
 - The current implementation boundary is the M0-M2 vertical slice in [`docs/overview/LEGAL_RAG_MASTER_PLAN_2026.md`](docs/overview/LEGAL_RAG_MASTER_PLAN_2026.md).
 - Treat [`docs/policies/LEGAL_SOURCES_POLICY.md`](docs/policies/LEGAL_SOURCES_POLICY.md) as the source-admission policy.
 - Keep implemented behavior, target architecture, research findings, and hypotheses explicitly separate.

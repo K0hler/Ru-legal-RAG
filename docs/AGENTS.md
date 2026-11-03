@@ -5,13 +5,14 @@
   both and the current four-worker / 0.55 GPU profile when qualifying the new
   runtime. The vLLM base lacks PyMuPDF and ONNX Runtime; TeleOCR installed both.
   A CPU-only model processor load is not a GPU inference or qualification.
-  The separate own-provider example is experimental; it does not switch the
-  default before qualification and owner acceptance. Retained failed first
+  Owner decision 04.11.2026 switches the default to `legal-rag-dotsmocr`.
+  OCR quality comparisons do not gate the integration switch. Retained failed first
   orientation outputs require their saved pre-confidence normalizer for replay.
   The first qualification and its failure, table differences and page-59
   rotation control are recorded in `milestones/m1/04b/M1_04B_QUALIFICATION_2026-11-03.md`.
   A full repeat on the repaired client/image again failed Minfin page 26 and
-  revealed a table-linkage regression. Qualification and owner decision are open.
+  revealed a table-linkage regression. Keep these historical findings; the owner
+  authorized the integration switch without further OCR runs.
 
 - Owner acceptance on 3 November 2026 closes the page-orientation task recorded in
   `milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md`; retain its documented
@@ -1324,8 +1325,8 @@
   a minimal dots.mocr runtime inside Legal RAG (own image without the TeleOCR base,
   one service, dots.mocr-only client, verified weights) with an unchanged output
   contract and qualification against the OCR-Lab runtime. Tasks 0–5 are
-  implemented; Task 6 is under qualification and Task 7 requires the owner's
-  decision. Owner decisions 23.10.2026: weights inside the project
+  implemented; historical Task 6 findings are retained, and the owner authorized
+  Task 7's integration switch on 04.11.2026. Owner decisions 23.10.2026: weights inside the project
   (`data/ocr/dotsmocr/model/`, ignored, hash-verified), code in `ocr/dotsmocr/`,
   M1-04B is a slice of the M1 plan (gates unchanged, G04 evidence), start only
   after M1-04A is complete; until then new OCR keeps the OCR-Lab runtime.

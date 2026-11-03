@@ -62,8 +62,11 @@ def summarize(extraction_raw: dict, replay_raw: dict, ocr_root: Path = OCR, tabl
         }
         if table_stats:
             acts[slug].update(_table_stats(ext))
-    return {"schema": "m1-04a-batch-ocr-summary/1", "health_wait_seconds": extraction_raw["health_wait_seconds"],
-            "engine": "dotsmocr", "acts": acts}
+    summary = {"schema": "m1-04a-batch-ocr-summary/1", "health_wait_seconds": extraction_raw["health_wait_seconds"],
+               "engine": "dotsmocr", "acts": acts}
+    if "ocr_provider" in extraction_raw:
+        summary["ocr_provider"] = extraction_raw["ocr_provider"]
+    return summary
 
 
 def main(argv=None) -> None:

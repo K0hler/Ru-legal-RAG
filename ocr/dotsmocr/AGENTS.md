@@ -1,7 +1,7 @@
 # dots.mocr runtime instructions
 
-- The service is under construction for M1-04B. It is not the default provider
-  until its qualification is reviewed and accepted by the owner.
+- Owner decision 04.11.2026 makes this service the default OCR provider.
+  The integration switch does not depend on identical OCR outputs.
 - See `../../docs/milestones/m1/04b/M1_04B_RUNTIME_CONTRACT.md` for the current
   OCR profile, evidence contract, dependency inventory and inherited limits.
 - Keep the model mount read-only and use only this runtime's input and results.
@@ -30,5 +30,5 @@
 - The 4 November qualification has not passed: with page orientation enabled,
   SanPiN page 59 changes a weekly interval and Minfin page 26 loops; a separate
   without-orientation control finishes the latter but does not validate its empty
-  table. Keep both orientations' evidence; do not change the accepted profile or
-  switch the default without the owner's decision on the qualification report.
+  table. Keep both orientations' evidence. The owner subsequently authorized
+  switching the integration without further OCR quality runs.

@@ -1,5 +1,8 @@
 # Local data instructions
 
+- Owner decision 04.11.2026 switches all four `m1/ocr*.local.json` profiles to
+  `legal-rag-dotsmocr` and the project root, preserving their OCR settings.
+  Keep old experiment configurations and results unchanged.
 - `m1/m1-04a/experiments/20261103-ocr-fix-orientation-01/` retains the failed
   first automatic-orientation control (false 180 on sparse `pp-1455-2022` p4).
   `...-02/` checks the added 0.85 confidence gate, separate from the manual probe.

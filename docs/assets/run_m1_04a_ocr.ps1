@@ -1,4 +1,4 @@
-# Runs dots.mocr (OCR-Lab, Docker) on the M1-04A check-pool batch and writes
+# Runs dots.mocr (project runtime, Docker) on the M1-04A check-pool batch and writes
 # immutable outputs under data/m1/m1-04a/ocr/<slug>/run-01[/logical-text] plus
 # a saved-results replay in run-01-replay. Run from the repository root:
 #   powershell -File docs/assets/run_m1_04a_ocr.ps1
@@ -30,6 +30,15 @@ if (-not $ReplayOnly) {
     if (-not (Test-Path $OcrConfig)) { throw "OCR config $OcrConfig not found" }
     $summary.ocr_config = $OcrConfig
     $summary.ocr_config_sha256 = (Get-FileHash -Algorithm SHA256 $OcrConfig).Hash.ToLower()
+    $runtimeConfig = Get-Content -Raw -Encoding utf8 $OcrConfig | ConvertFrom-Json
+    $summary.ocr_provider = $runtimeConfig.provider
+    if ($runtimeConfig.provider -eq "legal-rag-dotsmocr") {
+        $composeArgs = @("-f", (Join-Path $runtimeConfig.project_root "ocr/dotsmocr/compose.yaml"))
+        $container = "legal-rag-dotsmocr"
+    } elseif ($runtimeConfig.provider -eq "ocr-lab") {
+        $composeArgs = @("--project-directory", $LabRoot)
+        $container = "ocr-lab-dotsmocr"
+    } else { throw "Unsupported OCR provider: $($runtimeConfig.provider)" }
 }
 function Save-Json($value, $path) {
     [IO.File]::WriteAllText((Join-Path (Get-Location) $path), ($value | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding($false)))
@@ -39,19 +48,19 @@ if (-not $ReplayOnly) {
 $gpu = (nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits).Trim() -split ",\s*"
 $usedMiB = [int]$gpu[0]; $totalMiB = [int]$gpu[1]
 Write-Host "GPU memory used: $usedMiB / $totalMiB MiB"
-$others = docker ps --filter "name=ocr-lab-" --format "{{.Names}}" | Where-Object { $_ -ne "ocr-lab-dotsmocr" }
-if ($others) { throw "Other OCR-Lab containers hold the GPU: $others" }
+$others = docker ps --format "{{.Names}}" | Where-Object { $_ -match "^(ocr-lab-|legal-rag-dotsmocr$)" -and $_ -ne $container }
+if ($others) { throw "Other OCR containers hold the GPU: $others" }
 # A running dots.mocr service already owns its GPU reservation.
-$serviceRunning = @(docker ps --filter "name=^ocr-lab-dotsmocr$" --format "{{.Names}}") -contains "ocr-lab-dotsmocr"
+$serviceRunning = @(docker ps --filter "name=^${container}$" --format "{{.Names}}") -contains $container
 if (-not $serviceRunning -and $usedMiB -gt 0.5 * $totalMiB) { throw "GPU is busy: $usedMiB MiB in use" }
 
 # 2. Cold loading through the Windows mount can exceed 10 minutes; wait before extraction.
 $clock = [Diagnostics.Stopwatch]::StartNew()
-docker compose --project-directory $LabRoot up -d dotsmocr
+docker compose @composeArgs up -d dotsmocr
 if ($LASTEXITCODE) { throw "docker compose up failed" }
 $healthy = $false
 while ($clock.Elapsed.TotalSeconds -lt $HealthTimeoutSeconds) {
-    $state = docker inspect --format "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}" ocr-lab-dotsmocr
+    $state = docker inspect --format "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}" $container
     if ($state.Trim() -eq "running healthy") { $healthy = $true; break }
     Start-Sleep -Seconds 10
 }
@@ -85,7 +94,7 @@ try {
         }
     }
 } finally {
-    docker compose --project-directory $LabRoot stop dotsmocr
+    docker compose @composeArgs stop dotsmocr
 }
 
 }
