@@ -27,3 +27,8 @@
   (`unparsed_sse_base64`) with `client_error`; never accept a response with that
   error as finished. Picture failures remain recorded per attempt and, under
   `retain_unresolved`, produce an explicit unresolved region rather than text.
+- The 4 November qualification has not passed: with page orientation enabled,
+  SanPiN page 59 changes a weekly interval and Minfin page 26 loops; a separate
+  without-orientation control finishes the latter but does not validate its empty
+  table. Keep both orientations' evidence; do not change the accepted profile or
+  switch the default without the owner's decision on the qualification report.

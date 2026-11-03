@@ -89,7 +89,7 @@ development failures, experiments and superseded approaches.
 - [Region probes](milestones/m1/04/M1_04_REGION_PROBES_2026-10-16.md) — bounded diagnostic experiments.
 - [Dense tables and rotated pages](milestones/m1/04/M1_04_DENSE_TABLES_2026-10-23.md) — batch-5 OCR failures, per-table grid degradation and the opt-in rotation retry.
 - [Automatic page orientation](milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md) — packaged PaddleClas classifier before dots.mocr, confidence gate and retained control evidence; [implementation plan](plans/2026-11-03-page-orientation.md).
-- [M1-04B plan](plans/2026-10-23-m1-04b-ocr-runtime.md) — planned slice of the M1 plan, starts after M1-04A is complete: own minimal dots.mocr runtime in `ocr/dotsmocr/` with weights in ignored `data/ocr/dotsmocr/model/`, instead of the OCR-Lab test bench; only the safety patch (Task 0) is done.
+- [M1-04B plan](plans/2026-10-23-m1-04b-ocr-runtime.md) — project-owned dots.mocr runtime and experimental provider; [qualification report](milestones/m1/04b/M1_04B_QUALIFICATION_2026-11-03.md). Two runs found unresolved failures and a table-linkage regression, so qualification and the owner's decision remain open and OCR-Lab stays the default.
 
 ### M1-04A: universal OCR structure parser
 

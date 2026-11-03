@@ -8,6 +8,10 @@
   The separate own-provider example is experimental; it does not switch the
   default before qualification and owner acceptance. Retained failed first
   orientation outputs require their saved pre-confidence normalizer for replay.
+  The first qualification and its failure, table differences and page-59
+  rotation control are recorded in `milestones/m1/04b/M1_04B_QUALIFICATION_2026-11-03.md`.
+  A full repeat on the repaired client/image again failed Minfin page 26 and
+  revealed a table-linkage regression. Qualification and owner decision are open.
 
 - Owner acceptance on 3 November 2026 closes the page-orientation task recorded in
   `milestones/m1/04a/M1_04A_OCR_PAGE_ORIENTATION_2026-11-03.md`; retain its documented
@@ -1319,8 +1323,9 @@
 - `plans/2026-10-23-m1-04b-ocr-runtime.md` (owner request 23.10.2026) plans M1-04B:
   a minimal dots.mocr runtime inside Legal RAG (own image without the TeleOCR base,
   one service, dots.mocr-only client, verified weights) with an unchanged output
-  contract and qualification against the OCR-Lab runtime. Only Task 0 (the patch)
-  is done. Owner decisions 23.10.2026: weights inside the project
+  contract and qualification against the OCR-Lab runtime. Tasks 0–5 are
+  implemented; Task 6 is under qualification and Task 7 requires the owner's
+  decision. Owner decisions 23.10.2026: weights inside the project
   (`data/ocr/dotsmocr/model/`, ignored, hash-verified), code in `ocr/dotsmocr/`,
   M1-04B is a slice of the M1 plan (gates unchanged, G04 evidence), start only
   after M1-04A is complete; until then new OCR keeps the OCR-Lab runtime.
