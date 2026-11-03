@@ -8,6 +8,11 @@
   Feed views normalize null/absent names to empty strings for existing selectors;
   retain exact raw feed bytes and reject non-string values. Conflicting act identity
   must preserve all previously successful raw/assets/items.
+  `test_publication_pdf_transport.py` drives real urllib/http.client framing
+  through authored fake sockets, without network access. The peer stalls on
+  Connection: close; test complete acquisition/repeat, HTTP/timeout/truncation
+  and blocked redirects while preserving successful archive state. Ordinary
+  metadata replay stubs both frozen `_get` and the pool's `_get_pdf` boundary.
 
 - `test_structure_bundle.py` replays both banks with authored sidecars and the
   unchanged frozen fixtures. Check exact bytes, same-edition selectors, repeat

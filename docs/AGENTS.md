@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- Section 5 of `milestones/m1/M1_NPA_REQUISITES_2026-11-03.md` records the later
+  PDF transport fix: Connection: close alone reproduces partial-body timeout
+  even in curl; pool/4 uses a PDF-only Python keep-alive handler. Main-loader
+  acquisition/repeat succeeds without curl or monkeypatch; frozen M0 stays intact.
+  Earlier curl workarounds and timeout reports remain historical evidence.
+
 - Owner decision on 3 November 2026 supersedes the mandatory OCR requisites-comparison
   plan: date/full number/type/issuer come from the official card, with card/PDF/OCR
   linkage retained. `plans/2026-11-03-official-card-requisites.md` implements the

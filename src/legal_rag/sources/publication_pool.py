@@ -6,10 +6,29 @@ each item are checked by the frozen validator, with item failures reported separ
 
 from datetime import datetime
 import hashlib
+from http.client import HTTPConnection, IncompleteRead
 import json
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlsplit
+from urllib.request import HTTPHandler, Request, build_opener
 
-from .publication_pravo import PublicationPravoConnector, PublicationPravoFailure
+from .publication_pravo import PublicationPravoConnector, PublicationPravoFailure, _HttpOnlyRedirectHandler
+
+
+class _PdfConnection(HTTPConnection):
+    def putheader(self, header, *values):
+        # The portal stalls mid-PDF on urllib's forced Connection: close.
+        if header.lower() == "connection":
+            values = ("keep-alive",)
+        super().putheader(header, *values)
+
+
+class _PdfHandler(HTTPHandler):
+    def http_open(self, request):
+        return self.do_open(_PdfConnection, request)
+
+
+_PDF_OPENER = build_opener(_PdfHandler(), _HttpOnlyRedirectHandler())
 
 
 class _FeedReplay(PublicationPravoConnector):
@@ -22,7 +41,7 @@ class _FeedReplay(PublicationPravoConnector):
 
 
 class PublicationPoolConnector(PublicationPravoConnector):
-    adapter_version = "publication-pravo-pool/3"
+    adapter_version = "publication-pravo-pool/4"
 
     def fetch_feed(self, publication_date, page=1):
         self._rejected = []
@@ -42,8 +61,8 @@ class PublicationPoolConnector(PublicationPravoConnector):
         return fetched
 
     def _get(self, url, accept):
-        raw, transport = super()._get(url, accept)
         route = urlsplit(url).path
+        raw, transport = self._get_pdf(url, accept) if route == "/File/Pdf" else super()._get(url, accept)
         if route == "/File/Pdf":
             self._asset_bytes = raw
             if raw.startswith(b"%PDF-"):
@@ -97,4 +116,39 @@ class PublicationPoolConnector(PublicationPravoConnector):
                 seen.add(item["eoNumber"])
                 valid.append(item)
             return json.dumps(dict(value, items=valid), ensure_ascii=False).encode(), transport
+        return raw, transport
+
+    def _get_pdf(self, url, accept):
+        # Frozen v1 transport cannot accept a different opener.
+        request = Request(url, headers={"Accept": accept, "User-Agent": "LegalRAG-M0/0.2"})
+        self._meter.before_request()
+        try:
+            with _PDF_OPENER.open(request, timeout=self.timeout) as response:
+                raw = response.read()
+                self._meter.record_response(raw)
+                transport = {"http_status": response.status, "request_url": url,
+                             "response_url": response.geturl(),
+                             "headers": {name.lower(): value for name, value in response.headers.items()
+                                         if name.lower() in {"content-type", "content-length",
+                                            "content-disposition", "etag", "last-modified"}}}
+        except HTTPError as error:
+            status, reason = error.code, error.reason
+            error.close()
+            raise PublicationPravoFailure(
+                "http_error", f"HTTP {status}: {reason}", retryable=status == 429 or status >= 500,
+                http_status=status, source_url=url,
+            ) from None
+        except TimeoutError:
+            raise PublicationPravoFailure("timeout", "source request timed out",
+                                          retryable=True, source_url=url) from None
+        except URLError as error:
+            timeout = isinstance(error.reason, TimeoutError)
+            raise PublicationPravoFailure(
+                "timeout" if timeout else "network_error",
+                "source request timed out" if timeout else f"source request failed: {error.reason}",
+                retryable=True, source_url=url,
+            ) from None
+        except IncompleteRead:
+            raise PublicationPravoFailure("network_error", "PDF response ended before the declared length",
+                                          retryable=True, source_url=url) from None
         return raw, transport

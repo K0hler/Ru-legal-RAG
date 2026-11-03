@@ -1,6 +1,6 @@
 # Source acquisition module
 
-- `publication_pool.py` is opt-in `publication-pravo-pool/3` for future acquisitions.
+- `publication_pool.py` is opt-in `publication-pravo-pool/4` for future acquisitions.
   It reuses frozen v1 validators through temporary metadata views:
   accept empty, null or absent `name` with otherwise valid metadata, with a `complexName`
   warning; archive the exact original card and its hash. Reject feed items
@@ -8,6 +8,13 @@
   `File/Pdf` may return ZIP (observed for December 2011); report the format and
   headers without treating it as PDF or unpacking it. Frozen v1 stays unchanged.
   Whitespace-only names and non-string, non-null values remain invalid.
+  PDF requests use a dedicated urllib HTTP handler with Connection: keep-alive:
+  the portal stalls mid-response with urllib's forced Connection: close, also
+  reproduced by adding that header to curl. Each response is still closed;
+  no shared persistent socket or curl dependency is introduced. `_get_pdf`
+  retains rate metering, error reports and the frozen same-HTTP-origin redirect
+  handler; incomplete Content-Length responses fail without persisting bytes.
+  Card/feed transport and frozen v1 remain unchanged.
 
 - `structure_bundle.py` is an opt-in `official-structure-bundle/2` acquisition
   wrapper. It reuses frozen adapters and lifecycle without changing their files

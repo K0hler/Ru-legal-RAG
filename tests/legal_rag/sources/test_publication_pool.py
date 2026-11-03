@@ -46,6 +46,7 @@ def replay(monkeypatch, responses):
                       "headers": {"content-type": accept}}
 
     monkeypatch.setattr(PublicationPravoConnector, "_get", get)
+    monkeypatch.setattr(Connector, "_get_pdf", get)
 
 
 @pytest.mark.parametrize("name", ["", None, "missing"])
