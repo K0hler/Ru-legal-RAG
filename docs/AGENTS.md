@@ -6,6 +6,11 @@
   Real No.1165-r repeats new/unchanged only with a disclosed one-run curl transport
   injection after native Python PDF timeouts. Keep that limit separate from
   metadata correctness and from future OCR/requisites/manual-review measurements.
+  Its subsequent offline diagnostic binds1606unchanged inputs for229scan-pool
+  documents: all have cards/four fields;17empty titles. Existing OCR profile:
+  75four-field matches,7unresolved postanovlenie cases,147other-type coverage gaps.
+  These are research sidecars, not new compiler statuses or actual human workload.
+  Keep the next extraction work and all-source/manual-load acceptance open.
 
 - M1-04A is closed by owner acceptance on2November2026; the current record is
   `milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md`. Acceptance covers250corrected
