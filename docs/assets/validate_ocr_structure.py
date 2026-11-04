@@ -23,7 +23,7 @@ def unique(rows, key, label):
     return indexed
 
 
-def validate_source(extraction, tree):
+def _validate_source_v2(extraction, tree):
     """Check complete physical/text accounting independently of inferred owners."""
     require(tree["schema_version"] == "legal-ast/2", "unsupported tree schema")
     require(tree["source_asset_sha256"] == extraction["source_asset_sha256"]
@@ -109,6 +109,161 @@ def validate_source(extraction, tree):
         accounting[label + "_text_nodes"] = sum(len(e["text_node_ids"]) for e in group)
         accounting[label + "_source_chars"] = sum(len(e["original_text"]) for e in group)
     require(tree["accounting"] == accounting, "incorrect accounting receipt")
+    return regions, tokens
+
+
+def validate_source(extraction, tree):
+    """Read historical /2 proofs or independently check /3 source intervals."""
+    if tree.get("schema_version") == "legal-ast/2":
+        return _validate_source_v2(extraction, tree)
+    require(tree.get("schema_version") == "legal-ast/3", "unsupported tree schema")
+    require(tree["source_asset_sha256"] == extraction["source_asset_sha256"]
+            and tree["extraction_id"] == extraction["extraction_id"], "wrong source identity")
+    require(tree["document_tree"] == extraction["document_tree"], "changed physical document tree")
+    tokens = unique(extraction["text_nodes"], "text_node_id", "source token")
+    regions = unique([{**r, "page": p["page"], "index": i} for p in extraction["pages"]
+                      for i, r in enumerate(p["regions"])], "region_id", "source region")
+    order = {rid: i for i, rid in enumerate(regions)}
+    region_tokens, token_region = defaultdict(list), {}
+    for block in extraction["blocks"]:
+        rid = block["source_region_id"]
+        region_tokens[rid].extend(block["text_node_ids"])
+        for tid in block["text_node_ids"]:
+            require(tid not in token_region, "duplicated source token membership")
+            token_region[tid] = rid
+    coverage, parts = defaultdict(list), defaultdict(list)
+    basis = "concatenated_text_node_raw_text"
+    groups = [tree["nodes"], tree["unresolved_blocks"], tree["excluded_blocks"]]
+    accounting = {"basis": "text_node_raw_text_half_open_intervals", "exactly_once": True,
+                  "total_text_nodes": len(tokens), "total_source_chars": sum(len(t["raw_text"]) for t in tokens.values())}
+    for disposition, group in zip(("parsed", "unresolved", "excluded"), groups, strict=True):
+        starts, group_tokens, chars = [], set(), 0
+        for entry in group:
+            ids = entry.get("source_region_ids", [])
+            if not ids:
+                require(not any(entry.get(k) for k in ("text_node_ids", "text_slices", "original_text", "text", "source_spans")),
+                        "container duplicates source content")
+                continue
+            require(len(set(ids)) == len(ids) and all(r in regions for r in ids), "invalid source regions")
+            require(all(type(t) is int for t in entry["text_node_ids"]), "noninteger source token ID")
+            require(all(set(part) == {"text_node_id", "start", "end"} and all(type(part[k]) is int
+                        for k in ("text_node_id", "start", "end")) for part in entry.get("text_slices", [])),
+                    "source slice IDs and offsets must be exact integers")
+            require([order[r] for r in ids] == sorted(order[r] for r in ids), "changed fragment order")
+            require(type(entry["block_id"]) is int and entry["block_id"] == order[ids[0]] and entry["source_region_id"] == ids[0], "changed source block")
+            fragments = entry["fragments"]
+            require([f["region_id"] for f in fragments] == ids, "changed source fragments")
+            expected_slices, raw_parts = [], []
+            for fragment in fragments:
+                rid = fragment["region_id"]
+                region, tids = regions[rid], region_tokens[rid]
+                start, end = fragment["start"], fragment["end"]
+                length = sum(len(tokens[t]["raw_text"]) for t in tids)
+                require(type(start) is int and type(end) is int and 0 <= start <= end <= length
+                        and (start < end or length == 0), "invalid region interval")
+                require(fragment["offset_basis"] == basis and all(fragment[k] == region[k]
+                        for k in ("page", "index", "category", "bbox")), "changed physical source fragment")
+                local, selected, cursor = [], [], 0
+                for tid in tids:
+                    raw = tokens[tid]["raw_text"]
+                    lo, hi = max(start, cursor), min(end, cursor + len(raw))
+                    empty = not raw and (start < cursor <= end or start == cursor == 0)
+                    if lo < hi or empty:
+                        part = {"text_node_id": tid, "start": lo - cursor, "end": hi - cursor}
+                        selected.append(part)
+                        local.append(raw[part["start"]:part["end"]])
+                    cursor += len(raw)
+                require(all(type(t) is int for t in fragment["text_node_ids"])
+                        and fragment["text_node_ids"] == [s["text_node_id"] for s in selected], "changed fragment tokens")
+                expected_slices.extend(selected)
+                raw_parts.append("".join(local))
+                parts[rid].append({"start": start, "end": end, "address": entry["address"],
+                                   "owner_path": entry["owner_path"], "disposition": disposition,
+                                   "continuation": ids.index(rid) > 0})
+                if region["category"] == "Table":
+                    require(start == 0 and end == length and entry.get("layout_kind") == "table"
+                            and entry["kind"] in {"table", "unresolved_block"}
+                            and entry.get("table_topology") == region["table"]
+                            and entry.get("table_cells") == region["table"]["cells"], "changed source table")
+            require(entry.get("text_slices") == expected_slices
+                    and entry["text_node_ids"] == [p["text_node_id"] for p in expected_slices], "changed source slices")
+            spans = []
+            for part in expected_slices:
+                tid, start, end = part["text_node_id"], part["start"], part["end"]
+                span = dict(tokens[tid]["source_span"])
+                if start != 0 or end != len(tokens[tid]["raw_text"]):
+                    for prefix in ("", "ocr_"):
+                        base = span[prefix + "char_start"]
+                        span[prefix + "char_start"], span[prefix + "char_end"] = base + start, base + end
+                    span["locator"] = re.sub(r":chars:\d+:\d+$", f":chars:{span['ocr_char_start']}:{span['ocr_char_end']}", span["locator"])
+                spans.append(span)
+                coverage[tid].append((start, end))
+                group_tokens.add(tid)
+                chars += end - start
+            joined = " ".join(raw_parts)
+            view = re.sub(r"\s+", " ", " ".join(re.sub(r"^\s*#{1,6}\s+", "", line) for line in joined.splitlines())).strip()
+            require(all(all(type(span[k]) is int for k in ("char_start", "char_end", "ocr_char_start", "ocr_char_end"))
+                        for span in entry["source_spans"]), "source offsets must be exact integers")
+            require(entry["source_span"] is None or all(type(entry["source_span"][k]) is int
+                        for k in ("char_start", "char_end", "ocr_char_start", "ocr_char_end")), "source offsets must be integers")
+            require(entry["original_text"] == "".join(raw_parts) and entry["text"] == view
+                    and entry["source_spans"] == spans and entry["source_span"] == (spans[0] if len(spans) == 1 else None),
+                    "changed source text or locators")
+            require(disposition != "parsed" or entry["kind"] != "unresolved_block", "unresolved kind in parsed nodes")
+            starts.append((entry["block_id"], fragments[0]["start"]))
+        require(starts == sorted(starts), "changed source content order")
+        accounting[disposition + "_text_nodes"], accounting[disposition + "_source_chars"] = len(group_tokens), chars
+    require(set(coverage) == set(tokens), "missing source token coverage")
+    for tid, token in tokens.items():
+        intervals, cursor = sorted(coverage[tid]), 0
+        require(token["raw_text"] or intervals == [(0, 0)], "duplicated empty source token")
+        for start, end in intervals:
+            require(start == cursor and end >= start and (end > start or not token["raw_text"]), "source interval gap or overlap")
+            cursor = end
+        require(cursor == len(token["raw_text"]), "incomplete source token")
+    require(tree["accounting"] == accounting, "incorrect interval accounting receipt")
+    require([b["region_id"] for b in tree["region_bindings"]] == list(regions), "changed physical region coverage")
+    for binding in tree["region_bindings"]:
+        rid = binding["region_id"]
+        fragments = sorted(parts[rid], key=lambda f: (f["start"], f["end"]))
+        require(all(type(binding[k]) is int for k in ("page", "index")), "invalid physical page/index")
+        require(fragments and all(binding[k] == regions[rid][k] for k in ("page", "index")), "changed physical binding")
+        length = sum(len(tokens[t]["raw_text"]) for t in region_tokens[rid])
+        require(length > 0 or len(fragments) == 1, "duplicated empty physical region")
+        cursor = 0
+        for fragment in fragments:
+            require(fragment["start"] == cursor, "source region interval gap, overlap or order")
+            cursor = fragment["end"]
+        require(cursor == sum(len(tokens[t]["raw_text"]) for t in region_tokens[rid]), "incomplete physical source")
+        if len(fragments) > 1:
+            require(all(type(f["start"]) is int and type(f["end"]) is int for f in binding.get("fragments", [])),
+                    "binding interval offsets must be exact integers")
+            require(binding["disposition"] == "partitioned" and binding["owner_path"] is None
+                    and binding["address"] is None and binding["continuation"] is None
+                    and binding["offset_basis"] == basis and binding["fragments"] == fragments, "inconsistent source partition")
+        else:
+            require(all(binding[k] == fragments[0][k] for k in ("address", "owner_path", "disposition", "continuation")), "inconsistent physical binding")
+    nodes = unique(tree["nodes"], "address", "AST address")
+    positions, children = {a: i for i, a in enumerate(nodes)}, defaultdict(list)
+    for node in nodes.values():
+        parent = node["parent_address"]
+        require(parent == tree["namespace"] or parent in nodes and positions[parent] < positions[node["address"]], "invalid parent or node order")
+        children[parent].append(node["address"])
+        if node.get("source_region_ids"):
+            require(parent == tree["namespace"] + "/owner/" + node["owner_path"] and parent in nodes
+                    and not nodes[parent].get("source_region_ids"), "wrong content parent")
+        else:
+            anchors = node["anchor_region_ids"]
+            require(len(set(anchors)) == len(anchors) and all(r in regions for r in anchors), "invalid source anchors")
+            spans = [span for leaf in nodes.values() if leaf.get("source_region_ids") and leaf["owner_path"] == node["owner_path"]
+                     for fragment in leaf["fragments"] if fragment["region_id"] in anchors
+                     for part, span in zip(leaf["text_slices"], leaf["source_spans"], strict=True)
+                     if token_region[part["text_node_id"]] == fragment["region_id"]]
+            require(all(all(type(span[k]) is int for k in ("char_start", "char_end", "ocr_char_start", "ocr_char_end"))
+                        for span in node["anchor_source_spans"])
+                    and node["anchor_source_spans"] == spans, "changed source anchor locators")
+    for node in nodes.values():
+        require(node["children"] == children[node["address"]], "invalid children order")
     return regions, tokens
 
 

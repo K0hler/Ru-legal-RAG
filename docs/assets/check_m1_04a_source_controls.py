@@ -38,7 +38,7 @@ def validate_controls(extraction, tree, packet, controls, *, allow_source_warnin
 
 
 def verify_annotation(packet, controls, *, allow_source_warnings=False):
-    require(controls["schema_version"] == "m1-04a-independent-source-controls/1", "wrong annotation schema")
+    require(controls["schema_version"] in {"m1-04a-independent-source-controls/1", "m1-04a-independent-source-controls/2"}, "wrong annotation schema")
     require(all(controls[k] == packet[k] for k in ("source_asset_sha256", "extraction_id", "assigned_pages")),
             "annotation source/pages mismatch")
     require(controls["independence"]["candidate_outputs_used"] is False
@@ -49,8 +49,11 @@ def verify_annotation(packet, controls, *, allow_source_warnings=False):
     require(list(source) == list(actual), "incomplete/unordered annotation coverage")
     for key, row in actual.items():
         status = row["status"]
-        require(status in {"evaluated", "picture", "noise", "ambiguous"}, "unknown annotation status")
-        require(isinstance(row["continuation"], bool), "continuation must be boolean")
+        require(status in {"evaluated", "picture", "noise", "ambiguous", "partitioned"}, "unknown annotation status")
+        require(isinstance(row["continuation"], bool) or status == "partitioned" and row["continuation"] is None,
+                "continuation must be boolean (or null for partitions)")
+        if status == "partitioned":
+            require(controls["schema_version"].endswith("/2") and source[key]["category"] not in {"Table", "Picture"}, "partition requires /2 text controls")
         require((source[key]["category"] == "Picture") == (status == "picture"), "incorrect picture exclusion")
         if status == "evaluated":
             require(isinstance(row["owner"], str) and bool(row["owner"]), "missing expected owner")
@@ -117,6 +120,56 @@ def verify_annotation(packet, controls, *, allow_source_warnings=False):
                         for unit in controls["units"]), "invalid independently anchored owner occurrence")
 
 
+def verify_source_intervals(extraction, packet, controls):
+    """Validate source-authored projections/ranges before comparing candidate owners."""
+    source = {r["key"]: r for r in packet["regions"]}
+    rows = {r["key"]: r for r in controls["regions"]}
+    tokens = {t["text_node_id"]: t for t in extraction["text_nodes"]}
+    grouped = defaultdict(list)
+    projections = controls.get("region_text_projections", {})
+    for span in controls.get("region_owner_spans", []):
+        require(controls["schema_version"].endswith("/2"), "source intervals require versioned /2 controls")
+        key = span["key"]
+        require(key in source and key in projections, "source span lacks explicit raw-token projection")
+        rid = source[key]["region_id"]
+        tids = [tid for block in extraction["blocks"] if block["source_region_id"] == rid for tid in block["text_node_ids"]]
+        raw = "".join(tokens[t]["raw_text"] for t in tids)
+        require(all(type(t) is int for t in projections[key]["text_node_ids"]), "projection token IDs must be integers")
+        require(projections[key] == {"offset_basis": "concatenated_text_node_raw_text", "text_node_ids": tids, "raw_text": raw},
+                "changed source interval projection")
+        start, end = span["start"], span["end"]
+        require(type(start) is int and type(end) is int and 0 <= start < end <= len(raw)
+                and span["offset_basis"] == "concatenated_text_node_raw_text" and span["text"] == raw[start:end],
+                "invalid source owner interval or text")
+        require(isinstance(span["owner"], str) and bool(span["owner"]) and span["disposition"] == "parsed"
+                and isinstance(span["continuation"], bool), "invalid source interval owner")
+        grouped[key].append(span)
+    require(set(projections) == set(grouped), "unused source projection")
+    for key, row in rows.items():
+        if row["status"] != "partitioned":
+            continue
+        spans, cursor = grouped[key], 0
+        require(len(spans) > 1, "incomplete partition owner controls")
+        for span in spans:
+            require(span["start"] == cursor, "source owner partition gap/overlap/order")
+            cursor = span["end"]
+        require(cursor == len(projections[key]["raw_text"]), "incomplete source owner partition")
+        for unit in controls["units"]:
+            if unit["start_key"] == key:
+                require("start_text_offset" in unit and "start_text_quote" in unit, "partition unit needs precise source marker")
+    for unit in controls["units"]:
+        if "start_text_offset" in unit or "start_text_quote" in unit:
+            require("start_text_offset" in unit and "start_text_quote" in unit, "incomplete source marker anchor")
+            key, offset, quote = unit["start_key"], unit["start_text_offset"], unit["start_text_quote"]
+            require(key in source and type(offset) is int and offset >= 0 and isinstance(quote, str) and bool(quote), "invalid source marker anchor")
+            rid = source[key]["region_id"]
+            raw = "".join(tokens[tid]["raw_text"] for block in extraction["blocks"] if block["source_region_id"] == rid for tid in block["text_node_ids"])
+            require(raw[offset:].startswith(quote), "source marker quote/offset mismatch")
+            if unit["printed_number"] is not None:
+                require(re.match(re.escape(unit["printed_number"]) + r"[.)]\s", quote) is not None, "source anchor does not start at printed marker")
+    return grouped
+
+
 def source_warning_errors(tree, packet, controls):
     """Bind each accepted uncertainty to a visible warning and the actual affected owners."""
     source = {row["key"]: row["region_id"] for row in packet["regions"]}
@@ -162,6 +215,7 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
             and packet["assigned_pages"] == [p["page"] for p in extraction["pages"]], "packet must cover the full actual extraction")
     verify_annotation(packet, controls, allow_source_warnings=allow_source_warnings)
     validate_source(extraction, tree)
+    source_spans = verify_source_intervals(extraction, packet, controls)
     gold = {r["key"]: {"owners": [r["owner"]]} for r in controls["regions"] if r["status"] == "evaluated"}
     bindings = {f"{b['page']}.{b['index']}": b for b in tree["region_bindings"]}
     unit_gold = {**gold, **{"unit:" + u["owner_path"]: {"owners": [u["owner_path"]]} for u in controls["units"]}}
@@ -211,6 +265,21 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
     region_errors, continuation_errors = [], []
     proposals_passed = canonical_passed = 0
     for expected in controls["regions"]:
+        if expected["status"] == "partitioned":
+            binding = bindings[expected["key"]]
+            spans = source_spans[expected["key"]]
+            actual = binding.get("fragments", [])
+            matches = binding["disposition"] == "partitioned" and len(actual) == len(spans) and all(
+                fragment["start"] == span["start"] and fragment["end"] == span["end"]
+                and actual_norm(fragment["owner_path"]) == expected_norm(span["owner"])
+                and fragment["disposition"] == span["disposition"]
+                and fragment["continuation"] == span["continuation"]
+                for fragment, span in zip(actual, spans))
+            proposals_passed += matches
+            canonical_passed += matches
+            if not matches:
+                region_errors.append({"key": expected["key"], "failure": "source owner intervals", "expected": spans, "actual": actual})
+            continue
         if expected["status"] != "evaluated" and not (allow_source_warnings and expected["status"] == "ambiguous"):
             continue
         binding = bindings[expected["key"]]
@@ -224,6 +293,14 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
                                   "actual_owner": binding["owner_path"], "disposition": binding["disposition"], "proposal_matches": proposal})
         if binding["continuation"] != expected["continuation"]:
             continuation_errors.append({"key": expected["key"], "expected": expected["continuation"], "actual": binding["continuation"]})
+    for key, spans in source_spans.items():
+        if region_controls[key]["status"] == "partitioned":
+            continue
+        binding = bindings[key]
+        for span in spans:
+            if (actual_norm(binding["owner_path"]) != expected_norm(span["owner"])
+                    or binding["disposition"] != span["disposition"] or binding["continuation"] != span["continuation"]):
+                region_errors.append({"key": key, "failure": "supplemental source owner interval"})
     nodes = {n["address"]: n for n in tree["nodes"]}
     containers = [n for n in tree["nodes"] if not n.get("source_region_ids")]
     by_owner = defaultdict(list)
@@ -271,6 +348,9 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
                 failures.append("kind")
             if any(unit[k] != value for k, value in number_fields(expected["printed_number"]).items()):
                 failures.append("number")
+            printed_marker = re.sub(r"^(?:подразд|часть|разд|гл|ст|ч|§)", "", unit.get("marker_label") or "") or None
+            if tree["schema_version"] == "legal-ast/3" and printed_marker != expected["printed_number"]:
+                failures.append("marker")
             if (len(occurrences.get(expected_norm(expected["owner_path"]), [])) > 1
                     and unit["anchor_region_ids"] != [source_regions[k] for k in expected["evidence_keys"]]):
                 failures.append("anchor_evidence")
@@ -285,12 +365,42 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
                         and nodes[binding["address"]]["parent_address"] == unit["address"])
                 if not anchored:
                     failures.append("anchor")
+            if "start_text_offset" in expected:
+                offset, quote = expected["start_text_offset"], expected["start_text_quote"]
+                rid = source_regions[expected["start_key"]]
+                tids = [tid for block in extraction["blocks"] if block["source_region_id"] == rid for tid in block["text_node_ids"]]
+                tokens = {t["text_node_id"]: t for t in extraction["text_nodes"]}
+                end_offset = sum(len(tokens[t]["raw_text"]) for t in tids)
+                expected_parts = [p for p in source_spans.get(expected["start_key"], [])
+                                  if p["start"] == offset and expected_norm(p["owner"]) == expected_norm(expected["owner_path"])]
+                if expected_parts:
+                    end_offset = expected_parts[0]["end"]
+                cursor, spans = 0, []
+                for tid in tids:
+                    token = tokens[tid]
+                    length = len(token["raw_text"])
+                    if cursor + length > offset and cursor < end_offset:
+                        span = dict(token["source_span"])
+                        start, end = max(0, offset - cursor), min(length, end_offset - cursor)
+                        if start or end != length:
+                            for prefix in ("", "ocr_"):
+                                base = span[prefix + "char_start"]
+                                span[prefix + "char_start"], span[prefix + "char_end"] = base + start, base + end
+                            span["locator"] = re.sub(r":chars:\d+:\d+$", f":chars:{span['ocr_char_start']}:{span['ocr_char_end']}", span["locator"])
+                        spans.append(span)
+                    cursor += length
+                if unit["anchor_source_spans"] != spans:
+                    failures.append("anchor_text_offset")
+                projection = "".join(tokens[t]["raw_text"] for t in tids)
+                if not projection[offset:].startswith(quote):
+                    failures.append("anchor_text_quote")
         if failures:
             unit_errors.append({"owner_path": expected["owner_path"], "start_key": expected["start_key"],
                                 "printed_number": expected["printed_number"], "failures": failures,
                                 "actual": {k: unit[k] for k in ("owner_path", "kind", "number_canonical", "number_display", "number_components")} if unit else None})
     extra_units = [actual_norm(u["owner_path"]) for u in containers if u["address"] not in matched]
     status_counts = Counter(r["status"] for r in controls["regions"])
+    status_counts["evaluated"] += status_counts["partitioned"]
     return {"regions": {k: status_counts[k] for k in ("evaluated", "picture", "noise", "ambiguous")},
             "owner_proposals_passed": proposals_passed, "canonical_regions_passed": canonical_passed,
             "region_errors": region_errors, "continuation_errors": continuation_errors, "expected_units": len(controls["units"]),

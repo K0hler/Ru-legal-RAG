@@ -112,10 +112,10 @@ def build(extraction: dict) -> dict:
     region_cont = {}
     for p in paragraphs:
         for k, r in enumerate(p.regions):
-            region_owner[r.region_id] = p.owner
-            region_cont[r.region_id] = k > 0
+            region_owner[(r.region_id, r.source_start, r.source_end)] = p.owner
+            region_cont[(r.region_id, r.source_start, r.source_end)] = k > 0
     # preservation: every OCR token belongs to exactly one region entry
-    covered = Counter(t for r in regions for t in r.text_node_ids)
+    covered = Counter(t for r in regions if r.source_start == 0 for t in r.text_node_ids)
     expected = Counter(t["text_node_id"] for t in extraction["text_nodes"])
     if covered != expected:
         raise ValueError("token accounting mismatch")
@@ -126,14 +126,17 @@ def build(extraction: dict) -> dict:
         "paragraphs": [{
             "flow": p.flow, "kind": p.kind, "owner": p.owner,
             "marker": None if p.marker.kind in {"none", "section_reset", "retired_range"} else [p.marker.kind, p.marker.label],
-            "regions": [{"page": r.page, "index": r.index, "region_id": r.region_id, "category": r.category}
+            "regions": [{"page": r.page, "index": r.index, "region_id": r.region_id, "category": r.category,
+                         "source_start": r.source_start, "source_end": r.source_end,
+                         "text_node_ids": r.text_node_ids}
                         for r in p.regions],
             "text_node_ids": [t for r in p.regions for t in r.text_node_ids],
             "text_preview": p.text[:90], "evidence": p.evidence,
         } for p in paragraphs],
         "regions": [{"page": r.page, "index": r.index, "region_id": r.region_id, "category": r.category,
-                     "role": r.role, "owner": region_owner.get(r.region_id),
-                     "continuation": region_cont.get(r.region_id, False)} for r in regions],
+                     "source_start": r.source_start, "source_end": r.source_end,
+                     "role": r.role, "owner": region_owner.get((r.region_id, r.source_start, r.source_end)),
+                     "continuation": region_cont.get((r.region_id, r.source_start, r.source_end), False)} for r in regions],
     }
 
 

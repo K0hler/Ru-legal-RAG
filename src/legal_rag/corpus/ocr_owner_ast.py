@@ -1,4 +1,4 @@
-"""Convert the maintained owner parser's decisions into source-bound diagnostic legal-ast/2."""
+"""Convert the maintained owner parser's decisions into source-bound diagnostic legal-ast/3."""
 from collections import Counter, defaultdict
 from copy import deepcopy
 import re
@@ -7,10 +7,11 @@ from .compiler import content_hash
 from . import ocr_owner_structure as parser
 from ._ocr_owner.text import ANNEX
 from ._ocr_owner.audit import prepare_owner_result
+from ._ocr_owner.source_slices import BASIS, slices_for, narrowed_span
 from .ocr_structure import _identity, prepare
 from .structure import _number_fields
 
-VERSION = "ocr-owner-ast/4"
+VERSION = "ocr-owner-ast/5"
 KINDS = {"int": "point", "decimal": "point", "paren": "subitem", "letter": "subitem",
          "article": "article", "chapter": "chapter", "roman": "section", "letter_part": "part",
          "code_part": "part", "section_named": "section", "subsection": "subsection", "paragraph_sign": "subchapter",
@@ -38,23 +39,39 @@ def _unresolved(paragraph):
 
 
 def _accounting(tokens, nodes, unresolved, excluded):
-    result = {"total_text_nodes": len(tokens), "exactly_once": True}
+    result = {"total_text_nodes": len(tokens), "exactly_once": True,
+              "basis": "text_node_raw_text_half_open_intervals",
+              "total_source_chars": sum(len(t["raw_text"]) for t in tokens.values())}
+    coverage = defaultdict(list)
     for label, group in (("parsed", nodes), ("unresolved", unresolved), ("excluded", excluded)):
-        result[label + "_text_nodes"] = sum(len(e["text_node_ids"]) for e in group)
-        result[label + "_source_chars"] = sum(len(e["original_text"]) for e in group)
+        slices = [s for e in group for s in e.get("text_slices", [])]
+        result[label + "_text_nodes"] = len({s["text_node_id"] for s in slices})
+        result[label + "_source_chars"] = sum(s["end"] - s["start"] for s in slices)
+        for part in slices:
+            coverage[part["text_node_id"]].append((part["start"], part["end"]))
+    if set(coverage) != set(tokens):
+        raise ValueError("missing source token intervals")
+    for tid, token in tokens.items():
+        intervals, cursor = sorted(coverage[tid]), 0
+        if not token["raw_text"] and intervals != [(0, 0)]:
+            raise ValueError("empty token must have one source slice")
+        for start, end in intervals:
+            if start != cursor or end < start or (start == end and token["raw_text"]):
+                raise ValueError("source slice gap or overlap")
+            cursor = end
+        if cursor != len(token["raw_text"]):
+            raise ValueError("incomplete source intervals")
     return result
 
 
-def _anchors(result):
-    anchors = defaultdict(list)
+def _anchors(result, tokens, regions, token_ids):
+    anchors, spans = defaultdict(list), defaultdict(list)
     for paragraph in result["paragraphs"]:
         if paragraph["owner"] and (_marked(paragraph) or paragraph["kind"] in {"approval", "annex"}):
-            anchors[paragraph["owner"]].extend(r["region_id"] for r in paragraph["regions"])
-    return anchors
-
-
-def _anchor_spans(ids, tokens, token_ids):
-    return [deepcopy(tokens[t]["source_span"]) for rid in ids for t in token_ids[rid]]
+            entry = _entry(paragraph["regions"], tokens, regions, token_ids)
+            anchors[paragraph["owner"]].extend(entry["source_region_ids"])
+            spans[paragraph["owner"]].extend(entry["source_spans"])
+    return anchors, spans
 
 
 def _source(extraction):
@@ -83,18 +100,26 @@ def _unit_markers(result, tokens, token_ids):
     return markers
 
 
-def _entry(ids, tokens, regions, token_ids):
-    tids = [t for rid in ids for t in token_ids[rid]]
-    spans = [deepcopy(tokens[t]["source_span"]) for t in tids]
-    raw = "".join(tokens[t]["raw_text"] for t in tids)
-    text = parser.view(" ".join("".join(tokens[t]["raw_text"] for t in token_ids[rid]) for rid in ids))
-    fragments = [{"region_id": rid, "page": regions[rid]["page"], "index": regions[rid]["index"],
-                  "category": regions[rid]["category"], "bbox": deepcopy(regions[rid]["bbox"]),
-                  "text_node_ids": list(token_ids[rid])} for rid in ids]
-    return {"block_id": regions[ids[0]]["order"], "source_region_id": ids[0], "source_region_ids": list(ids),
-            "text_node_ids": tids, "original_text": raw, "text": text,
+def _entry(parts, tokens, regions, token_ids):
+    ids = [r["region_id"] if isinstance(r, dict) else r for r in parts]
+    slices, fragments, raw_parts = [], [], []
+    for part, rid in zip(parts, ids, strict=True):
+        length = sum(len(tokens[t]["raw_text"]) for t in token_ids[rid])
+        start, end = (part.get("source_start", 0), part.get("source_end", length)) if isinstance(part, dict) else (0, length)
+        selected = slices_for(token_ids[rid], start, end, tokens)
+        slices.extend(selected)
+        raw_parts.append("".join(tokens[s["text_node_id"]]["raw_text"][s["start"]:s["end"]] for s in selected))
+        fragments.append({"region_id": rid, "page": regions[rid]["page"], "index": regions[rid]["index"],
+                          "category": regions[rid]["category"], "bbox": deepcopy(regions[rid]["bbox"]),
+                          "text_node_ids": [s["text_node_id"] for s in selected],
+                          "start": start, "end": end, "offset_basis": BASIS})
+    tids = [s["text_node_id"] for s in slices]
+    spans = [narrowed_span(tokens[s["text_node_id"]], s["start"], s["end"]) for s in slices]
+    raw, text = "".join(raw_parts), parser.view(" ".join(raw_parts))
+    return {"block_id": regions[ids[0]]["order"], "source_region_id": ids[0], "source_region_ids": ids,
+            "text_node_ids": tids, "text_slices": slices, "original_text": raw, "text": text,
             "cleanup_mapping": [{"operation": "whitespace_view_with_region_boundaries", "separator": " ",
-                                  "source_region_ids": list(ids)}] if text != raw else [],
+                                  "source_region_ids": ids}] if text != raw else [],
             "source_span": deepcopy(spans[0]) if len(spans) == 1 else None,
             "source_spans": spans, "fragments": fragments}
 
@@ -113,7 +138,7 @@ def build_owner_tree(extraction, declared_identity, role):
     if any(count > 1 for count in repeated.values()):
         issues.add("duplicate_printed_owner")
     captions = {p["owner"]: p["kind"] for p in result["paragraphs"] if p["kind"] in {"approval", "annex"}}
-    anchors = _anchors(result)
+    anchors, anchor_spans = _anchors(result, tokens, regions, token_ids)
 
     def owner_node(owner):
         if owner in containers:
@@ -133,7 +158,7 @@ def build_owner_tree(extraction, declared_identity, role):
                 "block_id": None, "text": "", "original_text": "", "text_node_ids": [],
                 "source_span": None, "source_spans": [], **number,
                 "anchor_region_ids": list(anchors[owner]),
-                "anchor_source_spans": _anchor_spans(anchors[owner], tokens, token_ids),
+                "anchor_source_spans": deepcopy(anchor_spans[owner]),
                 "marker_label": marker[1] if marker else None, "number_is_explicit": marker is not None,
                 "legal_status": "unverified", "children": []}
         containers[owner] = node
@@ -143,7 +168,7 @@ def build_owner_tree(extraction, declared_identity, role):
     assigned = set()
     for paragraph in result["paragraphs"]:
         ids = [r["region_id"] for r in paragraph["regions"]]
-        entry = _entry(ids, tokens, regions, token_ids)
+        entry = _entry(paragraph["regions"], tokens, regions, token_ids)
         entry.update(kind=paragraph["kind"], owner_path=paragraph["owner"], evidence=deepcopy(paragraph["evidence"]))
         if _unresolved(paragraph):
             entry.update(kind="unresolved_block", reason="owner_unresolved", address=None)
@@ -151,6 +176,8 @@ def build_owner_tree(extraction, declared_identity, role):
         else:
             parent = owner_node(paragraph["owner"])
             address = namespace + "/content/" + str(entry["block_id"])
+            if sum(r["region_id"] == ids[0] for r in result["regions"]) > 1:
+                address += ":" + str(entry["fragments"][0]["start"])
             entry.update(address=address, parent_address=parent, children=[], legal_status="unverified",
                          node_id=content_hash({"source": extraction["source_asset_sha256"], "parser": version, "address": address}))
             nodes.append(entry)
@@ -159,32 +186,44 @@ def build_owner_tree(extraction, declared_identity, role):
             entry["table_topology"] = deepcopy(regions[ids[0]]["table"])
             entry["table_cells"] = deepcopy(regions[ids[0]]["table"]["cells"])
         for rid in ids:
-            if rid in assigned:
-                raise ValueError("duplicated OCR paragraph region")
             assigned.add(rid)
-            entries[rid] = entry
+            entries.setdefault(rid, []).append(entry)
     for rid, region in regions.items():
         if rid in assigned:
             continue
         entry = _entry([rid], tokens, regions, token_ids)
         entry.update(kind="excluded_block", reason="physical_page_noise", address=None, owner_path=None)
         excluded.append(entry)
-        entries[rid] = entry
+        entries[rid] = [entry]
     children = defaultdict(list)
     for node in nodes:
         children[node["parent_address"]].append(node["address"])
     for node in nodes:
         node["children"] = children[node["address"]]
-    expected = {r["region_id"]: r for r in result["regions"]}
-    excluded_ids = {id(e) for e in excluded}
-    bindings = [{"region_id": rid, "page": region["page"], "index": region["index"],
-                 "address": entries[rid]["address"], "owner_path": expected[rid]["owner"],
-                 "continuation": expected[rid]["continuation"], "role": expected[rid]["role"],
-                 "disposition": "excluded" if id(entries[rid]) in excluded_ids else
-                                "unresolved" if entries[rid]["address"] is None else "parsed"}
-                for rid, region in regions.items()]
+    decisions = {(r["region_id"], r["source_start"], r["source_end"]): r for r in result["regions"]}
+    excluded_ids, unresolved_ids = {id(e) for e in excluded}, {id(e) for e in unresolved}
+    bindings = []
+    for rid, region in regions.items():
+        pieces = []
+        for entry in entries[rid]:
+            fragment = next(f for f in entry["fragments"] if f["region_id"] == rid)
+            decision = decisions[(rid, fragment["start"], fragment["end"])]
+            pieces.append({"start": fragment["start"], "end": fragment["end"],
+                           "owner_path": entry["owner_path"], "address": entry["address"],
+                           "disposition": "excluded" if id(entry) in excluded_ids else
+                                          "unresolved" if id(entry) in unresolved_ids else "parsed",
+                           "continuation": decision["continuation"]})
+        partitioned = len(pieces) > 1
+        binding = {"region_id": rid, "page": region["page"], "index": region["index"],
+                   "address": None if partitioned else pieces[0]["address"],
+                   "owner_path": None if partitioned else pieces[0]["owner_path"],
+                   "continuation": None if partitioned else pieces[0]["continuation"],
+                   "role": decision["role"], "disposition": "partitioned" if partitioned else pieces[0]["disposition"]}
+        if partitioned:
+            binding.update(fragments=pieces, offset_basis=BASIS)
+        bindings.append(binding)
     accounting = _accounting(tokens, nodes, unresolved, excluded)
-    tree = {"schema_version": "legal-ast/2", "parser_version": version, "profile_version": "owner-path/2",
+    tree = {"schema_version": "legal-ast/3", "parser_version": version, "profile_version": "owner-path/2",
             "source_asset_sha256": extraction["source_asset_sha256"], "extraction_id": extraction.get("extraction_id"),
             "role": role, "namespace": namespace, "identity_decision": identity,
             "edition_admission": False, "valid_from": None, "valid_to": None,
@@ -194,106 +233,15 @@ def build_owner_tree(extraction, declared_identity, role):
             "region_bindings": bindings, "document_tree": deepcopy(extraction["document_tree"]),
             "ocr_uncertainties": deepcopy(extraction.get("uncertainties", [])), "accounting": accounting,
             "owner_parser": {"version": result["parser_version"], "result_sha256": content_hash(raw)}}
-    validate_owner_tree(extraction, tree)
     return tree
 
 
 def validate_owner_tree(extraction, tree):
-    """Check conversion against source and parser decisions; independent semantic review belongs to Task 3."""
-    tokens, regions, token_ids = _source(extraction)
-    raw = parser.build(extraction)
-    expected = prepare_owner_result(raw, tokens)
-    if tree.get('source_warnings') != expected['source_warnings']:
-        raise ValueError('changed source numbering warnings')
-    if not set(expected['audit_issues']) <= set(tree['structural_issues']):
-        raise ValueError('missing hierarchy findings')
-    identity = _identity(prepare(extraction)["blocks"], tree["identity_decision"]["declared_identity"])
-    if tree["identity_decision"] != identity:
-        raise ValueError("changed OCR identity decision")
-    if (tree["source_asset_sha256"] != extraction["source_asset_sha256"]
-            or tree["extraction_id"] != extraction.get("extraction_id")
-            or tree["document_tree"] != extraction["document_tree"]
-            or tree["owner_parser"]["result_sha256"] != content_hash(raw)):
-        raise ValueError("changed OCR input or owner decisions")
-    nodes = {n["address"]: n for n in tree["nodes"]}
-    if len(nodes) != len(tree["nodes"]):
-        raise ValueError("duplicate owner AST address")
-    order = {n["address"]: k for k, n in enumerate(tree["nodes"])}
-    children = defaultdict(list)
-    for node in tree["nodes"]:
-        children[node["parent_address"]].append(node["address"])
-    markers = _unit_markers(expected, tokens, token_ids)
-    anchors = _anchors(expected)
-    entries = [*tree["nodes"], *tree["unresolved_blocks"], *tree["excluded_blocks"]]
-    if Counter(t for e in entries for t in e["text_node_ids"]) != Counter(tokens.keys()):
-        raise ValueError("dropped or duplicated OCR text")
-    leaf_regions = {}
-    for entry in entries:
-        ids = entry.get("source_region_ids", [])
-        if not ids:
-            if entry["text"] or entry["original_text"] or entry["source_spans"] or entry["text_node_ids"]:
-                raise ValueError("owner container duplicates source text")
-            continue
-        original = _entry(ids, tokens, regions, token_ids)
-        if any(entry[k] != original[k] for k in original):
-            raise ValueError("changed OCR source text, fragments or locators")
-        for rid in ids:
-            if rid in leaf_regions:
-                raise ValueError("duplicate OCR region assignment")
-            leaf_regions[rid] = entry
-        if entry.get("layout_kind") == "table" and (entry.get("table_topology") != regions[ids[0]]["table"]
-                                         or entry.get("table_cells") != regions[ids[0]]["table"]["cells"]):
-            raise ValueError("changed OCR table topology")
-    if set(leaf_regions) != set(regions):
-        raise ValueError("missing physical OCR region")
-    for node in tree["nodes"]:
-        parent = node["parent_address"]
-        if parent != tree["namespace"] and (parent not in order or order[parent] >= order[node["address"]]):
-            raise ValueError("invalid owner AST parent")
-        if node["children"] != children[node["address"]]:
-            raise ValueError("invalid owner AST children")
-        if node.get("source_region_ids") and nodes[parent]["owner_path"] != node["owner_path"]:
-            raise ValueError("content attached to another owner")
-        if not node.get("source_region_ids"):
-            path = node["owner_path"]
-            prefix = path.rpartition("/")[0]
-            expected_parent = tree["namespace"] + "/owner/" + prefix if prefix else tree["namespace"]
-            marker = markers.get(path)
-            number = _number(marker)
-            if (parent != expected_parent or node["address"] != tree["namespace"] + "/owner/" + path
-                    or any(node[k] != v for k, v in number.items()) or node["number_is_explicit"] != (marker is not None)):
-                raise ValueError("wrong owner container parent or number")
-            if (node["anchor_region_ids"] != anchors[path]
-                    or node["anchor_source_spans"] != _anchor_spans(anchors[path], tokens, token_ids)):
-                raise ValueError("changed owner marker anchors")
-        if node["node_id"] != content_hash({"source": extraction["source_asset_sha256"],
-                                            "parser": tree["parser_version"], "address": node["address"]}):
-            raise ValueError("changed owner node identity")
-    bindings = tree["region_bindings"]
-    if Counter(b["region_id"] for b in bindings) != Counter(regions.keys()):
-        raise ValueError("missing or duplicated physical OCR binding")
-    decisions = {r["region_id"]: r for r in expected["regions"]}
-    paragraphs = {r["region_id"]: p for p in expected["paragraphs"] for r in p["regions"]}
-    excluded_ids = {id(e) for e in tree["excluded_blocks"]}
-    unresolved_ids = {id(e) for e in tree["unresolved_blocks"]}
-    for binding in bindings:
-        rid = binding["region_id"]
-        paragraph = paragraphs.get(rid)
-        disposition = "excluded" if paragraph is None else "unresolved" if _unresolved(paragraph) else "parsed"
-        actual = "excluded" if id(leaf_regions[rid]) in excluded_ids else (
-            "unresolved" if id(leaf_regions[rid]) in unresolved_ids else "parsed")
-        entry = leaf_regions[rid]
-        kind = "excluded_block" if paragraph is None else "unresolved_block" if disposition == "unresolved" else paragraph["kind"]
-        expected_ids = [r["region_id"] for r in paragraph["regions"]] if paragraph else [rid]
-        if (entry["kind"] != kind or entry["source_region_ids"] != expected_ids
-                or (paragraph is not None and entry["layout_kind"] != paragraph["kind"])):
-            raise ValueError("changed OCR paragraph grouping or kind")
-        if (binding["owner_path"] != decisions[rid]["owner"] or binding["address"] != leaf_regions[rid]["address"]
-                or leaf_regions[rid]["owner_path"] != binding["owner_path"]
-                or binding["continuation"] != decisions[rid]["continuation"]
-                or binding["page"] != regions[rid]["page"] or binding["index"] != regions[rid]["index"]
-                or binding["role"] != decisions[rid]["role"] or binding["disposition"] != disposition
-                or actual != disposition):
-            raise ValueError("wrong physical OCR owner")
-    if tree["accounting"] != _accounting(tokens, tree["nodes"], tree["unresolved_blocks"], tree["excluded_blocks"]):
-        raise ValueError("changed OCR accounting")
+    """Verify conversion against a fresh deterministic owner conversion.
+
+    This is a producer assertion; the standalone source/control checker performs
+    independent interval and semantic validation without calling this parser.
+    """
+    expected = build_owner_tree(extraction, tree["identity_decision"]["declared_identity"], tree["role"])
+    if tree != expected:
+        raise ValueError("changed owner conversion: source, grouping, owners, anchors or accounting")

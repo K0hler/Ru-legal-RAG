@@ -110,12 +110,18 @@ def test_bottom_text_continues_open_citation_note_and_opens_marked_next_note():
 def test_text_note_inference_requires_a_local_reference_and_bottom_citation(change):
     source = bottom_notes_source()
     if change == 'no_reference':
-        source['blocks'][4]['original_text'] = '2. Сведения об ингредиентах должны быть доступны.'
+        block = source['blocks'][4]
+        block['original_text'] = '2. Сведения об ингредиентах должны быть доступны.'
+        token = next(t for t in source['text_nodes'] if t['text_node_id'] == block['text_node_ids'][0])
+        token['raw_text'] = block['original_text']
     elif change == 'not_at_bottom':
         source['pages'][1]['regions'][4]['bbox'] = [180, 400, 1400, 450]
         source['pages'][1]['regions'][5]['bbox'] = [180, 460, 1400, 500]
     else:
-        source['blocks'][1]['original_text'] = '17. Источник завершен.'
+        block = source['blocks'][1]
+        block['original_text'] = '17. Источник завершен.'
+        token = next(t for t in source['text_nodes'] if t['text_node_id'] == block['text_node_ids'][0])
+        token['raw_text'] = block['original_text']
     result = S.build(source)
     assert conts(result)['2.4'] is False
     assert owners(result)['2.4'] == 'A/3'

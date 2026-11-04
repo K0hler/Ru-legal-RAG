@@ -13,6 +13,7 @@ from .model import (
     Paragraph,
     Region,
 )
+from .source_slices import split_regions
 from .text import (
     BARCODE_EVIDENCE,
     NOISE_CATEGORIES,
@@ -62,8 +63,9 @@ def mark_row_cells(regions: list[Region]) -> None:
 def load_regions(extraction: dict) -> list[Region]:
     raw = defaultdict(str)
     nodes = defaultdict(list)
+    tokens = {t["text_node_id"]: t for t in extraction["text_nodes"]}
     for block in extraction["blocks"]:
-        raw[block["source_region_id"]] += block["original_text"]
+        raw[block["source_region_id"]] += "".join(tokens[t]["raw_text"] for t in block["text_node_ids"])
         nodes[block["source_region_id"]].extend(block["text_node_ids"])
     regions = []
     for page in extraction["pages"]:
@@ -94,7 +96,7 @@ def load_regions(extraction: dict) -> list[Region]:
             code = page_mark(r) and not re.fullmatch(r"[-–\s]*\d{1,5}[-–\s]*", r.text)
             if repeated and not is_caption(r.text) and not code:
                 r.role = "noise"
-    return regions
+    return split_regions(regions)
 
 
 def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:

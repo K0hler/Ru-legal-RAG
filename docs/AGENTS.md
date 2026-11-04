@@ -1,5 +1,23 @@
 # Documentation instructions
 
+- M1-06 source-slice development is under
+  `data/m1/pilot_runs/m1-06-20261104/source-slices-development/`.
+  `validate_ocr_structure.validate_source` preserves historical /2 validation
+  and independently checks /3 token intervals, raw whitespace, narrowed source
+  spans, physical geometry, order, anchors and partition bindings, without a
+  parser call. The active source-control checker accepts version /2 controls:
+  `status=partitioned`, null aggregate owner/continuation, full ordered
+  `region_owner_spans` with actual owner/disposition/continuation and explicit
+  `region_text_projections` (basis=concatenated_text_node_raw_text, token IDs,
+  raw_text). Every supplied source span is checked. Units starting in a partition
+  require exact source start_text_offset/start_text_quote; ranges and marker
+  coordinates reject booleans. /1 remains valid for single-owner regions.
+  Derived act11 /2 controls retain the old source-clear representation warning
+  under representation_notes; the original /1 controls and failed0/2 stay sealed.
+  Ten-PDF and exposed two-act passes are development evidence, not G13/table
+  quality/legal admission. Keep verify_m1_06 input/date/role/namespace/ID checks.
+
+
 - M1-06's first frozen sanitary-PDF transfer attempt is
   `data/m1/pilot_runs/m1-06-20261104/qualification-01/`:0/2 on two new complete
   amending acts/14pages/182regions. Preserve first source controls and results.

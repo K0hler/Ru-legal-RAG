@@ -66,7 +66,7 @@ def test_owner_ast_preserves_prototype_owners_text_tables_and_physical_regions()
     expected = prototype().build(source)
     tree = adapter().build_owner_tree(source, CLAIM, "original")
     assert source == before
-    assert tree["schema_version"] == "legal-ast/2"
+    assert tree["schema_version"] == "legal-ast/3"
     assert tree["document_tree"] == source["document_tree"]
     point = next(n for n in tree["nodes"] if n["address"] == "act/owner/S/I/1")
     region = next(r for p in source["pages"] for r in p["regions"] if r["region_id"] == point["anchor_region_ids"][0])

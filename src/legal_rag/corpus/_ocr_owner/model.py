@@ -21,6 +21,8 @@ class Region:
     repeats: int = 0  # running header/footer: regions with exactly the same text
     repeat_index: int = 0  # 0 for the first of those regions in reading order
     row_cell: bool = False  # cycle 10 B3: a right-hand cell of a printed row that starts with a table or long text
+    source_start: int = 0  # offsets in concatenated, unchanged text-node raw_text
+    source_end: int = 0
 
 
 @dataclass

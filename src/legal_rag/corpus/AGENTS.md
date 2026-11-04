@@ -1,5 +1,24 @@
 # Corpus compilation module
 
+- M1-06 source slices use `legal-ast/3` + `ocr-owner-ast/5` on the maintained
+  OCR route only; native/official AST /2 and saved text-extraction/1 stay unchanged.
+  Each content leaf owns ordered token-relative half-open `text_slices`; raw text,
+  narrowed local/global spans and locators agree exactly. Fragment offsets use
+  concatenated unchanged token.raw_text, never `view`; bbox stays physical.
+  A confirmed numbered replacement directive's outer guillemet close followed
+  by its next outer integer marker can partition a Text region. Nested quotes,
+  dates/decimals, ordinary quotes, page marks and ordinary notes cannot trigger
+  this split; tables stay indivisible. Source fragments retain physical IDs and
+  bounds through audit/occurrence mapping. Physical region_bindings remain one
+  row; `partitioned` rows have null aggregate owner/address/continuation and
+  ordered source-owner fragments. Content addresses sharing a first physical
+  block use `:<source_start>`. /3 accounting is interval-based; a token can occur
+  in several dispositions with disjoint slices, so per-disposition token counts
+  are distinct counts and need not sum to total. Empty tokens own one [0,0).
+  `validate_owner_tree` compares a fresh deterministic conversion; this is a
+  producer assertion, separate from standalone source/control validation.
+
+
 - M1-06 quote fixes keep a lower-case continued quoted list open across the
   next physical page after a semicolon, only without an intervening table.
   `assign_footnote_owners` can bind a quoted replacement to the latest explicit

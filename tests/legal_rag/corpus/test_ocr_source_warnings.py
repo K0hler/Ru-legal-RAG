@@ -80,6 +80,11 @@ def warning_case(alternative_scope=False, alternative_parent=False, delayed_foot
     for row, owner in zip(rows, actual_paths, strict=True):
         entry = {**_entry([row["region_id"]], tokens, regions, token_ids), "address": "act/content/" + row["key"],
                  "owner_path": owner, "parent_address": "act/owner/" + owner if owner else "act", "kind": "image" if owner is None else "paragraph"}
+        # This authored historical /2 fixture deliberately retains whole tokens.
+        entry.pop("text_slices")
+        for fragment in entry["fragments"]:
+            for key in ("start", "end", "offset_basis"):
+                fragment.pop(key)
         (nodes if owner else excluded).append(entry)
         bindings.append({**row, "index": int(row["key"].split(".")[1]), "address": entry["address"],
                          "owner_path": owner, "disposition": "parsed" if owner else "excluded", "continuation": False})

@@ -1,5 +1,16 @@
 # Local data instructions
 
+- M1-06 `source-slices-development/` is a development replay, never a new
+  qualification. It retains separate /2 derived source controls for act11:
+  original source-authored owners/ranges/marker are copied from sealed /1 facts;
+  projection is the unchanged token.raw_text concatenation. The source-clear
+  representational warning remains verbatim under representation_notes.
+  Original qualification-01 controls, OCR, first0/2 and old /2 trees stay intact.
+  New repeated source checks pass10/10pilot PDFs and2/2exposed acts; all237old
+  scan error lists remain unchanged. Physical table regions are still25 in the
+  ten-PDF bundle; that count does not certify table text/topology or G13.
+
+
 - M1-06 `qualification-01/` freezes selection/code before PDF bodies and full
   source controls/images before first candidate exposure. It retains two card
   timeouts for No17 plus the actual successful new/unchanged source runs.

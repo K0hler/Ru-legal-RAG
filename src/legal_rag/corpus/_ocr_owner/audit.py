@@ -12,8 +12,9 @@ def prepare_owner_result(raw, tokens):
     result = deepcopy(raw)
     aliases, starts, repeats = {}, defaultdict(list), {}
     warnings, issues = [], set()
-    referenced_owners = {}
-    original_owners = {r['region_id']: r['owner'] for r in raw['regions']}
+    referenced_owners = defaultdict(set)
+    def fragment_key(r):
+        return (r['region_id'], r.get('source_start'), r.get('source_end'))
 
     def mapped(path):
         parts = path.split('/')
@@ -47,20 +48,20 @@ def prepare_owner_result(raw, tokens):
                 references = [rid for e in p['evidence'] for rid in e.get('footnote_reference_region_ids', [])]
                 candidates = set()
                 for rid in references:
-                    before, after = original_owners.get(rid), referenced_owners.get(rid)
-                    if before and after and (before == original or before.startswith(original + '/')):
-                        candidates.add('/'.join(after.split('/')[:len(original.split('/'))]))
+                    for before, after in referenced_owners[rid]:
+                        if before and after and (before == original or before.startswith(original + '/')):
+                            candidates.add('/'.join(after.split('/')[:len(original.split('/'))]))
                 if len(candidates) == 1:
                     p['owner'] = candidates.pop()
                 elif candidates:
                     p['owner'] = None
                     p['evidence'].append({'footnote_owner': 'unresolved', 'candidate_owners': sorted(candidates)})
         for region in p['regions']:
-            referenced_owners[region['region_id']] = p['owner']
-    owners = {r['region_id']: p['owner'] for p in result['paragraphs'] for r in p['regions']}
+            referenced_owners[region['region_id']].add((original, p['owner']))
+    owners = {fragment_key(r): p['owner'] for p in result['paragraphs'] for r in p['regions']}
     for r in result['regions']:
-        if r['region_id'] in owners:
-            r['owner'] = owners[r['region_id']]
+        if fragment_key(r) in owners:
+            r['owner'] = owners[fragment_key(r)]
 
     marked = [p for p in result['paragraphs'] if p['marker'] and p['marker'][0] != 'dash' and p['owner']]
     markers = {p['owner']: p['marker'] for p in marked}
@@ -93,7 +94,8 @@ def prepare_owner_result(raw, tokens):
                     warnings.append({'code': 'missing_parent_number', 'region_ids': [p['regions'][0]['region_id']],
                                      'owner_paths': [p['owner']], 'message': 'Для номера «' + label
                                      + '» не найден напечатанный родитель «' + prefix + '»; номер не исправлялся.'})
-        text = ' '.join(tokens[t]['raw_text'] for t in p['text_node_ids'])
+        text = ' '.join(''.join(tokens[t]['raw_text'] for t in r['text_node_ids'])[r['source_start']:r['source_end']]
+                        for r in p['regions'])
         if kind != 'int' or i == 0 or not text.rstrip().endswith(':'):
             continue
         section = markers.get(parent)

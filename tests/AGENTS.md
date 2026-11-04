@@ -1,5 +1,15 @@
 # Test instructions
 
+- `corpus/test_ocr_source_slices.py` authors source expectations for /3 slices:
+  intra-token/multi-token/boundary splits, raw whitespace, physical bbox and exact
+  unit markers/anchors, nested quotes/dates/decimals/no-directive refusals,
+  interval gaps/overlaps/reversal/duplicate whole-token references, empty tokens,
+  partial dispositions, source-owner controls /2 and exact integer (not bool)
+  coordinates/IDs. A self-consistent wrong owner still fails independent controls.
+  The historical warning fixture explicitly keeps its /2 whole-token shape;
+  parser-only note mutations update token.raw_text as the source basis too.
+
+
 - `corpus/test_ocr_owner_m1_06_fixes.py` covers the first transfer failures:
   open quoted semicolon lists across pages, table/closed-quote/plain-list
   negatives, and explicitly named plural footnote replacements. A different
