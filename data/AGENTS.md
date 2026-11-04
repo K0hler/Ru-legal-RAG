@@ -1,5 +1,16 @@
 # Local data instructions
 
+- `m1/pilot_runs/m1-06-20261104/` retains the full ten-PDF SanPiN audit:
+  103 pages, 1139 regions, 25 table regions, identical builds and an unchanged
+  repeat. `source-review/pilot/` keeps initial independent controls and their
+  first comparison. For the original SanPiN the separate policy-reviewed
+  controls reconcile accepted paragraph/table conventions; never overwrite
+  the initial annotation to hide its eight owner/five continuation mismatches.
+  `source-review/policy-reviewed/freeze.json` binds the controls actually used.
+  All103page images were reviewed; source tables annex1 pp59–60 and annex9
+  pp74–75 retain OCR span/sign defects. Ownership success is not table accuracy,
+  independent G13 qualification, an applied amendment or legal admission.
+
 - Owner decision 04.11.2026 switches all four `m1/ocr*.local.json` profiles to
   `legal-rag-dotsmocr` and the project root, preserving their OCR settings.
   Keep old experiment configurations and results unchanged.

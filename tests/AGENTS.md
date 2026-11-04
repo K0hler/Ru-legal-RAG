@@ -1,5 +1,13 @@
 # Test instructions
 
+- `corpus/test_m1_06.py` exercises the full-bundle verifier with authored
+  independent source controls. Reject incomplete/foreign/duplicate PDFs,
+  partial pages, altered text/table/locators, unequal builds and another valid
+  date's draft. Also reject resealed role/namespace changes and canonical node
+  ID collisions; the checker must derive identities without invoking the parser.
+  Missing controls remain incomplete; corrupt controls fail.
+  Bind the exact control/packet content in the report; no live OCR is required.
+
 - `corpus/test_dotsmocr_{picture,rotation,loop,orientation,export}.py` exercise
   the project-owned client without GPU, including real Pillow images, retained
   attempts, stream deadlines, source-coordinate mapping, failed-page handling

@@ -1,5 +1,15 @@
 # Documentation instructions
 
+- M1-06's complete retained SanPiN/PDF audit is recorded in
+  `milestones/m1/M1_06_SANPIN_STRUCTURE_2026-11-04.md` and the 4 November plan.
+  Keep source accounting, ownership under accepted conventions, OCR table
+  accuracy, independent G13 transfer and legal admission separate. The source
+  annotation's first mismatch and separate policy reconciliation remain sealed;
+  no production parser fix was needed. Annex1 pp59–60 and annex9 pp74–75 have
+  actual OCR table defects; a passing structure report does not accept them.
+  `assets/verify_m1_06.py` binds full inputs/pages, both builds, source controls
+  and selected OCR image hashes; missing controls cannot yield a passing result.
+
 - `milestones/m1/04b/M1_04B_WINDOWS_LAUNCH_FIX_2026-11-04.md` resolves the
   environment limitation recorded at M1-05 closure. Windows `os.execvp` did not
   escape paths/arguments; the corrected Windows subprocess branch preserves them
