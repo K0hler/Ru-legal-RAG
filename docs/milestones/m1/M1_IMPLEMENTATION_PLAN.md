@@ -7,6 +7,7 @@
 **Status update, 3 November 2026:** M1-04B is in progress: its own image, verified model, client and experimental provider passed synthetic execution and saved-result replay. Comparative qualification and the owner's decision remain open; OCR-Lab remains the current provider.
 **Status update, 4 November 2026:** M1-04B's two comparative runs exposed a repeated Minfin page failure, an orientation-related transcription error and a table-linkage regression. Positive qualification and the owner's decision remain open; do not switch the default. See the [qualification report](04b/M1_04B_QUALIFICATION_2026-11-03.md).
 **Owner decision, 4 November 2026:** switch new OCR runs to the integrated `legal-rag-dotsmocr` provider. The owner limits this work to integration and does not require further OCR quality runs or identical OCR outputs before switching.
+**M1-05 update, 4 November 2026:** shared extraction-index discovery replaces temporary Poppler/Tesseract OCR. Retained No. 1242 → No. 491 replay passes with PDF page 3 and shared extraction evidence, idempotence and stale refusal after resync; 172 historical source files are unchanged. Compatible M0 freeze reviewed and reassessed at 78/78; 1401 tests pass on Python 3.13 in a temporary environment without spaces in its path. See the [result and environment limitation](M1_05_DISCOVERY_2026-11-04.md). M1-06 and the independent G13 qualification remain open.
 **Historical official-JSON reconstruction:** the `/4` and subsequent `/5` frozen cohorts each passed only **2/6** full controls; these failures are preserved in the [normalization report](03a/M1_03A_OFFICIAL_NORMALIZATION_2026-10-16.md) and [transfer report](03a/M1_03A_OFFICIAL_JSON_TRANSFER_2026-10-16.md). The owner-approved replacement is `official-json-import/1`, not a claim that those failed semantic-parser versions now qualify.
 **Basis:** [PRD v0.2](../../overview/PRODUCT_REQUIREMENTS.md), [source policy](../../policies/LEGAL_SOURCES_POLICY.md), [master plan](../../overview/LEGAL_RAG_MASTER_PLAN_2026.md), [frozen M0 contracts](../m0/M0_CONTRACTS.md).
 **Task board:** [Legal RAG - M1](https://trello.com/b/45X665tC/legal-rag-m1). The initial 2 October publication had 15 slice cards, 62 slice acceptance items and 12 milestone gate items. The 13 October correction adds [M1-03A](https://trello.com/c/icH6oqSj), its acceptance checks and G13, and updates affected dependencies/checklists. Publication is not implementation or legal acceptance; verify live card state before updating it.
@@ -386,7 +387,7 @@ Verify: full default tests, Ruff, `git diff --check`, the complete saved-evidenc
 
 ### M1-05: Replace Discovery's Temporary OCR
 
-**Type:** AFK plus reviewed contract change. **Dependencies:** M1-04. **Status:** planned.
+**Type:** AFK plus reviewed contract change. **Dependencies:** M1-04. **Status:** completed 4 November 2026. [Evidence and compatible contract update](M1_05_DISCOVERY_2026-11-04.md).
 
 Replace `_extract_pdf_pages` and its Poppler/Tesseract subprocess path with consumption of the shared extraction artifact. Add an explicit extraction-directory/reference argument for the staged discovery workflow. Missing or wrong-hash artifacts remain actionable exceptions until extraction and replay complete.
 

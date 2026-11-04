@@ -1,5 +1,12 @@
 # Source acquisition test instructions
 
+- M1-05 discovery tests generate genuine `text-extraction/1` artifacts with
+  the shared normalizer from authored native responses. Mock only transport,
+  never the extraction reader. Cover extraction-later replay, stable relations,
+  stale resync, corrupt/misbound indices/results, missing/duplicate pages and
+  wrong/missing OCR locators. The frozen PDF transport stubs and candidate
+  fixture stay unchanged; no GPU or network is required.
+
 - `test_publication_pool.py` uses authored metadata and fake transport only.
   Check empty/null/absent-name acquisition/repeat across document types with exact original card hashes,
   unchanged identity validation, per-item feed refusal (including duplicates,

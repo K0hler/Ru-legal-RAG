@@ -144,12 +144,18 @@ python -m legal_rag.sources run-pilot `
 
 python -m legal_rag.sources discover-publications `
   --date 2026-09-26 `
-  --data-dir data/m0-09
+  --data-dir data/m0-09 `
+  --extraction-index <shared-output>/extractions/index-<id>.json
 ```
 
-Scanned amendment PDFs require `pdftoppm` and Tesseract with the `rus` language
-data on `PATH`. OCR is retained as a derived audit artifact; the relation cites
-the immutable official PDF hash and page.
+Discovery reads the shared `text-extraction/1` results through an explicit
+`extraction-index/1`. First run without the index to acquire the amendment PDFs;
+missing results remain actionable exceptions. Prepare a permitted corpus input,
+run `python -m legal_rag.corpus extract --input <manifest> --ocr-config
+data/m1/ocr.recovery.local.json --output-dir <shared-output>`, then repeat
+discovery with its index. Discovery does not start OCR. The relation cites the
+immutable official PDF hash, physical page and shared extraction ID. Saved M0
+OCR artifacts remain historical evidence.
 
 Run its offline acceptance tests with:
 

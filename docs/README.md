@@ -6,6 +6,10 @@ Start with the [product requirements](overview/PRODUCT_REQUIREMENTS.md),
 Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
+[M1-05](milestones/m1/M1_05_DISCOVERY_2026-11-04.md) connects publication discovery
+to the shared OCR artifact through an explicit extraction index. The retained
+No.1242 → No.491 scenario preserves PDF-page evidence, replay and stale refusal.
+
 M1-04A is [closed by owner acceptance on 2 November](milestones/m1/04a/M1_04A_CLOSURE_2026-11-02.md).
 The [five corrected sets](milestones/m1/04a/M1_04A_REMAINING_SETS_FIXES_2026-11-02.md)
 pass250/250strictly above99%, minimum99.16%; the

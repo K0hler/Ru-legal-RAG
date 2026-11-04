@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- M1-05 shared-OCR discovery is recorded in
+  `milestones/m1/M1_05_DISCOVERY_2026-11-04.md`. The staged path is acquire,
+  explicit `corpus extract`, then discovery replay with `--extraction-index`.
+  Retained 26 September feed controls bind No. 1242 to No. 491 through PDF page 3,
+  preserve stale handoff refusal after resync and leave all 172 historical files
+  unchanged. The compatible M0 freeze update covers changed code/tests plus
+  the new light reader; it does not rewrite historical OCR or public contracts.
+
 - M1-04B runtime inventory is in `milestones/m1/04b/M1_04B_RUNTIME_CONTRACT.md`.
   The plan predates accepted page orientation and bounded page recovery: retain
   both and the current four-worker / 0.55 GPU profile when qualifying the new

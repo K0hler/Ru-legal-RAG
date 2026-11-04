@@ -1,6 +1,7 @@
 import base64
 from contextlib import redirect_stdout
 import hashlib
+from html import escape
 from io import StringIO
 import json
 from pathlib import Path
@@ -18,6 +19,8 @@ sys.path.insert(0, str(SRC_ROOT))
 
 from legal_rag.sources.__main__ import main  # noqa: E402
 from legal_rag.sources.acquisition import _persist_success  # noqa: E402
+from legal_rag.sources.relations import _stable_id  # noqa: E402
+from legal_rag.corpus.pdf_extraction import normalize_dotsmocr  # noqa: E402
 
 
 class ReplayResponse:
@@ -41,27 +44,23 @@ class ReplayResponse:
 
 
 class PublicationDiscoveryTest(unittest.TestCase):
+    def setUp(self):
+        sleeper = patch("legal_rag.sources.transport.sleep")
+        sleeper.start()
+        self.addCleanup(sleeper.stop)
+
     def test_feed_discovers_amendment_invalidates_candidate_and_replays_idempotently(self):
         replay = json.loads(FIXTURE.read_text(encoding="utf-8"))
         responses = self._responses(replay) * 2
-        ocr_by_hash = {
-            hashlib.sha256(base64.b64decode(document["asset_body_base64"])).hexdigest(): document[
-                "ocr_pages"
-            ]
-            for document in replay["documents"]
-        }
-
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_dir = Path(temporary_directory)
             candidate_path = self._write_pp491_candidate(data_dir)
+            index_path = self._write_extractions(replay, data_dir / "shared")
             outputs = []
             with patch(
                 "legal_rag.sources.publication_pravo.urlopen",
                 side_effect=responses,
-            ) as urlopen, patch(
-                "legal_rag.sources.discovery._extract_pdf_pages",
-                side_effect=lambda path: ocr_by_hash[path.name],
-            ):
+            ) as urlopen:
                 for _ in range(2):
                     stdout = StringIO()
                     with redirect_stdout(stdout):
@@ -73,6 +72,8 @@ class PublicationDiscoveryTest(unittest.TestCase):
                                     "2026-09-26",
                                     "--data-dir",
                                     str(data_dir),
+                                    "--extraction-index",
+                                    str(index_path),
                                     "--timeout",
                                     "2.5",
                                 ]
@@ -111,6 +112,11 @@ class PublicationDiscoveryTest(unittest.TestCase):
             )
             self.assertEqual(amendment["review_state"], "source_claim")
             self.assertIn("PDF page 3", amendment["evidence_reference"]["locator"])
+            self.assertIn("/pages/2/blocks", amendment["evidence_reference"]["locator"])
+            extraction_id = amendment["evidence_reference"]["extraction_id"]
+            extraction = json.loads((data_dir / "extractions" / f"{extraction_id}.json").read_text("utf-8"))
+            self.assertEqual(extraction["schema_version"], "text-extraction/1")
+            self.assertEqual(extraction_id, _stable_id({key: value for key, value in extraction.items() if key != "extraction_id"}))
             evidence_sha256 = amendment["evidence_reference"]["source_asset_sha256"]
             self.assertEqual(
                 (data_dir / "raw" / evidence_sha256).read_bytes(),
@@ -166,6 +172,138 @@ class PublicationDiscoveryTest(unittest.TestCase):
             exception = json.loads(next((data_dir / "exceptions").glob("*.json")).read_text("utf-8"))
             self.assertEqual(exception["reason"], "unresolved_amendment_target")
             self.assertEqual(exception["stage"], "publication_discovery")
+
+    def test_missing_extraction_can_be_supplied_before_replaying_the_same_feed(self):
+        replay = json.loads(FIXTURE.read_text("utf-8"))
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            candidate_path = self._write_pp491_candidate(data_dir)
+            with patch("legal_rag.sources.publication_pravo.urlopen", side_effect=self._responses(replay) * 2):
+                first = self._discover(data_dir)
+                self.assertEqual(first["result"], "failed")
+                self.assertEqual(first["resolved_relation_count"], 0)
+                self.assertNotIn("candidate_status", json.loads(candidate_path.read_text("utf-8")))
+                exceptions = [json.loads(path.read_text("utf-8")) for path in (data_dir / "exceptions").glob("*.json")]
+                self.assertTrue(all("--extraction-index" in entry["diagnostic_message"] for entry in exceptions))
+                index_path = self._write_extractions(replay, data_dir / "shared")
+                second = self._discover(data_dir, index_path)
+            self.assertEqual(second["resolved_relation_count"], 1)
+            self.assertEqual(json.loads(candidate_path.read_text("utf-8"))["candidate_status"], "stale")
+
+    def test_projected_table_text_retains_its_source_span(self):
+        replay = json.loads(FIXTURE.read_text("utf-8"))
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            data_dir = Path(temporary_directory)
+            self._write_pp491_candidate(data_dir)
+            index_path = self._write_extractions(replay, data_dir / "shared", table=True)
+            with patch("legal_rag.sources.publication_pravo.urlopen", side_effect=self._responses(replay)):
+                result = self._discover(data_dir, index_path)
+            self.assertEqual(result["resolved_relation_count"], 1)
+
+    def test_invalid_shared_extractions_cannot_create_relations(self):
+        replay = json.loads(FIXTURE.read_text("utf-8"))
+        for mutation in ("missing_index", "index_hash", "index_shape", "extraction_hash", "wrong_pdf", "missing_page", "duplicate_page", "missing_locator", "invalid_locator", "missing_offsets", "missing_region", "wrong_offsets", "wrong_span_text", "wrong_span_pdf", "wrong_span_page", "ambiguous_target"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary_directory:
+                data_dir = Path(temporary_directory)
+                candidate_path = self._write_pp491_candidate(data_dir)
+                candidate_before = candidate_path.read_bytes()
+                index_path = self._write_extractions(replay, data_dir / "shared")
+                index = json.loads(index_path.read_text("utf-8"))
+                reference = next(iter(index["extractions"].values()))
+                extraction_path = index_path.parent / reference["path"]
+                extraction = json.loads(extraction_path.read_text("utf-8"))
+                if mutation == "missing_index":
+                    index_path.unlink()
+                elif mutation == "index_hash":
+                    index["input_hash"] = "0" * 64
+                    index_path.write_text(json.dumps(index), encoding="utf-8")
+                elif mutation == "index_shape":
+                    index["extractions"] = []
+                    index.pop("index_id")
+                    index["index_id"] = _stable_id(index)
+                    index_path.write_text(json.dumps(index), encoding="utf-8")
+                elif mutation == "extraction_hash":
+                    extraction["blocks"][0]["text"] += " altered"
+                    extraction_path.write_text(json.dumps(extraction), encoding="utf-8")
+                else:
+                    if mutation == "wrong_pdf":
+                        extraction["source_asset_sha256"] = "0" * 64
+                    elif mutation == "missing_page":
+                        extraction["pages"].pop()
+                    elif mutation == "duplicate_page":
+                        extraction["pages"][-1]["page"] = 1
+                    elif mutation == "missing_locator":
+                        del extraction["pages"][2]["blocks"][0]["source_span"]["locator"]
+                    elif mutation == "invalid_locator":
+                        extraction["pages"][2]["blocks"][0]["source_span"]["locator"] = "ocr:/pages/0/layout/0/text:chars:0:1"
+                    elif mutation in {"missing_offsets", "missing_region", "wrong_offsets", "wrong_span_text"}:
+                        block = extraction["pages"][2]["blocks"][0]
+                        span = block["source_span"]
+                        if mutation == "missing_offsets":
+                            del span["ocr_char_start"], span["ocr_char_end"]
+                        elif mutation == "missing_region":
+                            span["json_pointer"] = "/pages/2/layout/99999/text"
+                        elif mutation == "wrong_offsets":
+                            span.update(ocr_char_start=0, ocr_char_end=1)
+                        else:
+                            block["text"] = "1. Изменённый текст"
+                        span["locator"] = f"ocr:{span['json_pointer']}:chars:{span.get('ocr_char_start')}:{span.get('ocr_char_end')}"
+                    elif mutation == "wrong_span_pdf":
+                        extraction["pages"][2]["blocks"][0]["source_span"]["source_asset_sha256"] = "0" * 64
+                    elif mutation == "wrong_span_page":
+                        extraction["pages"][2]["blocks"][0]["source_span"]["page"] = 1
+                    elif mutation == "ambiguous_target":
+                        text = "постановлением Правительства Российской Федерации от 13 августа 2006 г. № 4910 или № 491"
+                        extraction["pages"][2]["blocks"][0]["text"] = text
+                    extraction.pop("extraction_id")
+                    extraction["extraction_id"] = _stable_id(extraction)
+                    reference.update(path=extraction["extraction_id"] + ".json", extraction_id=extraction["extraction_id"])
+                    (index_path.parent / reference["path"]).write_text(json.dumps(extraction), encoding="utf-8")
+                    index.pop("index_id")
+                    index["index_id"] = _stable_id(index)
+                    index_path.write_text(json.dumps(index), encoding="utf-8")
+                with patch("legal_rag.sources.publication_pravo.urlopen", side_effect=self._responses(replay)):
+                    result = self._discover(data_dir, index_path)
+                self.assertEqual(result["resolved_relation_count"], 0)
+                self.assertEqual(candidate_path.read_bytes(), candidate_before)
+                self.assertFalse((data_dir / "relations").exists())
+                self.assertGreater(result["unresolved_target_count"], 0)
+
+    def _discover(self, data_dir, index_path=None):
+        arguments = ["discover-publications", "--date", "2026-09-26", "--data-dir", str(data_dir)]
+        if index_path is not None:
+            arguments.extend(["--extraction-index", str(index_path)])
+        stdout = StringIO()
+        with redirect_stdout(stdout), patch("legal_rag.sources.transport.sleep"):
+            main(arguments)
+        return json.loads(stdout.getvalue())
+
+    @staticmethod
+    def _write_extractions(replay, directory, table=False):
+        directory.mkdir()
+        entries = {}
+        for document in replay["documents"]:
+            digest = hashlib.sha256(base64.b64decode(document["asset_body_base64"])).hexdigest()
+            pages = document["ocr_pages"]
+            layouts = [[{"category": "Text", "bbox": [0, 0, 100, 100], "text": text}] for text in pages]
+            if table:
+                layouts = [[{**layout[0], "category": "Table", "text": "<table><tr><td>" + escape(layout[0]["text"]) + "</td></tr></table>"}] for layout in layouts]
+            native = {"pages": [{"page_number": i + 1, "image_size": [100, 100], "layout": layout,
+                      "native": {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(layout)}}]}}
+                     for i, layout in enumerate(layouts)]}
+            run = {"engine": "dotsmocr", "source_sha256": digest, "status": "complete", "source_pages": len(pages),
+                   "requested_pages": list(range(1, len(pages) + 1)), "completed_pages": list(range(1, len(pages) + 1)),
+                   "model": {"repo": "dots-studio/dots.mocr", "revision": "b" * 40,
+                             "weights_sha256": {"model.safetensors": "c" * 64}}, "config": {}}
+            extraction = normalize_dotsmocr(native, run, digest)
+            name = extraction["extraction_id"] + ".json"
+            (directory / name).write_text(json.dumps(extraction, ensure_ascii=False), encoding="utf-8")
+            entries[digest] = {"path": name, "extraction_id": extraction["extraction_id"], "native_evidence_id": "d" * 64}
+        index = {"schema_version": "extraction-index/1", "input_hash": "e" * 64, "permission_hash": "f" * 64, "extractions": entries}
+        index["index_id"] = _stable_id(index)
+        path = directory / "index.json"
+        path.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
+        return path
 
     @staticmethod
     def _responses(replay: dict[str, object]) -> list[ReplayResponse]:

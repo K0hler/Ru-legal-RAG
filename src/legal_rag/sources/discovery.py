@@ -2,9 +2,6 @@ from datetime import UTC, date, datetime
 import hashlib
 from pathlib import Path
 import re
-import shutil
-import subprocess
-import tempfile
 
 from .acquisition import (
     _persist_success,
@@ -15,6 +12,7 @@ from .acquisition import (
     acquire_publication,
 )
 from .publication_pravo import PublicationPravoConnector, PublicationPravoFailure
+from .extraction import read_pdf_extraction
 from .relations import _stable_id, reconcile_publication_relations
 
 
@@ -38,6 +36,7 @@ def discover_official_publications(
     connector: PublicationPravoConnector,
     publication_date: date,
     data_dir: Path,
+    extraction_index: Path | None = None,
 ) -> dict[str, object]:
     data_dir = Path(data_dir)
     targets = _known_targets(data_dir)
@@ -130,8 +129,8 @@ def discover_official_publications(
         )
         if not matched_claims and generic_amendment:
             try:
-                matched_claims, extraction = _claims_from_document(item, targets, data_dir)
-            except RuntimeError as error:
+                matched_claims, extraction = _claims_from_document(item, targets, data_dir, extraction_index)
+            except (OSError, ValueError, KeyError, TypeError) as error:
                 exception_ids.append(
                     _record_unresolved(
                         item,
@@ -310,20 +309,16 @@ def _claims_from_document(
     item: dict[str, object],
     targets: dict[str, dict[str, object]],
     data_dir: Path,
+    extraction_index: Path | None,
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
     source_asset_sha256 = item["latest_successful_asset"]
     raw_path = data_dir / "raw" / source_asset_sha256
-    pages = _extract_pdf_pages(raw_path)
-    extraction = {
-        "method": "pdftoppm+tesseract-rus",
-        "pages": [
-            {"page": page_number, "text": text}
-            for page_number, text in enumerate(pages, 1)
-        ],
-        "source_asset_sha256": source_asset_sha256,
-    }
-    extraction_id = _stable_id(extraction)
-    extraction["extraction_id"] = extraction_id
+    if hashlib.sha256(raw_path.read_bytes()).hexdigest() != source_asset_sha256:
+        raise ValueError("official PDF source hash mismatch")
+    extraction = read_pdf_extraction(
+        extraction_index, source_asset_sha256, item["declared_publication"]["pages_count"],
+    )
+    extraction_id = extraction["extraction_id"]
     _write_json_once(
         data_dir / "extractions" / f"{extraction_id}.json",
         extraction,
@@ -335,13 +330,14 @@ def _claims_from_document(
         if discovered.get("item_kind") == "amendment"
     )
     claims = []
+    pages = ["\n".join(block["text"] for block in page["blocks"]) for page in extraction["pages"]]
     for target, page_number in _find_targets(pages, targets).items():
         claims.append(
             {
                 "asserted_by": "publication.pravo.gov.ru",
                 "evidence_reference": {
                     "extraction_id": extraction_id,
-                    "locator": f"PDF page {page_number}; OCR match for {target}",
+                    "locator": f"PDF page {page_number}; /pages/{page_number - 1}/blocks; OCR match for {target}",
                     "source_asset_role": "primary_document",
                     "source_asset_sha256": source_asset_sha256,
                     "source_url": item["source_url"],
@@ -351,7 +347,12 @@ def _claims_from_document(
                 "to_candidates": [target],
             }
         )
-    return claims, extraction
+    return claims, {
+        "method": "shared-text-extraction/1",
+        "extraction_id": extraction_id,
+        "source_asset_sha256": source_asset_sha256,
+        "pages": [{"page": page, "text": text} for page, text in enumerate(pages, 1)],
+    }
 
 
 def _find_targets(
@@ -497,39 +498,6 @@ def _invalidate_candidates(
         _write_json(path, candidate)
         invalidation_ids.append(invalidation_id)
     return invalidation_ids
-
-
-def _extract_pdf_pages(path: Path) -> list[str]:
-    pdftoppm = shutil.which("pdftoppm")
-    tesseract = shutil.which("tesseract")
-    if not pdftoppm or not tesseract:
-        raise RuntimeError("pdftoppm and tesseract with Russian data are required")
-    with tempfile.TemporaryDirectory(prefix="legal-rag-ocr-") as temporary_directory:
-        prefix = Path(temporary_directory) / "page"
-        try:
-            subprocess.run(
-                [pdftoppm, "-r", "200", "-png", str(path), str(prefix)],
-                check=True,
-                capture_output=True,
-            )
-            images = sorted(
-                prefix.parent.glob("page-*.png"),
-                key=lambda image: int(image.stem.rsplit("-", 1)[1]),
-            )
-            if not images:
-                raise RuntimeError("PDF rendering produced no pages")
-            return [
-                subprocess.run(
-                    [tesseract, str(image), "stdout", "-l", "rus"],
-                    check=True,
-                    capture_output=True,
-                    encoding="utf-8",
-                    text=True,
-                ).stdout
-                for image in images
-            ]
-        except (OSError, subprocess.CalledProcessError) as error:
-            raise RuntimeError(f"official PDF OCR failed: {error}") from error
 
 
 def _utc_now() -> str:

@@ -219,7 +219,7 @@
     "tests/legal_rag/sources/test_legislation_russia.py": "74a31cbc00b622bd06d8bba9a60640f092b0ba6dac3db39d1266daddfb8466a2",
     "tests/legal_rag/sources/test_candidate_handoff.py": "f98cc11b7df916a0a622671623cac45c22addc56b62e44590379ab8205e8da30",
     "tests/legal_rag/sources/test_pilot.py": "2fbd58dd95b43200402ac151345fb030a335392a159ce77f1712964bcad41ae6",
-    "tests/legal_rag/sources/test_publication_discovery.py": "9baa130707e1591de951c15cf7cecd0ed811bae3074b84643d7d6e4893acab93",
+    "tests/legal_rag/sources/test_publication_discovery.py": "4368e46b4400304500c1b096e38498041dd87a06c922e37496ff4e784b4deee8",
     "tests/legal_rag/sources/test_m0_gate.py": "cfc71d6701552cea1d49b6bbdb4572090ba6d8569cbda5824b1093b949330e96",
     "data/m0-09-live-20260929-v2/pilot_runs/1534d4bd-36cc-46ed-a712-d10e93e6877f/report.json": "ee0480eaf5960b4ed32a102fe6411170b11bb97ab8e203b5a1fb4b67acb9faee",
     "docs/milestones/m0/M0_07_PILOT_AND_REVIEW_POLICY.md": "957c12d51c8bb9502ba6e6d952fac9738fb32d4649f899fb58a8c5115742fa5e",
@@ -229,7 +229,7 @@
     "data/m0-12-gate/offline-checks.txt": "5cee2fc4bc9d2c646cb0c47a26963773e755a65cf0bfa69122e9a2faa7159ffb",
     "data/m0-12-gate/handoff-replay.json": "b0aad2e7b05de7d5fd03b1120f6aebfb9fe1a5719b3303d4e54c82edcbbdd424",
     "docs/milestones/m0/M0_CONTRACTS.md": "616f835322f8360c95b8ab558a3b19ec3a8cafa35e051fd32ae52d388becc6f3",
-    "docs/milestones/m0/M0_CONTRACT_FREEZE.json": "bbe2720b6b562dcc8ba1caa11f2d9b7f10701bdb20ae5b09c93d3de29cd86128",
+    "docs/milestones/m0/M0_CONTRACT_FREEZE.json": "0bd28c7bd8b097db940e939a85b0bbcefd7ac5224aeb19b05669cee2d64a0143",
     "docs/assets/generate_m0_gate.py": "71298347f525bad590aa0458be17dc5ad4dccd1a2cba75c777f0d7bff9e5496b",
     "data/m0-02-live-0001202511280030/runs/1432d7a5-2beb-49ab-ab2a-e058aec1c7e7.json": "dd0f323e109738c8d1ccaeaee1b02ce2d4d5dd537d2e7c05ef16b10bb3e4462e"
   },

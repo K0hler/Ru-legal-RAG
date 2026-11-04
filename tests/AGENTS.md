@@ -523,3 +523,12 @@ Scope: automated tests and checked fixtures.
   internal boundaries. Projection7 tests in `test_m1_04a_json_baseline.py` cover
   source-typed first-act wrappers, explicit-approval precedence and full printed
   dotted section labels; projections1–6 keep their prior behavior.
+
+# Windows test environment
+
+- The unchanged `test_dotsmocr_model.py` command-start test fails with the
+  project's space-containing `.venv` Python path. M1-05's full acceptance
+  suite (1401 tests) passes under Python 3.13.12 in a temporary path without spaces,
+  using the same `.venv/Lib/site-packages` via `PYTHONPATH`. Keep the failing
+  observation in the M1-05 report; do not skip the test or change the verifier
+  merely to hide this environment difference.

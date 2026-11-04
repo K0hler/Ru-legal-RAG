@@ -14,10 +14,10 @@
     "docs/milestones/m0/M0_CONTRACTS.md": "616f835322f8360c95b8ab558a3b19ec3a8cafa35e051fd32ae52d388becc6f3",
     "docs/assets/generate_m0_gate.py": "71298347f525bad590aa0458be17dc5ad4dccd1a2cba75c777f0d7bff9e5496b",
     "src/legal_rag/sources/__init__.py": "3cd76c4b0252120ba2bb093227fd657eb64ec5b21951a85177aea08a9cb6fbf2",
-    "src/legal_rag/sources/__main__.py": "aa182613f4bd444d8a3b7d74a9bd8bed3f83dd11036850076a0abf726cd56bb5",
+    "src/legal_rag/sources/__main__.py": "b5bac2c6117019bb2a25c5c2455a9b89f5965510f163db8ac8892b39642b7625",
     "src/legal_rag/sources/acquisition.py": "d35cc12dc2d5ae407b6637b38957132049cc04521ca3a8323505145ca13c1d76",
     "src/legal_rag/sources/actual_pravo.py": "cfdbfb15a36530741ec85620d3cf409388966362c3df9b8ce41378e132616664",
-    "src/legal_rag/sources/discovery.py": "1c6a941e02361b995e7c0c8d3b5801e31663b07e39dc6d1968e0f379d979b14c",
+    "src/legal_rag/sources/discovery.py": "aa6c7c8b3760ec8441ae513931bc9dd81637168b82d045fd0d31dfccb5133a40",
     "src/legal_rag/sources/handoff.py": "c5354de3e81f739cfffc7332124843b80128f638cccf4bdf81a2c95b32acd867",
     "src/legal_rag/sources/legislation_russia.py": "1f17c667a8384b26877e906fcbaf1626b9e874c1c3474319119b75c41e8dc653",
     "src/legal_rag/sources/pilot.py": "595fa6d7d176e3ffe83ead946b50987a6e299d20bfa40a074762e5dfcfd210b0",
@@ -38,9 +38,10 @@
     "tests/legal_rag/sources/test_legislation_russia.py": "74a31cbc00b622bd06d8bba9a60640f092b0ba6dac3db39d1266daddfb8466a2",
     "tests/legal_rag/sources/test_m0_gate.py": "cfc71d6701552cea1d49b6bbdb4572090ba6d8569cbda5824b1093b949330e96",
     "tests/legal_rag/sources/test_pilot.py": "2fbd58dd95b43200402ac151345fb030a335392a159ce77f1712964bcad41ae6",
-    "tests/legal_rag/sources/test_publication_discovery.py": "9baa130707e1591de951c15cf7cecd0ed811bae3074b84643d7d6e4893acab93",
+    "tests/legal_rag/sources/test_publication_discovery.py": "4368e46b4400304500c1b096e38498041dd87a06c922e37496ff4e784b4deee8",
     "tests/legal_rag/sources/test_publication_pravo.py": "9a8e38fc47fdad9168bfa0f23c831d17ef82a9dda905c456ac060e92720abc3b",
-    "tests/legal_rag/sources/test_publication_relations.py": "4e1e2f02dbe1161401ad31d9db6073d875870d17bfd976266570d1992228d973"
+    "tests/legal_rag/sources/test_publication_relations.py": "4e1e2f02dbe1161401ad31d9db6073d875870d17bfd976266570d1992228d973",
+    "src/legal_rag/sources/extraction.py": "85c82ad0294b12dd3fd9df4f55fc8dcd9a2dda02a03c3f82af51b6a7b3efaa9b"
   },
   "frozen_on": "2026-10-01",
   "legacy_unversioned_formats": [

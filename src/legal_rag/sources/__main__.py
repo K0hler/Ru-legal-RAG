@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     discovery = commands.add_parser("discover-publications")
     discovery.add_argument("--date", type=date.fromisoformat, required=True)
     discovery.add_argument("--data-dir", type=Path, required=True)
+    discovery.add_argument("--extraction-index", type=Path)
     discovery.add_argument("--timeout", type=float, default=20.0)
     actual = commands.add_parser("acquire-actual")
     actual.add_argument("--document-hash", required=True)
@@ -70,6 +71,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             arguments.date,
             arguments.data_dir,
+            arguments.extraction_index,
         )
     elif arguments.command == "acquire-actual":
         result = acquire_actual(
