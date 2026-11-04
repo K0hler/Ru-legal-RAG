@@ -402,7 +402,7 @@ Verify: source tests, both discovery stages on retained official PDFs, frozen ca
 
 ### M1-06: Full SanPiN Base And Amendment Structure
 
-**Type:** AFK plus structural review. **Dependencies:** M1-03A, M1-04A and permitted pilot inputs. **Status:** in progress, 4 November 2026. The complete retained ten-PDF/103-page bundle repeats identically and passes source ownership controls under the accepted conventions. OCR table defects and independent G13 qualification remain open. [Audit and limitations](M1_06_SANPIN_STRUCTURE_2026-11-04.md).
+**Type:** AFK plus structural review. **Dependencies:** M1-03A, M1-04A and permitted pilot inputs. **Status:** partial, current run finished at the owner's instruction, 4 November 2026. The complete retained ten-PDF/103-page bundle repeats identically and passes source controls. Quoted continuation/footnote and shared-region owner defects are fixed; the two exposed acts pass as development only. The first G13 result remains 0/2; fresh qualification is deferred. Sixty OCR table discrepancies have bound, unapplied correction proposals. M1-06 acceptance remains open. [Result and limitations](M1_06_SANPIN_STRUCTURE_2026-11-04.md).
 
 Compile the complete original and amendment texts with the OCR structure engine/profile delivered in M1-04A, after establishing the missing independent PDF/OCR-format qualification under G13. This slice owns full SanPiN bundle coverage and readiness for operation targeting; M1-04A's bounded closure is not proof of that qualification. Distinguish the approving resolution, the sanitary rules and their nine retained original annexes; verify actual document boundaries rather than assuming every annex is present. SanPiN 2.1.3684-21 is a pilot instance, not a hard-coded profile identity.
 

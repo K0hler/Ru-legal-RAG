@@ -1,5 +1,13 @@
 # Documentation instructions
 
+- The owner ended the current M1-06 run on 4 November with «Нет, завершай
+  задачу». The result is partial, not milestone acceptance: source-slice and
+  quoted-footnote/continuation fixes pass the retained ten PDFs and two exposed
+  development acts; the sealed first G13 result remains 0/2. Fresh qualification
+  is deferred. `table-correction-proposals/` retains 62 unapplied before/after
+  records for 60 source discrepancies on annex1 pp59–60 and annex9 pp74–75.
+  Keep the exact source bindings and table/operation-targeting/admission limits.
+
 - M1-06 source-slice development is under
   `data/m1/pilot_runs/m1-06-20261104/source-slices-development/`.
   `validate_ocr_structure.validate_source` preserves historical /2 validation
