@@ -526,9 +526,9 @@ Scope: automated tests and checked fixtures.
 
 # Windows test environment
 
-- The unchanged `test_dotsmocr_model.py` command-start test fails with the
-  project's space-containing `.venv` Python path. M1-05's full acceptance
-  suite (1401 tests) passes under Python 3.13.12 in a temporary path without spaces,
-  using the same `.venv/Lib/site-packages` via `PYTHONPATH`. Keep the failing
-  observation in the M1-05 report; do not skip the test or change the verifier
-  merely to hide this environment difference.
+- The M1-05 model-launch failure was fixed on 4 November: Windows `os.execvp`
+  splits unescaped paths/arguments; a subprocess with an argument list preserves
+  them and returns the actual exit code. `test_dotsmocr_model.py` uses a command
+  path with spaces and checks Unicode, quotes, empty strings, trailing backslashes
+  and statuses 0/7. The full suite now passes in the standard project `.venv`;
+  the earlier temporary-environment workaround remains historical evidence only.

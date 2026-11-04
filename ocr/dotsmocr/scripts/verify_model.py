@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 
@@ -39,4 +40,7 @@ if __name__ == "__main__":
         verify_model(Path(sys.argv[1]), Path(sys.argv[2]))
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise SystemExit(f"model integrity check failed: {error}") from error
+    if os.name == "nt":
+        # Windows execvp does not quote arguments; subprocess preserves them.
+        raise SystemExit(subprocess.call(sys.argv[4:]))
     os.execvp(sys.argv[4], sys.argv[4:])

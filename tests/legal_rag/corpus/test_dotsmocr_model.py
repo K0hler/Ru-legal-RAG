@@ -23,18 +23,30 @@ def model(tmp_path):
     return directory, manifest, tmp_path / "inference-started"
 
 
-def run_verifier(model):
+def run_verifier(model, arguments=(), exit_code=0):
     directory, manifest, marker = model
-    command = marker.parent / "fake_inference.py"
-    command.write_text("from pathlib import Path\nimport sys\nPath(sys.argv[1]).touch()\n", encoding="utf-8")
+    command = marker.parent / "command with spaces" / "fake inference.py"
+    command.parent.mkdir()
+    command.write_text("from pathlib import Path\nimport json,sys\n"
+                       "Path(sys.argv[1]).write_text(json.dumps(sys.argv[2:]), encoding='utf-8')\n"
+                       f"raise SystemExit({exit_code})\n", encoding="utf-8")
     return subprocess.run([sys.executable, str(VERIFY), str(directory), str(manifest), "--",
-                           sys.executable, str(command), str(marker)], capture_output=True, text=True, timeout=30)
+                           sys.executable, str(command), str(marker), *arguments], capture_output=True, text=True, timeout=30)
 
 
 def test_matching_model_starts_the_command(model):
     result = run_verifier(model)
     assert result.returncode == 0, result.stderr
     assert model[2].exists()
+
+
+@pytest.mark.parametrize("exit_code", [0, 7])
+def test_command_preserves_arguments_and_exit_code(model, exit_code):
+    arguments = ["two words", 'кавычка"текст', "", "C:\\folder with spaces\\"]
+    result = run_verifier(model, arguments, exit_code)
+    assert result.returncode == exit_code, result.stderr
+    assert model[2].exists(), result.stderr
+    assert json.loads(model[2].read_text(encoding="utf-8")) == arguments
 
 
 @pytest.mark.parametrize("damage", ["corrupt", "missing", "extra"])

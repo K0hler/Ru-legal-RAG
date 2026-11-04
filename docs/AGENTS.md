@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- `milestones/m1/04b/M1_04B_WINDOWS_LAUNCH_FIX_2026-11-04.md` resolves the
+  environment limitation recorded at M1-05 closure. Windows `os.execvp` did not
+  escape paths/arguments; the corrected Windows subprocess branch preserves them
+  and propagates the command status. Linux retains exec/PID behavior. The image
+  was rebuilt and the full suite (1403 tests) passes directly in the project `.venv`.
+  Preserve the earlier M1-05 failure as history, with its subsequent fix linked.
+
 - M1-05 shared-OCR discovery is recorded in
   `milestones/m1/M1_05_DISCOVERY_2026-11-04.md`. The staged path is acquire,
   explicit `corpus extract`, then discovery replay with `--extraction-index`.

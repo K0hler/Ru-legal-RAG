@@ -1,5 +1,13 @@
 # dots.mocr runtime instructions
 
+- `scripts/verify_model.py` must verify all weights before launching any command.
+  Use `subprocess.call` with the argument list on Windows and propagate its status:
+  Windows `os.execvp` does not escape spaces/quotes and can report success after
+  a broken launch. Linux keeps `os.execvp` for the same PID and signal behavior.
+  A verifier change requires rebuilding the image because the host checks its
+  baked hash; keep earlier images/evidence for replay. The 4 November fix has
+  actual Windows argument/exit-code tests and a Linux image/PID control.
+
 - Owner decision 04.11.2026 makes this service the default OCR provider.
   The integration switch does not depend on identical OCR outputs.
 - See `../../docs/milestones/m1/04b/M1_04B_RUNTIME_CONTRACT.md` for the current
