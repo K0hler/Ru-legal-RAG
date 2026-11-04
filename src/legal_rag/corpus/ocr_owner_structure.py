@@ -95,7 +95,7 @@ __all__ = (
     "toc_line", "view",
 )
 
-VERSION = "ocr-logical-structure/23-experiment"
+VERSION = "ocr-logical-structure/23-experiment+m1-06/1"
 
 
 def build(extraction: dict) -> dict:

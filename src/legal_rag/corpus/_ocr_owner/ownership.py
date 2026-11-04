@@ -27,6 +27,7 @@ from .markers import (
 from .model import (
     Marker,
     Paragraph,
+    Region,
 )
 from .scopes import (
     SERVICE_TAIL_EVIDENCE,
@@ -554,6 +555,27 @@ def assign_body_owners(scope_path: str, items: list[Paragraph], points_are_parts
             p.evidence.append({"form_signature": "name and signature before the numbered document-receipt field"})
 
 
+FOOTNOTE_REPLACEMENT = re.compile(
+    r"\b[Сс]носк(?:у|и)\s+(\d+(?:\s*(?:,|и)\s*\d+)*)\b.*"
+    r"\bизложить\s+в\s+следующ(?:ей|их)\s+редакци[ия]х?\s*:", re.S)
+
+
+def quoted_footnote_replacement(note: Paragraph, body_seen: list[tuple[Region, Paragraph]]) -> Paragraph | None:
+    payload, seen = [], set()
+    for _, paragraph in reversed(body_seen):
+        if id(paragraph) in seen:
+            continue
+        seen.add(id(paragraph))
+        if paragraph.marker.kind not in {"none", "dash"}:
+            directive = FOOTNOTE_REPLACEMENT.search(paragraph.text)
+            if (directive and note.footnote in {int(n) for n in re.findall(r"\d+", directive[1])}
+                    and quote_balance(" ".join(reversed(payload))) > 0 and paragraph.owner):
+                return paragraph
+            return None
+        payload.append(paragraph.text)
+    return None
+
+
 def assign_footnote_owners(paragraphs: list[Paragraph], scopes: list[tuple[str, list[Paragraph]]]) -> None:
     # footnotes: owner = latest preceding body paragraph carrying the same superscript marker; a table
     # may print the mark as HTML «<sup>1</sup>» instead of «¹» (Review Focus 2: two lists numbering
@@ -565,11 +587,19 @@ def assign_footnote_owners(paragraphs: list[Paragraph], scopes: list[tuple[str, 
     scope_of = {id(q): scope_path for scope_path, items in scopes for q in items}
     page_marked: dict[int, bool] = {}  # footnote id -> its mark found on its own page
     body_seen = []  # (region, paragraph) of body text seen so far
+    quoted_notes = set()
     for p in paragraphs:
         if p.flow == "body":
             body_seen.extend((r, p) for r in p.regions)
             continue
         number = p.footnote
+        replacement = quoted_footnote_replacement(p, body_seen) if number is not None else None
+        if replacement is not None:
+            p.owner = replacement.owner
+            p.evidence.extend([{"footnote_owner": "quoted_replacement"},
+                               {"footnote_reference_region_ids": [replacement.first.region_id]}])
+            quoted_notes.add(id(p))
+            continue
         stars = ASTERISK_NOTE.match(strip_emphasis(p.text))
         if number is None and stars is None:
             p.owner = None
@@ -601,7 +631,7 @@ def assign_footnote_owners(paragraphs: list[Paragraph], scopes: list[tuple[str, 
     # marks there (one table's notes); a footnote whose mark is nowhere belongs to the document of its page
     by_page: dict[int, list] = defaultdict(list)
     for p in paragraphs:
-        if p.flow == "footnote":
+        if p.flow == "footnote" and id(p) not in quoted_notes:
             by_page[p.first.page].append(p)
     for notes in by_page.values():
         local_notes = [q for q in notes if page_marked.get(id(q)) and q.owner]

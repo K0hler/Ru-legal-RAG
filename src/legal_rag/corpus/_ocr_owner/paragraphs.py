@@ -143,6 +143,9 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
         # Body text. Join a continuation only with an unterminated open paragraph
         # across a page break, never on the same page (OCR keeps those together).
         tail = open_body.text if open_body else ""
+        quoted_semicolon = (open_body is not None and open_body.regions[-1].page == r.page - 1
+                            and final_char(tail) == ";" and unbalanced_quotes(tail) > 0
+                            and not any(x.role == "table" for x in regions[open_body.regions[-1].order + 1:r.order]))
         strong_start = (open_body is not None and open_body.regions[-1].page == r.page - 1 and first_on_page
                         and (r.text[:1].isupper() or r.text[:1].isdigit() or continues_reference(tail, r.text))
                         and r.category == "Text" and not is_caption(r.text)
@@ -168,7 +171,8 @@ def logical_paragraphs(regions: list[Region]) -> list[Paragraph]:
                 open_note.regions.append(r)
                 open_note.evidence.append({"join": "footnote_continuation_after_page_break", "region": r.region_id})
                 continue
-            if open_body and open_body.regions[-1].page < r.page and first_on_page and not terminated(open_body.text):
+            if (open_body and open_body.regions[-1].page < r.page and first_on_page
+                    and (not terminated(open_body.text) or quoted_semicolon)):
                 open_body.regions.append(r)
                 open_body.evidence.append({"join": "body_continuation_after_page_break", "region": r.region_id})
                 continue

@@ -1,5 +1,15 @@
 # Corpus compilation module
 
+- M1-06 quote fixes keep a lower-case continued quoted list open across the
+  next physical page after a semicolon, only without an intervening table.
+  `assign_footnote_owners` can bind a quoted replacement to the latest explicit
+  numbered directive naming that footnote; the outer quote must still be open.
+  Such quoted notes are not used as ordinary page-footnote anchors. Missing
+  numbers, a closed quote or an intervening new unit keep ordinary/refusal rules.
+  Version suffix `+m1-06/1` records these fixes without renumbering M1-04A steps.
+  All237old scan error lists remain unchanged. The first new two-act G13 result
+  remains0/2; its corrected replay is development evidence, not qualification.
+
 - M1-04B adds the explicit `legal-rag-dotsmocr` provider; the old `ocr-lab`
   adapter and saved-result route remain unchanged. The new adapter verifies the
   running container's image, model-verifier entrypoint, compose command, mounts,

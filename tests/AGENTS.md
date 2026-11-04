@@ -1,5 +1,11 @@
 # Test instructions
 
+- `corpus/test_ocr_owner_m1_06_fixes.py` covers the first transfer failures:
+  open quoted semicolon lists across pages, table/closed-quote/plain-list
+  negatives, and explicitly named plural footnote replacements. A different
+  note number, a closed quotation or a new numbered unit cannot borrow the
+  replacement owner. Inputs remain unchanged.
+
 - `corpus/test_m1_06.py` exercises the full-bundle verifier with authored
   independent source controls. Reject incomplete/foreign/duplicate PDFs,
   partial pages, altered text/table/locators, unequal builds and another valid
