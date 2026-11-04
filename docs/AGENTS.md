@@ -1,5 +1,14 @@
 # Documentation instructions
 
+- M1-06's first frozen sanitary-PDF transfer attempt is
+  `data/m1/pilot_runs/m1-06-20261104/qualification-01/`:0/2 on two new complete
+  amending acts/14pages/182regions. Preserve first source controls and results.
+  No11 exposes an unresolved quoted replacement footnote and one833-character
+  OCR token containing amendments12/13; No17 has a semicolon quote continuation
+  mismatch. Both acts contain prose, not actual tables; they cannot qualify
+  table topology. Do not turn fixes/replays of these now-exposed acts into new
+  independent evidence or waive the retained original's OCR table defects.
+
 - M1-06's complete retained SanPiN/PDF audit is recorded in
   `milestones/m1/M1_06_SANPIN_STRUCTURE_2026-11-04.md` and the 4 November plan.
   Keep source accounting, ownership under accepted conventions, OCR table

@@ -1,5 +1,13 @@
 # Local data instructions
 
+- M1-06 `qualification-01/` freezes selection/code before PDF bodies and full
+  source controls/images before first candidate exposure. It retains two card
+  timeouts for No17 plus the actual successful new/unchanged source runs.
+  First transfer result0/2 is immutable. No11p7.6/text_node62 has both actual
+  source units12/13: source spans[0,795) and[795,833), not alternative readings.
+  Never label a one-owner result as full coverage or drop unit13. Both acts
+  are now exposed; they have no physical tables.
+
 - `m1/pilot_runs/m1-06-20261104/` retains the full ten-PDF SanPiN audit:
   103 pages, 1139 regions, 25 table regions, identical builds and an unchanged
   repeat. `source-review/pilot/` keeps initial independent controls and their
