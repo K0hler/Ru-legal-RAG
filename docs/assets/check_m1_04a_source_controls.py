@@ -367,31 +367,40 @@ def compare_controls(extraction, tree, packet, controls, *, allow_source_warning
                     failures.append("anchor")
             if "start_text_offset" in expected:
                 offset, quote = expected["start_text_offset"], expected["start_text_quote"]
-                rid = source_regions[expected["start_key"]]
-                tids = [tid for block in extraction["blocks"] if block["source_region_id"] == rid for tid in block["text_node_ids"]]
                 tokens = {t["text_node_id"]: t for t in extraction["text_nodes"]}
-                end_offset = sum(len(tokens[t]["raw_text"]) for t in tids)
-                expected_parts = [p for p in source_spans.get(expected["start_key"], [])
-                                  if p["start"] == offset and expected_norm(p["owner"]) == expected_norm(expected["owner_path"])]
-                if expected_parts:
-                    end_offset = expected_parts[0]["end"]
-                cursor, spans = 0, []
-                for tid in tids:
-                    token = tokens[tid]
-                    length = len(token["raw_text"])
-                    if cursor + length > offset and cursor < end_offset:
-                        span = dict(token["source_span"])
-                        start, end = max(0, offset - cursor), min(length, end_offset - cursor)
-                        if start or end != length:
-                            for prefix in ("", "ocr_"):
-                                base = span[prefix + "char_start"]
-                                span[prefix + "char_start"], span[prefix + "char_end"] = base + start, base + end
-                            span["locator"] = re.sub(r":chars:\d+:\d+$", f":chars:{span['ocr_char_start']}:{span['ocr_char_end']}", span["locator"])
-                        spans.append(span)
-                    cursor += length
+                anchor_keys = expected["evidence_keys"]
+                if (not anchor_keys or anchor_keys[0] != expected["start_key"]
+                        or unit["anchor_region_ids"] != [source_regions[k] for k in anchor_keys]):
+                    failures.append("anchor_evidence")
+                spans, projection = [], ""
+                for key in anchor_keys:
+                    rid = source_regions[key]
+                    tids = [tid for block in extraction["blocks"] if block["source_region_id"] == rid for tid in block["text_node_ids"]]
+                    start_offset = offset if key == expected["start_key"] else 0
+                    end_offset = sum(len(tokens[t]["raw_text"]) for t in tids)
+                    expected_parts = [p for p in source_spans.get(key, [])
+                                      if p["start"] == start_offset and expected_norm(p["owner"]) == expected_norm(expected["owner_path"])]
+                    if expected_parts:
+                        end_offset = expected_parts[0]["end"]
+                    cursor = 0
+                    for tid in tids:
+                        token = tokens[tid]
+                        length = len(token["raw_text"])
+                        empty = length == 0 and (start_offset < cursor <= end_offset or start_offset == cursor == 0)
+                        if cursor + length > start_offset and cursor < end_offset or empty:
+                            span = dict(token["source_span"])
+                            start, end = max(0, start_offset - cursor), min(length, end_offset - cursor)
+                            if start or end != length:
+                                for prefix in ("", "ocr_"):
+                                    base = span[prefix + "char_start"]
+                                    span[prefix + "char_start"], span[prefix + "char_end"] = base + start, base + end
+                                span["locator"] = re.sub(r":chars:\d+:\d+$", f":chars:{span['ocr_char_start']}:{span['ocr_char_end']}", span["locator"])
+                            spans.append(span)
+                        cursor += length
+                    if key == expected["start_key"]:
+                        projection = "".join(tokens[t]["raw_text"] for t in tids)
                 if unit["anchor_source_spans"] != spans:
                     failures.append("anchor_text_offset")
-                projection = "".join(tokens[t]["raw_text"] for t in tids)
                 if not projection[offset:].startswith(quote):
                     failures.append("anchor_text_quote")
         if failures:

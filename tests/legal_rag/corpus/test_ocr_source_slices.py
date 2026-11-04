@@ -260,3 +260,48 @@ def test_a_directive_inside_a_quote_does_not_license_a_new_outer_unit():
     source = extraction(['12. «Пункт изложить в следующей редакции: правило». 13. Ещё внутри текста.'])
     tree = build_owner_tree(source, CLAIM, 'original')
     assert all(b['disposition'] != 'partitioned' for b in tree['region_bindings'])
+
+
+def test_precise_marker_anchor_retains_a_trailing_empty_source_token():
+    source, _, packet, controls = partition_case()
+    empty = deepcopy(source['text_nodes'][-1])
+    empty.update(text_node_id=empty['text_node_id'] + 1, raw_text='', decoded_text='')
+    for prefix in ('', 'ocr_'):
+        empty['source_span'][prefix + 'char_start'] = empty['source_span'][prefix + 'char_end']
+    source['text_nodes'].append(empty)
+    source['blocks'][-1]['text_node_ids'].append(empty['text_node_id'])
+    controls['region_text_projections']['1.5']['text_node_ids'].append(empty['text_node_id'])
+    tree = build_owner_tree(source, CLAIM, 'original')
+    validate_source(source, tree)
+    validate_controls(source, tree, packet, controls)
+
+
+def test_precise_marker_anchor_retains_source_authored_next_page_continuation():
+    from legal_rag.corpus.pdf_extraction import normalize_dotsmocr
+    from test_pdf_extraction import saved_result
+    source, _, packet, controls = partition_case()
+    document, run = saved_result()
+    document['pages'][0]['layout'] = [deepcopy(r['source_record']) for r in source['pages'][0]['regions']]
+    document['pages'][0]['layout'][-1]['text'] = document['pages'][0]['layout'][-1]['text'][:-1] + ','
+    document['pages'][1]['layout'] = [{'category': 'Text', 'text': 'а также примечание.', 'bbox': [10, 10, 900, 90]}]
+    for page in document['pages']:
+        page['image_size'] = [1000, 2000]
+    run['source_sha256'] = source['source_asset_sha256']
+    source = normalize_dotsmocr(document, run, run['source_sha256'])
+    tree = build_owner_tree(source, CLAIM, 'original')
+    for record in (packet, controls):
+        record['extraction_id'] = source['extraction_id']
+        record['assigned_pages'] = [1, 2]
+    packet['pages'].append({'page': 2, 'sha256': 'c' * 64})
+    region = source['pages'][1]['regions'][0]
+    packet['regions'].append({'key': '2.0', 'page': 2, 'region_id': region['region_id'], 'category': 'Text'})
+    controls['regions'].append({'key': '2.0', 'status': 'evaluated', 'owner': 'A/13', 'continuation': True})
+    controls['image_reviews'].append({'page': 2, 'image_sha256': 'c' * 64, 'observed_structure': 'Point13 continues on the next page.'})
+    controls['units'][-1]['evidence_keys'].append('2.0')
+    controls['units'][-1]['start_text_quote'] = controls['units'][-1]['start_text_quote'][:-1] + ','
+    controls['region_owner_spans'][-1]['text'] = controls['region_owner_spans'][-1]['text'][:-1] + ','
+    controls['region_text_projections']['1.5']['raw_text'] = controls['region_text_projections']['1.5']['raw_text'][:-1] + ','
+    validate_source(source, tree)
+    point = next(n for n in tree['nodes'] if n['address'] == 'act/owner/A/13')
+    assert len(point['anchor_region_ids']) == 2
+    validate_controls(source, tree, packet, controls)

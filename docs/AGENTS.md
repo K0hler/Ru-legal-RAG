@@ -12,6 +12,9 @@
   raw_text). Every supplied source span is checked. Units starting in a partition
   require exact source start_text_offset/start_text_quote; ranges and marker
   coordinates reject booleans. /1 remains valid for single-owner regions.
+  Precise marker anchors retain all source-authored evidence_keys, including
+  following paragraph regions and explicit empty-token spans; only the first
+  anchor region applies start_text_offset.
   Derived act11 /2 controls retain the old source-clear representation warning
   under representation_notes; the original /1 controls and failed0/2 stay sealed.
   Ten-PDF and exposed two-act passes are development evidence, not G13/table
