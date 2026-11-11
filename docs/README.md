@@ -7,8 +7,9 @@ Completed engineering slices do not imply legal admission of editions.
 Experiment reports retain the results and limitations of their own dated runs.
 
 [M1-06](milestones/m1/M1_06_SANPIN_STRUCTURE_2026-11-04.md) is accepted for the
-retained SanPiN pilot. M1-07 uses the pilot trees and four PDF-reviewed table
-fragments. The independent sanitary-PDF check remains open under G13 for M1.
+retained SanPiN pilot. [M1-07](milestones/m1/M1_07_SANPIN_LEDGER_2026-11-11.md)
+records the accepted ledger for both dates. M1-08 will reconstruct the two
+editions. The independent sanitary-PDF check remains open under G13 for M1.
 
 [M1-05](milestones/m1/M1_05_DISCOVERY_2026-11-04.md) connects publication discovery
 to the shared OCR artifact through an explicit extraction index. The retained
