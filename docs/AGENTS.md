@@ -1,5 +1,11 @@
 # Documentation instructions
 
+- The M1-06 table review draft is local under
+  `data/m1/pilot_runs/m1-06-20261104/table-correction-draft/`. Replay binds
+  all 62 proposal records to the saved extraction, source PDF and page images,
+  checks four complete grids and compares all 168 Annex 9 sign cells with
+  the source annotation. The draft requires reviewer confirmation before use.
+
 - The owner ended the current M1-06 run on 4 November with «Нет, завершай
   задачу». The result is partial, not milestone acceptance: source-slice and
   quoted-footnote/continuation fixes pass the retained ten PDFs and two exposed
