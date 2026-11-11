@@ -1,5 +1,10 @@
 # Local data instructions
 
+- M1-06 `table-correction-acceptance/table-review.json` binds the
+  PDF-checked table draft and its four region addresses in the ten-PDF
+  pilot tree. Use it with the original PDF for M1-07 table references.
+  Preserve the raw OCR, the proposal journal and the first G13 failure.
+
 - M1-06 `source-slices-development/` is a development replay, never a new
   qualification. It retains separate /2 derived source controls for act11:
   original source-authored owners/ranges/marker are copied from sealed /1 facts;
