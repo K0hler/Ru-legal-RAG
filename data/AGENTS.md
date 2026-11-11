@@ -1,5 +1,11 @@
 # Local data instructions
 
+- M1-07 `m1/reviews/m1-07-review-v1/` retains the proposal, readable packet
+  and blank template. Preserve the artifact bytes; a correction creates a
+  new version, and actual human decisions are stored separately. The proposal
+  binds the retained M1-02 evidence and the M1-06 table review/AST. Both dates
+  require separate completeness decisions.
+
 - M1-06 `table-correction-acceptance/table-review.json` binds the
   PDF-checked table draft and its four region addresses in the ten-PDF
   pilot tree. Use it with the original PDF for M1-07 table references.

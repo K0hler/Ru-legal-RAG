@@ -417,7 +417,7 @@ Verify: SanPiN AST/table/accounting tests, complete retained compilation twice, 
 
 ### M1-07: Review The SanPiN Amendment Ledger
 
-**Type:** HITL. **Dependencies:** M1-02, M1-06. **Status:** planned.
+**Type:** HITL. **Dependencies:** M1-02, M1-06. **Status:** engineering proposal prepared on 11 November 2026. Nine retained amendment publications and 13 proposed operations are bound to the accepted pilot trees and official PDFs. Both dates await Legal Reviewer decisions. [Proposal and verification](M1_07_SANPIN_LEDGER_2026-11-11.md).
 
 The human lawyer prepares/confirms the exact operations and their effective dates/conditions for both targets. Engineering may populate an operation proposal with locators, but cannot decide ambiguous wording or applicability.
 

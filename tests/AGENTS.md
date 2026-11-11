@@ -1,5 +1,11 @@
 # Test instructions
 
+- `corpus/test_amendment_ledger.py` uses authored nodes and decisions for
+  source binding, exact before ranges, dependencies, subtree deletion and
+  fail-closed dated review. Run the separate retained M1-07 CLI check to
+  verify real pilot PDF/AST/table bindings and replay. Default tests do
+  not read local SanPiN or review artifacts.
+
 - `corpus/test_ocr_source_slices.py` authors source expectations for /3 slices:
   intra-token/multi-token/boundary splits, raw whitespace, physical bbox and exact
   unit markers/anchors, nested quotes/dates/decimals/no-directive refusals,

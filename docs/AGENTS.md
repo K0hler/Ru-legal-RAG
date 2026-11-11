@@ -1,5 +1,12 @@
 # Documentation instructions
 
+- M1-07 uses `build_m1_07_sanpin_ledger.py` to reproduce and check the
+  retained proposal from nine publications, the accepted M1-06 trees and
+  M1-02 coverage evidence. Use the archived PDFs and their page locators
+  when reviewing scope, exact changes and dates. The Markdown packet and
+  blank decision template record no human decision. See
+  `milestones/m1/M1_07_SANPIN_LEDGER_2026-11-11.md`.
+
 - Owner decision 11 November closes M1-06 for the retained SanPiN pilot.
   Use `table-correction-acceptance/table-review.json` in the M1-06 run for
   the four PDF-checked tables in M1-07. It binds the exact draft, PDF, page

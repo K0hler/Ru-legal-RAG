@@ -1,5 +1,18 @@
 # Corpus compilation module
 
+- M1-07 `amendment_ledger.bind_operations` validates a proposal in declared
+  order using copied node state. The before hash covers the exact node or
+  ordered subtree. Insertion also records absent addresses and the next
+  sibling. A later edit to inserted or modified text requires its producer.
+  Ranges use half-open Unicode offsets in AST text. Numbered insertions
+  reserve an owner address and its `/text` child. The pilot supports exact
+  text replacement, text/sibling insertion and point deletion; an unsupported
+  operation blocks verification.
+- `check_review` binds supplied human records to the whole ledger, checks
+  the assigned Legal Reviewer, separate date completeness and each operation's
+  disposition. Disputed decisions require a separate bound human record.
+  Readiness concerns reconstruction for the reviewed date and scope.
+
 - M1-06 source slices use `legal-ast/3` + `ocr-owner-ast/5` on the maintained
   OCR route only; native/official AST /2 and saved text-extraction/1 stay unchanged.
   Each content leaf owns ordered token-relative half-open `text_slices`; raw text,
